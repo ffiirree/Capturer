@@ -13,23 +13,22 @@ MainWindow::MainWindow(QWidget *parent)
     recorder_ = new ScreenRecorder();
 
     //@shortcut Ctrl+Alt+A
-    auto CTRAL_ALT_A = new QxtGlobalShortcut(this);
-    CTRAL_ALT_A->setShortcut(QKeySequence("Ctrl+Alt+S"));
+    auto SCREEN_SHOT_SHORTCUT = new QxtGlobalShortcut(this);
+    SCREEN_SHOT_SHORTCUT->setShortcut(QKeySequence("F1"));
+    connect(SCREEN_SHOT_SHORTCUT, &QxtGlobalShortcut::activated, capturer_, &ScreenCapturer::start);
 
-    connect(CTRAL_ALT_A, &QxtGlobalShortcut::activated, capturer_, &ScreenCapturer::start);
+    auto FIX_LAST_IMAGE_SHORTCUT = new QxtGlobalShortcut(this);
+    FIX_LAST_IMAGE_SHORTCUT->setShortcut(QKeySequence("F3"));
+    connect(FIX_LAST_IMAGE_SHORTCUT, &QxtGlobalShortcut::activated, this, &MainWindow::fixLastImage);
 
-    auto F3 = new QxtGlobalShortcut(this);
-    F3->setShortcut(QKeySequence("F3"));
-    connect(F3, &QxtGlobalShortcut::activated, this, &MainWindow::fixLastImage);
-
-    auto CTRAL_ALT_V = new QxtGlobalShortcut(this);
-    CTRAL_ALT_V->setShortcut(QKeySequence("Ctrl+Alt+V"));
-    connect(CTRAL_ALT_V, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
+    auto SCREEN_RECORDING_SHORTCUT = new QxtGlobalShortcut(this);
+    SCREEN_RECORDING_SHORTCUT->setShortcut(QKeySequence("Ctrl+Alt+V"));
+    connect(SCREEN_RECORDING_SHORTCUT, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
 
     gifcptr_ = new GifCapturer();
-    auto CTRAL_ALT_G = new QxtGlobalShortcut(this);
-    CTRAL_ALT_G->setShortcut(QKeySequence("Ctrl+Alt+G"));
-    connect(CTRAL_ALT_G, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
+    auto GIF_SHORTCUT = new QxtGlobalShortcut(this);
+    GIF_SHORTCUT->setShortcut(QKeySequence("Ctrl+Alt+G"));
+    connect(GIF_SHORTCUT, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 }
 
 void MainWindow::fixImage(QPixmap image)
