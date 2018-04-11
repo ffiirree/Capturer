@@ -1,3 +1,6 @@
 [submodule "qxtglobalshortcut5"]
 	path = qxtglobalshortcut5
 	url = https://github.com/ffiirree/qxtglobalshortcut5.git
+[submodule "qxtglobalshortcut"]
+	path = qxtglobalshortcut
+	url = git://github.com/ffiirree/qxtglobalshortcut.git
