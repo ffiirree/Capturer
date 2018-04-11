@@ -1,0 +1,22 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>res/close.png</file>
+        <file>res/save.png</file>
+        <file>res/copy.png</file>
+        <file>res/fixed.png</file>
+        <file>res/arrow-up-right2.png</file>
+        <file>res/circle.png</file>
+        <file>res/eraser.png</file>
+        <file>res/feather.png</file>
+        <file>res/text.png</file>
+        <file>res/dot.png</file>
+        <file>res/line.png</file>
+        <file>res/redo.png</file>
+        <file>res/undo.png</file>
+        <file>res/box.png</file>
+        <file>res/rectangle.png</file>
+    </qresource>
+    <qresource prefix="/qss">
+        <file>menu.qss</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,23 @@
+QPushButton {
+    border: 0;
+}
+QPushButton:hover {
+    background-color: #cccccc;
+}
+
+QPushButton:pressed {
+    background-color: #2080F0;
+}
+
+QPushButton[selected="true"] {
+    background-color: #2080F0;
+}
+
+MainMenu, GraphMenu {
+    background-color: white;
+    border: 1px solid #2080F0;
+}
+
+QTextEdit#text_area {
+    background-color: rgba(0, 0, 0, 1);
+}
