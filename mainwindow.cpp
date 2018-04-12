@@ -14,6 +14,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     recorder_ = new ScreenRecorder();
 
+    // setting
+    setting_dialog_ = new SettingDialog();
+
     // SystemTrayIcon
     sys_tray_icon_menu_ = new QMenu(this);
 
@@ -32,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     sys_tray_icon_menu_->addSeparator();
 
     auto setting = new QAction("Setting", this);
+    connect(setting, &QAction::triggered, setting_dialog_, &SettingDialog::show);
     sys_tray_icon_menu_->addAction(setting);
 
     sys_tray_icon_menu_->addSeparator();

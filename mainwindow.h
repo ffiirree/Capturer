@@ -13,6 +13,7 @@
 #include "qxtglobalshortcut.h"
 #include "screencapturer.h"
 #include "gifcapturer.h"
+#include "settingdialog.h"
 
 class MainWindow : public QWidget
 {
@@ -38,6 +39,8 @@ private:
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;
+
+    SettingDialog * setting_dialog_ = nullptr;
 };
 
 #endif // MAINWINDOW_H

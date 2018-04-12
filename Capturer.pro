@@ -32,7 +32,8 @@ SOURCES += \
     screenrecorder.cpp \
     selector.cpp \
     screencapturer.cpp \
-    gifcapturer.cpp
+    gifcapturer.cpp \
+    settingdialog.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -42,7 +43,8 @@ HEADERS += \
     screenrecorder.h \
     selector.h \
     screencapturer.h \
-    gifcapturer.h
+    gifcapturer.h \
+    settingdialog.h
 
 FORMS += \
         mainwindow.ui
