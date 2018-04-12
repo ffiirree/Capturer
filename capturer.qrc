@@ -15,6 +15,7 @@
         <file>res/undo.png</file>
         <file>res/box.png</file>
         <file>res/rectangle.png</file>
+        <file>res/icon.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu.qss</file>

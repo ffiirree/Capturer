@@ -3,7 +3,9 @@
 
 #include <QFrame>
 #include <QPixmap>
+#include <QSystemTrayIcon>
 #include <vector>
+#include <QMenu>
 #include <memory>
 #include "screencapturer.h"
 #include "fixedwindow.h"
@@ -33,6 +35,9 @@ private:
 
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
+
+    QSystemTrayIcon *sys_tray_icon_ = nullptr;
+    QMenu * sys_tray_icon_menu_ = nullptr;
 };
 
 #endif // MAINWINDOW_H
