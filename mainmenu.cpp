@@ -116,6 +116,12 @@ MainMenu::MainMenu(QWidget* parent)
 //    connect(redo_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
 //    layout_->addWidget(redo_btn);
 
+    QFrame * frame = new QFrame();
+    frame->setMaximumHeight(20);
+    frame->setFrameStyle(QFrame::Raised);
+    frame->setFrameShape(QFrame::VLine);
+    layout_->addWidget(frame);
+
     ///
     QPushButton * close_btn = new QPushButton();
     close_btn->setObjectName("close_btn");

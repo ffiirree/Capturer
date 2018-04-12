@@ -34,7 +34,9 @@ public:
 public slots:
     virtual void start();
 
-Q_SIGNALS:
+signals:
+    void moved();
+    void resized();
 
 protected:
     virtual void mousePressEvent(QMouseEvent *event);

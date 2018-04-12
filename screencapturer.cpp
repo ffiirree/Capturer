@@ -51,6 +51,18 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
 
     connect(gmenu_, &GraphMenu::SET_COLOR, [=](const QColor& color) { color_ = color; });
 
+    // move menu
+    auto menu_move_factor = [&]() {
+        captured_screen_.height() - rb().y() <= menu_->height()
+            ? menu_->move(rb().x() - menu_->width() + 1, rb().y() - menu_->height() - 1)
+            : menu_->move(rb().x() - menu_->width() + 1, rb().y() + 3);
+
+        gmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
+    };
+
+    connect(this, &ScreenCapturer::moved, menu_move_factor);
+    connect(this, &ScreenCapturer::resized, menu_move_factor);
+
     text_edit_ = new QTextEdit(this);
     text_edit_->hide();
     text_edit_->setObjectName("text_area");
