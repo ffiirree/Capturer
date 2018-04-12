@@ -15,10 +15,10 @@ public:
         INITIAL,
         NORMAL,
         SELECTING,
-        SELECTED,
+        CAPTURED,
         MOVING,
         RESIZING, /*TOP_RESIZING, BOTTOM_RESIZING, LEFT_RESIZING, RIGHT_RESIZING,*/
-        EDITING
+        LOCKED,
     };
 
     enum PointPosition {
@@ -73,6 +73,9 @@ protected:
     QPoint begin_{0, 0}, end_{0, 0};
     QPoint mbegin_{0, 0}, mend_{0, 0};
     QPoint rbegin_{0, 0}, rend_{0, 0};
+
+private:
+    void registerShortcuts();
 };
 
 #endif //! CAPTURER_SELECTOR_H

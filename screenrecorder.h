@@ -24,8 +24,6 @@ private:
     QProcess *process_;
 
     QString filename_;
-
-    bool is_recording = false;
 };
 
 #endif //! CAPTURER_VIDEOCAPTURER_H

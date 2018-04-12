@@ -15,121 +15,9 @@ Selector::Selector(QWidget * parent)
     connect(this, &Selector::moved, [&](){ this->update(); });
     connect(this, &Selector::resized, [&](){ this->update(); });
 
-    // shortcuts
-    // move
-    auto move_up = new QShortcut(QKeySequence("W"), this);
-    connect(move_up, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED && begin_.y() - 1 > 0 && end_.y() - 1 > 0) {
-            begin_.setY(begin_.y() - 1);
-            end_.setY(end_.y() - 1);
-            emit moved();
-        }
-    });
-
-    auto move_down = new QShortcut(QKeySequence("S"), this);
-    connect(move_down, &QShortcut::activated, [&]() {
-        QRect srect = QGuiApplication::primaryScreen()->geometry();
-        if(status_ == SELECTED && begin_.y() + 1 < srect.height() && end_.y() + 1 < srect.height()) {
-            begin_.setY(begin_.y() + 1);
-            end_.setY(end_.y() + 1);
-            emit moved();
-        }
-    });
-
-    auto move_left = new QShortcut(QKeySequence("A"), this);
-    connect(move_left, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED && begin_.x() - 1 > 0 && end_.x() - 1 > 0) {
-            begin_.setX(begin_.x() - 1);
-            end_.setX(end_.x() - 1);
-            emit moved();
-        }
-    });
-
-    auto move_right = new QShortcut(QKeySequence("D"), this);
-    connect(move_right, &QShortcut::activated, [&]() {
-        QRect srect = QGuiApplication::primaryScreen()->geometry();
-        if(status_ == SELECTED && begin_.x() + 1 < srect.width() && end_.x() + 1 < srect.width()) {
-            begin_.setX(begin_.x() + 1);
-            end_.setX(end_.x() + 1);
-            emit moved();
-        }
-    });
-
-
-    // resize
-    // increase
-    auto increase_top = new QShortcut(Qt::CTRL + Qt::Key_Up, this);
-    connect(increase_top, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            begin_.y() < end_.y() ? begin_.setY(std::max(0, begin_.y() -1)) : end_.setY(std::max(0, end_.y() - 1));
-            emit resized();
-        }
-    });
-
-    auto increase_bottom = new QShortcut(Qt::CTRL + Qt::Key_Down, this);
-    connect(increase_bottom, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            QRect srect = QGuiApplication::primaryScreen()->geometry();
-            begin_.y() < end_.y() ? end_.setY(std::min(srect.height(), end_.y() + 1)) : begin_.setY(std::min(srect.height(), begin_.y() + 1));
-            emit resized();
-        }
-    });
-
-    auto increase_left = new QShortcut(Qt::CTRL + Qt::Key_Left, this);
-    connect(increase_left, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            begin_.x() < end_.x() ? begin_.setX(std::max(0, begin_.x() - 1)) : end_.setX(std::max(0, end_.x() - 1));
-            emit resized();
-        }
-    });
-
-    auto increase_right = new QShortcut(Qt::CTRL + Qt::Key_Right, this);
-    connect(increase_right, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            QRect srect = QGuiApplication::primaryScreen()->geometry();
-            begin_.x() < end_.x() ? end_.setX(std::min(srect.width(), end_.x() + 1)) : begin_.setX(std::min(srect.width(), begin_.x() + 1));
-            emit resized();
-        }
-    });
-
-    // decrease
-    auto decrease_top = new QShortcut(Qt::SHIFT + Qt::Key_Up, this);
-    connect(decrease_top, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            QRect srect = QGuiApplication::primaryScreen()->geometry();
-            begin_.y() > end_.y() ? end_.setY(std::min(srect.height(), end_.y() + 1)) : begin_.setY(std::min(srect.height(), begin_.y() + 1));
-            emit resized();
-        }
-    });
-
-    auto decrease_bottom = new QShortcut(Qt::SHIFT + Qt::Key_Down, this);
-    connect(decrease_bottom, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            begin_.y() > end_.y() ? begin_.setY(std::max(0, begin_.y() - 1)) : end_.setY(std::max(0, end_.y() - 1));
-            emit resized();
-        }
-    });
-
-    auto decrease_left = new QShortcut(Qt::SHIFT + Qt::Key_Left, this);
-    connect(decrease_left, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            QRect srect = QGuiApplication::primaryScreen()->geometry();
-            begin_.x() > end_.x() ? end_.setX(std::min(srect.width(), end_.x() + 1)) : begin_.setX(std::min(srect.width(), begin_.x() + 1));
-            emit resized();
-        }
-    });
-
-    auto decrease_right = new QShortcut(Qt::SHIFT + Qt::Key_Right, this);
-    connect(decrease_right, &QShortcut::activated, [&]() {
-        if(status_ == SELECTED) {
-            begin_.x() > end_.x() ? begin_.setX(std::max(0, begin_.x() - 1)) : end_.setX(std::max(0, end_.x() - 1));
-            emit resized();
-        }
-    });
+    registerShortcuts();
 }
 
-
-// TODO: State Machine
 void Selector::start()
 {
     if(status_ == INITIAL) {
@@ -143,24 +31,35 @@ void Selector::mousePressEvent(QMouseEvent *event)
     if(event->button() == Qt::LeftButton) {
         cursor_pos_ = position(event->pos());
 
-        switch (cursor_pos_) {
-        case INSIDE:
-            status_ = MOVING;
-            mbegin_ = event->pos();
-            mend_ = event->pos();
-            break;
-
-        case OUTSIDE:
-            status_ = SELECTING;
+        switch (status_) {
+        case NORMAL:
             begin_ = event->pos();
             end_ = event->pos();
+
+            status_ = SELECTING;
             break;
 
-        default:
-            status_ = RESIZING;
-            rbegin_ = event->pos();
-            rend_ = event->pos();
+        case SELECTING: break;
+
+        case CAPTURED:
+            if(cursor_pos_ == INSIDE) {
+                mbegin_ = event->pos();
+                mend_ = event->pos();
+
+                status_ = MOVING;
+            }
+            else {
+                rbegin_ = event->pos();
+                rend_ = event->pos();
+
+                status_ = RESIZING;
+            }
             break;
+
+        case MOVING:
+        case RESIZING:
+        case LOCKED:
+        default: break;
         }
     }
 
@@ -172,47 +71,56 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     auto mouse_pos = event->pos();
 
     switch (status_) {
+    case NORMAL: setCursor(Qt::CrossCursor); break;
+    case SELECTING:
+        end_ = mouse_pos;
+
+        status_ = SELECTING;
+        break;
+
+    case CAPTURED:
+        cursor_pos_ = position(mouse_pos);
+        switch (cursor_pos_) {
+        case INSIDE:  setCursor(Qt::SizeAllCursor); break;
+        case OUTSIDE: setCursor(Qt::ForbiddenCursor); break;
+
+        case TOP_BORDER:
+        case BOTTOM_BORDER: setCursor(Qt::SizeVerCursor); break;
+
+        case LEFT_BORDER:
+        case RIGHT_BORDER: setCursor(Qt::SizeHorCursor); break;
+
+        case LT_DIAG:
+        case RB_DIAG: setCursor(Qt::SizeFDiagCursor); break;
+
+        case LB_DIAG:
+        case RT_DIAG: setCursor(Qt::SizeBDiagCursor);break;
+
+        default: break;
+        }
+        break;
+
     case MOVING:
         mend_ = mouse_pos;
         updateSelected();
         mbegin_ = mouse_pos;
-        break;
 
-    case SELECTING:
-        end_ = mouse_pos;
+        status_ = MOVING;
         break;
 
     case RESIZING:
         rend_ = mouse_pos;
         updateSelected();
         rbegin_ = mouse_pos;
+
+        status_ = RESIZING;
         break;
 
+    case LOCKED:
     default: break;
     }
 
-    cursor_pos_ = position(mouse_pos);
-
-    switch (cursor_pos_) {
-    case INSIDE:  setCursor(Qt::SizeAllCursor); break;
-    case OUTSIDE: setCursor(Qt::CrossCursor); break;
-
-    case TOP_BORDER:
-    case BOTTOM_BORDER: setCursor(Qt::SizeVerCursor); break;
-
-    case LEFT_BORDER:
-    case RIGHT_BORDER: setCursor(Qt::SizeHorCursor); break;
-
-    case LT_DIAG:
-    case RB_DIAG: setCursor(Qt::SizeFDiagCursor); break;
-
-    case LB_DIAG:
-    case RT_DIAG: setCursor(Qt::SizeBDiagCursor);break;
-
-    default: break;
-    }
     this->update();
-
     QWidget::mouseMoveEvent(event);
 }
 
@@ -220,9 +128,12 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton) {
         switch (status_) {
-        case SELECTING: end_ = event->pos(); status_ = SELECTED; break;
-        case MOVING: mend_ = event->pos(); status_ = SELECTED; break;
-        case RESIZING: rend_ = event->pos(); status_ = SELECTED; break;
+        case NORMAL: break;
+        case SELECTING: end_ = event->pos(); status_ = CAPTURED; break;
+        case MOVING: mend_ = event->pos(); status_ = CAPTURED; break;
+        case RESIZING: rend_ = event->pos(); status_ = CAPTURED; break;
+        case CAPTURED:
+        case LOCKED:
         default: break;
         }
     }
@@ -375,4 +286,128 @@ bool Selector::isBottomBorder(const QPoint& p)
 {
     auto sa = selected();
     return QRect(sa.x(), sa.y() + sa.height() - POSITION_BORDER_WIDTH/2, sa.width(), POSITION_BORDER_WIDTH).contains(p);
+}
+
+void Selector::registerShortcuts()
+{
+    // move
+    auto move_up = new QShortcut(QKeySequence("W"), this);
+    connect(move_up, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED && begin_.y() > 1 && end_.y() > 1) {
+            begin_.setY(begin_.y() - 1);
+            end_.setY(end_.y() - 1);
+            emit moved();
+        }
+    });
+
+    auto move_down = new QShortcut(QKeySequence("S"), this);
+    connect(move_down, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED && begin_.y() + 1 < this->height() && end_.y() + 1 < this->height()) {
+            begin_.setY(begin_.y() + 1);
+            end_.setY(end_.y() + 1);
+            emit moved();
+        }
+    });
+
+    auto move_left = new QShortcut(QKeySequence("A"), this);
+    connect(move_left, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED && begin_.x() > 1 && end_.x() > 1) {
+            begin_.setX(begin_.x() - 1);
+            end_.setX(end_.x() - 1);
+            emit moved();
+        }
+    });
+
+    auto move_right = new QShortcut(QKeySequence("D"), this);
+    connect(move_right, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED && begin_.x() + 1 < this->width() && end_.x() + 1 < this->width()) {
+            begin_.setX(begin_.x() + 1);
+            end_.setX(end_.x() + 1);
+            emit moved();
+        }
+    });
+
+
+    // resize
+    // increase
+    auto increase_top = new QShortcut(Qt::CTRL + Qt::Key_Up, this);
+    connect(increase_top, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.y() < end_.y()
+                    ? begin_.setY(std::max(0, begin_.y() -1))
+                    : end_.setY(std::max(0, end_.y() - 1));
+            emit resized();
+        }
+    });
+
+    auto increase_bottom = new QShortcut(Qt::CTRL + Qt::Key_Down, this);
+    connect(increase_bottom, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.y() < end_.y()
+                    ? end_.setY(std::min(this->height(), end_.y() + 1))
+                    : begin_.setY(std::min(this->height(), begin_.y() + 1));
+            emit resized();
+        }
+    });
+
+    auto increase_left = new QShortcut(Qt::CTRL + Qt::Key_Left, this);
+    connect(increase_left, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.x() < end_.x()
+                    ? begin_.setX(std::max(0, begin_.x() - 1))
+                    : end_.setX(std::max(0, end_.x() - 1));
+            emit resized();
+        }
+    });
+
+    auto increase_right = new QShortcut(Qt::CTRL + Qt::Key_Right, this);
+    connect(increase_right, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.x() < end_.x()
+                    ? end_.setX(std::min(this->width(), end_.x() + 1))
+                    : begin_.setX(std::min(this->width(), begin_.x() + 1));
+            emit resized();
+        }
+    });
+
+    // decrease
+    auto decrease_top = new QShortcut(Qt::SHIFT + Qt::Key_Up, this);
+    connect(decrease_top, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.y() > end_.y()
+                    ? end_.setY(std::min(this->height(), end_.y() + 1))
+                    : begin_.setY(std::min(this->height(), begin_.y() + 1));
+            emit resized();
+        }
+    });
+
+    auto decrease_bottom = new QShortcut(Qt::SHIFT + Qt::Key_Down, this);
+    connect(decrease_bottom, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.y() > end_.y()
+                    ? begin_.setY(std::max(0, begin_.y() - 1))
+                    : end_.setY(std::max(0, end_.y() - 1));
+            emit resized();
+        }
+    });
+
+    auto decrease_left = new QShortcut(Qt::SHIFT + Qt::Key_Left, this);
+    connect(decrease_left, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.x() > end_.x()
+                    ? end_.setX(std::min(this->width(), end_.x() + 1))
+                    : begin_.setX(std::min(this->width(), begin_.x() + 1));
+            emit resized();
+        }
+    });
+
+    auto decrease_right = new QShortcut(Qt::SHIFT + Qt::Key_Right, this);
+    connect(decrease_right, &QShortcut::activated, [&]() {
+        if(status_ == CAPTURED) {
+            begin_.x() > end_.x()
+                    ? begin_.setX(std::max(0, begin_.x() - 1))
+                    : end_.setX(std::max(0, end_.x() - 1));
+            emit resized();
+        }
+    });
 }

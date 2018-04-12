@@ -25,7 +25,6 @@ private:
 
     QString filename_;
     QString current_time_str_;
-    bool is_recording = false;
     QProcess *process_ = nullptr;
 };
 

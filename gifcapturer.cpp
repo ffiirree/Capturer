@@ -14,11 +14,13 @@ GifCapturer::GifCapturer(QWidget * parent)
 void GifCapturer::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        status_ = NORMAL;
+        status_ = INITIAL;
         this->hide();
     }
 
     if(event->key() == Qt::Key_Return) {
+        status_ = LOCKED;
+
         this->hide();
         this->start();
         this->setup();
@@ -36,23 +38,22 @@ void GifCapturer::paintEvent(QPaintEvent *event)
 
 void GifCapturer::record()
 {
-    if(is_recording) {
-        end();
-        return;
+    if(status_ == INITIAL) {
+        status_ = NORMAL;
+        filename_ = QFileDialog::getSaveFileName(this, tr("Save Gif"), "/", tr("Gif (*.gif)"));
+
+        if(!filename_.isEmpty()) {
+            this->show();
+            this->update();
+        }
     }
-
-    filename_ = QFileDialog::getSaveFileName(this, tr("Save Gif"), "/", tr("Gif (*.gif)"));
-
-    if(!filename_.isEmpty()) {
-        this->show();
-        this->update();
+    else {
+        end();
     }
 }
 
 void GifCapturer::setup()
 {
-    is_recording = true;
-
     QStringList args;
     auto roi = selected();
 
@@ -69,7 +70,6 @@ void GifCapturer::setup()
 
 void GifCapturer::end()
 {
-    is_recording = false;
     status_ = INITIAL;
     end_ = begin_;
 

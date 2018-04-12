@@ -20,22 +20,22 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     connect(menu_, &MainMenu::EXIT_CAPTURE, this, &ScreenCapturer::exit_capture);
 
 
-    connect(menu_, &MainMenu::START_PAINT_RECTANGLE, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_RECTANGLE; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_RECTANGLE, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_RECTANGLE; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_RECTANGLE, [=]() { edit_status_ = NONE; gmenu_->hide(); });
 
-    connect(menu_, &MainMenu::START_PAINT_CIRCLE, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_CIRCLE; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_CIRCLE, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_CIRCLE; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_CIRCLE, [=]() { edit_status_ = NONE; gmenu_->hide(); });
 
-    connect(menu_, &MainMenu::START_PAINT_ARROW, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_ARROW; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_ARROW, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_ARROW; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_ARROW, [=]() { edit_status_ = NONE; gmenu_->hide(); });
 
-    connect(menu_, &MainMenu::START_PAINT_LINE, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_LINE; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_LINE, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_LINE; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_LINE, [=]() { edit_status_ = NONE; gmenu_->hide(); });
 
-    connect(menu_, &MainMenu::START_PAINT_CURVES, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_CURVES; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_CURVES, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_CURVES; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_CURVES, [=]() { edit_status_ = NONE; gmenu_->hide(); });
 
-    connect(menu_, &MainMenu::START_PAINT_TEXT, [=]() { status_ = EDITING;  edit_status_ = START_PAINTING_TEXT; gmenu_->show(); });
+    connect(menu_, &MainMenu::START_PAINT_TEXT, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_TEXT; gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_TEXT, [=]() { edit_status_ = NONE; text_edit_->hide(); gmenu_->hide(); });
 
     // graph menu
@@ -80,7 +80,7 @@ void ScreenCapturer::start()
 
 void ScreenCapturer::mousePressEvent(QMouseEvent *event)
 {
-    if(status_ == EDITING) {
+    if(status_ == LOCKED) {
         switch (edit_status_) {
         case START_PAINTING_RECTANGLE:
         case END_PAINTING_RECTANGLE: rectangle_end_ = rectangle_begin_ = event->pos(); edit_status_ = PAINTING_RECTANGLE; break;
@@ -105,14 +105,13 @@ void ScreenCapturer::mousePressEvent(QMouseEvent *event)
             break;
         }
     }
-    else  {
-        Selector::mousePressEvent(event);
-    }
+
+    Selector::mousePressEvent(event);
 }
 
 void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
 {
-    if(status_ > NORMAL) {
+    if(status_ > CAPTURED) {
         menu_->show();
 
         captured_screen_.height() - rb().y() <= menu_->height()
@@ -122,7 +121,7 @@ void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
         gmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
     }
 
-    if(status_ == EDITING) {
+    if(status_ == LOCKED) {
         switch (edit_status_) {
         case PAINTING_RECTANGLE: rectangle_end_ = event->pos(); setCursor(Qt::CrossCursor); break;
         case PAINTING_CIRCLE: circle_end_ = event->pos(); setCursor(Qt::CrossCursor); break;
@@ -133,15 +132,14 @@ void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
         default:break;
         }
     }
-    else {
-        Selector::mouseMoveEvent(event);
-    }
+
     this->update();
+    Selector::mouseMoveEvent(event);
 }
 
 void ScreenCapturer::mouseReleaseEvent(QMouseEvent *event)
 {
-    if(status_ == EDITING) {
+    if(status_ == LOCKED) {
         switch (edit_status_) {
         case PAINTING_RECTANGLE: edit_status_ = END_PAINTING_RECTANGLE; break;
         case PAINTING_CIRCLE: edit_status_ = END_PAINTING_CIRCLE; break;
@@ -151,14 +149,13 @@ void ScreenCapturer::mouseReleaseEvent(QMouseEvent *event)
         default: break;
         }
     }
-    else {
-        Selector::mouseReleaseEvent(event);
-    }
+
+    Selector::mouseReleaseEvent(event);
 }
 
 void ScreenCapturer::keyPressEvent(QKeyEvent *event)
 {
-    if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ == SELECTED) {
+    if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ == CAPTURED) {
         copy2clipboard();
         exit_capture();
     }
@@ -179,8 +176,7 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
 
     painter_.setPen(QPen(QColor(color_.rgb()), 1, Qt::DashDotLine, Qt::FlatCap));
 
-
-    if(status_ == EDITING) {
+    if(status_ == LOCKED) {
         QPainter edit_painter;
         edit_painter.begin(&captured_screen_);
         edit_painter.setRenderHint(QPainter::Antialiasing, true);
@@ -225,13 +221,13 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
 
 void ScreenCapturer::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
 {
-    double par = 13.0;
-    double par2 = 35.0;
+    double par = 10.0;
+    double par2 = 27.0;
     double slopy = atan2((end.y() - begin.y()), (end.x() - begin.x()));
     double alpha = 30 * 3.14 / 180;
 
-    points[1] = QPoint(end.x() - int(par * cos(alpha + slopy)) - int(12 * cos(slopy)), end.y() - int(par*sin(alpha + slopy)) - int(12 * sin(slopy)));
-    points[5] = QPoint(end.x() - int(par * cos(alpha - slopy)) - int(12 * cos(slopy)), end.y() + int(par*sin(alpha - slopy)) - int(12 * sin(slopy)));
+    points[1] = QPoint(end.x() - int(par * cos(alpha + slopy)) - int(9 * cos(slopy)), end.y() - int(par*sin(alpha + slopy)) - int(9 * sin(slopy)));
+    points[5] = QPoint(end.x() - int(par * cos(alpha - slopy)) - int(9 * cos(slopy)), end.y() + int(par*sin(alpha - slopy)) - int(9 * sin(slopy)));
 
     points[2] = QPoint(end.x() - int(par2 * cos(alpha + slopy)), end.y() - int(par2*sin(alpha + slopy)));
     points[4] = QPoint(end.x() - int(par2 * cos(alpha - slopy)), end.y() + int(par2*sin(alpha - slopy)));
@@ -265,7 +261,7 @@ void ScreenCapturer::fix_image()
 
 void ScreenCapturer::exit_capture()
 {
-    if(!captured_image_.isNull() && status_ == SELECTED) {
+    if(!captured_image_.isNull() && status_ == CAPTURED) {
         CAPTURE_SCREEN_DONE(captured_image_);
     }
 

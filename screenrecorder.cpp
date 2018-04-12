@@ -16,23 +16,22 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
 
 void ScreenRecorder::record()
 {
-    if(is_recording) {
-        end();
-        return;
+    if(status_ == INITIAL) {
+        status_ = NORMAL;
+        filename_ = QFileDialog::getSaveFileName(this, tr("Save Video"), "/", tr("Video Files (*.mp4)"));
+
+        if(!filename_.isEmpty()) {
+            this->show();
+            this->update();
+        }
     }
-
-    filename_ = QFileDialog::getSaveFileName(this, tr("Save Video"), "/", tr("Video Files (*.mp4 *.gif)"));
-
-    if(!filename_.isEmpty()) {
-        this->show();
-        this->update();
+    else {
+        end();
     }
 }
 
 void ScreenRecorder::setup()
 {
-    is_recording = true;
-
     QStringList args;
     auto roi = selected();
 
@@ -46,7 +45,6 @@ void ScreenRecorder::setup()
 
 void ScreenRecorder::end()
 {
-    is_recording = false;
     status_ = INITIAL;
     end_ = begin_;
 
@@ -56,11 +54,13 @@ void ScreenRecorder::end()
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        status_ = NORMAL;
+        status_ = INITIAL;
         this->hide();
     }
 
     if(event->key() == Qt::Key_Return) {
+        status_ = LOCKED;
+
         this->hide();
         this->start();
         this->setup();
