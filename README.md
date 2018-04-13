@@ -1,5 +1,16 @@
 # Capturer
-Linux上的截图/录屏/Gif软件。
+- 截图
+    - [x] Windows 10
+    - [x] Ubuntu 16.04
+    - [ ] OS X
+- 录屏
+    - [ ] Windows 10
+    - [x] Ubuntu 16.04
+    - [ ] OS X
+- GIF
+    - [ ] Windows 10
+    - [x] Ubuntu 16.04
+    - [ ] OS X
 
 ## Shortcut
 ### 截图

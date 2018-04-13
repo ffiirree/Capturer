@@ -33,7 +33,8 @@ SOURCES += \
     selector.cpp \
     screencapturer.cpp \
     gifcapturer.cpp \
-    settingdialog.cpp
+    settingdialog.cpp \
+    shortcutinput.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -44,10 +45,14 @@ HEADERS += \
     selector.h \
     screencapturer.h \
     gifcapturer.h \
-    settingdialog.h
+    settingdialog.h \
+    shortcutinput.h \
+    json.hpp
 
-FORMS += \
-        mainwindow.ui
+FORMS +=
 
 RESOURCES += \
     capturer.qrc
+
+msvc: QMAKE_CXXFLAGS += -execution-charset:utf-8
+msvc: QMAKE_CXXFLAGS += -source-charset:utf-8

@@ -14,6 +14,7 @@
 #include "screencapturer.h"
 #include "gifcapturer.h"
 #include "settingdialog.h"
+#include "json.hpp"
 
 class MainWindow : public QWidget
 {
@@ -27,8 +28,18 @@ private slots:
     void fixImage(QPixmap image);
     void fixLastImage();
 
+    void setSnipHotKey(const QKeySequence&);
+    void setFixImgHotKey(const QKeySequence&);
+    void setGIFHotKey(const QKeySequence&);
+    void setVideoHotKey(const QKeySequence&);
+
+    inline nlohmann::json settings() const { return setting_dialog_->settings(); }
+
 private:
     void keyPressEvent(QKeyEvent *event);
+
+    void setupSystemTrayIcon();
+    void registerHotKeys();
 
     ScreenCapturer * capturer_ = nullptr;
     std::vector<QPixmap> images_;
@@ -41,6 +52,12 @@ private:
     QMenu * sys_tray_icon_menu_ = nullptr;
 
     SettingDialog * setting_dialog_ = nullptr;
+
+    // hotkey
+    QxtGlobalShortcut *snip_sc_ = nullptr;
+    QxtGlobalShortcut *fix_sc_ = nullptr;
+    QxtGlobalShortcut *gif_sc_ = nullptr;
+    QxtGlobalShortcut *video_sc_ = nullptr;
 };
 
 #endif // MAINWINDOW_H

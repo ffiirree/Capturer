@@ -16,7 +16,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     // setting
     setting_dialog_ = new SettingDialog();
+    connect(setting_dialog_, &SettingDialog::snipShortcutChanged, this, &MainWindow::setSnipHotKey);
+    connect(setting_dialog_, &SettingDialog::fixImgShortcutChanged, this, &MainWindow::setFixImgHotKey);
+    connect(setting_dialog_, &SettingDialog::gifShortcutChanged, this, &MainWindow::setGIFHotKey);
+    connect(setting_dialog_, &SettingDialog::videoShortcutChanged, this, &MainWindow::setVideoHotKey);
 
+    // shortcuts
+    // @attention Must after setting.
+    registerHotKeys();
+
+    // System tray icon
+    // @attention Must after setting.
+    setupSystemTrayIcon();
+}
+
+void MainWindow::setupSystemTrayIcon()
+{
     // SystemTrayIcon
     sys_tray_icon_menu_ = new QMenu(this);
 
@@ -49,24 +64,47 @@ MainWindow::MainWindow(QWidget *parent)
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));
     setWindowIcon(QIcon(":/icon/res/icon.png"));
     sys_tray_icon_->show();
-
-    // shortcut
-    auto SCREEN_SHOT_SHORTCUT = new QxtGlobalShortcut(this);
-    SCREEN_SHOT_SHORTCUT->setShortcut(QKeySequence("F1"));
-    connect(SCREEN_SHOT_SHORTCUT, &QxtGlobalShortcut::activated, capturer_, &ScreenCapturer::start);
-
-    auto FIX_LAST_IMAGE_SHORTCUT = new QxtGlobalShortcut(this);
-    FIX_LAST_IMAGE_SHORTCUT->setShortcut(QKeySequence("F3"));
-    connect(FIX_LAST_IMAGE_SHORTCUT, &QxtGlobalShortcut::activated, this, &MainWindow::fixLastImage);
-
-    auto SCREEN_RECORDING_SHORTCUT = new QxtGlobalShortcut(this);
-    SCREEN_RECORDING_SHORTCUT->setShortcut(QKeySequence("Ctrl+Alt+V"));
-    connect(SCREEN_RECORDING_SHORTCUT, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
-
-    auto GIF_SHORTCUT = new QxtGlobalShortcut(this);
-    GIF_SHORTCUT->setShortcut(QKeySequence("Ctrl+Alt+G"));
-    connect(GIF_SHORTCUT, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 }
+
+void MainWindow::registerHotKeys()
+{
+    snip_sc_ = new QxtGlobalShortcut(this);
+    snip_sc_->setShortcut(GET_SETTING(["hotkey"]["snip"]));
+    connect(snip_sc_, &QxtGlobalShortcut::activated, capturer_, &ScreenCapturer::start);
+
+    fix_sc_ = new QxtGlobalShortcut(this);
+    fix_sc_->setShortcut(GET_SETTING(["hotkey"]["fix_image"]));
+    connect(fix_sc_, &QxtGlobalShortcut::activated, this, &MainWindow::fixLastImage);
+
+    video_sc_ = new QxtGlobalShortcut(this);
+    video_sc_->setShortcut(GET_SETTING(["hotkey"]["video"]));
+    connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
+
+    gif_sc_ = new QxtGlobalShortcut(this);
+    gif_sc_->setShortcut(GET_SETTING(["hotkey"]["gif"]));
+    connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
+}
+
+void MainWindow::setSnipHotKey(const QKeySequence &sc)
+{
+    snip_sc_->setShortcut(sc);
+}
+
+void MainWindow::setFixImgHotKey(const QKeySequence &sc)
+{
+    fix_sc_->setShortcut(sc);
+}
+
+void MainWindow::setGIFHotKey(const QKeySequence &sc)
+{
+    gif_sc_->setShortcut(sc);
+}
+
+void MainWindow::setVideoHotKey(const QKeySequence &sc)
+{
+    video_sc_->setShortcut(sc);
+}
+
 
 void MainWindow::fixImage(QPixmap image)
 {
@@ -90,6 +128,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 MainWindow::~MainWindow()
 {
     delete capturer_;
+    delete setting_dialog_;
 
     for(auto& fw: fix_windows_) {
         delete fw;

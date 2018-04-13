@@ -2,41 +2,62 @@
 #define SETTINGDIALOG_H
 
 #include <QDialog>
-#include <QListWidget>
+#include <QTableWidget>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QAction>
-#include <QScrollArea>
-#include <QMenu>
-#include <QButtonGroup>
-#include <QPushButton>
-#include <QRadioButton>
-#include <QPainter>
-#include <QScrollBar>
+#include <QGridLayout>
+#include <QCheckBox>
+#include <QSettings>
+#include <QDir>
+#include <QCoreApplication>
+#include <QLabel>
+#include <QLineEdit>
+#include "json.hpp"
 
-class SettingDialog : public QDialog
+#define JSON_QSTR(x)    QString::fromStdString((x).get<std::string>())
+#define GET_SETTING(X)  JSON_QSTR(settings()X)
+
+class SettingDialog : public QFrame
 {
     Q_OBJECT
 
 public:
     explicit SettingDialog(QWidget * parent = nullptr);
+    ~SettingDialog();
 
-protected:
-    virtual void paintEvent(QPaintEvent *event);
+    nlohmann::json settings() const { return settings_; }
+
+signals:
+    void snipShortcutChanged(const QKeySequence &);
+    void fixImgShortcutChanged(const QKeySequence &);
+    void gifShortcutChanged(const QKeySequence &);
+    void videoShortcutChanged(const QKeySequence &);
+
+private slots:
+    void setAutoRun(int);
 
 private:
-    QScrollArea * scroll_area_ = nullptr;
-    QWidget * scroll_widget_ = nullptr;
-    QVBoxLayout * scroll_layout_ = nullptr;
+    void setupGeneralWidget();
+    void setupAppearanceWidget();
+    void setupHotkeyWidget();
+    void setupAboutWidget();
 
-    QButtonGroup * btn_group = nullptr;
-    QVBoxLayout * menu_layout_ = nullptr;
+    void config();
 
+    QTabWidget * tabw_ = nullptr;
 
-    //
-    QWidget * menu_ = nullptr;
-    QWidget * shortcut_widget_ = nullptr;
-    QWidget * about_widget_ = nullptr;
+    QWidget * background_ = nullptr;
+
+    QWidget * general_ = nullptr;
+    QWidget * appearance_ = nullptr;
+    QWidget * hotkey_ = nullptr;
+    QWidget * about_ = nullptr;
+
+    nlohmann::json settings_;
+
+    QString config_dir_path_{};
+    QString config_file_path_{};
+
+    static QString default_settings_;
 };
 
 #endif // SETTINGDIALOG_H

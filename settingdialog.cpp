@@ -1,61 +1,173 @@
 #include "settingdialog.h"
+#include <QDebug>
+#include "shortcutinput.h"
+#include <string>
+#include <QStandardPaths>
+
+using json = nlohmann::json;
+
+QString SettingDialog::default_settings_ =
+R"({
+    "autorun": true,
+    "hotkey": {
+        "fix_image": "F3",
+        "gif": "Ctrl+Alt+G",
+        "snip": "Ctrl+Alt+Q",
+        "video": "Ctrl+Alt+V"
+    }
+})";
 
 SettingDialog::SettingDialog(QWidget * parent)
-    : QDialog(parent)
+    : QFrame(parent)
 {
-    setFixedSize(800, 600);
+    config_dir_path_ = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir config_dir(config_dir_path_);
+    if(!config_dir.exists()) {
+        config_dir.mkpath(config_dir_path_);
+    }
+    config_file_path_ = config_dir_path_ + QDir::separator() + "config.json";
+    if(!QFile::exists(config_file_path_)) {
+        QFile config_file(config_file_path_);
+        if(config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+            QTextStream out(&config_file);
+            out << default_settings_;
+        }
+    }
 
-    btn_group = new QButtonGroup(this);
+    setWindowFlags(Qt::WindowStaysOnTopHint);
 
-    menu_ = new QWidget(this);
-    menu_->setGeometry(0, 0, 250, 600);
-    menu_layout_ = new QVBoxLayout();
-    menu_->setLayout(menu_layout_);
+    tabw_ = new QTabWidget(this);
+    tabw_->setMinimumSize(300, 400);
 
+    // tab widget
+    general_ = new QWidget(this);
+    appearance_ = new QWidget(this);
+    hotkey_ = new QWidget(this);
+    about_ = new QWidget(this);
 
-    auto shortcut_btn = new QRadioButton("Shortcut", this);
-    btn_group->addButton(shortcut_btn);
+    tabw_->addTab(general_, "常规");
+    tabw_->addTab(appearance_, "外观");
+    tabw_->addTab(hotkey_, "快捷键");
+    tabw_->addTab(about_, "关于");
 
-    auto about_action = new QRadioButton("About Capturer", this);
-    btn_group->addButton(about_action);
-
-    menu_layout_->addWidget(shortcut_btn);
-    menu_layout_->addWidget(about_action);
-    menu_layout_->addStretch();
-
-    scroll_area_ = new QScrollArea(this);
-    scroll_area_->setGeometry(250, 0, 550, 600);
-    scroll_area_->setBackgroundRole(QPalette::Dark);
-    scroll_layout_ = new QVBoxLayout();
-
-    scroll_widget_ = new QWidget(this);
-
-    shortcut_widget_ = new QWidget(this);
-    shortcut_widget_->setFixedSize(500, 500);
-    shortcut_widget_->setStyleSheet("background-color:red;");
-    shortcut_widget_->show();;
-
-    about_widget_ = new QWidget(this);
-    about_widget_->setFixedSize(500, 500);
-    about_widget_->setStyleSheet("background-color:blue;");
-    about_widget_->show();
-
-    scroll_layout_->addWidget(shortcut_widget_);
-    scroll_layout_->addWidget(about_widget_);
-
-    scroll_layout_->setMargin(0);
-    scroll_widget_->setLayout(scroll_layout_);
-    scroll_area_->setWidget(scroll_widget_);
+    config();
 
     //
-    connect(shortcut_btn, &QRadioButton::clicked, [&]() {
-        scroll_area_->verticalScrollBar()->setValue(0);
-    });
-    connect(about_action, &QRadioButton::clicked, [&]() {
-        scroll_area_->verticalScrollBar()->setValue(500);
-    });
+    setupGeneralWidget();
+    setupAppearanceWidget();
+    setupHotkeyWidget();
+    setupAboutWidget();
 }
 
-void SettingDialog::paintEvent(QPaintEvent *event)
+SettingDialog::~SettingDialog()
 {
+    QFile file(config_file_path_);
+
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
+        return;
+
+    QTextStream out(&file);
+    out << settings_.dump(4).c_str();
 }
+
+void SettingDialog::config()
+{
+    QFile file(config_file_path_);
+
+    QString text = default_settings_;
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        text = in.readAll();
+    }
+
+    try {
+        // parsing input with a syntax error
+        settings_ = nlohmann::json::parse(text.toStdString());
+    }
+    catch (json::parse_error& e) {
+        qDebug() << "Parse config.json failed!";
+    }
+}
+
+void SettingDialog::setAutoRun(int statue)
+{
+#ifdef _WIN32
+        QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+        QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+        settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
+        settings_["autorun"] = (statue == Qt::Checked);
+#elif _LINUX
+
+#endif
+}
+
+void SettingDialog::setupGeneralWidget()
+{
+    auto layout = new QVBoxLayout();
+    //
+    auto _01 = new QCheckBox("开机自动启动");
+    if(settings_["autorun"].is_null()) settings_["auto"] = true;
+    _01->setChecked(settings_["autorun"].get<bool>());
+    setAutoRun(_01->checkState());
+    connect(_01, &QCheckBox::stateChanged, this, &SettingDialog::setAutoRun);
+
+    layout->addWidget(_01);
+    layout->addStretch();
+
+    general_->setLayout(layout);
+}
+
+void SettingDialog::setupAppearanceWidget()
+{
+
+}
+
+void SettingDialog::setupHotkeyWidget()
+{
+    auto layout = new QGridLayout();
+
+    auto _1_1 = new QLabel("截屏");
+    if(settings_["hotkey"]["snip"].is_null())
+        settings_["hotkey"]["snip"] = "F1";
+    auto _1_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["snip"]));
+    connect(_1_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
+        settings_["hotkey"]["snip"] = ks.toString().toStdString();
+        emit snipShortcutChanged(ks);
+    });
+    layout->addWidget(_1_1, 1, 1);
+    layout->addWidget(_1_2, 1, 2);
+
+    auto _2_1 = new QLabel("贴图");
+    if(settings_["hotkey"]["fix_image"].is_null())
+        settings_["hotkey"]["fix_image"] = "F3";
+    auto _2_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["fix_image"]));
+    connect(_2_2, &ShortcutInput::changed, this, &SettingDialog::fixImgShortcutChanged);
+    layout->addWidget(_2_1, 2, 1);
+    layout->addWidget(_2_2, 2, 2);
+
+    auto _3_1 = new QLabel("GIF");
+    if(settings_["hotkey"]["gif"].is_null())
+        settings_["hotkey"]["gif"] = "F3";
+    auto _3_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["gif"]));
+    connect(_3_2, &ShortcutInput::changed, this, &SettingDialog::gifShortcutChanged);
+    layout->addWidget(_3_1, 3, 1);
+    layout->addWidget(_3_2, 3, 2);
+
+    auto _4_1 = new QLabel("录屏");
+    if(settings_["hotkey"]["video"].is_null())
+        settings_["hotkey"]["video"] = "F3";
+    auto _4_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["video"]));
+    connect(_4_2, &ShortcutInput::changed, this, &SettingDialog::videoShortcutChanged);
+    layout->addWidget(_4_1, 4, 1);
+    layout->addWidget(_4_2, 4, 2);
+
+    layout->setRowStretch(5, 1);
+
+    hotkey_->setLayout(layout);
+}
+void SettingDialog::setupAboutWidget()
+{
+    new QLabel("Copyright (C) 2018 Zhang Liangqi", about_);
+}
+
