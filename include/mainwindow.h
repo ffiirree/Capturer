@@ -42,11 +42,11 @@ private:
     void registerHotKeys();
 
     ScreenCapturer * capturer_ = nullptr;
-    std::vector<QPixmap> images_;
-    std::vector<FixImageWindow *> fix_windows_;
-
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
+
+    std::vector<QPixmap> images_;
+    std::vector<FixImageWindow *> fix_windows_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;

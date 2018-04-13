@@ -96,10 +96,10 @@ void SettingDialog::setAutoRun(int statue)
         QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
         QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
         settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
-        settings_["autorun"] = (statue == Qt::Checked);
 #elif _LINUX
 
 #endif
+    settings_["autorun"] = (statue == Qt::Checked);
 }
 
 void SettingDialog::setupGeneralWidget()

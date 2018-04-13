@@ -10,8 +10,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(capturer_, &ScreenCapturer::FIX_IMAGE, this, &MainWindow::fixImage);
     connect(capturer_, &ScreenCapturer::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
 
-    gifcptr_ = new GifCapturer();
-
     recorder_ = new ScreenRecorder();
 
     // setting
@@ -80,6 +78,7 @@ void MainWindow::registerHotKeys()
     video_sc_->setShortcut(GET_SETTING(["hotkey"]["video"]));
     connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
 
+    gifcptr_ = new GifCapturer(); // Must be there ????
     gif_sc_ = new QxtGlobalShortcut(this);
     gif_sc_->setShortcut(GET_SETTING(["hotkey"]["gif"]));
     connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
