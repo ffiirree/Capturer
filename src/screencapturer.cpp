@@ -69,7 +69,7 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
 
     // Magnifier
     magnifier_ = new Magnifier(this);
-    magnifier_->show();
+    magnifier_->hide();
 }
 
 void ScreenCapturer::start()
@@ -115,16 +115,6 @@ void ScreenCapturer::mousePressEvent(QMouseEvent *event)
 
 void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
 {
-    if(status_ >= CAPTURED) {
-        menu_->show();
-
-        captured_screen_.height() - rb().y() <= menu_->height()
-            ? menu_->move(rb().x() - menu_->width() + 1, rb().y() - menu_->height() - 1)
-            : menu_->move(rb().x() - menu_->width() + 1, rb().y() + 3);
-
-        gmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
-    }
-
     if(status_ == LOCKED) {
         switch (edit_status_) {
         case PAINTING_RECTANGLE: rectangle_end_ = event->pos(); setCursor(Qt::CrossCursor); break;
@@ -169,6 +159,16 @@ void ScreenCapturer::keyPressEvent(QKeyEvent *event)
 
 void ScreenCapturer::paintEvent(QPaintEvent *event)
 {
+    if(status_ >= CAPTURED) {
+        menu_->show();
+
+        captured_screen_.height() - rb().y() <= menu_->height()
+            ? menu_->move(rb().x() - menu_->width() + 1, rb().y() - menu_->height() - 1)
+            : menu_->move(rb().x() - menu_->width() + 1, rb().y() + 3);
+
+        gmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
+    }
+
     if(status_ != LOCKED) {
         magnifier_->show();
         magnifier_->move(QCursor::pos().x() + 1, QCursor::pos().y() + 1);

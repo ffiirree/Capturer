@@ -38,6 +38,8 @@ void GifCapturer::paintEvent(QPaintEvent *event)
         painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
         painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
         painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+
+        painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
     }
     else {
         painter_.fillRect(rect(), bgc);
