@@ -35,7 +35,8 @@ SOURCES += \
     $$PWD/src/screencapturer.cpp \
     $$PWD/src/gifcapturer.cpp \
     $$PWD/src/settingdialog.cpp \
-    $$PWD/src/shortcutinput.cpp
+    $$PWD/src/shortcutinput.cpp \
+    $$PWD/src/magnifier.cpp
 
 HEADERS += \
     $$PWD/include/mainwindow.h \
@@ -48,7 +49,8 @@ HEADERS += \
     $$PWD/include/gifcapturer.h \
     $$PWD/include/settingdialog.h \
     $$PWD/include/shortcutinput.h \
-    $$PWD/3rdparty/json.hpp
+    $$PWD/3rdparty/json.hpp \
+    $$PWD/include/magnifier.h
 
 FORMS +=
 

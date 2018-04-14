@@ -1,16 +1,16 @@
 # Capturer
-- 截图
-    - [x] Windows 10
-    - [x] Ubuntu 16.04
-    - [ ] OS X
-- 录屏
-    - [ ] Windows 10
-    - [x] Ubuntu 16.04
-    - [ ] OS X
-- GIF
-    - [ ] Windows 10
-    - [x] Ubuntu 16.04
-    - [ ] OS X
+- Ubuntu 16.04
+    - [x] 截图
+    - [x] 录屏
+    - [x] GIF
+- Windows 10
+    - [x] 截图
+    - [ ] 录屏
+    - [ ] GIF
+- OS X
+    - [ ] 截图
+    - [ ] 录屏
+    - [ ] GIF
 
 ## Shortcut
 ### 截图

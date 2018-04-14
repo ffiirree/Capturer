@@ -66,6 +66,10 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     text_edit_ = new QTextEdit(this);
     text_edit_->hide();
     text_edit_->setObjectName("text_area");
+
+    // Magnifier
+    magnifier_ = new Magnifier(this);
+    magnifier_->show();
 }
 
 void ScreenCapturer::start()
@@ -111,7 +115,7 @@ void ScreenCapturer::mousePressEvent(QMouseEvent *event)
 
 void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
 {
-    if(status_ > CAPTURED) {
+    if(status_ >= CAPTURED) {
         menu_->show();
 
         captured_screen_.height() - rb().y() <= menu_->height()
@@ -165,6 +169,14 @@ void ScreenCapturer::keyPressEvent(QKeyEvent *event)
 
 void ScreenCapturer::paintEvent(QPaintEvent *event)
 {
+    if(status_ != LOCKED) {
+        magnifier_->show();
+        magnifier_->move(QCursor::pos().x() + 1, QCursor::pos().y() + 1);
+    }
+    else {
+        magnifier_->hide();;
+    }
+
     QRect roi = selected();
     captured_image_ = captured_screen_.copy(roi);
 

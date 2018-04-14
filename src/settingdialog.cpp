@@ -12,7 +12,7 @@ R"({
     "hotkey": {
         "fix_image": "F3",
         "gif": "Ctrl+Alt+G",
-        "snip": "Ctrl+Alt+Q",
+        "snip": "F1",
         "video": "Ctrl+Alt+V"
     }
 })";

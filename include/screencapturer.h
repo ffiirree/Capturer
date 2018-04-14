@@ -5,6 +5,7 @@
 #include <QTextEdit>
 #include "mainmenu.h"
 #include "graphmenu.h"
+#include "magnifier.h"
 
 class ScreenCapturer : public Selector
 {
@@ -58,6 +59,7 @@ private:
 
     MainMenu * menu_ = nullptr;
     GraphMenu * gmenu_ = nullptr;
+    Magnifier * magnifier_ = nullptr;
 
     QPoint rectangle_begin_{0, 0}, rectangle_end_{0, 0};
     QPoint circle_begin_{0, 0}, circle_end_{0, 0};
