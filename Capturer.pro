@@ -52,8 +52,6 @@ HEADERS += \
     $$PWD/3rdparty/json.hpp \
     $$PWD/include/magnifier.h
 
-FORMS +=
-
 RESOURCES += \
     capturer.qrc
 
