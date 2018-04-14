@@ -3,11 +3,11 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QDateTime>
+#include <QStandardPaths>
 
 GifCapturer::GifCapturer(QWidget * parent)
     : Selector(parent)
 {
-    this->setWindowOpacity(0.35);
     process_ = new QProcess(this);
 }
 
@@ -22,7 +22,6 @@ void GifCapturer::keyPressEvent(QKeyEvent *event)
         status_ = LOCKED;
 
         this->hide();
-        this->start();
         this->setup();
     }
 }
@@ -30,7 +29,20 @@ void GifCapturer::keyPressEvent(QKeyEvent *event)
 void GifCapturer::paintEvent(QPaintEvent *event)
 {
     painter_.begin(this);
-    painter_.fillRect(this->rect(),  QColor(0, 0, 0));
+
+    QColor bgc = QColor(0, 0, 0, 50);
+
+    if(status_ != NORMAL) {
+        auto roi = selected();
+        painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
+        painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
+        painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
+        painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+    }
+    else {
+        painter_.fillRect(rect(), bgc);
+    }
+
     painter_.end();
 
     Selector::paintEvent(event);
@@ -38,33 +50,23 @@ void GifCapturer::paintEvent(QPaintEvent *event)
 
 void GifCapturer::record()
 {
-    if(status_ == INITIAL) {
-        status_ = NORMAL;
-        filename_ = QFileDialog::getSaveFileName(this, tr("Save Gif"), "/", tr("Gif (*.gif)"));
-
-        if(!filename_.isEmpty()) {
-            this->show();
-            this->update();
-        }
-    }
-    else {
-        end();
-    }
+    status_ == INITIAL ? start() : end();
 }
 
 void GifCapturer::setup()
 {
+    auto native_movies_path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    current_time_str_ = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
+
+    filename_ = native_movies_path + QDir::separator() + "Capturer_gif_" + current_time_str_ + ".gif";
+
     QStringList args;
-    auto roi = selected();
-
-    QDateTime current_time = QDateTime::currentDateTime();
-    current_time_str_ = current_time.toString("yyyy_MM_dd_hh_mm_ss_zzz");
-
-    args << "-video_size" << (std::to_string(roi.width()) + "x" + std::to_string(roi.height())).c_str()
+    auto selected_area = selected();
+    args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
          << "-framerate" << "25"
          << "-f" << "x11grab"
-         << "-i" << (":0.0+" + std::to_string(roi.x()) + "," + std::to_string(roi.y())).c_str()
-         << "/tmp/capturer_2_gif_" + current_time_str_ + ".mp4";
+         << "-i" << ":0.0+" + QString::number(selected_area.x()) + "," + QString::number(selected_area.y())
+         << "/tmp/Capturer_gif_" + current_time_str_ + ".mp4";
     process_->start("ffmpeg", args);
 }
 
@@ -78,15 +80,15 @@ void GifCapturer::end()
     process_->waitForFinished();
     QStringList args;
     args << "-y"
-         << "-i" << "/tmp/capturer_2_gif_" + current_time_str_ + ".mp4"
+         << "-i" << "/tmp/Capturer_gif_" + current_time_str_ + ".mp4"
          << "-vf" << "fps=8,palettegen"
-         << "/tmp/capturer_palette_" + current_time_str_ + ".png";
+         << "/tmp/Capturer_palette_" + current_time_str_ + ".png";
     process_->start("ffmpeg", args);
     process_->waitForFinished();
 
     args.clear();
-    args << "-i" << "/tmp/capturer_2_gif_" + current_time_str_ + ".mp4"
-         << "-i" << "/tmp/capturer_palette_" + current_time_str_ + ".png"
+    args << "-i" << "/tmp/Capturer_gif_" + current_time_str_ + ".mp4"
+         << "-i" << "/tmp/Capturer_palette_" + current_time_str_ + ".png"
          << "-filter_complex" << "fps=5,paletteuse"
          << filename_;
     process_->start("ffmpeg", args);

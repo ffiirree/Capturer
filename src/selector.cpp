@@ -8,9 +8,10 @@
 Selector::Selector(QWidget * parent)
     : QWidget(parent)
 {
-    this->setMouseTracking(true);
-    this->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-    this->setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setMouseTracking(true);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
 
     connect(this, &Selector::moved, [&](){ this->update(); });
     connect(this, &Selector::resized, [&](){ this->update(); });

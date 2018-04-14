@@ -142,7 +142,10 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["fix_image"].is_null())
         settings_["hotkey"]["fix_image"] = "F3";
     auto _2_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["fix_image"]));
-    connect(_2_2, &ShortcutInput::changed, this, &SettingDialog::fixImgShortcutChanged);
+    connect(_2_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
+        settings_["hotkey"]["fix_image"] = ks.toString().toStdString();
+        emit fixImgShortcutChanged(ks);
+    });
     layout->addWidget(_2_1, 2, 1);
     layout->addWidget(_2_2, 2, 2);
 
@@ -150,7 +153,10 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["gif"].is_null())
         settings_["hotkey"]["gif"] = "F3";
     auto _3_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["gif"]));
-    connect(_3_2, &ShortcutInput::changed, this, &SettingDialog::gifShortcutChanged);
+    connect(_3_2, &ShortcutInput::changed,[&](const QKeySequence& ks) {
+        settings_["hotkey"]["gif"] = ks.toString().toStdString();
+        emit gifShortcutChanged(ks);
+    });
     layout->addWidget(_3_1, 3, 1);
     layout->addWidget(_3_2, 3, 2);
 
@@ -158,7 +164,10 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["video"].is_null())
         settings_["hotkey"]["video"] = "F3";
     auto _4_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["video"]));
-    connect(_4_2, &ShortcutInput::changed, this, &SettingDialog::videoShortcutChanged);
+    connect(_4_2, &ShortcutInput::changed, [&](const QKeySequence& ks) {
+        settings_["hotkey"]["video"] = ks.toString().toStdString();
+        emit videoShortcutChanged(ks);
+    });
     layout->addWidget(_4_1, 4, 1);
     layout->addWidget(_4_2, 4, 2);
 

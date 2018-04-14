@@ -42,9 +42,9 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     gmenu_ = new GraphMenu(this);
     gmenu_->hide();
 
-    connect(gmenu_, &GraphMenu::SET_WIDTH_01, [=](){ pen_width_ = 1; });
-    connect(gmenu_, &GraphMenu::SET_WIDTH_02, [=](){ pen_width_ = 2; });
-    connect(gmenu_, &GraphMenu::SET_WIDTH_03, [=](){ pen_width_ = 4; });
+    connect(gmenu_, &GraphMenu::SET_WIDTH_01, [=](){ pen_width_ = 1; fill_ = false; });
+    connect(gmenu_, &GraphMenu::SET_WIDTH_02, [=](){ pen_width_ = 2; fill_ = false; });
+    connect(gmenu_, &GraphMenu::SET_WIDTH_03, [=](){ pen_width_ = 4; fill_ = false; });
 
     connect(gmenu_, &GraphMenu::SET_FILL, [=](){ fill_ = true; });
     connect(gmenu_, &GraphMenu::SET_UNFILL, [=](){ fill_ = false; });

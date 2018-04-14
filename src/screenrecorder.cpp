@@ -5,40 +5,33 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QDateTime>
 
 ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
 {
-    this->setWindowOpacity(0.35);
-
     process_ = new QProcess(this);
 }
 
 void ScreenRecorder::record()
 {
-    if(status_ == INITIAL) {
-        status_ = NORMAL;
-        filename_ = QFileDialog::getSaveFileName(this, tr("Save Video"), "/", tr("Video Files (*.mp4)"));
-
-        if(!filename_.isEmpty()) {
-            this->show();
-            this->update();
-        }
-    }
-    else {
-        end();
-    }
+    status_ == INITIAL ? start() : end();
 }
 
 void ScreenRecorder::setup()
 {
-    QStringList args;
-    auto roi = selected();
+    auto native_movies_path = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    auto current_date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
 
-    args << "-video_size" << (std::to_string(roi.width()) + "x" + std::to_string(roi.height())).c_str()
+    filename_ = native_movies_path + QDir::separator() + "Capturer_video_" + current_date_time + ".mp4";
+
+    QStringList args;
+    auto selected_area = selected();
+    args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
          << "-framerate" << "25"
          << "-f" << "x11grab"
-         << "-i" << (":0.0+" + std::to_string(roi.x()) + "," + std::to_string(roi.y())).c_str()
+         << "-i" << ":0.0+" + QString::number((selected_area.x())) + "," + QString::number((selected_area.y()))
          << filename_;
     process_->start("ffmpeg", args);
 }
@@ -62,7 +55,6 @@ void ScreenRecorder::keyPressEvent(QKeyEvent *event)
         status_ = LOCKED;
 
         this->hide();
-        this->start();
         this->setup();
     }
 }
@@ -70,7 +62,20 @@ void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 void ScreenRecorder::paintEvent(QPaintEvent *event)
 {
     painter_.begin(this);
-    painter_.fillRect(this->rect(),  QColor(0, 0, 0));
+
+    QColor bgc = QColor(0, 0, 0, 50);
+
+    if(status_ != NORMAL) {
+        auto roi = selected();
+        painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
+        painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
+        painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
+        painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+    }
+    else {
+        painter_.fillRect(rect(), bgc);
+    }
+
     painter_.end();
 
     Selector::paintEvent(event);
