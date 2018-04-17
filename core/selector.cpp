@@ -20,7 +20,7 @@ Selector::Selector(QWidget * parent)
     registerShortcuts();
 
     info_ = new Info(this);
-    info_->show();
+    info_->hide();
 }
 
 void Selector::start()

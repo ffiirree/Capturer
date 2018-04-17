@@ -8,7 +8,7 @@
 #include <QMenu>
 #include <memory>
 #include "screencapturer.h"
-#include "fixedwindow.h"
+#include "imagewindow.h"
 #include "screenrecorder.h"
 #include "qxtglobalshortcut.h"
 #include "screencapturer.h"
@@ -46,7 +46,7 @@ private:
     GifCapturer * gifcptr_ = nullptr;
 
     std::vector<QPixmap> images_;
-    std::vector<FixImageWindow *> fix_windows_;
+    std::vector<ImageWindow *> fix_windows_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;

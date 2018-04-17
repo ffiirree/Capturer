@@ -1,7 +1,7 @@
-#include "fixedwindow.h"
+#include "imagewindow.h"
 #include <QKeyEvent>
 
-FixImageWindow::FixImageWindow(QWidget *parent)
+ImageWindow::ImageWindow(QWidget *parent)
     : QDialog(parent)
 {
     this->move(0, 0);
@@ -17,28 +17,28 @@ FixImageWindow::FixImageWindow(QWidget *parent)
     this->setLayout(layout_);
 }
 
-void FixImageWindow::fix(QPixmap image)
+void ImageWindow::fix(QPixmap image)
 {
     label_->setPixmap(image);
     this->show();
 }
 
-void FixImageWindow::mousePressEvent(QMouseEvent *event)
+void ImageWindow::mousePressEvent(QMouseEvent *event)
 {
     begin_ = event->pos();
 }
 
-void FixImageWindow::mouseMoveEvent(QMouseEvent* event)
+void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
     move(event->pos() - begin_ + pos());
 }
 
-void FixImageWindow::mouseReleaseEvent(QMouseEvent *event)
+void ImageWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event);
 }
 
-void FixImageWindow::keyPressEvent(QKeyEvent *event)
+void ImageWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
         hide();
@@ -46,7 +46,7 @@ void FixImageWindow::keyPressEvent(QKeyEvent *event)
 }
 
 
-FixImageWindow::~FixImageWindow()
+ImageWindow::~ImageWindow()
 {
     delete label_;
     delete layout_;

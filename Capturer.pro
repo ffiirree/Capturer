@@ -23,51 +23,60 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 include(3rdparty/qxtglobalshortcut/qxt.pri)
-INCLUDEPATH += $$PWD/include/ $$PWD/3rdparty
+INCLUDEPATH += \
+    $$PWD/core \
+    $$PWD/snip \
+    $$PWD/video \
+    $$PWD/gif \
+    $$PWD/setting \
+    $$PWD/3rdparty
+
 SOURCES += \
-    $$PWD/src/main.cpp \
-    $$PWD/src/mainwindow.cpp \
-    $$PWD/src/fixedwindow.cpp \
-    $$PWD/src/mainmenu.cpp \
-    $$PWD/src/graphmenu.cpp \
-    $$PWD/src/screenrecorder.cpp \
-    $$PWD/src/selector.cpp \
-    $$PWD/src/screencapturer.cpp \
-    $$PWD/src/gifcapturer.cpp \
-    $$PWD/src/settingdialog.cpp \
-    $$PWD/src/shortcutinput.cpp \
-    $$PWD/src/magnifier.cpp \
-    src/info.cpp
+    $$PWD/main.cpp \
+    $$PWD/capturer.cpp \
+    $$PWD/core/imagewindow.cpp \
+    $$PWD/core/shortcutinput.cpp \
+    $$PWD/core/magnifier.cpp \
+    $$PWD/core/info.cpp \
+    $$PWD/core/selector.cpp \
+    $$PWD/snip/mainmenu.cpp \
+    $$PWD/snip/graphmenu.cpp \
+    $$PWD/snip/screencapturer.cpp \
+    $$PWD/video/screenrecorder.cpp \
+    $$PWD/gif/gifcapturer.cpp \
+    $$PWD/setting/settingdialog.cpp
+
 
 HEADERS += \
-    $$PWD/include/mainwindow.h \
-    $$PWD/include/fixedwindow.h \
-    $$PWD/include/mainmenu.h \
-    $$PWD/include/graphmenu.h \
-    $$PWD/include/screenrecorder.h \
-    $$PWD/include/selector.h \
-    $$PWD/include/screencapturer.h \
-    $$PWD/include/gifcapturer.h \
-    $$PWD/include/settingdialog.h \
-    $$PWD/include/shortcutinput.h \
-    $$PWD/3rdparty/json.hpp \
-    $$PWD/include/magnifier.h \
-    $$PWD/include/detectwidgets.h \
-    include/info.h
+    $$PWD/capturer.h \
+    $$PWD/core/magnifier.h \
+    $$PWD/core/detectwidgets.h \
+    $$PWD/core/info.h \
+    $$PWD/core/imagewindow.h \
+    $$PWD/core/shortcutinput.h \
+    $$PWD/core/selector.h \
+    $$PWD/snip/mainmenu.h \
+    $$PWD/snip/graphmenu.h \
+    $$PWD/snip/screencapturer.h \
+    $$PWD/video/screenrecorder.h \
+    $$PWD/gif/gifcapturer.h \
+    $$PWD/setting/settingdialog.h \
+    $$PWD/3rdparty/json.hpp
+
 
 # Linux
 unix:!macx {
-    SOURCES += $$PWD/src/detectwidgets_x11.cpp
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_x11.cpp
 }
 
 # OS X
 macx: {
-    SOURCES += $$PWD/src/detectwidgets_mac.cpp
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_mac.cpp
 }
 
 # Windows
 win32: {
-    SOURCES += $$PWD/src/detectwidgets_win.cpp
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_win.cpp
 }
 
 RESOURCES += capturer.qrc

@@ -1,7 +1,7 @@
-#include "mainwindow.h"
+#include "capturer.h"
 #include <QKeyEvent>
 #include <QDebug>
-#include "fixedwindow.h"
+#include "imagewindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
@@ -107,7 +107,7 @@ void MainWindow::setVideoHotKey(const QKeySequence &sc)
 
 void MainWindow::fixImage(QPixmap image)
 {
-    auto fixed_image = new FixImageWindow();
+    auto fixed_image = new ImageWindow();
     fixed_image->fix(image);
     fix_windows_.push_back(fixed_image);
 }

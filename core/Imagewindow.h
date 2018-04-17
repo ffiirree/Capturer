@@ -6,13 +6,13 @@
 #include <QHBoxLayout>
 #include <QPoint>
 
-class FixImageWindow : public QDialog
+class ImageWindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit FixImageWindow(QWidget *parent = nullptr);
-    ~FixImageWindow();
+    explicit ImageWindow(QWidget *parent = nullptr);
+    ~ImageWindow();
 
     void fix(QPixmap image);
 

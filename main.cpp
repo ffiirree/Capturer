@@ -1,6 +1,6 @@
 #include <QApplication>
 #include <QFile>
-#include "mainwindow.h"
+#include "capturer.h"
 
 int main(int argc, char *argv[])
 {
