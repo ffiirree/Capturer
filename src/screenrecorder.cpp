@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QDateTime>
+#include "detectwidgets.h"
 
 ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
@@ -64,18 +65,14 @@ void ScreenRecorder::paintEvent(QPaintEvent *event)
     painter_.begin(this);
 
     QColor bgc = QColor(0, 0, 0, 50);
-    if(status_ != NORMAL) {
-        auto roi = selected();
-        painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
-        painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
-        painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
-        painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
 
-        painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
-    }
-    else {
-        painter_.fillRect(rect(), bgc);
-    }
+    auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
+    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
+    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
+    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
+    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+
+    painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
 
     painter_.end();
 

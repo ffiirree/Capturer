@@ -4,6 +4,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QShortcut>
+#include "detectwidgets.h"
 
 Selector::Selector(QWidget * parent)
     : QWidget(parent)
@@ -23,7 +24,7 @@ void Selector::start()
 {
     if(status_ == INITIAL) {
         status_ = NORMAL;
-        this->show();
+        showFullScreen();
     }
 }
 
@@ -129,8 +130,20 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton) {
         switch (status_) {
-        case NORMAL: break;
-        case SELECTING: end_ = event->pos(); status_ = CAPTURED; break;
+        case NORMAL:break;
+        case SELECTING:
+            // detected window
+            if(event->pos() == begin_) {
+                auto window = DetectWidgets::window();
+                begin_ = window.topLeft();
+                end_ = window.bottomRight();
+                status_ = CAPTURED;
+            }
+            // selected window
+            else {
+                end_ = event->pos(); status_ = CAPTURED;
+            }
+            break;
         case MOVING: mend_ = event->pos(); status_ = CAPTURED; break;
         case RESIZING: rend_ = event->pos(); status_ = CAPTURED; break;
         case CAPTURED:
@@ -160,10 +173,14 @@ void Selector::paintEvent(QPaintEvent *event)
 
     painter_.begin(this);
 
-    if(status_ > NORMAL) {
-        painter_.setPen(QPen(Qt::cyan, 1, Qt::DashDotLine, Qt::FlatCap));
-        painter_.drawRect(selected());
+    if(status_ == NORMAL) {
+        auto rect = DetectWidgets::window();
+        begin_ = rect.topLeft();
+        end_ = rect.bottomRight();
     }
+
+    painter_.setPen(QPen(Qt::cyan, 1, Qt::DashDotLine, Qt::FlatCap));
+    painter_.drawRect(selected());
 
     painter_.end();
 }

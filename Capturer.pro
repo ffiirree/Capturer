@@ -50,10 +50,30 @@ HEADERS += \
     $$PWD/include/settingdialog.h \
     $$PWD/include/shortcutinput.h \
     $$PWD/3rdparty/json.hpp \
-    $$PWD/include/magnifier.h
+    $$PWD/include/magnifier.h \
+    $$PWD/include/detectwidgets.h
 
-RESOURCES += \
-    capturer.qrc
+# Linux
+unix:!macx {
+    SOURCES += $$PWD/src/detectwidgets_x11.cpp
+}
 
-msvc: QMAKE_CXXFLAGS += -execution-charset:utf-8
-msvc: QMAKE_CXXFLAGS += -source-charset:utf-8
+# OS X
+macx: {
+    SOURCES += $$PWD/src/detectwidgets_mac.cpp
+}
+
+# Windows
+win32: {
+    SOURCES += $$PWD/src/detectwidgets_win.cpp
+}
+
+RESOURCES += capturer.qrc
+
+#
+msvc: {
+    QMAKE_CXXFLAGS += -execution-charset:utf-8 \
+        -source-charset:utf-8
+
+    LIBS += -ldwmapi
+}
