@@ -1,12 +1,9 @@
 #include "detectwidgets.h"
 #include <QCursor>
-#include <QDebug>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QX11Info>
-#include <xcb/xcb.h>
 #include <X11/Xlib.h>
-#include <QtX11Extras>
 
 
 QRect DetectWidgets::window()

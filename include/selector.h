@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QPainter>
+#include "info.h"
 
 #define POSITION_BORDER_WIDTH 10
 
@@ -73,6 +74,8 @@ protected:
     QPoint begin_{0, 0}, end_{0, 0};
     QPoint mbegin_{0, 0}, mend_{0, 0};
     QPoint rbegin_{0, 0}, rend_{0, 0};
+
+    Info * info_ = nullptr;
 
 private:
     void registerShortcuts();

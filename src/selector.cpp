@@ -18,6 +18,9 @@ Selector::Selector(QWidget * parent)
     connect(this, &Selector::resized, [&](){ this->update(); });
 
     registerShortcuts();
+
+    info_ = new Info(this);
+    info_->show();
 }
 
 void Selector::start()
@@ -170,6 +173,9 @@ void Selector::keyPressEvent(QKeyEvent *event)
 void Selector::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
+    //
+    info_->show();
+    info_->move(lt());
 
     painter_.begin(this);
 
@@ -183,6 +189,11 @@ void Selector::paintEvent(QPaintEvent *event)
     painter_.drawRect(selected());
 
     painter_.end();
+
+    // info
+    info_->size(selected().size());
+    auto info_y = lt().y() - info_->geometry().height();
+    info_->move(lt().x() + 1, (info_y < 0 ? lt().y() + 1 : info_y));
 }
 
 Selector::PointPosition Selector::position(const QPoint& p)

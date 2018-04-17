@@ -22,7 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-include(qxtglobalshortcut/qxt.pri)
+include(3rdparty/qxtglobalshortcut/qxt.pri)
 INCLUDEPATH += $$PWD/include/ $$PWD/3rdparty
 SOURCES += \
     $$PWD/src/main.cpp \
@@ -36,7 +36,8 @@ SOURCES += \
     $$PWD/src/gifcapturer.cpp \
     $$PWD/src/settingdialog.cpp \
     $$PWD/src/shortcutinput.cpp \
-    $$PWD/src/magnifier.cpp
+    $$PWD/src/magnifier.cpp \
+    src/info.cpp
 
 HEADERS += \
     $$PWD/include/mainwindow.h \
@@ -51,7 +52,8 @@ HEADERS += \
     $$PWD/include/shortcutinput.h \
     $$PWD/3rdparty/json.hpp \
     $$PWD/include/magnifier.h \
-    $$PWD/include/detectwidgets.h
+    $$PWD/include/detectwidgets.h \
+    include/info.h
 
 # Linux
 unix:!macx {

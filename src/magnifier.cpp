@@ -15,9 +15,10 @@ Magnifier::Magnifier(QWidget *parent)
     label_->setScaledContents(true);
 }
 
-
 void Magnifier::paintEvent(QPaintEvent * e)
 {
+    Q_UNUSED(e);
+
     QPainter painter;
     auto screen = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
     auto mouse_pos = QCursor::pos();
