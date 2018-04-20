@@ -16,13 +16,15 @@
 #include "settingdialog.h"
 #include "json.hpp"
 
-class MainWindow : public QWidget
+class Capturer : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit Capturer(QWidget *parent = nullptr);
+    ~Capturer();
+
+    inline nlohmann::json settings() const { return setting_dialog_->settings(); }
 
 private slots:
     void fixImage(QPixmap image);
@@ -33,7 +35,9 @@ private slots:
     void setGIFHotKey(const QKeySequence&);
     void setVideoHotKey(const QKeySequence&);
 
-    inline nlohmann::json settings() const { return setting_dialog_->settings(); }
+    void setBorderColor(const QColor&);
+    void setBorderWidth(int);
+    void setBorderStyle(Qt::PenStyle);
 
 private:
     void keyPressEvent(QKeyEvent *event);

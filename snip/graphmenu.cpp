@@ -9,18 +9,18 @@ GraphMenu::GraphMenu(QWidget * parent)
     setCursor(Qt::ArrowCursor);
 
     const int HEIGHT = 30;
-    this->setGeometry(0, 0, 120, HEIGHT);
+    setFixedHeight(HEIGHT);
 
     layout_ = new QHBoxLayout();
     layout_->setSpacing(0);
     layout_->setMargin(0);
-    this->setLayout(layout_);
+    setLayout(layout_);
 
     QPushButton * dot_01 = new QPushButton();
     dot_01->setObjectName("rectangle_btn");
     dot_01->setIcon(QIcon(":/icon/res/dot.png"));
     dot_01->setIconSize(QSize(5, 5));
-    dot_01->setMinimumHeight(HEIGHT);
+    dot_01->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_01, &QPushButton::clicked, [=](){
         emit SET_WIDTH_01();
         this->click(dot_01);
@@ -31,7 +31,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_02->setObjectName("rectangle_btn");
     dot_02->setIcon(QIcon(":/icon/res/dot.png"));
     dot_02->setIconSize(QSize(10, 10));
-    dot_02->setMinimumHeight(HEIGHT);
+    dot_02->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_02, &QPushButton::clicked, [=]() {
         emit SET_WIDTH_02();
         this->click(dot_02);
@@ -42,7 +42,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_03->setObjectName("rectangle_btn");
     dot_03->setIcon(QIcon(":/icon/res/dot.png"));
     dot_03->setIconSize(QSize(15, 15));
-    dot_03->setMinimumHeight(HEIGHT);
+    dot_03->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_03, &QPushButton::clicked, [=]() {
         emit SET_WIDTH_03();
         this->click(dot_03);
@@ -53,7 +53,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     rectangle->setObjectName("rectangle_btn");
     rectangle->setIcon(QIcon(":/icon/res/rectangle.png"));
     rectangle->setIconSize(QSize(20, 20));
-    rectangle->setMinimumHeight(HEIGHT);
+    rectangle->setFixedSize(HEIGHT, HEIGHT);
     connect(rectangle, &QPushButton::clicked, [=]() {
         rectangle == selected_btn_
                 ? emit SET_UNFILL()
@@ -84,7 +84,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     map.fill(Qt::cyan);
     color_btn_->setIcon(QIcon(map));
     color_btn_->setIconSize(QSize(25, 25));
-    color_btn_->setMinimumHeight(HEIGHT);
+    color_btn_->setFixedSize(HEIGHT, HEIGHT);
     connect(color_btn_, &QPushButton::clicked, [=]() {
         color_dialog_->show();
     });

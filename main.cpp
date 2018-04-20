@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
         file.close();
     }
 
-    MainWindow window;
+    Capturer window;
 
     return a.exec();
 }

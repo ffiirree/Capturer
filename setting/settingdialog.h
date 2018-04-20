@@ -32,6 +32,10 @@ signals:
     void gifShortcutChanged(const QKeySequence &);
     void videoShortcutChanged(const QKeySequence &);
 
+    void borderColorChanged(const QColor&);
+    void borderWidthChanged(int);
+    void borderStyleChanged(Qt::PenStyle);
+
 private slots:
     void setAutoRun(int);
 

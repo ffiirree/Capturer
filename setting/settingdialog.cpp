@@ -3,6 +3,9 @@
 #include "shortcutinput.h"
 #include <string>
 #include <QStandardPaths>
+#include <QSpinBox>
+#include <QComboBox>
+#include "colorbutton.h"
 
 using json = nlohmann::json;
 
@@ -120,7 +123,53 @@ void SettingDialog::setupGeneralWidget()
 
 void SettingDialog::setupAppearanceWidget()
 {
+    auto layout = new QGridLayout();
+    auto _1_1 = new QLabel("边框宽度");
+    auto _1_2 = new QSpinBox();
+    if(settings_["selector"]["border"]["width"].is_null())
+        settings_["selector"]["border"]["width"] = 1;
+    _1_2->setValue(settings_["selector"]["border"]["width"].get<int>());
+    connect(_1_2, reinterpret_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
+        emit borderWidthChanged(w);
+        settings_["selector"]["border"]["width"] = w;
+    });
+    layout->addWidget(_1_1, 1, 1);
+    layout->addWidget(_1_2, 1, 2);
 
+    auto _2_1 = new QLabel("边框颜色");
+    auto _2_2 = new ColorButton();
+    if(settings_["selector"]["border"]["color"].is_null())
+        settings_["selector"]["border"]["color"] = QColor(Qt::cyan).name().toStdString();
+    _2_2->color(JSON_QSTR(settings_["selector"]["border"]["color"]));
+    connect(_2_2, &ColorButton::changed, [&](const QColor& color){
+        emit borderColorChanged(color);
+        settings_["selector"]["border"]["color"] = color.name().toStdString();
+    });
+    layout->addWidget(_2_2, 2, 2);
+    layout->addWidget(_2_1, 2, 1);
+
+    auto _3_1 = new QLabel("边框线条");
+    auto _3_2 = new QComboBox();
+    _3_2->addItem("NoPen");
+    _3_2->addItem("SolidLine");
+    _3_2->addItem("DashLine");
+    _3_2->addItem("DotLine");
+    _3_2->addItem("DashDotLine");
+    _3_2->addItem("DashDotDotLine");
+    _3_2->addItem("CustomDashLine");
+    if(settings_["selector"]["border"]["style"].is_null())
+        settings_["selector"]["border"]["style"] = (int)Qt::DashDotLine;
+    _3_2->setCurrentIndex(settings_["selector"]["border"]["style"].get<int>());
+    connect(_3_2,  reinterpret_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
+        emit borderStyleChanged(Qt::PenStyle(s));
+        settings_["selector"]["border"]["style"] = s;
+    });
+    layout->addWidget(_3_2, 3, 2);
+    layout->addWidget(_3_1, 3, 1);
+
+    layout->setRowStretch(5, 1);
+
+    appearance_->setLayout(layout);
 }
 
 void SettingDialog::setupHotkeyWidget()

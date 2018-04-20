@@ -6,6 +6,11 @@
 #include "mainmenu.h"
 #include "graphmenu.h"
 #include "magnifier.h"
+#include "textedit.h"
+#include "fontmenu.h"
+#include "command.h"
+
+#define  DO(command) do{ undo_stack_.push(command); redo_stack_.clear(); }while(0)
 
 class ScreenCapturer : public Selector
 {
@@ -25,7 +30,7 @@ public:
 public:
     explicit ScreenCapturer(QWidget *parent = nullptr);
 
-Q_SIGNALS:
+signals:
     void CAPTURE_SCREEN_DONE(QPixmap image);
     void FIX_IMAGE(QPixmap image);
 
@@ -37,6 +42,9 @@ public slots:
     void fix_image();
     void exit_capture();
 
+    void undo();
+    void redo();
+
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
     virtual void mouseMoveEvent(QMouseEvent* event);
@@ -46,6 +54,8 @@ protected:
 
 private:
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
+    void updateMenuPosition();
+    void upadateMagnifierPosition();
 
     QPixmap captured_screen_, captured_image_;
 
@@ -54,18 +64,26 @@ private:
     bool fill_ = false;
     QColor color_ = Qt::cyan;
 
-    QTextEdit * text_edit_ = nullptr;
+    TextEdit * text_edit_ = nullptr;
+    QString font_family_ = "宋体";
+    QString font_style_ = "regular";
+    int font_size_ = 11;
+    QColor font_color_ = Qt::cyan;
     QPoint text_pos_{0, 0};
 
     MainMenu * menu_ = nullptr;
     GraphMenu * gmenu_ = nullptr;
+    FontMenu * fmenu_ = nullptr;
     Magnifier * magnifier_ = nullptr;
 
     QPoint rectangle_begin_{0, 0}, rectangle_end_{0, 0};
     QPoint circle_begin_{0, 0}, circle_end_{0, 0};
     QPoint arrow_begin_{0, 0}, arrow_end_{0, 0};
     QPoint line_begin_{0, 0}, line_end_{0, 0};
-    QPoint curves_begin_{0, 0}, curves_end_{0, 0};
+    std::vector<QPoint> curves_;
+
+    CommandStack undo_stack_;
+    CommandStack redo_stack_;
 };
 
 #endif // TESTCAPTURER_H

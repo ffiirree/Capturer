@@ -3,21 +3,25 @@
 #include <QDebug>
 #include "imagewindow.h"
 
-MainWindow::MainWindow(QWidget *parent)
+Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
     capturer_ = new ScreenCapturer();
-    connect(capturer_, &ScreenCapturer::FIX_IMAGE, this, &MainWindow::fixImage);
+    connect(capturer_, &ScreenCapturer::FIX_IMAGE, this, &Capturer::fixImage);
     connect(capturer_, &ScreenCapturer::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
 
     recorder_ = new ScreenRecorder();
 
     // setting
     setting_dialog_ = new SettingDialog();
-    connect(setting_dialog_, &SettingDialog::snipShortcutChanged, this, &MainWindow::setSnipHotKey);
-    connect(setting_dialog_, &SettingDialog::fixImgShortcutChanged, this, &MainWindow::setFixImgHotKey);
-    connect(setting_dialog_, &SettingDialog::gifShortcutChanged, this, &MainWindow::setGIFHotKey);
-    connect(setting_dialog_, &SettingDialog::videoShortcutChanged, this, &MainWindow::setVideoHotKey);
+    connect(setting_dialog_, &SettingDialog::snipShortcutChanged, this, &Capturer::setSnipHotKey);
+    connect(setting_dialog_, &SettingDialog::fixImgShortcutChanged, this, &Capturer::setFixImgHotKey);
+    connect(setting_dialog_, &SettingDialog::gifShortcutChanged, this, &Capturer::setGIFHotKey);
+    connect(setting_dialog_, &SettingDialog::videoShortcutChanged, this, &Capturer::setVideoHotKey);
+
+    connect(setting_dialog_, &SettingDialog::borderColorChanged, this, &Capturer::setBorderColor);
+    connect(setting_dialog_, &SettingDialog::borderWidthChanged, this, &Capturer::setBorderWidth);
+    connect(setting_dialog_, &SettingDialog::borderStyleChanged, this, &Capturer::setBorderStyle);
 
     // shortcuts
     // @attention Must after setting.
@@ -26,9 +30,13 @@ MainWindow::MainWindow(QWidget *parent)
     // System tray icon
     // @attention Must after setting.
     setupSystemTrayIcon();
+
+    setBorderColor(GET_SETTING(["selector"]["border"]["color"]));
+    setBorderWidth(settings()["selector"]["border"]["width"].get<int>());
+    setBorderStyle(Qt::PenStyle(settings()["selector"]["border"]["style"].get<int>()));
 }
 
-void MainWindow::setupSystemTrayIcon()
+void Capturer::setupSystemTrayIcon()
 {
     // SystemTrayIcon
     sys_tray_icon_menu_ = new QMenu(this);
@@ -54,7 +62,7 @@ void MainWindow::setupSystemTrayIcon()
     sys_tray_icon_menu_->addSeparator();
 
     auto exit_action = new QAction("Quit Capturer", this);
-    connect(exit_action, &QAction::triggered, this, &MainWindow::close);
+    connect(exit_action, &QAction::triggered, this, &Capturer::close);
     sys_tray_icon_menu_->addAction(exit_action);
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
@@ -64,7 +72,7 @@ void MainWindow::setupSystemTrayIcon()
     sys_tray_icon_->show();
 }
 
-void MainWindow::registerHotKeys()
+void Capturer::registerHotKeys()
 {
     snip_sc_ = new QxtGlobalShortcut(this);
     snip_sc_->setShortcut(GET_SETTING(["hotkey"]["snip"]));
@@ -72,7 +80,7 @@ void MainWindow::registerHotKeys()
 
     fix_sc_ = new QxtGlobalShortcut(this);
     fix_sc_->setShortcut(GET_SETTING(["hotkey"]["fix_image"]));
-    connect(fix_sc_, &QxtGlobalShortcut::activated, this, &MainWindow::fixLastImage);
+    connect(fix_sc_, &QxtGlobalShortcut::activated, this, &Capturer::fixLastImage);
 
     video_sc_ = new QxtGlobalShortcut(this);
     video_sc_->setShortcut(GET_SETTING(["hotkey"]["video"]));
@@ -84,47 +92,67 @@ void MainWindow::registerHotKeys()
     connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 }
 
-void MainWindow::setSnipHotKey(const QKeySequence &sc)
+void Capturer::setSnipHotKey(const QKeySequence &sc)
 {
     snip_sc_->setShortcut(sc);
 }
 
-void MainWindow::setFixImgHotKey(const QKeySequence &sc)
+void Capturer::setFixImgHotKey(const QKeySequence &sc)
 {
     fix_sc_->setShortcut(sc);
 }
 
-void MainWindow::setGIFHotKey(const QKeySequence &sc)
+void Capturer::setGIFHotKey(const QKeySequence &sc)
 {
     gif_sc_->setShortcut(sc);
 }
 
-void MainWindow::setVideoHotKey(const QKeySequence &sc)
+void Capturer::setVideoHotKey(const QKeySequence &sc)
 {
     video_sc_->setShortcut(sc);
 }
 
+void Capturer::setBorderColor(const QColor& c)
+{
+    capturer_->setBorderColor(c);
+    gifcptr_->setBorderColor(c);
+    recorder_->setBorderColor(c);
+}
 
-void MainWindow::fixImage(QPixmap image)
+void Capturer::setBorderWidth(int w)
+{
+    capturer_->setBorderWidth(w);
+    gifcptr_->setBorderWidth(w);
+    recorder_->setBorderWidth(w);
+}
+
+void Capturer::setBorderStyle(Qt::PenStyle style)
+{
+    capturer_->setBorderStyle(style);
+    gifcptr_->setBorderStyle(style);
+    recorder_->setBorderStyle(style);
+}
+
+void Capturer::fixImage(QPixmap image)
 {
     auto fixed_image = new ImageWindow();
     fixed_image->fix(image);
     fix_windows_.push_back(fixed_image);
 }
 
-void MainWindow::fixLastImage()
+void Capturer::fixLastImage()
 {
     if(images_.empty()) return;
 
     fixImage(images_.back());
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void Capturer::keyPressEvent(QKeyEvent *event)
 {
     Q_UNUSED(event);
 }
 
-MainWindow::~MainWindow()
+Capturer::~Capturer()
 {
     delete capturer_;
     delete setting_dialog_;

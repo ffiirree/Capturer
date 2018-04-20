@@ -10,6 +10,7 @@ Info::Info(QWidget *parent)
 
     QFont font;
     font.setPointSize(11);
+    font.setFamily("Consolas");
     label_->setFont(font);
 
     QPalette p;

@@ -12,9 +12,6 @@
 class GraphMenu : public QFrame
 {
     Q_OBJECT
-public:
-//    enum Button {
-//    };
 
 public:
     explicit GraphMenu(QWidget* parent = nullptr);

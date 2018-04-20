@@ -20,12 +20,8 @@ void Magnifier::paintEvent(QPaintEvent * e)
     Q_UNUSED(e);
 
     QPainter painter;
-    auto screen = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
-    auto mouse_pos = QCursor::pos();
-    QRect roi(mouse_pos.x() - 10, mouse_pos.y() - 10, 21, 21);
-    auto area = screen.copy(roi);
 
-    auto draw_ = area.scaled(105, 105, Qt::KeepAspectRatioByExpanding);
+    auto draw_ = area_.scaled(105, 105, Qt::KeepAspectRatioByExpanding);
     painter.begin(&draw_);
     painter.setPen(QPen(QColor(50, 50, 200, 100), 5, Qt::SolidLine, Qt::FlatCap));
 

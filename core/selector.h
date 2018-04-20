@@ -34,6 +34,9 @@ public:
 
 public slots:
     virtual void start();
+    void setBorderColor(const QColor&);
+    void setBorderWidth(int);
+    void setBorderStyle(Qt::PenStyle s);
 
 signals:
     void moved();
@@ -79,6 +82,10 @@ protected:
 
 private:
     void registerShortcuts();
+
+    QColor border_color_ = Qt::cyan;
+    int border_width_ = 1;
+    Qt::PenStyle border_style_ = Qt::DashDotLine;
 };
 
 #endif //! CAPTURER_SELECTOR_H

@@ -13,7 +13,7 @@ QPushButton[selected="true"] {
     background-color: #2080F0;
 }
 
-MainMenu, GraphMenu {
+MainMenu, GraphMenu, FontMenu {
     background-color: white;
     border: 1px solid #2080F0;
 }

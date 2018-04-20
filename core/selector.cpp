@@ -14,6 +14,9 @@ Selector::Selector(QWidget * parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
 
+    // Sometims, the Selector can not full screen on Windows.
+    setFixedSize(QGuiApplication::primaryScreen()->geometry().size());
+
     connect(this, &Selector::moved, [&](){ this->update(); });
     connect(this, &Selector::resized, [&](){ this->update(); });
 
@@ -27,7 +30,7 @@ void Selector::start()
 {
     if(status_ == INITIAL) {
         status_ = NORMAL;
-        showFullScreen();
+        show();
     }
 }
 
@@ -185,7 +188,7 @@ void Selector::paintEvent(QPaintEvent *event)
         end_ = rect.bottomRight();
     }
 
-    painter_.setPen(QPen(Qt::cyan, 1, Qt::DashDotLine, Qt::FlatCap));
+    painter_.setPen(QPen(border_color_, border_width_, border_style_));
     painter_.drawRect(selected());
 
     painter_.end();
@@ -439,4 +442,19 @@ void Selector::registerShortcuts()
             emit resized();
         }
     });
+}
+
+void Selector::setBorderColor(const QColor &c)
+{
+    border_color_ = c;
+}
+
+void Selector::setBorderWidth(int w)
+{
+    border_width_ = w;
+}
+
+void Selector::setBorderStyle(Qt::PenStyle s)
+{
+    border_style_ = s;
 }
