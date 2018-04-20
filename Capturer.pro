@@ -45,10 +45,10 @@ SOURCES += \
     $$PWD/video/screenrecorder.cpp \
     $$PWD/gif/gifcapturer.cpp \
     $$PWD/setting/settingdialog.cpp \
-    core/colorbutton.cpp \
-    core/textedit.cpp \
-    snip/fontmenu.cpp \
-    snip/command.cpp
+    $$PWD/core/colorbutton.cpp \
+    $$PWD/core/textedit.cpp \
+    $$PWD/snip/fontmenu.cpp \
+    $$PWD/snip/command.cpp
 
 
 HEADERS += \
@@ -66,11 +66,10 @@ HEADERS += \
     $$PWD/gif/gifcapturer.h \
     $$PWD/setting/settingdialog.h \
     $$PWD/3rdparty/json.hpp \
-    core/colorbutton.h \
-    core/textedit.h \
-    snip/fontmenu.h \
-    snip/command.h \
-    snip/command.h
+    $$PWD/core/colorbutton.h \
+    $$PWD/core/textedit.h \
+    $$PWD/snip/fontmenu.h \
+    $$PWD/snip/command.h
 
 
 # Linux

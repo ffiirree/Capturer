@@ -9,7 +9,7 @@ Info::Info(QWidget *parent)
     label_->setAlignment(Qt::AlignCenter);
 
     QFont font;
-    font.setPointSize(11);
+    font.setPointSize(10);
     font.setFamily("Consolas");
     label_->setFont(font);
 

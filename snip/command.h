@@ -47,8 +47,8 @@ public:
 
 private:
     CommandType type_{ NONE };
+    QPen pen_{};
     QPoint position_{ 0, 0 };
-    QPen pen_;
     bool is_fill_ = false;
     std::vector<QPoint> points_;
     QWidget * widget_ = nullptr;
@@ -66,7 +66,7 @@ public:
 
         stack_.push_back(command);
 
-        emit changed();
+        emit changed(stack_.size());
         emit pushed();
     }
 
@@ -77,7 +77,7 @@ public:
         if(stack_.empty())
             emit empty(true);
 
-        emit changed();
+        emit changed(stack_.size());
         emit poped();
     }
 
@@ -91,7 +91,7 @@ public:
     inline bool empty() const { return stack_.empty(); }
 
 signals:
-    void changed();
+    void changed(int);
     void pushed();
     void poped();
 

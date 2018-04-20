@@ -129,7 +129,7 @@ void SettingDialog::setupAppearanceWidget()
     if(settings_["selector"]["border"]["width"].is_null())
         settings_["selector"]["border"]["width"] = 1;
     _1_2->setValue(settings_["selector"]["border"]["width"].get<int>());
-    connect(_1_2, reinterpret_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
+    connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
         emit borderWidthChanged(w);
         settings_["selector"]["border"]["width"] = w;
     });
@@ -160,7 +160,7 @@ void SettingDialog::setupAppearanceWidget()
     if(settings_["selector"]["border"]["style"].is_null())
         settings_["selector"]["border"]["style"] = (int)Qt::DashDotLine;
     _3_2->setCurrentIndex(settings_["selector"]["border"]["style"].get<int>());
-    connect(_3_2,  reinterpret_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
+    connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
         emit borderStyleChanged(Qt::PenStyle(s));
         settings_["selector"]["border"]["style"] = s;
     });

@@ -22,8 +22,8 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
 
     connect(menu_, &MainMenu::UNDO, this, &ScreenCapturer::undo);
     connect(menu_, &MainMenu::REDO, this, &ScreenCapturer::redo);
-    connect(&undo_stack_, SIGNAL(changed()), this, SLOT(update()));
-    connect(&undo_stack_, reinterpret_cast<void (CommandStack::*)(bool)>(&CommandStack::empty), [&](bool e) { status_ = e ? CAPTURED : LOCKED; });
+    connect(&undo_stack_, SIGNAL(changed(int)), this, SLOT(update()));
+    connect(&undo_stack_, static_cast<void (CommandStack::*)(bool)>(&CommandStack::empty), [&](bool e) { status_ = e ? CAPTURED : LOCKED; });
 
     auto end_edit_functor = [=]() {
         if(undo_stack_.empty()){
@@ -97,9 +97,6 @@ void ScreenCapturer::start()
     captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
 
     Selector::start();
-
-    menu_->hide();
-    gmenu_->hide();
 }
 
 void ScreenCapturer::mousePressEvent(QMouseEvent *event)
@@ -229,6 +226,10 @@ void ScreenCapturer::keyPressEvent(QKeyEvent *event)
         exit_capture();
     }
 
+    if(event->key() == Qt::Key_Escape) {
+        exit_capture();
+    }
+
     Selector::keyPressEvent(event);
 }
 
@@ -273,7 +274,6 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
 
     painter_.begin(this);
     painter_.setRenderHint(QPainter::Antialiasing, false);
-
 
     if(status_ == LOCKED) {
         QPainter edit_painter;
@@ -392,9 +392,9 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
         }
     }
 
+    captured_image_ = background.copy(area);
     painter_.drawPixmap(0, 0, background);
     painter_.fillRect(background.rect(), QColor(0, 0, 0, 100));
-    captured_image_ = background.copy(area);
     painter_.drawPixmap(area.topLeft(), captured_image_);
 
     painter_.end();
@@ -461,7 +461,6 @@ void ScreenCapturer::exit_capture()
 }
 
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
-
 void ScreenCapturer::undo()
 {
     if(undo_stack_.empty()) return;

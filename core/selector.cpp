@@ -14,9 +14,6 @@ Selector::Selector(QWidget * parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
 
-    // Sometims, the Selector can not full screen on Windows.
-    setFixedSize(QGuiApplication::primaryScreen()->geometry().size());
-
     connect(this, &Selector::moved, [&](){ this->update(); });
     connect(this, &Selector::resized, [&](){ this->update(); });
 
@@ -31,6 +28,10 @@ void Selector::start()
     if(status_ == INITIAL) {
         status_ = NORMAL;
         show();
+
+        auto rect = DetectWidgets::window();
+        begin_ = rect.topLeft();
+        end_ = rect.bottomRight();
     }
 }
 
@@ -167,7 +168,7 @@ void Selector::keyPressEvent(QKeyEvent *event)
     if(key == Qt::Key_Escape) {
         status_ = INITIAL;
         end_ = begin_ = {0, 0};
-        this->hide();
+        hide();
     }
 
     QWidget::keyPressEvent(event);

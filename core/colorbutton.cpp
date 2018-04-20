@@ -5,7 +5,7 @@ ColorButton::ColorButton(QWidget *parent)
 {}
 
 ColorButton::ColorButton(const QColor& color, QWidget *parent)
-    : color_(color), QPushButton(parent)
+    : QPushButton(parent), color_(color)
 {
     color_dialog_ = new QColorDialog();
     color_dialog_->setOptions(QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
