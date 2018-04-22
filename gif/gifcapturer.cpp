@@ -12,40 +12,6 @@ GifCapturer::GifCapturer(QWidget * parent)
     process_ = new QProcess(this);
 }
 
-void GifCapturer::keyPressEvent(QKeyEvent *event)
-{
-    if(event->key() == Qt::Key_Escape) {
-        status_ = INITIAL;
-        this->hide();
-    }
-
-    if(event->key() == Qt::Key_Return) {
-        status_ = LOCKED;
-
-        this->hide();
-        this->setup();
-    }
-}
-
-void GifCapturer::paintEvent(QPaintEvent *event)
-{
-    painter_.begin(this);
-
-    QColor bgc = QColor(0, 0, 0, 100);
-
-    auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
-    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
-    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
-    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
-    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
-
-    painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
-
-    painter_.end();
-
-    Selector::paintEvent(event);
-}
-
 void GifCapturer::record()
 {
     status_ == INITIAL ? start() : end();
@@ -90,4 +56,39 @@ void GifCapturer::end()
          << "-filter_complex" << "fps=5,paletteuse"
          << filename_;
     process_->start("ffmpeg", args);
+}
+
+
+void GifCapturer::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Escape) {
+        status_ = INITIAL;
+        this->hide();
+    }
+
+    if(event->key() == Qt::Key_Return) {
+        status_ = LOCKED;
+
+        this->hide();
+        this->setup();
+    }
+}
+
+void GifCapturer::paintEvent(QPaintEvent *event)
+{
+    painter_.begin(this);
+
+    QColor bgc = QColor(0, 0, 0, 100);
+
+    auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
+    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
+    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
+    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
+    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+
+    painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
+
+    painter_.end();
+
+    Selector::paintEvent(event);
 }

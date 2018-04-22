@@ -16,13 +16,13 @@
 #define JSON_QSTR(x)    QString::fromStdString((x).get<std::string>())
 #define GET_SETTING(X)  JSON_QSTR(settings()X)
 
-class SettingDialog : public QFrame
+class SettingWindow : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit SettingDialog(QWidget * parent = nullptr);
-    ~SettingDialog();
+    explicit SettingWindow(QWidget * parent = nullptr);
+    ~SettingWindow();
 
     nlohmann::json settings() const { return settings_; }
 

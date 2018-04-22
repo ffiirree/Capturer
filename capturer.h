@@ -7,11 +7,11 @@
 #include <vector>
 #include <QMenu>
 #include <memory>
-#include "screencapturer.h"
+#include "screenshoter.h"
 #include "imagewindow.h"
 #include "screenrecorder.h"
 #include "qxtglobalshortcut.h"
-#include "screencapturer.h"
+#include "screenshoter.h"
 #include "gifcapturer.h"
 #include "settingdialog.h"
 #include "json.hpp"
@@ -45,7 +45,7 @@ private:
     void setupSystemTrayIcon();
     void registerHotKeys();
 
-    ScreenCapturer * capturer_ = nullptr;
+    ScreenShoter * shoter_ = nullptr;
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
 
@@ -55,7 +55,7 @@ private:
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;
 
-    SettingDialog * setting_dialog_ = nullptr;
+    SettingWindow * setting_dialog_ = nullptr;
 
     // hotkey
     QxtGlobalShortcut *snip_sc_ = nullptr;

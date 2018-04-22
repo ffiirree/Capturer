@@ -1,26 +1,34 @@
 #include "imagewindow.h"
 #include <QKeyEvent>
+#include <QGraphicsDropShadowEffect>
 
 ImageWindow::ImageWindow(QWidget *parent)
-    : QDialog(parent)
+    : QWidget(parent)
 {
-    this->move(0, 0);
-    this->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Dialog);
-    this->setCursor(Qt::SizeAllCursor);
-    this->setMouseTracking(true);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setCursor(Qt::SizeAllCursor);
 
     label_ = new QLabel();
 
     layout_ = new QHBoxLayout();
     layout_->setMargin(0);
     layout_->addWidget(label_);
-    this->setLayout(layout_);
+    setLayout(layout_);
+
+    layout_->setMargin(10);
+
+    setAttribute(Qt::WA_TranslucentBackground);
+    auto effect = new QGraphicsDropShadowEffect(this);
+    effect->setBlurRadius(10);
+    effect->setOffset(0);
+    effect->setColor(QColor(0, 125, 255));
+    setGraphicsEffect(effect);
 }
 
 void ImageWindow::fix(QPixmap image)
 {
     label_->setPixmap(image);
-    this->show();
+    show();
 }
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
@@ -44,7 +52,6 @@ void ImageWindow::keyPressEvent(QKeyEvent *event)
         hide();
     }
 }
-
 
 ImageWindow::~ImageWindow()
 {

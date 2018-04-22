@@ -6,7 +6,7 @@
 #include <QHBoxLayout>
 #include <QPoint>
 
-class ImageWindow : public QDialog
+class ImageWindow : public QWidget
 {
     Q_OBJECT
 

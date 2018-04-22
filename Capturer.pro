@@ -41,7 +41,7 @@ SOURCES += \
     $$PWD/core/selector.cpp \
     $$PWD/snip/mainmenu.cpp \
     $$PWD/snip/graphmenu.cpp \
-    $$PWD/snip/screencapturer.cpp \
+    $$PWD/snip/screenshoter.cpp \
     $$PWD/video/screenrecorder.cpp \
     $$PWD/gif/gifcapturer.cpp \
     $$PWD/setting/settingdialog.cpp \
@@ -61,7 +61,7 @@ HEADERS += \
     $$PWD/core/selector.h \
     $$PWD/snip/mainmenu.h \
     $$PWD/snip/graphmenu.h \
-    $$PWD/snip/screencapturer.h \
+    $$PWD/snip/screenshoter.h \
     $$PWD/video/screenrecorder.h \
     $$PWD/gif/gifcapturer.h \
     $$PWD/setting/settingdialog.h \
@@ -71,6 +71,7 @@ HEADERS += \
     $$PWD/snip/fontmenu.h \
     $$PWD/snip/command.h
 
+RC_ICONS = $$PWD/res/icon.ico
 
 # Linux
 unix:!macx {

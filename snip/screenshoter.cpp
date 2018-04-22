@@ -1,4 +1,4 @@
-#include "screencapturer.h"
+#include "screenshoter.h"
 #include <QApplication>
 #include <QScreen>
 #include <QDesktopWidget>
@@ -8,7 +8,7 @@
 #include <QStandardPaths>
 #include <QDebug>
 
-ScreenCapturer::ScreenCapturer(QWidget *parent)
+ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
 {
     // menu
@@ -17,13 +17,13 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     fmenu_ = new FontMenu(this);
     magnifier_ = new Magnifier(this);
 
-    connect(menu_, &MainMenu::save, this, &ScreenCapturer::save_image);
-    connect(menu_, &MainMenu::copy, this, &ScreenCapturer::copy2clipboard);
-    connect(menu_, &MainMenu::fix, this, &ScreenCapturer::fix_image);
-    connect(menu_, &MainMenu::exit, this, &ScreenCapturer::exit_capture);
+    connect(menu_, &MainMenu::save, this, &ScreenShoter::save_image);
+    connect(menu_, &MainMenu::copy, this, &ScreenShoter::copy2clipboard);
+    connect(menu_, &MainMenu::fix, this, &ScreenShoter::fix_image);
+    connect(menu_, &MainMenu::exit, this, &ScreenShoter::exit_capture);
 
-    connect(menu_, &MainMenu::undo, this, &ScreenCapturer::undo);
-    connect(menu_, &MainMenu::redo, this, &ScreenCapturer::redo);
+    connect(menu_, &MainMenu::undo, this, &ScreenShoter::undo);
+    connect(menu_, &MainMenu::redo, this, &ScreenShoter::redo);
 
     connect(&undo_stack_, SIGNAL(changed(size_t)), this, SLOT(update()));
     connect(&undo_stack_, static_cast<void (CommandStack::*)(bool)>(&CommandStack::empty), [&](bool e) { status_ = e ? CAPTURED : LOCKED; });
@@ -67,11 +67,11 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     connect(fmenu_, &FontMenu::colorChanged, [=](const QColor& color){ font_color_ = color; });
 
     // move menu
-    connect(this, &ScreenCapturer::moved, this, &ScreenCapturer::updateMenuPosition);
-    connect(this, &ScreenCapturer::resized, this, &ScreenCapturer::updateMenuPosition);
+    connect(this, &ScreenShoter::moved, this, &ScreenShoter::updateMenuPosition);
+    connect(this, &ScreenShoter::resized, this, &ScreenShoter::updateMenuPosition);
 }
 
-void ScreenCapturer::start()
+void ScreenShoter::start()
 {
     if(status_ == INITIAL)
         captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
@@ -79,7 +79,7 @@ void ScreenCapturer::start()
     Selector::start();
 }
 
-void ScreenCapturer::mousePressEvent(QMouseEvent *event)
+void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     if(status_ == LOCKED) {
         switch (edit_status_) {
@@ -124,7 +124,7 @@ void ScreenCapturer::mousePressEvent(QMouseEvent *event)
     Selector::mousePressEvent(event);
 }
 
-void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
+void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
     if(status_ == LOCKED) {
         switch (edit_status_) {
@@ -141,7 +141,7 @@ void ScreenCapturer::mouseMoveEvent(QMouseEvent* event)
     Selector::mouseMoveEvent(event);
 }
 
-void ScreenCapturer::mouseReleaseEvent(QMouseEvent *event)
+void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
     if(status_ == LOCKED) {
         switch (edit_status_) {
@@ -199,7 +199,7 @@ void ScreenCapturer::mouseReleaseEvent(QMouseEvent *event)
     Selector::mouseReleaseEvent(event);
 }
 
-void ScreenCapturer::keyPressEvent(QKeyEvent *event)
+void ScreenShoter::keyPressEvent(QKeyEvent *event)
 {
     if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ >= CAPTURED) {
         copy2clipboard();
@@ -213,7 +213,7 @@ void ScreenCapturer::keyPressEvent(QKeyEvent *event)
     Selector::keyPressEvent(event);
 }
 
-void ScreenCapturer::updateMenuPosition()
+void ScreenShoter::updateMenuPosition()
 {
     if(status_ <  CAPTURED) return;
 
@@ -229,13 +229,10 @@ void ScreenCapturer::updateMenuPosition()
     fmenu_->move(menu_->pos().x(), menu_->pos().y() + menu_->height() + 1);
 }
 
-void ScreenCapturer::upadateMagnifierPosition()
+void ScreenShoter::upadateMagnifierPosition()
 {
     if(status_ != LOCKED) {
-        auto mouse_pos = QCursor::pos();
-        QRect rect(mouse_pos.x() - 10, mouse_pos.y() - 10, 21, 21);
-
-        magnifier_->area(captured_screen_.copy(rect));
+        magnifier_->pixmap(captured_screen_.copy(magnifier_->area()));
         magnifier_->show();
         magnifier_->move(QCursor::pos().x() + 1, QCursor::pos().y() + 1);
     }
@@ -244,7 +241,7 @@ void ScreenCapturer::upadateMagnifierPosition()
     }
 }
 
-void ScreenCapturer::paintEvent(QPaintEvent *event)
+void ScreenShoter::paintEvent(QPaintEvent *event)
 {
     updateMenuPosition();
     upadateMagnifierPosition();
@@ -381,7 +378,7 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
     Selector::paintEvent(event);
 }
 
-void ScreenCapturer::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
+void ScreenShoter::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
 {
     double par = 10.0;
     double par2 = 27.0;
@@ -399,7 +396,7 @@ void ScreenCapturer::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
 }
 
 
-void ScreenCapturer::save_image()
+void ScreenShoter::save_image()
 {
     auto filename = QFileDialog::getSaveFileName(this,
                                                  tr("Save Image"),
@@ -413,21 +410,21 @@ void ScreenCapturer::save_image()
     }
 }
 
-void ScreenCapturer::copy2clipboard()
+void ScreenShoter::copy2clipboard()
 {
     QApplication::clipboard()->setPixmap(captured_image_);
     CAPTURE_SCREEN_DONE(captured_image_);
     exit_capture();
 }
 
-void ScreenCapturer::fix_image()
+void ScreenShoter::fix_image()
 {
     FIX_IMAGE(captured_image_);
     CAPTURE_SCREEN_DONE(captured_image_);
     exit_capture();
 }
 
-void ScreenCapturer::exit_capture()
+void ScreenShoter::exit_capture()
 {
     status_ = INITIAL;
     end_ = begin_ = { 0, 0 };
@@ -441,7 +438,7 @@ void ScreenCapturer::exit_capture()
 }
 
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
-void ScreenCapturer::undo()
+void ScreenShoter::undo()
 {
     if(undo_stack_.empty()) return;
 
@@ -449,7 +446,7 @@ void ScreenCapturer::undo()
     undo_stack_.pop();
 }
 
-void ScreenCapturer::redo()
+void ScreenShoter::redo()
 {
     if(redo_stack_.empty()) return;
 

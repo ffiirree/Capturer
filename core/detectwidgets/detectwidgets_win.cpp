@@ -18,7 +18,7 @@ QRect DetectWidgets::window()
         // https://stackoverflow.com/questions/34583160/winapi-createwindow-function-creates-smaller-windows-than-set
         // GetWindowRect(hwnd, &rect);
         DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(RECT));
-        QRect window{ rect.left, rect.top, rect.right - rect.left + 1, rect.bottom - rect.top + 1 };
+        QRect window(QPoint(rect.left, rect.top),  QPoint(rect.right, rect.bottom));
 
         if(IsWindowVisible(hwnd) && window.contains(cpos)) {
             if(resoult.width() * resoult.height() > window.width() * window.height()) {

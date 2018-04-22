@@ -6,30 +6,31 @@
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
-    capturer_ = new ScreenCapturer();
-    connect(capturer_, &ScreenCapturer::FIX_IMAGE, this, &Capturer::fixImage);
-    connect(capturer_, &ScreenCapturer::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
-
+    shoter_ = new ScreenShoter();
     recorder_ = new ScreenRecorder();
+    gifcptr_ = new GifCapturer();
+
+    connect(shoter_, &ScreenShoter::FIX_IMAGE, this, &Capturer::fixImage);
+    connect(shoter_, &ScreenShoter::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
 
     // setting
-    setting_dialog_ = new SettingDialog();
-    connect(setting_dialog_, &SettingDialog::snipShortcutChanged, this, &Capturer::setSnipHotKey);
-    connect(setting_dialog_, &SettingDialog::fixImgShortcutChanged, this, &Capturer::setFixImgHotKey);
-    connect(setting_dialog_, &SettingDialog::gifShortcutChanged, this, &Capturer::setGIFHotKey);
-    connect(setting_dialog_, &SettingDialog::videoShortcutChanged, this, &Capturer::setVideoHotKey);
+    setting_dialog_ = new SettingWindow();
+    connect(setting_dialog_, &SettingWindow::snipShortcutChanged, this, &Capturer::setSnipHotKey);
+    connect(setting_dialog_, &SettingWindow::fixImgShortcutChanged, this, &Capturer::setFixImgHotKey);
+    connect(setting_dialog_, &SettingWindow::gifShortcutChanged, this, &Capturer::setGIFHotKey);
+    connect(setting_dialog_, &SettingWindow::videoShortcutChanged, this, &Capturer::setVideoHotKey);
 
-    connect(setting_dialog_, &SettingDialog::borderColorChanged, this, &Capturer::setBorderColor);
-    connect(setting_dialog_, &SettingDialog::borderWidthChanged, this, &Capturer::setBorderWidth);
-    connect(setting_dialog_, &SettingDialog::borderStyleChanged, this, &Capturer::setBorderStyle);
-
-    // shortcuts
-    // @attention Must after setting.
-    registerHotKeys();
+    connect(setting_dialog_, &SettingWindow::borderColorChanged, this, &Capturer::setBorderColor);
+    connect(setting_dialog_, &SettingWindow::borderWidthChanged, this, &Capturer::setBorderWidth);
+    connect(setting_dialog_, &SettingWindow::borderStyleChanged, this, &Capturer::setBorderStyle);
 
     // System tray icon
     // @attention Must after setting.
     setupSystemTrayIcon();
+
+    // shortcuts
+    // @attention Must after setting.
+    registerHotKeys();
 
     setBorderColor(GET_SETTING(["selector"]["border"]["color"]));
     setBorderWidth(settings()["selector"]["border"]["width"].get<int>());
@@ -42,7 +43,7 @@ void Capturer::setupSystemTrayIcon()
     sys_tray_icon_menu_ = new QMenu(this);
 
     auto screen_shot = new QAction("Screen Shot", this);
-    connect(screen_shot, &QAction::triggered, capturer_, &ScreenCapturer::start);
+    connect(screen_shot, &QAction::triggered, shoter_, &ScreenShoter::start);
     sys_tray_icon_menu_->addAction(screen_shot);
 
     auto gif = new QAction("GIF", this);
@@ -56,13 +57,13 @@ void Capturer::setupSystemTrayIcon()
     sys_tray_icon_menu_->addSeparator();
 
     auto setting = new QAction("Setting", this);
-    connect(setting, &QAction::triggered, setting_dialog_, &SettingDialog::show);
+    connect(setting, &QAction::triggered, setting_dialog_, &SettingWindow::show);
     sys_tray_icon_menu_->addAction(setting);
 
     sys_tray_icon_menu_->addSeparator();
 
     auto exit_action = new QAction("Quit Capturer", this);
-    connect(exit_action, &QAction::triggered, this, &Capturer::close);
+    connect(exit_action, &QAction::triggered, qApp, &QCoreApplication::exit);
     sys_tray_icon_menu_->addAction(exit_action);
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
@@ -75,60 +76,71 @@ void Capturer::setupSystemTrayIcon()
 void Capturer::registerHotKeys()
 {
     snip_sc_ = new QxtGlobalShortcut(this);
-    snip_sc_->setShortcut(GET_SETTING(["hotkey"]["snip"]));
-    connect(snip_sc_, &QxtGlobalShortcut::activated, capturer_, &ScreenCapturer::start);
+    setSnipHotKey(GET_SETTING(["hotkey"]["snip"]));
+    connect(snip_sc_, &QxtGlobalShortcut::activated, shoter_, &ScreenShoter::start);
 
     fix_sc_ = new QxtGlobalShortcut(this);
-    fix_sc_->setShortcut(GET_SETTING(["hotkey"]["fix_image"]));
+    setFixImgHotKey(GET_SETTING(["hotkey"]["fix_image"]));
     connect(fix_sc_, &QxtGlobalShortcut::activated, this, &Capturer::fixLastImage);
 
     video_sc_ = new QxtGlobalShortcut(this);
-    video_sc_->setShortcut(GET_SETTING(["hotkey"]["video"]));
+    setVideoHotKey(GET_SETTING(["hotkey"]["video"]));
     connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
 
-    gifcptr_ = new GifCapturer(); // Must be there ????
     gif_sc_ = new QxtGlobalShortcut(this);
-    gif_sc_->setShortcut(GET_SETTING(["hotkey"]["gif"]));
+    setGIFHotKey(GET_SETTING(["hotkey"]["gif"]));
     connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 }
 
 void Capturer::setSnipHotKey(const QKeySequence &sc)
 {
-    snip_sc_->setShortcut(sc);
+    if(!snip_sc_->setShortcut(sc)) {
+        auto msg = "截屏快捷键<" + sc.toString() + ">注册失败!";
+        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
+    }
 }
 
 void Capturer::setFixImgHotKey(const QKeySequence &sc)
 {
-    fix_sc_->setShortcut(sc);
+    if(!fix_sc_->setShortcut(sc)){
+        auto msg = "贴图快捷键<" + sc.toString() + ">注册失败!";
+        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
+    }
 }
 
 void Capturer::setGIFHotKey(const QKeySequence &sc)
 {
-    gif_sc_->setShortcut(sc);
+    if(!gif_sc_->setShortcut(sc)){
+        auto msg = "GIF快捷键<" + sc.toString() + ">注册失败!";
+        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
+    }
 }
 
 void Capturer::setVideoHotKey(const QKeySequence &sc)
 {
-    video_sc_->setShortcut(sc);
+    if(!video_sc_->setShortcut(sc)){
+        auto msg = "录屏快捷键<" + sc.toString() + ">注册失败!";
+        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
+    }
 }
 
 void Capturer::setBorderColor(const QColor& c)
 {
-    capturer_->setBorderColor(c);
+    shoter_->setBorderColor(c);
     gifcptr_->setBorderColor(c);
     recorder_->setBorderColor(c);
 }
 
 void Capturer::setBorderWidth(int w)
 {
-    capturer_->setBorderWidth(w);
+    shoter_->setBorderWidth(w);
     gifcptr_->setBorderWidth(w);
     recorder_->setBorderWidth(w);
 }
 
 void Capturer::setBorderStyle(Qt::PenStyle style)
 {
-    capturer_->setBorderStyle(style);
+    shoter_->setBorderStyle(style);
     gifcptr_->setBorderStyle(style);
     recorder_->setBorderStyle(style);
 }
@@ -154,7 +166,7 @@ void Capturer::keyPressEvent(QKeyEvent *event)
 
 Capturer::~Capturer()
 {
-    delete capturer_;
+    delete shoter_;
     delete setting_dialog_;
 
     for(auto& fw: fix_windows_) {

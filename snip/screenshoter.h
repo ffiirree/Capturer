@@ -12,7 +12,7 @@
 
 #define  DO(command) do{ undo_stack_.push(command); redo_stack_.clear(); }while(0)
 
-class ScreenCapturer : public Selector
+class ScreenShoter : public Selector
 {
     Q_OBJECT
 
@@ -28,7 +28,7 @@ public:
     };
 
 public:
-    explicit ScreenCapturer(QWidget *parent = nullptr);
+    explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
     void CAPTURE_SCREEN_DONE(QPixmap image);

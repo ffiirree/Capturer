@@ -9,7 +9,7 @@
 
 using json = nlohmann::json;
 
-QString SettingDialog::default_settings_ =
+QString SettingWindow::default_settings_ =
 R"({
     "autorun": true,
     "hotkey": {
@@ -20,8 +20,8 @@ R"({
     }
 })";
 
-SettingDialog::SettingDialog(QWidget * parent)
-    : QFrame(parent)
+SettingWindow::SettingWindow(QWidget * parent)
+    : QWidget(parent)
 {
     config_dir_path_ = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     QDir config_dir(config_dir_path_);
@@ -37,10 +37,11 @@ SettingDialog::SettingDialog(QWidget * parent)
         }
     }
 
-    setWindowFlags(Qt::WindowStaysOnTopHint);
+    setWindowFlags((windowFlags()&~Qt::WindowMinMaxButtonsHint)
+                    | Qt::WindowStaysOnTopHint);
 
     tabw_ = new QTabWidget(this);
-    tabw_->setMinimumSize(300, 400);
+    tabw_->setMinimumSize(350, 200);
 
     // tab widget
     general_ = new QWidget(this);
@@ -62,12 +63,15 @@ SettingDialog::SettingDialog(QWidget * parent)
     setupAboutWidget();
 
     auto *layout = new QVBoxLayout();
+
+    // tab widget
     layout->addWidget(tabw_);
     layout->setMargin(0);
+    layout->setSpacing(0);
     setLayout(layout);
 }
 
-SettingDialog::~SettingDialog()
+SettingWindow::~SettingWindow()
 {
     QFile file(config_file_path_);
 
@@ -78,7 +82,7 @@ SettingDialog::~SettingDialog()
     out << settings_.dump(4).c_str();
 }
 
-void SettingDialog::config()
+void SettingWindow::config()
 {
     QFile file(config_file_path_);
 
@@ -99,7 +103,7 @@ void SettingDialog::config()
     }
 }
 
-void SettingDialog::setAutoRun(int statue)
+void SettingWindow::setAutoRun(int statue)
 {
 #ifdef _WIN32
         QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
@@ -111,7 +115,7 @@ void SettingDialog::setAutoRun(int statue)
     settings_["autorun"] = (statue == Qt::Checked);
 }
 
-void SettingDialog::setupGeneralWidget()
+void SettingWindow::setupGeneralWidget()
 {
     auto layout = new QVBoxLayout();
     //
@@ -119,7 +123,7 @@ void SettingDialog::setupGeneralWidget()
     if(settings_["autorun"].is_null()) settings_["auto"] = true;
     _01->setChecked(settings_["autorun"].get<bool>());
     setAutoRun(_01->checkState());
-    connect(_01, &QCheckBox::stateChanged, this, &SettingDialog::setAutoRun);
+    connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
 
     layout->addWidget(_01);
     layout->addStretch();
@@ -127,11 +131,12 @@ void SettingDialog::setupGeneralWidget()
     general_->setLayout(layout);
 }
 
-void SettingDialog::setupAppearanceWidget()
+void SettingWindow::setupAppearanceWidget()
 {
     auto layout = new QGridLayout();
     auto _1_1 = new QLabel("边框宽度");
     auto _1_2 = new QSpinBox();
+    _1_2->setFixedHeight(25);
     if(settings_["selector"]["border"]["width"].is_null())
         settings_["selector"]["border"]["width"] = 1;
     _1_2->setValue(settings_["selector"]["border"]["width"].get<int>());
@@ -144,6 +149,7 @@ void SettingDialog::setupAppearanceWidget()
 
     auto _2_1 = new QLabel("边框颜色");
     auto _2_2 = new ColorButton();
+    _2_2->setFixedHeight(25);
     if(settings_["selector"]["border"]["color"].is_null())
         settings_["selector"]["border"]["color"] = QColor(Qt::cyan).name().toStdString();
     _2_2->color(JSON_QSTR(settings_["selector"]["border"]["color"]));
@@ -156,6 +162,7 @@ void SettingDialog::setupAppearanceWidget()
 
     auto _3_1 = new QLabel("边框线条");
     auto _3_2 = new QComboBox();
+    _3_2->setFixedHeight(25);
     _3_2->addItem("NoPen");
     _3_2->addItem("SolidLine");
     _3_2->addItem("DashLine");
@@ -178,7 +185,7 @@ void SettingDialog::setupAppearanceWidget()
     appearance_->setLayout(layout);
 }
 
-void SettingDialog::setupHotkeyWidget()
+void SettingWindow::setupHotkeyWidget()
 {
     auto layout = new QGridLayout();
 
@@ -186,6 +193,7 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["snip"].is_null())
         settings_["hotkey"]["snip"] = "F1";
     auto _1_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["snip"]));
+    _1_2->setFixedHeight(25);
     connect(_1_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
         settings_["hotkey"]["snip"] = ks.toString().toStdString();
         emit snipShortcutChanged(ks);
@@ -197,6 +205,7 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["fix_image"].is_null())
         settings_["hotkey"]["fix_image"] = "F3";
     auto _2_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["fix_image"]));
+    _2_2->setFixedHeight(20);
     connect(_2_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
         settings_["hotkey"]["fix_image"] = ks.toString().toStdString();
         emit fixImgShortcutChanged(ks);
@@ -208,6 +217,7 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["gif"].is_null())
         settings_["hotkey"]["gif"] = "F3";
     auto _3_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["gif"]));
+    _3_2->setFixedHeight(25);
     connect(_3_2, &ShortcutInput::changed,[&](const QKeySequence& ks) {
         settings_["hotkey"]["gif"] = ks.toString().toStdString();
         emit gifShortcutChanged(ks);
@@ -219,6 +229,7 @@ void SettingDialog::setupHotkeyWidget()
     if(settings_["hotkey"]["video"].is_null())
         settings_["hotkey"]["video"] = "F3";
     auto _4_2 = new ShortcutInput(JSON_QSTR(settings_["hotkey"]["video"]));
+    _4_2->setFixedHeight(25);
     connect(_4_2, &ShortcutInput::changed, [&](const QKeySequence& ks) {
         settings_["hotkey"]["video"] = ks.toString().toStdString();
         emit videoShortcutChanged(ks);
@@ -230,7 +241,7 @@ void SettingDialog::setupHotkeyWidget()
 
     hotkey_->setLayout(layout);
 }
-void SettingDialog::setupAboutWidget()
+void SettingWindow::setupAboutWidget()
 {
     new QLabel("Copyright (C) 2018 Zhang Liangqi", about_);
 }
