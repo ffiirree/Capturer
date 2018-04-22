@@ -54,4 +54,6 @@ FontMenu::FontMenu(QWidget *parent)
     connect(color_btn, &ColorButton::changed, this, &FontMenu::colorChanged);
     color_btn->setFixedSize(HEIGHT - 6, HEIGHT - 6);
     layout()->addWidget(color_btn);
+
+    hide();
 }

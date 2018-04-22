@@ -64,7 +64,7 @@ void ScreenRecorder::paintEvent(QPaintEvent *event)
 {
     painter_.begin(this);
 
-    QColor bgc = QColor(0, 0, 0, 50);
+    QColor bgc = QColor(0, 0, 0, 100);
 
     auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
     painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);

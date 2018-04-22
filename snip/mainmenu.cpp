@@ -109,7 +109,7 @@ MainMenu::MainMenu(QWidget* parent)
     undo_btn->setIcon(QIcon(":/icon/res/undo.png"));
     undo_btn->setIconSize(QSize(22, 22));
     undo_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(undo_btn, &QPushButton::clicked, this, &MainMenu::UNDO);
+    connect(undo_btn, &QPushButton::clicked, this, &MainMenu::undo);
     connect(undo_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(undo_btn);
 
@@ -118,7 +118,7 @@ MainMenu::MainMenu(QWidget* parent)
     redo_btn->setIcon(QIcon(":/icon/res/redo.png"));
     redo_btn->setIconSize(QSize(22, 22));
     redo_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(redo_btn, &QPushButton::clicked, this, &MainMenu::REDO);
+    connect(redo_btn, &QPushButton::clicked, this, &MainMenu::redo);
     connect(redo_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(redo_btn);
 
@@ -134,7 +134,7 @@ MainMenu::MainMenu(QWidget* parent)
     close_btn->setIcon(QIcon(":/icon/res/close.png"));
     close_btn->setIconSize(QSize(22, 22));
     close_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(close_btn, &QPushButton::clicked, this, &MainMenu::EXIT_CAPTURE);
+    connect(close_btn, &QPushButton::clicked, this, &MainMenu::exit);
     connect(close_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(close_btn);
 
@@ -143,7 +143,7 @@ MainMenu::MainMenu(QWidget* parent)
     fix_btn->setIcon(QIcon(":/icon/res/fixed.png"));
     fix_btn->setIconSize(QSize(20, 20));
     fix_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(fix_btn, &QPushButton::clicked, this, &MainMenu::FIX_IMAGE);
+    connect(fix_btn, &QPushButton::clicked, this, &MainMenu::fix);
     connect(fix_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(fix_btn);
 
@@ -152,7 +152,7 @@ MainMenu::MainMenu(QWidget* parent)
     save_btn->setObjectName("");
     save_btn->setIconSize(QSize(22, 22));
     save_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(save_btn, &QPushButton::clicked, this, &MainMenu::SAVE_IMAGE);
+    connect(save_btn, &QPushButton::clicked, this, &MainMenu::save);
     connect(save_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(save_btn);
 
@@ -161,15 +161,11 @@ MainMenu::MainMenu(QWidget* parent)
     copy_btn->setObjectName("copy_btn");
     copy_btn->setIconSize(QSize(22, 22));
     copy_btn->setFixedSize(HEIGHT, HEIGHT);
-    connect(copy_btn, &QPushButton::clicked, this, &MainMenu::COPY_TO_CLIPBOARD);
+    connect(copy_btn, &QPushButton::clicked, this, &MainMenu::copy);
     connect(copy_btn, &QPushButton::clicked, [=]() { this->unselectAll(); });
     layout_->addWidget(copy_btn);
-}
 
-
-MainMenu::~MainMenu()
-{
-    delete layout_;
+    hide();
 }
 
 void MainMenu::click(QPushButton* btn)

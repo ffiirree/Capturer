@@ -13,7 +13,7 @@ class FontMenu : public QFrame
 
 public:
     explicit FontMenu(QWidget* parent = nullptr);
-//    ~FontMenu();
+    ~FontMenu() = default;
 
 signals:
     void familyChanged(const QString&);

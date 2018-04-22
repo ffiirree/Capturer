@@ -13,6 +13,8 @@ Magnifier::Magnifier(QWidget *parent)
     label_ = new QLabel(this);
     label_->setFixedSize(105, 105);
     label_->setScaledContents(true);
+
+    hide();
 }
 
 void Magnifier::paintEvent(QPaintEvent * e)

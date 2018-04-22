@@ -60,6 +60,11 @@ SettingDialog::SettingDialog(QWidget * parent)
     setupAppearanceWidget();
     setupHotkeyWidget();
     setupAboutWidget();
+
+    auto *layout = new QVBoxLayout();
+    layout->addWidget(tabw_);
+    layout->setMargin(0);
+    setLayout(layout);
 }
 
 SettingDialog::~SettingDialog()
@@ -89,6 +94,7 @@ void SettingDialog::config()
         settings_ = nlohmann::json::parse(text.toStdString());
     }
     catch (json::parse_error& e) {
+        Q_UNUSED(e);
         qDebug() << "Parse config.json failed!";
     }
 }

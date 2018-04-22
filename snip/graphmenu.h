@@ -15,16 +15,12 @@ class GraphMenu : public QFrame
 
 public:
     explicit GraphMenu(QWidget* parent = nullptr);
-    ~GraphMenu();
+    ~GraphMenu() = default;
 
 signals:
-    void SET_WIDTH_01();
-    void SET_WIDTH_02();
-    void SET_WIDTH_03();
-
-    void SET_FILL();
-    void SET_UNFILL();
-    void SET_COLOR(const QColor& color);
+    void setWidth(int);
+    void setFill(bool);
+    void setColor(const QColor& color);
 
 private:
     void click(QPushButton* btn);

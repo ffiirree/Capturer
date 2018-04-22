@@ -91,7 +91,7 @@ public:
     inline bool empty() const { return stack_.empty(); }
 
 signals:
-    void changed(int);
+    void changed(size_t);
     void pushed();
     void poped();
 

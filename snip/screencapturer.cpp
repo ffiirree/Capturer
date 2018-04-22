@@ -13,16 +13,19 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
 {
     // menu
     menu_ = new MainMenu(this);
-    menu_->hide();
+    gmenu_ = new GraphMenu(this);
+    fmenu_ = new FontMenu(this);
+    magnifier_ = new Magnifier(this);
 
-    connect(menu_, &MainMenu::SAVE_IMAGE, this, &ScreenCapturer::save_image);
-    connect(menu_, &MainMenu::COPY_TO_CLIPBOARD, this, &ScreenCapturer::copy2clipboard);
-    connect(menu_, &MainMenu::FIX_IMAGE, this, &ScreenCapturer::fix_image);
-    connect(menu_, &MainMenu::EXIT_CAPTURE, this, &ScreenCapturer::exit_capture);
+    connect(menu_, &MainMenu::save, this, &ScreenCapturer::save_image);
+    connect(menu_, &MainMenu::copy, this, &ScreenCapturer::copy2clipboard);
+    connect(menu_, &MainMenu::fix, this, &ScreenCapturer::fix_image);
+    connect(menu_, &MainMenu::exit, this, &ScreenCapturer::exit_capture);
 
-    connect(menu_, &MainMenu::UNDO, this, &ScreenCapturer::undo);
-    connect(menu_, &MainMenu::REDO, this, &ScreenCapturer::redo);
-    connect(&undo_stack_, SIGNAL(changed(int)), this, SLOT(update()));
+    connect(menu_, &MainMenu::undo, this, &ScreenCapturer::undo);
+    connect(menu_, &MainMenu::redo, this, &ScreenCapturer::redo);
+
+    connect(&undo_stack_, SIGNAL(changed(size_t)), this, SLOT(update()));
     connect(&undo_stack_, static_cast<void (CommandStack::*)(bool)>(&CommandStack::empty), [&](bool e) { status_ = e ? CAPTURED : LOCKED; });
 
     auto end_edit_functor = [=]() {
@@ -53,48 +56,25 @@ ScreenCapturer::ScreenCapturer(QWidget *parent)
     connect(menu_, &MainMenu::END_PAINT_TEXT, end_edit_functor);
 
     // graph menu
-    gmenu_ = new GraphMenu(this);
-    gmenu_->hide();
-
-    connect(gmenu_, &GraphMenu::SET_WIDTH_01, [=](){ pen_width_ = 1; fill_ = false; });
-    connect(gmenu_, &GraphMenu::SET_WIDTH_02, [=](){ pen_width_ = 2; fill_ = false; });
-    connect(gmenu_, &GraphMenu::SET_WIDTH_03, [=](){ pen_width_ = 4; fill_ = false; });
-
-    connect(gmenu_, &GraphMenu::SET_FILL, [=](){ fill_ = true; });
-    connect(gmenu_, &GraphMenu::SET_UNFILL, [=](){ fill_ = false; });
-
-    connect(gmenu_, &GraphMenu::SET_COLOR, [=](const QColor& color) { color_ = color; });
+    connect(gmenu_, &GraphMenu::setWidth, [=](int width){ pen_width_ = width; fill_ = false; });
+    connect(gmenu_, &GraphMenu::setFill, [=](bool fill){ fill_ = fill; });
+    connect(gmenu_, &GraphMenu::setColor, [=](const QColor& color) { color_ = color; });
 
     // font menu
-    fmenu_ = new FontMenu(this);
-    fmenu_->hide();
-
     connect(fmenu_, &FontMenu::familyChanged, [=](const QString &family){ font_family_ = family; });
     connect(fmenu_, &FontMenu::styleChanged, [=](const QString &style){ font_style_ = style; });
     connect(fmenu_, &FontMenu::sizeChanged, [=](int s){ font_size_ = s; });
     connect(fmenu_, &FontMenu::colorChanged, [=](const QColor& color){ font_color_ = color; });
 
     // move menu
-    auto menu_move_factor = [&]() {
-        captured_screen_.height() - rb().y() <= menu_->height()
-            ? menu_->move(rb().x() - menu_->width() + 1, rb().y() - menu_->height() - 1)
-            : menu_->move(rb().x() - menu_->width() + 1, rb().y() + 3);
-
-        gmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
-        fmenu_->move(rb().x() - menu_->width() + 1, rb().y() + menu_->height() + 5);
-    };
-
-    connect(this, &ScreenCapturer::moved, menu_move_factor);
-    connect(this, &ScreenCapturer::resized, menu_move_factor);
-
-    // Magnifier
-    magnifier_ = new Magnifier(this);
-    magnifier_->hide();
+    connect(this, &ScreenCapturer::moved, this, &ScreenCapturer::updateMenuPosition);
+    connect(this, &ScreenCapturer::resized, this, &ScreenCapturer::updateMenuPosition);
 }
 
 void ScreenCapturer::start()
 {
-    captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
+    if(status_ == INITIAL)
+        captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
 
     Selector::start();
 }
@@ -394,7 +374,7 @@ void ScreenCapturer::paintEvent(QPaintEvent *event)
 
     captured_image_ = background.copy(area);
     painter_.drawPixmap(0, 0, background);
-    painter_.fillRect(background.rect(), QColor(0, 0, 0, 100));
+    painter_.fillRect(rect(), QColor(0, 0, 0, 100));
     painter_.drawPixmap(area.topLeft(), captured_image_);
 
     painter_.end();
@@ -449,7 +429,7 @@ void ScreenCapturer::fix_image()
 
 void ScreenCapturer::exit_capture()
 {
-    status_ =  INITIAL;
+    status_ = INITIAL;
     end_ = begin_ = { 0, 0 };
 
     undo_stack_.clear();

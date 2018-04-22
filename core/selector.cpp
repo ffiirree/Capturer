@@ -9,6 +9,8 @@
 Selector::Selector(QWidget * parent)
     : QWidget(parent)
 {
+    info_ = new Info(this);         // ???? 放在构造函数的末尾会造成全屏失败 ????
+
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -18,9 +20,6 @@ Selector::Selector(QWidget * parent)
     connect(this, &Selector::resized, [&](){ this->update(); });
 
     registerShortcuts();
-
-    info_ = new Info(this);
-    info_->hide();
 }
 
 void Selector::start()
@@ -177,9 +176,6 @@ void Selector::keyPressEvent(QKeyEvent *event)
 void Selector::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
-    //
-    info_->show();
-    info_->move(lt());
 
     painter_.begin(this);
 

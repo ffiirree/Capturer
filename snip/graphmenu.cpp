@@ -22,7 +22,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_01->setIconSize(QSize(5, 5));
     dot_01->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_01, &QPushButton::clicked, [=](){
-        emit SET_WIDTH_01();
+        emit setWidth(1);
         this->click(dot_01);
     });
     layout_->addWidget(dot_01);
@@ -33,7 +33,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_02->setIconSize(QSize(10, 10));
     dot_02->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_02, &QPushButton::clicked, [=]() {
-        emit SET_WIDTH_02();
+        emit setWidth(2);
         this->click(dot_02);
     });
     layout_->addWidget(dot_02);
@@ -44,23 +44,21 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_03->setIconSize(QSize(15, 15));
     dot_03->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_03, &QPushButton::clicked, [=]() {
-        emit SET_WIDTH_03();
+        emit setWidth(5);
         this->click(dot_03);
     });
     layout_->addWidget(dot_03);
 
-    QPushButton * rectangle = new QPushButton();
-    rectangle->setObjectName("rectangle_btn");
-    rectangle->setIcon(QIcon(":/icon/res/rectangle.png"));
-    rectangle->setIconSize(QSize(20, 20));
-    rectangle->setFixedSize(HEIGHT, HEIGHT);
-    connect(rectangle, &QPushButton::clicked, [=]() {
-        rectangle == selected_btn_
-                ? emit SET_UNFILL()
-                : emit SET_FILL();
-        this->click(rectangle);
+    QPushButton * fill_btn = new QPushButton();
+    fill_btn->setObjectName("rectangle_btn");
+    fill_btn->setIcon(QIcon(":/icon/res/rectangle.png"));
+    fill_btn->setIconSize(QSize(20, 20));
+    fill_btn->setFixedSize(HEIGHT, HEIGHT);
+    connect(fill_btn, &QPushButton::clicked, [=]() {
+        emit setFill(fill_btn != selected_btn_);
+        this->click(fill_btn);
     });
-    layout_->addWidget(rectangle);
+    layout_->addWidget(fill_btn);
 
     // color button
     auto color_dialog_ = new QColorDialog();
@@ -73,7 +71,7 @@ GraphMenu::GraphMenu(QWidget * parent)
 
     connect(color_dialog_, &QColorDialog::colorSelected, [&](const QColor&color) {
         if(color.isValid()) {
-            emit SET_COLOR(color);
+            emit setColor(color);
             QPixmap icon(25, 25);
             icon.fill(color);
             color_btn_->setIcon(QIcon(icon));
@@ -89,11 +87,8 @@ GraphMenu::GraphMenu(QWidget * parent)
         color_dialog_->show();
     });
     layout_->addWidget(color_btn_);
-}
 
-GraphMenu::~GraphMenu()
-{
-
+    hide();
 }
 
 void GraphMenu::click(QPushButton* btn)

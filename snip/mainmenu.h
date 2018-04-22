@@ -13,13 +13,13 @@ class MainMenu : public QFrame
 
 public:
     explicit MainMenu(QWidget* parent = nullptr);
-    ~MainMenu();
+    ~MainMenu() = default;
 
 signals:
-    void SAVE_IMAGE();
-    void FIX_IMAGE();
-    void COPY_TO_CLIPBOARD();
-    void EXIT_CAPTURE();
+    void save();
+    void fix();
+    void copy();
+    void exit();
 
     void START_PAINT_RECTANGLE();
     void END_PAINT_RECTANGLE();
@@ -39,8 +39,8 @@ signals:
     void START_PAINT_TEXT();
     void END_PAINT_TEXT();
 
-    void UNDO();
-    void REDO();
+    void undo();
+    void redo();
 
 private:
     void click(QPushButton* btn);

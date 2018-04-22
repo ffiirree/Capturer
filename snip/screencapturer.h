@@ -45,6 +45,9 @@ public slots:
     void undo();
     void redo();
 
+private slots:
+    void updateMenuPosition();
+
 protected:
     virtual void mousePressEvent(QMouseEvent *event);
     virtual void mouseMoveEvent(QMouseEvent* event);
@@ -54,7 +57,7 @@ protected:
 
 private:
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
-    void updateMenuPosition();
+
     void upadateMagnifierPosition();
 
     QPixmap captured_screen_, captured_image_;
