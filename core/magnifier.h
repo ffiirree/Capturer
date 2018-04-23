@@ -10,19 +10,19 @@ class Magnifier : public QFrame
 public:
     explicit Magnifier(QWidget *parent = nullptr);
 
-    inline void pixmap(const QPixmap& a) { area_ = a; }
-
-    QRect area();
+    inline void pixmap(const QPixmap& p) { pixmap_ = p; }
+    QRect mrect();
 
 protected:
     void paintEvent(QPaintEvent *);
 
 private:
     QLabel * label_ = nullptr;
-    QPixmap area_;
+    QPixmap pixmap_;
 
-    int w_ = 31;
-    int h_ = 25;
+    int alpha_ = 5;
+    QSize msize_{ 31, 25 };
+    QSize psize_{ 0, 0 };
 };
 
 #endif // MAGNIFIER_H

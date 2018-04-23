@@ -86,6 +86,7 @@ macx: {
 # Windows
 win32: {
     SOURCES += $$PWD/core/detectwidgets/detectwidgets_win.cpp
+    LIBS += -ldwmapi
 }
 
 RESOURCES += capturer.qrc
@@ -94,6 +95,4 @@ RESOURCES += capturer.qrc
 msvc: {
     QMAKE_CXXFLAGS += -execution-charset:utf-8 \
         -source-charset:utf-8
-
-    LIBS += -ldwmapi
 }

@@ -232,9 +232,9 @@ void ScreenShoter::updateMenuPosition()
 void ScreenShoter::upadateMagnifierPosition()
 {
     if(status_ != LOCKED) {
-        magnifier_->pixmap(captured_screen_.copy(magnifier_->area()));
+        magnifier_->pixmap(captured_screen_.copy(magnifier_->mrect()));
         magnifier_->show();
-        magnifier_->move(QCursor::pos().x() + 1, QCursor::pos().y() + 1);
+        magnifier_->move(QCursor::pos().x() + 10, QCursor::pos().y() + 10);
     }
     else {
         magnifier_->hide();;
@@ -427,7 +427,7 @@ void ScreenShoter::fix_image()
 void ScreenShoter::exit_capture()
 {
     status_ = INITIAL;
-    end_ = begin_ = { 0, 0 };
+    x1_ = x2_ = y1_ = y2_ = 0;
 
     undo_stack_.clear();
 

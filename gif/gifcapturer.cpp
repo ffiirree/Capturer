@@ -37,7 +37,7 @@ void GifCapturer::setup()
 void GifCapturer::end()
 {
     status_ = INITIAL;
-    end_ = begin_;
+    x1_ = x2_ = y1_ = y2_ = 0;
 
     process_->write("q\n\r");
 
@@ -81,10 +81,10 @@ void GifCapturer::paintEvent(QPaintEvent *event)
     QColor bgc = QColor(0, 0, 0, 100);
 
     auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
-    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
+    painter_.fillRect(QRect{ 0, 0, w(), roi.y() }, bgc);
     painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
-    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
-    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), w() - roi.x() - roi.width(), roi.height()}, bgc);
+    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), w(), h() - roi.y() - roi.height()}, bgc);
 
     painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
 

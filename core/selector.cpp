@@ -29,8 +29,10 @@ void Selector::start()
         show();
 
         auto rect = DetectWidgets::window();
-        begin_ = rect.topLeft();
-        end_ = rect.bottomRight();
+        x1_ = rect.left();
+        x2_ = rect.right();
+        y1_ = rect.top();
+        y2_ = rect.bottom();
     }
 }
 
@@ -41,11 +43,14 @@ void Selector::mousePressEvent(QMouseEvent *event)
 
         switch (status_) {
         case NORMAL:
-            begin_ = event->pos();
-            end_ = event->pos();
+        {
+            auto pos = event->pos();
+            x2_ = x1_ = pos.x();
+            y2_ = y1_ = pos.y();
 
             status_ = SELECTING;
             break;
+        }
 
         case SELECTING: break;
 
@@ -81,7 +86,8 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     switch (status_) {
     case NORMAL: setCursor(Qt::CrossCursor); break;
     case SELECTING:
-        end_ = mouse_pos;
+        x2_ = mouse_pos.x();
+        y2_ = mouse_pos.y();
 
         status_ = SELECTING;
         break;
@@ -92,17 +98,34 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         case INSIDE:  setCursor(Qt::SizeAllCursor); break;
         case OUTSIDE: setCursor(Qt::ForbiddenCursor); break;
 
-        case TOP_BORDER:
-        case BOTTOM_BORDER: setCursor(Qt::SizeVerCursor); break;
+        case Y1_BORDER:
+        case Y2_BORDER: setCursor(Qt::SizeVerCursor); break;
 
-        case LEFT_BORDER:
-        case RIGHT_BORDER: setCursor(Qt::SizeHorCursor); break;
+        case X1_BORDER:
+        case X2_BORDER: setCursor(Qt::SizeHorCursor); break;
 
-        case LT_DIAG:
-        case RB_DIAG: setCursor(Qt::SizeFDiagCursor); break;
+        case X1Y1_DIAG:
+            ((x1_ < x2_ && y1_ < y2_) || (x1_ > x2_ && y1_ > y2_))
+                    ? setCursor(Qt::SizeFDiagCursor)
+                    : setCursor(Qt::SizeBDiagCursor);
+            break;
 
-        case LB_DIAG:
-        case RT_DIAG: setCursor(Qt::SizeBDiagCursor);break;
+        case X1Y2_DIAG:
+            ((x1_ < x2_ && y2_ < y1_) || (x1_ > x2_ && y2_ > y1_))
+                ? setCursor(Qt::SizeFDiagCursor)
+                : setCursor(Qt::SizeBDiagCursor);
+            break;
+
+        case X2Y1_DIAG:
+            ((x2_ < x1_ && y1_ < y2_) || (x2_ > x1_ && y1_ > y2_))
+                    ? setCursor(Qt::SizeFDiagCursor)
+                    : setCursor(Qt::SizeBDiagCursor);
+            break;
+        case X2Y2_DIAG:
+            ((x2_ < x1_ && y2_ < y1_) || (x2_ > x1_ && y2_ > y1_))
+                    ? setCursor(Qt::SizeFDiagCursor)
+                    : setCursor(Qt::SizeBDiagCursor);
+            break;
 
         default: break;
         }
@@ -138,17 +161,18 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
         switch (status_) {
         case NORMAL:break;
         case SELECTING:
+            x2_ = event->pos().x();
+            y2_ = event->pos().y();
+
             // detected window
-            if(event->pos() == begin_) {
+            if(x1_ == x2_ && y1_ == y2_) {
                 auto window = DetectWidgets::window();
-                begin_ = window.topLeft();
-                end_ = window.bottomRight();
-                status_ = CAPTURED;
+                x1_ = window.left();
+                x2_ = window.right();
+                y1_ = window.top();
+                y2_ = window.bottom();
             }
-            // selected window
-            else {
-                end_ = event->pos(); status_ = CAPTURED;
-            }
+            status_ = CAPTURED;
             break;
         case MOVING: mend_ = event->pos(); status_ = CAPTURED; break;
         case RESIZING: rend_ = event->pos(); status_ = CAPTURED; break;
@@ -166,7 +190,7 @@ void Selector::keyPressEvent(QKeyEvent *event)
 
     if(key == Qt::Key_Escape) {
         status_ = INITIAL;
-        end_ = begin_ = {0, 0};
+        x1_ = x2_= y1_= y2_ = 0;
         hide();
     }
 
@@ -179,142 +203,151 @@ void Selector::paintEvent(QPaintEvent *event)
 
     painter_.begin(this);
 
+    auto srect = selected();
+
     if(status_ == NORMAL) {
         auto rect = DetectWidgets::window();
-        begin_ = rect.topLeft();
-        end_ = rect.bottomRight();
+        x1_ = rect.left();
+        x2_ = rect.right();
+        y1_ = rect.top();
+        y2_ = rect.bottom();
     }
 
+    // draw border
     painter_.setPen(QPen(border_color_, border_width_, border_style_));
-    painter_.drawRect(selected());
+    painter_.drawRect(srect);
+
+    // draw anchor
+    painter_.fillRect(X1Y1Anchor(), border_color_);
+    painter_.fillRect(X1Y2Anchor(), border_color_);
+    painter_.fillRect(X2Y1Anchor(), border_color_);
+    painter_.fillRect(X2Y2Anchor(), border_color_);
+
+    painter_.fillRect(Y1Anchor(), border_color_);
+    painter_.fillRect(X2Anchor(), border_color_);
+    painter_.fillRect(Y2Anchor(), border_color_);
+    painter_.fillRect(X1Anchor(), border_color_);
 
     painter_.end();
 
     // info
     info_->size(selected().size());
-    auto info_y = lt().y() - info_->geometry().height();
-    info_->move(lt().x() + 1, (info_y < 0 ? lt().y() + 1 : info_y));
+    auto info_y = topLeft().y() - info_->geometry().height();
+    info_->move(topLeft().x() + 1, (info_y < 0 ? topLeft().y() + 1 : info_y));
 }
 
 Selector::PointPosition Selector::position(const QPoint& p)
 {
-    auto pos = INSIDE;
-    if(isTopBorder(p)) pos = TOP_BORDER;
-    if(isBottomBorder(p)) pos = BOTTOM_BORDER;
+    if(isX1Y1Anchor(p)) return X1Y1_DIAG;
+    if(isX1Y2Anchor(p)) return X1Y2_DIAG;
+    if(isX2Y1Anchor(p)) return X2Y1_DIAG;
+    if(isX2Y2Anchor(p)) return X2Y2_DIAG;
 
-    if(isLeftBorder(p))  {
-        if(pos == TOP_BORDER) return LT_DIAG;
-        if(pos == BOTTOM_BORDER) return LB_DIAG;
-
-        return LEFT_BORDER;
-    }
-    if(isRightBorder(p)) {
-        if(pos == TOP_BORDER) return RT_DIAG;
-        if(pos == BOTTOM_BORDER) return RB_DIAG;
-
-        return RIGHT_BORDER;
-    }
-
-    if(pos != INSIDE) return pos;
+    if(isX1Border(p)) return X1_BORDER;
+    if(isY2Border(p)) return Y2_BORDER;
+    if(isX2Border(p)) return X2_BORDER;
+    if(isY1Border(p)) return Y1_BORDER;
 
     return isContains(p) ? INSIDE : OUTSIDE;
-}
-
-QRect Selector::selected()
-{
-    auto x = (begin_.x() < end_.x()) ? begin_.x() : end_.x();
-    auto y = (begin_.y() < end_.y()) ? begin_.y() : end_.y();
-
-    auto w = std::abs(begin_.x() - end_.x());
-    auto h = std::abs(begin_.y() - end_.y());
-
-    // The minimum value is 1
-    w = w ? w : 1;
-    h = h ? h : 1;
-
-    return QRect(x, y, w, h);
 }
 
 void Selector::updateSelected()
 {
     if(status_ == MOVING) {
-        auto diff_x = mend_.x() - mbegin_.x();
-        auto diff_y = mend_.y() - mbegin_.y();
+        QPoint diff(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
 
-        auto diff_min_x = std::max(std::min(begin_.x(), end_.x()), 0);
-        auto diff_max_x = std::max(begin_.x(), end_.x()); diff_max_x = std::max(this->width() - diff_max_x, 0);
-        auto diff_min_y = std::max(std::min(begin_.y(), end_.y()), 0);
-        auto diff_max_y = std::max(begin_.y(), end_.y()); diff_max_y = std::max(this->height() - diff_max_y, 0);
+        auto diff_min_x = std::max(l(), 0);
+        auto diff_max_x = std::max(width() - r(), 0);
+        auto diff_min_y = std::max(t(), 0);
+        auto diff_max_y = std::max(height() - b(), 0);
 
-        diff_x = (diff_x < 0) ? std::max(diff_x, -diff_min_x) : std::min(diff_x, diff_max_x);
-        diff_y = (diff_y < 0) ? std::max(diff_y, -diff_min_y) : std::min(diff_y, diff_max_y);
+        diff.rx() = (diff.x() < 0) ? std::max(diff.x(), -diff_min_x) : std::min(diff.x(), diff_max_x);
+        diff.ry() = (diff.y() < 0) ? std::max(diff.y(), -diff_min_y) : std::min(diff.y(), diff_max_y);
 
-        begin_ = QPoint(begin_.x() + diff_x, begin_.y() + diff_y);
-        end_ = QPoint(end_.x() + diff_x, end_.y() + diff_y);
+        x1_ += diff.x();
+        x2_ += diff.x();
+        y1_ += diff.y();
+        y2_ += diff.y();
     }
     else if(status_ == RESIZING) {
         auto diff_x = rend_.x() - rbegin_.x();
         auto diff_y = rend_.y() - rbegin_.y();
 
-#define UPDEATE_TOP_BORDER()      (begin_.y() < end_.y() ? begin_.setY(begin_.y() + diff_y) : end_.setY(end_.y() + diff_y))
-#define UPDATE_BOTTOM_BORDER()    (begin_.y() > end_.y() ? begin_.setY(begin_.y() + diff_y) : end_.setY(end_.y() + diff_y))
-#define UPDATE_RIGHT_BORDER()     (begin_.x() > end_.x() ? begin_.setX(begin_.x() + diff_x) : end_.setX(end_.x() + diff_x))
-#define UPDATE_LEFT_BORDER()      (begin_.x() < end_.x() ? begin_.setX(begin_.x() + diff_x) : end_.setX(end_.x() + diff_x))
         switch (cursor_pos_) {
-        case TOP_BORDER:     UPDEATE_TOP_BORDER();   break;
-        case BOTTOM_BORDER:  UPDATE_BOTTOM_BORDER(); break;
-        case RIGHT_BORDER:   UPDATE_RIGHT_BORDER();  break;
-        case LEFT_BORDER:    UPDATE_LEFT_BORDER();   break;
+        case Y1_BORDER: y1_ += diff_y; break;
+        case Y2_BORDER: y2_ += diff_y; break;
+        case X1_BORDER: x1_ += diff_x; break;
+        case X2_BORDER: x2_ += diff_x; break;
 
-        case LT_DIAG: UPDATE_LEFT_BORDER();   UPDEATE_TOP_BORDER();   break;
-        case RB_DIAG: UPDATE_RIGHT_BORDER();  UPDATE_BOTTOM_BORDER(); break;
-        case LB_DIAG: UPDATE_LEFT_BORDER();   UPDATE_BOTTOM_BORDER(); break;
-        case RT_DIAG: UPDATE_RIGHT_BORDER();  UPDEATE_TOP_BORDER();   break;
+        case X1Y1_DIAG: x1_ += diff_x; y1_ += diff_y; break;
+        case X1Y2_DIAG: x1_ += diff_x; y2_ += diff_y; break;
+        case X2Y1_DIAG: x2_ += diff_x; y1_ += diff_y; break;
+        case X2Y2_DIAG: x2_ += diff_x; y2_ += diff_y; break;
 
         default:break;
         }
-#undef UPDEATE_TOP_BORDER
-#undef UPDATE_BOTTOM_BORDER
-#undef UPDATE_RIGHT_BORDER
-#undef UPDATE_LEFT_BORDER
     }
 }
 
-QPoint Selector::lt()
+QRect Selector::Y1Anchor() const
 {
-    auto x = (begin_.x() < end_.x()) ? begin_.x() : end_.x();
-    auto y = (begin_.y() < end_.y()) ? begin_.y() : end_.y();
-
-    return {x, y};
+    return { (x1_ + x2_)/2 - ANCHOR_WIDTH/2, y1_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
 }
 
-QPoint Selector::rb()
+QRect Selector::X1Anchor() const
 {
-    auto x = (begin_.x() > end_.x()) ? begin_.x() : end_.x();
-    auto y = (begin_.y() > end_.y()) ? begin_.y() : end_.y();
-
-    return {x, y};
+    return { x1_ - ANCHOR_WIDTH/2, (y1_ + y2_)/2 - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
 }
 
-bool Selector::isTopBorder(const QPoint& p)
+QRect Selector::Y2Anchor() const
 {
-    auto sa = selected();
-    return QRect(sa.x(), sa.y() - POSITION_BORDER_WIDTH/2, sa.width(), POSITION_BORDER_WIDTH).contains(p);
+    return { (x1_ + x2_)/2 - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
 }
-bool Selector::isLeftBorder(const QPoint& p)
+
+QRect Selector::X2Anchor() const
 {
-    auto sa = selected();
-    return QRect(sa.x() - POSITION_BORDER_WIDTH/2, sa.y(), POSITION_BORDER_WIDTH, sa.height()).contains(p);
+    return { x2_ - ANCHOR_WIDTH/2, (y1_ + y2_)/2 - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
 }
-bool Selector::isRightBorder(const QPoint& p)
+
+QRect Selector::X1Y1Anchor() const
 {
-    auto sa = selected();
-    return QRect(sa.x() + sa.width() - POSITION_BORDER_WIDTH/2, sa.y(), POSITION_BORDER_WIDTH, sa.height()).contains(p);
+    return { x1_ - ANCHOR_WIDTH/2, y1_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
 }
-bool Selector::isBottomBorder(const QPoint& p)
+
+QRect Selector::X1Y2Anchor() const
 {
-    auto sa = selected();
-    return QRect(sa.x(), sa.y() + sa.height() - POSITION_BORDER_WIDTH/2, sa.width(), POSITION_BORDER_WIDTH).contains(p);
+    return { x1_ - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
+}
+
+QRect Selector::X2Y1Anchor() const
+{
+    return { x2_ - ANCHOR_WIDTH/2, y1_- ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
+}
+
+QRect Selector::X2Y2Anchor() const
+{
+    return { x2_ - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
+}
+
+bool Selector::isX1Border(const QPoint& p) const
+{
+    return QRect(x1_ - RESIZE_BORDER_WIDTH/2, t() , RESIZE_BORDER_WIDTH, h()).contains(p)
+            || X1Anchor().contains(p);
+}
+bool Selector::isX2Border(const QPoint& p) const
+{
+    return QRect(x2_ - RESIZE_BORDER_WIDTH/2, t(), RESIZE_BORDER_WIDTH, h()).contains(p)
+            || X2Anchor().contains(p);
+}
+bool Selector::isY1Border(const QPoint& p) const
+{
+    return QRect(l(), y1_ - RESIZE_BORDER_WIDTH/2, w(), RESIZE_BORDER_WIDTH).contains(p)
+            || Y1Anchor().contains(p);
+}
+bool Selector::isY2Border(const QPoint& p) const
+{
+    return QRect(l(), y2_ - RESIZE_BORDER_WIDTH/2, w(), RESIZE_BORDER_WIDTH).contains(p)
+            || Y2Anchor().contains(p);
 }
 
 void Selector::registerShortcuts()
@@ -322,36 +355,36 @@ void Selector::registerShortcuts()
     // move
     auto move_up = new QShortcut(QKeySequence("W"), this);
     connect(move_up, &QShortcut::activated, [&]() {
-        if(status_ == CAPTURED && begin_.y() > 1 && end_.y() > 1) {
-            begin_.setY(begin_.y() - 1);
-            end_.setY(end_.y() - 1);
+        if(status_ == CAPTURED && y1_ > 0 && y2_ > 0) {
+            y1_ -= 1;
+            y2_ -= 1;
             emit moved();
         }
     });
 
     auto move_down = new QShortcut(QKeySequence("S"), this);
     connect(move_down, &QShortcut::activated, [&]() {
-        if(status_ == CAPTURED && begin_.y() + 1 < this->height() && end_.y() + 1 < this->height()) {
-            begin_.setY(begin_.y() + 1);
-            end_.setY(end_.y() + 1);
+        if(status_ == CAPTURED && y1_ < height() && y2_ < height()) {
+            y1_ += 1;
+            y2_ += 1;
             emit moved();
         }
     });
 
     auto move_left = new QShortcut(QKeySequence("A"), this);
     connect(move_left, &QShortcut::activated, [&]() {
-        if(status_ == CAPTURED && begin_.x() > 1 && end_.x() > 1) {
-            begin_.setX(begin_.x() - 1);
-            end_.setX(end_.x() - 1);
+        if(status_ == CAPTURED && x1_ > 0 && x2_ > 0) {
+            x1_ -= 1;
+            x2_ -= 1;
             emit moved();
         }
     });
 
     auto move_right = new QShortcut(QKeySequence("D"), this);
     connect(move_right, &QShortcut::activated, [&]() {
-        if(status_ == CAPTURED && begin_.x() + 1 < this->width() && end_.x() + 1 < this->width()) {
-            begin_.setX(begin_.x() + 1);
-            end_.setX(end_.x() + 1);
+        if(status_ == CAPTURED && x1_ < width() && x2_ < width()) {
+            x1_ += 1;
+            x2_ += 1;
             emit moved();
         }
     });
@@ -362,9 +395,7 @@ void Selector::registerShortcuts()
     auto increase_top = new QShortcut(Qt::CTRL + Qt::Key_Up, this);
     connect(increase_top, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.y() < end_.y()
-                    ? begin_.setY(std::max(0, begin_.y() -1))
-                    : end_.setY(std::max(0, end_.y() - 1));
+            y1_ < y2_ ? y1_ = std::max(y1_ - 1, 0) : y2_ = std::max(y2_ - 1, 0);
             emit resized();
         }
     });
@@ -372,9 +403,7 @@ void Selector::registerShortcuts()
     auto increase_bottom = new QShortcut(Qt::CTRL + Qt::Key_Down, this);
     connect(increase_bottom, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.y() < end_.y()
-                    ? end_.setY(std::min(this->height(), end_.y() + 1))
-                    : begin_.setY(std::min(this->height(), begin_.y() + 1));
+            y1_ > y2_ ? y1_ = std::min(y1_ + 1, height()) : y2_ = std::min(y2_ + 1, height());
             emit resized();
         }
     });
@@ -382,9 +411,7 @@ void Selector::registerShortcuts()
     auto increase_left = new QShortcut(Qt::CTRL + Qt::Key_Left, this);
     connect(increase_left, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.x() < end_.x()
-                    ? begin_.setX(std::max(0, begin_.x() - 1))
-                    : end_.setX(std::max(0, end_.x() - 1));
+            x1_ < x2_ ? x1_ = std::max(x1_ - 1, 0) : x2_ = std::max(x2_ - 1, 0);
             emit resized();
         }
     });
@@ -392,9 +419,7 @@ void Selector::registerShortcuts()
     auto increase_right = new QShortcut(Qt::CTRL + Qt::Key_Right, this);
     connect(increase_right, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.x() < end_.x()
-                    ? end_.setX(std::min(this->width(), end_.x() + 1))
-                    : begin_.setX(std::min(this->width(), begin_.x() + 1));
+            x1_ > x2_ ? x1_ = std::min(x1_ + 1, width()) : x2_ = std::min(x2_ + 1, width());
             emit resized();
         }
     });
@@ -403,9 +428,7 @@ void Selector::registerShortcuts()
     auto decrease_top = new QShortcut(Qt::SHIFT + Qt::Key_Up, this);
     connect(decrease_top, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.y() > end_.y()
-                    ? end_.setY(std::min(this->height(), end_.y() + 1))
-                    : begin_.setY(std::min(this->height(), begin_.y() + 1));
+            y1_ < y2_ ? y1_ = std::min(y1_ + 1, y2_) : y2_ = std::min(y2_ + 1, y1_);
             emit resized();
         }
     });
@@ -413,9 +436,7 @@ void Selector::registerShortcuts()
     auto decrease_bottom = new QShortcut(Qt::SHIFT + Qt::Key_Down, this);
     connect(decrease_bottom, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.y() > end_.y()
-                    ? begin_.setY(std::max(0, begin_.y() - 1))
-                    : end_.setY(std::max(0, end_.y() - 1));
+            y1_ > y2_ ? y1_ = std::max(y1_ - 1, y2_) : y2_ = std::max(y2_ - 1, y1_);
             emit resized();
         }
     });
@@ -423,9 +444,7 @@ void Selector::registerShortcuts()
     auto decrease_left = new QShortcut(Qt::SHIFT + Qt::Key_Left, this);
     connect(decrease_left, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.x() > end_.x()
-                    ? end_.setX(std::min(this->width(), end_.x() + 1))
-                    : begin_.setX(std::min(this->width(), begin_.x() + 1));
+            x1_ < x2_ ? x1_ = std::min(x1_ + 1, x2_) : x2_ = std::min(x2_ + 1, x1_);
             emit resized();
         }
     });
@@ -433,9 +452,7 @@ void Selector::registerShortcuts()
     auto decrease_right = new QShortcut(Qt::SHIFT + Qt::Key_Right, this);
     connect(decrease_right, &QShortcut::activated, [&]() {
         if(status_ == CAPTURED) {
-            begin_.x() > end_.x()
-                    ? begin_.setX(std::max(0, begin_.x() - 1))
-                    : end_.setX(std::max(0, end_.x() - 1));
+            x1_ > x2_ ? x1_ = std::max(x1_ - 1, x2_) : x2_ = std::max(x2_ - 1, x1_);
             emit resized();
         }
     });
