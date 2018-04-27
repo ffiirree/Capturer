@@ -41,17 +41,21 @@ public slots:
     void setBorderColor(const QColor&);
     void setBorderWidth(int);
     void setBorderStyle(Qt::PenStyle s);
+    void setMaskColor(const QColor&);
+    void setUseDetectWindow(bool);
+
+    virtual void exit();
 
 signals:
     void moved();
     void resized();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *event);
-    virtual void mouseMoveEvent(QMouseEvent* event);
-    virtual void mouseReleaseEvent(QMouseEvent *event);
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseMoveEvent(QMouseEvent* event) override;
+    virtual void mouseReleaseEvent(QMouseEvent *event) override;
+    virtual void keyPressEvent(QKeyEvent *event) override;
+    virtual void paintEvent(QPaintEvent *event) override;
 
     // The cursor's position
     PointPosition position(const QPoint&);
@@ -113,12 +117,16 @@ protected:
 
     Info * info_ = nullptr;
 
+    QColor mask_color_{0, 0, 0, 100};
+
 private:
     void registerShortcuts();
 
     QColor border_color_ = Qt::cyan;
     int border_width_ = 1;
     Qt::PenStyle border_style_ = Qt::DashDotLine;
+
+    bool use_detect_ = true;
 };
 
 #endif //! CAPTURER_SELECTOR_H

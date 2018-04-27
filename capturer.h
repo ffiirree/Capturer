@@ -27,17 +27,13 @@ public:
     inline nlohmann::json settings() const { return setting_dialog_->settings(); }
 
 private slots:
-    void fixImage(QPixmap image);
-    void fixLastImage();
+    void pinImage(QPixmap image);
+    void pinLastImage();
 
     void setSnipHotKey(const QKeySequence&);
     void setFixImgHotKey(const QKeySequence&);
     void setGIFHotKey(const QKeySequence&);
     void setVideoHotKey(const QKeySequence&);
-
-    void setBorderColor(const QColor&);
-    void setBorderWidth(int);
-    void setBorderStyle(Qt::PenStyle);
 
 private:
     void keyPressEvent(QKeyEvent *event);
@@ -45,7 +41,7 @@ private:
     void setupSystemTrayIcon();
     void registerHotKeys();
 
-    ScreenShoter * shoter_ = nullptr;
+    ScreenShoter * sniper_ = nullptr;
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
 
@@ -59,7 +55,7 @@ private:
 
     // hotkey
     QxtGlobalShortcut *snip_sc_ = nullptr;
-    QxtGlobalShortcut *fix_sc_ = nullptr;
+    QxtGlobalShortcut *pin_sc_ = nullptr;
     QxtGlobalShortcut *gif_sc_ = nullptr;
     QxtGlobalShortcut *video_sc_ = nullptr;
 };

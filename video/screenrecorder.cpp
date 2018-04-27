@@ -17,11 +17,14 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
 
 void ScreenRecorder::record()
 {
-    status_ == INITIAL ? start() : end();
+    status_ == INITIAL ? start() : exit();
 }
 
 void ScreenRecorder::setup()
 {
+    status_ = LOCKED;
+    hide();
+
     auto native_movies_path = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
     auto current_date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
 
@@ -31,13 +34,13 @@ void ScreenRecorder::setup()
     auto selected_area = selected();
 #ifdef _LINUX
     args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
-         << "-framerate" << "25"
+         << "-framerate" << QString::number(framerate_)
          << "-f" << "x11grab"
          << "-i" << ":0.0+" + QString::number((selected_area.x())) + "," + QString::number((selected_area.y()))
          << filename_;
 #elif _WIN32
     args << "-f" << "gdigrab"
-         << "-framerate" << "25"
+         << "-framerate" << QString::number(framerate_)
          << "-offset_x" << QString::number((selected_area.x())) << "-offset_y" << QString::number((selected_area.y()))
          << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
          << "-i" << "desktop"
@@ -46,26 +49,21 @@ void ScreenRecorder::setup()
     process_->start("ffmpeg", args);
 }
 
-void ScreenRecorder::end()
+void ScreenRecorder::exit()
 {
-    status_ = INITIAL;
-    x1_ = x2_ = y1_ = y2_ = 0;
-
     process_->write("q\n\r");
+
+    Selector::exit();
 }
 
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        status_ = INITIAL;
-        this->hide();
+        exit();
     }
 
     if(event->key() == Qt::Key_Return) {
-        status_ = LOCKED;
-
-        this->hide();
-        this->setup();
+        setup();
     }
 }
 
@@ -73,15 +71,13 @@ void ScreenRecorder::paintEvent(QPaintEvent *event)
 {
     painter_.begin(this);
 
-    QColor bgc = QColor(0, 0, 0, 100);
-
     auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
-    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
-    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
-    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
-    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
+    painter_.fillRect(rect(), QColor(0, 0, 0, 1)); // Make windows happy.
 
-    painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
+    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, mask_color_);
+    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, mask_color_);
+    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, mask_color_);
+    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, mask_color_);
 
     painter_.end();
 

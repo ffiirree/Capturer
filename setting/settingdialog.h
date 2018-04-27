@@ -28,13 +28,29 @@ public:
 
 signals:
     void snipShortcutChanged(const QKeySequence &);
-    void fixImgShortcutChanged(const QKeySequence &);
+    void pinImgShortcutChanged(const QKeySequence &);
     void gifShortcutChanged(const QKeySequence &);
     void videoShortcutChanged(const QKeySequence &);
 
-    void borderColorChanged(const QColor&);
-    void borderWidthChanged(int);
-    void borderStyleChanged(Qt::PenStyle);
+    void snipBorderColorChanged(const QColor&);
+    void snipBorderWidthChanged(int);
+    void snipBorderStyleChanged(Qt::PenStyle);
+    void snipMaskColorChanged(const QColor&);
+    void snipDetectWindowChanged(bool);
+
+    void recordBorderColorChanged(const QColor&);
+    void recordBorderWidthChanged(int);
+    void recordBorderStyleChanged(Qt::PenStyle);
+    void recordMaskColorChanged(const QColor&);
+    void recordDetectWindowChanged(bool);
+    void recordFramerateChanged(int);
+
+    void gifBorderColorChanged(const QColor&);
+    void gifBorderWidthChanged(int);
+    void gifBorderStyleChanged(Qt::PenStyle);
+    void gifMaskColorChanged(const QColor&);
+    void gifDetectWindowChanged(bool);
+    void gifFPSChanged(int);
 
 private slots:
     void setAutoRun(int);
@@ -42,6 +58,9 @@ private slots:
 private:
     void setupGeneralWidget();
     void setupAppearanceWidget();
+    void setupSnipWidget();
+    void setupRecordWidget();
+    void setupGIFWidget();
     void setupHotkeyWidget();
     void setupAboutWidget();
 
@@ -53,6 +72,9 @@ private:
 
     QWidget * general_ = nullptr;
     QWidget * appearance_ = nullptr;
+    QWidget * snip_ = nullptr;
+    QWidget * record_ = nullptr;
+    QWidget * gif_ = nullptr;
     QWidget * hotkey_ = nullptr;
     QWidget * about_ = nullptr;
 

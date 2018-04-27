@@ -28,11 +28,14 @@ void Selector::start()
         status_ = NORMAL;
         show();
 
-        auto rect = DetectWidgets::window();
-        x1_ = rect.left();
-        x2_ = rect.right();
-        y1_ = rect.top();
-        y2_ = rect.bottom();
+        if(use_detect_) {
+            auto rect = DetectWidgets::window();
+            x1_ = rect.left();
+            x2_ = rect.right();
+            y1_ = rect.top();
+            y2_ = rect.bottom();
+            info_->show();
+        }
     }
 }
 
@@ -47,6 +50,7 @@ void Selector::mousePressEvent(QMouseEvent *event)
             auto pos = event->pos();
             x2_ = x1_ = pos.x();
             y2_ = y1_ = pos.y();
+            info_->show();
 
             status_ = SELECTING;
             break;
@@ -165,7 +169,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             y2_ = event->pos().y();
 
             // detected window
-            if(x1_ == x2_ && y1_ == y2_) {
+            if(x1_ == x2_ && y1_ == y2_ && use_detect_) {
                 auto window = DetectWidgets::window();
                 x1_ = window.left();
                 x2_ = window.right();
@@ -186,15 +190,18 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 
 void Selector::keyPressEvent(QKeyEvent *event)
 {
-    auto key = event->key();
-
-    if(key == Qt::Key_Escape) {
-        status_ = INITIAL;
-        x1_ = x2_= y1_= y2_ = 0;
-        hide();
-    }
-
     QWidget::keyPressEvent(event);
+}
+
+void Selector::exit()
+{
+    status_ = INITIAL;
+    x1_ = x2_ = y1_ = y2_ = 0;
+    info_->hide();
+
+    repaint();
+
+    QWidget::hide();
 }
 
 void Selector::paintEvent(QPaintEvent *event)
@@ -205,7 +212,7 @@ void Selector::paintEvent(QPaintEvent *event)
 
     auto srect = selected();
 
-    if(status_ == NORMAL) {
+    if(status_ == NORMAL && use_detect_) {
         auto rect = DetectWidgets::window();
         x1_ = rect.left();
         x2_ = rect.right();
@@ -213,27 +220,28 @@ void Selector::paintEvent(QPaintEvent *event)
         y2_ = rect.bottom();
     }
 
-    // draw border
-    painter_.setPen(QPen(border_color_, border_width_, border_style_));
-    painter_.drawRect(srect);
+    if(use_detect_ || status_ > NORMAL) {
+        // info
+        info_->size(selected().size());
+        auto info_y = topLeft().y() - info_->geometry().height();
+        info_->move(topLeft().x() + 1, (info_y < 0 ? topLeft().y() + 1 : info_y));
 
-    // draw anchor
-    painter_.fillRect(X1Y1Anchor(), border_color_);
-    painter_.fillRect(X1Y2Anchor(), border_color_);
-    painter_.fillRect(X2Y1Anchor(), border_color_);
-    painter_.fillRect(X2Y2Anchor(), border_color_);
+        // draw border
+        painter_.setPen(QPen(border_color_, border_width_, border_style_));
+        painter_.drawRect(srect);
 
-    painter_.fillRect(Y1Anchor(), border_color_);
-    painter_.fillRect(X2Anchor(), border_color_);
-    painter_.fillRect(Y2Anchor(), border_color_);
-    painter_.fillRect(X1Anchor(), border_color_);
+        // draw anchor
+        painter_.fillRect(X1Y1Anchor(), border_color_);
+        painter_.fillRect(X1Y2Anchor(), border_color_);
+        painter_.fillRect(X2Y1Anchor(), border_color_);
+        painter_.fillRect(X2Y2Anchor(), border_color_);
 
+        painter_.fillRect(Y1Anchor(), border_color_);
+        painter_.fillRect(X2Anchor(), border_color_);
+        painter_.fillRect(Y2Anchor(), border_color_);
+        painter_.fillRect(X1Anchor(), border_color_);
+    }
     painter_.end();
-
-    // info
-    info_->size(selected().size());
-    auto info_y = topLeft().y() - info_->geometry().height();
-    info_->move(topLeft().x() + 1, (info_y < 0 ? topLeft().y() + 1 : info_y));
 }
 
 Selector::PointPosition Selector::position(const QPoint& p)
@@ -389,7 +397,6 @@ void Selector::registerShortcuts()
         }
     });
 
-
     // resize
     // increase
     auto increase_top = new QShortcut(Qt::CTRL + Qt::Key_Up, this);
@@ -456,6 +463,14 @@ void Selector::registerShortcuts()
             emit resized();
         }
     });
+
+    auto select_all = new QShortcut(Qt::CTRL + Qt::Key_A, this);
+    connect(select_all, &QShortcut::activated, [&]() {
+        x1_ = 0, x2_ = rect().width();
+        y1_ = 0, y2_ = rect().height();
+        emit resized();
+        status_ = CAPTURED;
+    });
 }
 
 void Selector::setBorderColor(const QColor &c)
@@ -471,4 +486,14 @@ void Selector::setBorderWidth(int w)
 void Selector::setBorderStyle(Qt::PenStyle s)
 {
     border_style_ = s;
+}
+
+void Selector::setMaskColor(const QColor& c)
+{
+    mask_color_ = c;
+}
+
+void Selector::setUseDetectWindow(bool f)
+{
+    use_detect_ = f;
 }

@@ -11,17 +11,25 @@ class GifCapturer : public Selector
 public:
     explicit GifCapturer(QWidget * parent = nullptr);
 
-public slots:
-    void record();
+    inline int framerate() const { return framerate_; }
+    inline int fps() const { return fps_; }
 
+public slots:
+    virtual void exit() override;
+
+    void record();
+    void framerate(int fr) { framerate_ = fr; }
+    void fps(int fps) { fps_ = fps; }
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *event);
+    virtual void keyPressEvent(QKeyEvent *) override;
+    virtual void paintEvent(QPaintEvent *) override;
 
 private:
     void setup();
-    void end();
+
+    int framerate_ = 30;
+    int fps_ = 6;
 
     QString filename_;
     QString current_time_str_;

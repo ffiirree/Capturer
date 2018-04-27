@@ -36,11 +36,11 @@ signals:
 
 public slots:
     virtual void start();
+    virtual void exit() override;
 
     void save_image();
     void copy2clipboard();
-    void fix_image();
-    void exit_capture();
+    void pin_image();
 
     void undo();
     void redo();
@@ -49,13 +49,14 @@ private slots:
     void updateMenuPosition();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *event);
-    virtual void mouseMoveEvent(QMouseEvent* event);
-    virtual void mouseReleaseEvent(QMouseEvent *event);
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *event);
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseMoveEvent(QMouseEvent* event) override;
+    virtual void mouseReleaseEvent(QMouseEvent *event) override;
+    virtual void keyPressEvent(QKeyEvent *event) override;
+    virtual void paintEvent(QPaintEvent *event) override;
 
 private:
+    void registerShortcuts();
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
 
     void upadateMagnifierPosition();

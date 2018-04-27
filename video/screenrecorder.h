@@ -11,17 +11,23 @@ class ScreenRecorder : public Selector
 public:
     explicit ScreenRecorder(QWidget *parent = nullptr);
 
+    inline int framerate() { return framerate_; }
+
 public slots:
+    virtual void exit() override;
+
     void record();
+    void framerate(int fr) { framerate_ = fr; }
 
 private:
     void setup();
-    void end();
 
     void keyPressEvent(QKeyEvent *event);
     void paintEvent(QPaintEvent *event);
 
-    QProcess *process_;
+    int framerate_ = 30;
+
+    QProcess *process_ = nullptr;
 
     QString filename_;
 };

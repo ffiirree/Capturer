@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QMouseEvent>
 #include <QStandardPaths>
+#include <QShortcut>
 #include <QDebug>
 
 ScreenShoter::ScreenShoter(QWidget *parent)
@@ -19,8 +20,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     connect(menu_, &MainMenu::save, this, &ScreenShoter::save_image);
     connect(menu_, &MainMenu::copy, this, &ScreenShoter::copy2clipboard);
-    connect(menu_, &MainMenu::fix, this, &ScreenShoter::fix_image);
-    connect(menu_, &MainMenu::exit, this, &ScreenShoter::exit_capture);
+    connect(menu_, &MainMenu::fix, this, &ScreenShoter::pin_image);
+    connect(menu_, &MainMenu::exit, this, &ScreenShoter::exit);
 
     connect(menu_, &MainMenu::undo, this, &ScreenShoter::undo);
     connect(menu_, &MainMenu::redo, this, &ScreenShoter::redo);
@@ -69,6 +70,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     // move menu
     connect(this, &ScreenShoter::moved, this, &ScreenShoter::updateMenuPosition);
     connect(this, &ScreenShoter::resized, this, &ScreenShoter::updateMenuPosition);
+
+    //
+    registerShortcuts();
 }
 
 void ScreenShoter::start()
@@ -203,11 +207,11 @@ void ScreenShoter::keyPressEvent(QKeyEvent *event)
 {
     if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ >= CAPTURED) {
         copy2clipboard();
-        exit_capture();
+        exit();
     }
 
     if(event->key() == Qt::Key_Escape) {
-        exit_capture();
+        exit();
     }
 
     Selector::keyPressEvent(event);
@@ -239,6 +243,17 @@ void ScreenShoter::upadateMagnifierPosition()
     else {
         magnifier_->hide();;
     }
+}
+
+void ScreenShoter::exit()
+{
+    undo_stack_.clear();
+
+    menu_->hide();
+    gmenu_->hide();
+    fmenu_->hide();
+
+    Selector::exit();
 }
 
 void ScreenShoter::paintEvent(QPaintEvent *event)
@@ -371,7 +386,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 
     captured_image_ = background.copy(area);
     painter_.drawPixmap(0, 0, background);
-    painter_.fillRect(rect(), QColor(0, 0, 0, 100));
+    painter_.fillRect(rect(), mask_color_);
     painter_.drawPixmap(area.topLeft(), captured_image_);
 
     painter_.end();
@@ -406,7 +421,7 @@ void ScreenShoter::save_image()
     if(!filename.isEmpty()) {
         captured_image_.save(filename);
         CAPTURE_SCREEN_DONE(captured_image_);
-        exit_capture();
+        exit();
     }
 }
 
@@ -414,27 +429,33 @@ void ScreenShoter::copy2clipboard()
 {
     QApplication::clipboard()->setPixmap(captured_image_);
     CAPTURE_SCREEN_DONE(captured_image_);
-    exit_capture();
+
+    exit();
 }
 
-void ScreenShoter::fix_image()
+void ScreenShoter::pin_image()
 {
     FIX_IMAGE(captured_image_);
     CAPTURE_SCREEN_DONE(captured_image_);
-    exit_capture();
+
+    exit();
 }
 
-void ScreenShoter::exit_capture()
+void ScreenShoter::registerShortcuts()
 {
-    status_ = INITIAL;
-    x1_ = x2_ = y1_ = y2_ = 0;
+    auto save = new QShortcut(Qt::CTRL + Qt::Key_S, this);
+    connect(save, &QShortcut::activated, [this](){
+        if(status_ == CAPTURED) {
+            save_image();
+        }
+    });
 
-    undo_stack_.clear();
-
-    menu_->hide();
-    gmenu_->hide();
-    fmenu_->hide();
-    hide();
+    auto pin = new QShortcut(Qt::Key_P, this);
+    connect(pin, &QShortcut::activated, [this](){
+        if(status_ == CAPTURED) {
+            pin_image();
+        }
+    });
 }
 
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
