@@ -29,11 +29,20 @@ void ScreenRecorder::setup()
 
     QStringList args;
     auto selected_area = selected();
+#ifdef _LINUX
     args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
          << "-framerate" << "25"
          << "-f" << "x11grab"
          << "-i" << ":0.0+" + QString::number((selected_area.x())) + "," + QString::number((selected_area.y()))
          << filename_;
+#elif _WIN32
+    args << "-f" << "gdigrab"
+         << "-framerate" << "25"
+         << "-offset_x" << QString::number((selected_area.x())) << "-offset_y" << QString::number((selected_area.y()))
+         << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
+         << "-i" << "desktop"
+         << filename_;
+#endif
     process_->start("ffmpeg", args);
 }
 
@@ -67,10 +76,10 @@ void ScreenRecorder::paintEvent(QPaintEvent *event)
     QColor bgc = QColor(0, 0, 0, 100);
 
     auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
-    painter_.fillRect(QRect{ 0, 0, w(), roi.y() }, bgc);
+    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, bgc);
     painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, bgc);
-    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), w() - roi.x() - roi.width(), roi.height()}, bgc);
-    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), w(), h() - roi.y() - roi.height()}, bgc);
+    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, bgc);
+    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, bgc);
 
     painter_.fillRect(selected(), QColor(0, 0, 0, 1)); // Make windows happy.
 

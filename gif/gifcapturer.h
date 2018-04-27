@@ -25,6 +25,8 @@ private:
 
     QString filename_;
     QString current_time_str_;
+    QString temp_video_path_;
+    QString temp_palette_path_;
     QProcess *process_ = nullptr;
 };
 
