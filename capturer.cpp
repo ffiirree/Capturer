@@ -13,60 +13,58 @@ Capturer::Capturer(QWidget *parent)
     connect(sniper_, &ScreenShoter::FIX_IMAGE, this, &Capturer::pinImage);
     connect(sniper_, &ScreenShoter::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
 
+    sys_tray_icon_ = new QSystemTrayIcon(this);
+
+    snip_sc_ = new QxtGlobalShortcut(this);
+    connect(snip_sc_, &QxtGlobalShortcut::activated, sniper_, &ScreenShoter::start);
+
+    pin_sc_ = new QxtGlobalShortcut(this);
+    connect(pin_sc_, &QxtGlobalShortcut::activated, this, &Capturer::pinLastImage);
+
+    video_sc_ = new QxtGlobalShortcut(this);
+    connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
+
+    gif_sc_ = new QxtGlobalShortcut(this);
+    connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
+
+    connect(Config::Instance(), &Config::changed, this, &Capturer::updateConfig);
+    updateConfig();
+
     // setting
-    setting_dialog_ = new SettingWindow();
-    connect(setting_dialog_, &SettingWindow::snipShortcutChanged, this, &Capturer::setSnipHotKey);
-    connect(setting_dialog_, &SettingWindow::pinImgShortcutChanged, this, &Capturer::setFixImgHotKey);
-    connect(setting_dialog_, &SettingWindow::gifShortcutChanged, this, &Capturer::setGIFHotKey);
-    connect(setting_dialog_, &SettingWindow::videoShortcutChanged, this, &Capturer::setVideoHotKey);
-
-    connect(setting_dialog_, &SettingWindow::snipBorderColorChanged, sniper_, &ScreenShoter::setBorderColor);
-    connect(setting_dialog_, &SettingWindow::snipBorderWidthChanged, sniper_, &ScreenShoter::setBorderWidth);
-    connect(setting_dialog_, &SettingWindow::snipBorderStyleChanged, sniper_, &ScreenShoter::setBorderStyle);
-    connect(setting_dialog_, &SettingWindow::snipMaskColorChanged, sniper_, &ScreenShoter::setMaskColor);
-    connect(setting_dialog_, &SettingWindow::snipDetectWindowChanged, sniper_, &ScreenShoter::setUseDetectWindow);
-
-    connect(setting_dialog_, &SettingWindow::recordBorderColorChanged, recorder_, &ScreenRecorder::setBorderColor);
-    connect(setting_dialog_, &SettingWindow::recordBorderWidthChanged, recorder_, &ScreenRecorder::setBorderWidth);
-    connect(setting_dialog_, &SettingWindow::recordBorderStyleChanged, recorder_, &ScreenRecorder::setBorderStyle);
-    connect(setting_dialog_, &SettingWindow::recordMaskColorChanged, recorder_, &ScreenRecorder::setMaskColor);
-    connect(setting_dialog_, &SettingWindow::recordDetectWindowChanged, recorder_, &ScreenRecorder::setUseDetectWindow);
-    connect(setting_dialog_, SIGNAL(recordFramerateChanged(int)), recorder_, SLOT(framerate(int)));
-
-    connect(setting_dialog_, &SettingWindow::gifBorderColorChanged, gifcptr_, &GifCapturer::setBorderColor);
-    connect(setting_dialog_, &SettingWindow::gifBorderWidthChanged, gifcptr_, &GifCapturer::setBorderWidth);
-    connect(setting_dialog_, &SettingWindow::gifBorderStyleChanged, gifcptr_, &GifCapturer::setBorderStyle);
-    connect(setting_dialog_, &SettingWindow::gifMaskColorChanged, gifcptr_, &GifCapturer::setMaskColor);
-    connect(setting_dialog_, &SettingWindow::gifDetectWindowChanged, gifcptr_, &GifCapturer::setUseDetectWindow);
-    connect(setting_dialog_, SIGNAL(gifFPSChanged(int)), gifcptr_, SLOT(fps(int)));
+    setting_dialog_ = new SettingWindow(this);
 
     // System tray icon
     // @attention Must after setting.
     setupSystemTrayIcon();
+}
 
-    // shortcuts
-    // @attention Must after setting.
-    registerHotKeys();
+void Capturer::updateConfig()
+{
+    auto cfg = Config::Instance();
+    setSnipHotKey(cfg->get<QKeySequence>(SNIP_HOTKEY));
+    setFixImgHotKey(cfg->get<QKeySequence>(PIN_HOTKEY));
+    setVideoHotKey(cfg->get<QKeySequence>(RECORD_HOTKEY));
+    setGIFHotKey(cfg->get<QKeySequence>(GIF_HOTKEY));
 
-    sniper_->setBorderColor(GET_SETTING(["snip"]["selector"]["border"]["color"]));
-    sniper_->setBorderWidth(settings()["snip"]["selector"]["border"]["width"].get<int>());
-    sniper_->setBorderStyle(Qt::PenStyle(settings()["snip"]["selector"]["border"]["style"].get<int>()));
-    sniper_->setMaskColor(GET_SETTING(["snip"]["selector"]["mask"]["color"]));
-    sniper_->setUseDetectWindow(settings()["snip"]["detectwindow"].get<bool>());
+    sniper_->setBorderColor(cfg->get<QColor>(SNIP_SBC));
+    sniper_->setBorderWidth(cfg->get<int>(SNIP_SBW));
+    sniper_->setBorderStyle(cfg->get<Qt::PenStyle>(SNIP_SBS));
+    sniper_->setMaskColor(cfg->get<QColor>(SNIP_SMC));
+    sniper_->setUseDetectWindow(cfg->get<bool>(SNIP_DW));
 
-    recorder_->setBorderColor(GET_SETTING(["record"]["selector"]["border"]["color"]));
-    recorder_->setBorderWidth(settings()["record"]["selector"]["border"]["width"].get<int>());
-    recorder_->setBorderStyle(Qt::PenStyle(settings()["record"]["selector"]["border"]["style"].get<int>()));
-    recorder_->framerate(settings()["record"]["params"]["framerate"].get<int>());
-    recorder_->setMaskColor(GET_SETTING(["record"]["selector"]["mask"]["color"]));
-    recorder_->setUseDetectWindow(settings()["record"]["detectwindow"].get<bool>());
+    recorder_->setBorderColor(cfg->get<QColor>(RECORD_SBC));
+    recorder_->setBorderWidth(cfg->get<int>(RECORD_SBW));
+    recorder_->setBorderStyle(cfg->get<Qt::PenStyle>(RECORD_SBS));
+    recorder_->setMaskColor(cfg->get<QColor>(RECORD_SMC));
+    recorder_->setUseDetectWindow(cfg->get<bool>(RECORD_DW));
+    recorder_->setFramerate(cfg->get<int>(RECORD_FRAMERATE));
 
-    gifcptr_->setBorderColor(GET_SETTING(["gif"]["selector"]["border"]["color"]));
-    gifcptr_->setBorderWidth(settings()["gif"]["selector"]["border"]["width"].get<int>());
-    gifcptr_->setBorderStyle(Qt::PenStyle(settings()["gif"]["selector"]["border"]["style"].get<int>()));
-    gifcptr_->fps(settings()["gif"]["params"]["fps"].get<int>());
-    gifcptr_->setMaskColor(GET_SETTING(["gif"]["selector"]["mask"]["color"]));
-    gifcptr_->setUseDetectWindow(settings()["gif"]["detectwindow"].get<bool>());
+    gifcptr_->setBorderColor(cfg->get<QColor>(GIF_SBC));
+    gifcptr_->setBorderWidth(cfg->get<int>(GIF_SBW));
+    gifcptr_->setBorderStyle(cfg->get<Qt::PenStyle>(GIF_SBS));
+    gifcptr_->setMaskColor(cfg->get<QColor>(GIF_SMC));
+    gifcptr_->setUseDetectWindow(cfg->get<bool>(GIF_DW));
+    gifcptr_->setFPS(cfg->get<int>(GIF_FPS));
 }
 
 void Capturer::setupSystemTrayIcon()
@@ -98,30 +96,10 @@ void Capturer::setupSystemTrayIcon()
     connect(exit_action, &QAction::triggered, qApp, &QCoreApplication::exit);
     sys_tray_icon_menu_->addAction(exit_action);
 
-    sys_tray_icon_ = new QSystemTrayIcon(this);
     sys_tray_icon_->setContextMenu(sys_tray_icon_menu_);
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));
     setWindowIcon(QIcon(":/icon/res/icon.png"));
     sys_tray_icon_->show();
-}
-
-void Capturer::registerHotKeys()
-{
-    snip_sc_ = new QxtGlobalShortcut(this);
-    setSnipHotKey(GET_SETTING(["snip"]["hotkey"]["snip"]));
-    connect(snip_sc_, &QxtGlobalShortcut::activated, sniper_, &ScreenShoter::start);
-
-    pin_sc_ = new QxtGlobalShortcut(this);
-    setFixImgHotKey(GET_SETTING(["snip"]["hotkey"]["pin"]));
-    connect(pin_sc_, &QxtGlobalShortcut::activated, this, &Capturer::pinLastImage);
-
-    video_sc_ = new QxtGlobalShortcut(this);
-    setVideoHotKey(GET_SETTING(["record"]["hotkey"]["record"]));
-    connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
-
-    gif_sc_ = new QxtGlobalShortcut(this);
-    setGIFHotKey(GET_SETTING(["gif"]["hotkey"]["record"]));
-    connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 }
 
 void Capturer::setSnipHotKey(const QKeySequence &sc)
@@ -158,9 +136,10 @@ void Capturer::setVideoHotKey(const QKeySequence &sc)
 
 void Capturer::pinImage(QPixmap image)
 {
-    auto fixed_image = new ImageWindow();
+    auto fixed_image = new ImageWindow(this);
     fixed_image->fix(image);
     fix_windows_.push_back(fixed_image);
+    fixed_image->show();
 }
 
 void Capturer::pinLastImage()
@@ -178,9 +157,6 @@ void Capturer::keyPressEvent(QKeyEvent *event)
 Capturer::~Capturer()
 {
     delete sniper_;
-    delete setting_dialog_;
-
-    for(auto& fw: fix_windows_) {
-        delete fw;
-    }
+    delete recorder_;
+    delete gifcptr_;
 }

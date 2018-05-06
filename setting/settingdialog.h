@@ -11,10 +11,7 @@
 #include <QCoreApplication>
 #include <QLabel>
 #include <QLineEdit>
-#include "json.hpp"
-
-#define JSON_QSTR(x)    QString::fromStdString((x).get<std::string>())
-#define GET_SETTING(X)  JSON_QSTR(settings()X)
+#include "config.h"
 
 class SettingWindow : public QWidget
 {
@@ -22,35 +19,7 @@ class SettingWindow : public QWidget
 
 public:
     explicit SettingWindow(QWidget * parent = nullptr);
-    ~SettingWindow();
-
-    nlohmann::json settings() const { return settings_; }
-
-signals:
-    void snipShortcutChanged(const QKeySequence &);
-    void pinImgShortcutChanged(const QKeySequence &);
-    void gifShortcutChanged(const QKeySequence &);
-    void videoShortcutChanged(const QKeySequence &);
-
-    void snipBorderColorChanged(const QColor&);
-    void snipBorderWidthChanged(int);
-    void snipBorderStyleChanged(Qt::PenStyle);
-    void snipMaskColorChanged(const QColor&);
-    void snipDetectWindowChanged(bool);
-
-    void recordBorderColorChanged(const QColor&);
-    void recordBorderWidthChanged(int);
-    void recordBorderStyleChanged(Qt::PenStyle);
-    void recordMaskColorChanged(const QColor&);
-    void recordDetectWindowChanged(bool);
-    void recordFramerateChanged(int);
-
-    void gifBorderColorChanged(const QColor&);
-    void gifBorderWidthChanged(int);
-    void gifBorderStyleChanged(Qt::PenStyle);
-    void gifMaskColorChanged(const QColor&);
-    void gifDetectWindowChanged(bool);
-    void gifFPSChanged(int);
+    ~SettingWindow() = default;
 
 private slots:
     void setAutoRun(int);
@@ -64,7 +33,7 @@ private:
     void setupHotkeyWidget();
     void setupAboutWidget();
 
-    void config();
+    Config * cfg_ = nullptr;
 
     QTabWidget * tabw_ = nullptr;
 
@@ -77,13 +46,6 @@ private:
     QWidget * gif_ = nullptr;
     QWidget * hotkey_ = nullptr;
     QWidget * about_ = nullptr;
-
-    nlohmann::json settings_;
-
-    QString config_dir_path_{};
-    QString config_file_path_{};
-
-    static QString default_settings_;
 };
 
 #endif // SETTINGDIALOG_H

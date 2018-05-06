@@ -18,8 +18,8 @@ public slots:
     virtual void exit() override;
 
     void record();
-    void framerate(int fr) { framerate_ = fr; }
-    void fps(int fps) { fps_ = fps; }
+    void setFramerate(int fr) { framerate_ = fr; }
+    void setFPS(int setFPS) { fps_ = setFPS; }
 
 protected:
     virtual void keyPressEvent(QKeyEvent *) override;

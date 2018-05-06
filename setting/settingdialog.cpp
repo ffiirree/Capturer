@@ -7,41 +7,17 @@
 #include <QComboBox>
 #include "colorbutton.h"
 
-using json = nlohmann::json;
-
-QString SettingWindow::default_settings_ =
-R"({
-    "autorun": true,
-    "hotkey": {
-        "fix_image": "F3",
-        "gif": "Ctrl+Alt+G",
-        "snip": "F1",
-        "video": "Ctrl+Alt+V"
-    }
-})";
-
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)
 {
-    config_dir_path_ = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    QDir config_dir(config_dir_path_);
-    if(!config_dir.exists()) {
-        config_dir.mkpath(config_dir_path_);
-    }
-    config_file_path_ = config_dir_path_ + QDir::separator() + "config.json";
-    if(!QFile::exists(config_file_path_)) {
-        QFile config_file(config_file_path_);
-        if(config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-            QTextStream out(&config_file);
-            out << default_settings_;
-        }
-    }
+    cfg_ = Config::Instance();
 
     setWindowFlags((windowFlags()&~Qt::WindowMinMaxButtonsHint)
-                    | Qt::WindowStaysOnTopHint);
+                    | Qt::WindowStaysOnTopHint | Qt::Dialog);
 
     tabw_ = new QTabWidget(this);
-    tabw_->setMinimumSize(300, 400);
+    tabw_->setFixedSize(300, 400);
+    setFixedSize(300, 400);
 
     // tab widget
     general_ = new QWidget(this);
@@ -55,8 +31,6 @@ SettingWindow::SettingWindow(QWidget * parent)
     tabw_->addTab(record_, "录屏");
     tabw_->addTab(gif_, "GIF");
     tabw_->addTab(about_, "关于");
-
-    config();
 
     //
     setupGeneralWidget();
@@ -74,57 +48,49 @@ SettingWindow::SettingWindow(QWidget * parent)
     setLayout(layout);
 }
 
-SettingWindow::~SettingWindow()
-{
-    QFile file(config_file_path_);
-
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
-        return;
-
-    QTextStream out(&file);
-    out << settings_.dump(4).c_str();
-}
-
-void SettingWindow::config()
-{
-    QFile file(config_file_path_);
-
-    QString text = default_settings_;
-
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        text = in.readAll();
-    }
-
-    try {
-        // parsing input with a syntax error
-        settings_ = nlohmann::json::parse(text.toStdString());
-    }
-    catch (json::parse_error& e) {
-        Q_UNUSED(e);
-        qDebug() << "Parse config.json failed!";
-    }
-}
-
 void SettingWindow::setAutoRun(int statue)
 {
+    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+
 #ifdef _WIN32
         QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-        QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
         settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
-#elif _LINUX
+#elif __linux__
+    auto native_config_path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    auto native_autostart_path = native_config_path + QDir::separator() + "autostart";
+    auto autorun_file = native_autostart_path + QDir::separator() + "Capturer.desktop";
+
+    if(statue == Qt::Checked) {
+        QFile file(autorun_file);
+        if(file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+            QTextStream in(&file);
+            in << "[Desktop Entry]\n"
+               << "Name=Capturer\n"
+               << "Comment=Screen capture/record/gif\n"
+               << "Exec=" + exec_path + "\n"
+               << "Terminal=false\n"
+               << "StartupNotify=true\n"
+               << "Type=Application\n"
+               << "Categories=Utility;\n"
+               << "Icon=capturer\n";
+        }
+        file.close();
+    }
+    else {
+        QFile::remove(autorun_file);
+    }
 
 #endif
-    settings_["autorun"] = (statue == Qt::Checked);
+    cfg_->set(AUTORUN, statue == Qt::Checked);
 }
 
 void SettingWindow::setupGeneralWidget()
 {
     auto layout = new QVBoxLayout();
+
     //
     auto _01 = new QCheckBox("开机自动启动");
-    if(settings_["autorun"].is_null()) settings_["autorun"] = true;
-    _01->setChecked(settings_["autorun"].get<bool>());
+    _01->setChecked(cfg_->get<bool>(AUTORUN));
     setAutoRun(_01->checkState());
     connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
 
@@ -154,26 +120,17 @@ void SettingWindow::setupSnipWidget()
         auto _1_1 = new QLabel("边框宽度");
         auto _1_2 = new QSpinBox();
         _1_2->setFixedHeight(25);
-        if(settings_["snip"]["selector"]["border"]["width"].is_null())
-            settings_["snip"]["selector"]["border"]["width"] = 1;
-        _1_2->setValue(settings_["snip"]["selector"]["border"]["width"].get<int>());
-        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
-            emit snipBorderWidthChanged(w);
-            settings_["snip"]["selector"]["border"]["width"] = w;
+        _1_2->setValue(cfg_->get<int>(SNIP_SBW));
+        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
+            cfg_->set(SNIP_SBW, w);
         });
         theme_layout->addWidget(_1_1, 1, 1);
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton();
+        auto _2_2 = new ColorButton(cfg_->get<QColor>(SNIP_SBC));
         _2_2->setFixedHeight(25);
-        if(settings_["snip"]["selector"]["border"]["color"].is_null())
-            settings_["snip"]["selector"]["border"]["color"] = QColor(Qt::cyan).name().toStdString();
-        _2_2->color(JSON_QSTR(settings_["snip"]["selector"]["border"]["color"]));
-        connect(_2_2, &ColorButton::changed, [&](const QColor& color){
-            emit snipBorderColorChanged(color);
-            settings_["snip"]["selector"]["border"]["color"] = color.name().toStdString();
-        });
+        connect(_2_2, &ColorButton::changed, [this](auto&& c) { cfg_->set(SNIP_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -187,26 +144,17 @@ void SettingWindow::setupSnipWidget()
         _3_2->addItem("DashDotLine");
         _3_2->addItem("DashDotDotLine");
         _3_2->addItem("CustomDashLine");
-        if(settings_["snip"]["selector"]["border"]["style"].is_null())
-            settings_["snip"]["selector"]["border"]["style"] = (int)Qt::DashDotLine;
-        _3_2->setCurrentIndex(settings_["snip"]["selector"]["border"]["style"].get<int>());
-        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
-            emit snipBorderStyleChanged(Qt::PenStyle(s));
-            settings_["snip"]["selector"]["border"]["style"] = s;
+        _3_2->setCurrentIndex(cfg_->get<int>(SNIP_SBS));
+        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
+            cfg_->set(SNIP_SBS, s);
         });
         theme_layout->addWidget(_3_2, 3, 2);
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton();
+        auto _4_2 = new ColorButton(cfg_->get<QColor>(SNIP_SMC));
         _4_2->setFixedHeight(25);
-        if(settings_["snip"]["selector"]["mask"]["color"].is_null())
-            settings_["snip"]["selector"]["mask"]["color"] = QColor(0, 0, 0, 100).name(QColor::HexArgb).toStdString();
-        _4_2->color(JSON_QSTR(settings_["snip"]["selector"]["mask"]["color"]));
-        connect(_4_2, &ColorButton::changed, [&](const QColor& color){
-            emit snipMaskColorChanged(color);
-            settings_["snip"]["selector"]["mask"]["color"] = color.name().toStdString();
-        });
+        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(SNIP_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -219,12 +167,8 @@ void SettingWindow::setupSnipWidget()
         auto behavier_layout = new QGridLayout();
 
         auto _01 = new QCheckBox("开启窗口探测");
-        if(settings_["snip"]["detectwindow"].is_null()) settings_["snip"]["detectwindow"] = true;
-        _01->setChecked(settings_["snip"]["detectwindow"].get<bool>());
-        connect(_01, &QCheckBox::stateChanged, [this](int state){
-            emit snipDetectWindowChanged(state == Qt::Checked);
-            settings_["snip"]["detectwindow"] = (state == Qt::Checked);
-        });
+        _01->setChecked(cfg_->get<bool>(SNIP_DW));
+        connect(_01, &QCheckBox::stateChanged, [this](int state){ cfg_->set(SNIP_DW, state == Qt::Checked); });
 
         behavier_layout->addWidget(_01);
         behavier_layout->setRowStretch(2, 1);
@@ -237,26 +181,16 @@ void SettingWindow::setupSnipWidget()
         auto hotkey_layout = new QGridLayout();
 
         auto _1_1 = new QLabel("截屏");
-        if(settings_["snip"]["hotkey"]["snip"].is_null())
-            settings_["snip"]["hotkey"]["snip"] = "F1";
-        auto _1_2 = new ShortcutInput(JSON_QSTR(settings_["snip"]["hotkey"]["snip"]));
+        auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(SNIP_HOTKEY));
         _1_2->setFixedHeight(25);
-        connect(_1_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
-            settings_["snip"]["hotkey"]["snip"] = ks.toString().toStdString();
-            emit snipShortcutChanged(ks);
-        });
+        connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(SNIP_HOTKEY, ks); });
         hotkey_layout->addWidget(_1_1, 1, 1);
         hotkey_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("贴图");
-        if(settings_["snip"]["hotkey"]["pin"].is_null())
-            settings_["snip"]["hotkey"]["pin"] = "F3";
-        auto _2_2 = new ShortcutInput(JSON_QSTR(settings_["snip"]["hotkey"]["pin"]));
+        auto _2_2 = new ShortcutInput(cfg_->get<QKeySequence>(PIN_HOTKEY));
         _2_2->setFixedHeight(20);
-        connect(_2_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
-            settings_["snip"]["hotkey"]["pin"] = ks.toString().toStdString();
-            emit pinImgShortcutChanged(ks);
-        });
+        connect(_2_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(PIN_HOTKEY, ks); });
         hotkey_layout->addWidget(_2_1, 2, 1);
         hotkey_layout->addWidget(_2_2, 2, 2);
 
@@ -291,12 +225,9 @@ void SettingWindow::setupRecordWidget()
         auto _1_1 = new QLabel("framerate");
         auto _1_2 = new QSpinBox();
         _1_2->setFixedHeight(25);
-        if(settings_["record"]["params"]["framerate"].is_null())
-            settings_["record"]["params"]["framerate"] = 30;
-        _1_2->setValue(settings_["record"]["params"]["framerate"].get<int>());
-        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
-            emit recordFramerateChanged(w);
-            settings_["record"]["params"]["framerate"] = w;
+        _1_2->setValue(cfg_->get<int>(RECORD_FRAMERATE));
+        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
+            cfg_->set(RECORD_FRAMERATE, w);
         });
         params_layout->addWidget(_1_1, 1, 1);
         params_layout->addWidget(_1_2, 1, 2);
@@ -312,26 +243,17 @@ void SettingWindow::setupRecordWidget()
         auto _1_1 = new QLabel("边框宽度");
         auto _1_2 = new QSpinBox();
         _1_2->setFixedHeight(25);
-        if(settings_["record"]["selector"]["border"]["width"].is_null())
-            settings_["record"]["selector"]["border"]["width"] = 1;
-        _1_2->setValue(settings_["record"]["selector"]["border"]["width"].get<int>());
-        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
-            emit recordBorderWidthChanged(w);
-            settings_["record"]["selector"]["border"]["width"] = w;
+        _1_2->setValue(cfg_->get<int>(RECORD_SBW));
+        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
+            cfg_->set(RECORD_SBW, w);
         });
         theme_layout->addWidget(_1_1, 1, 1);
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton();
+        auto _2_2 = new ColorButton(cfg_->get<QColor>(RECORD_SBC));
         _2_2->setFixedHeight(25);
-        if(settings_["record"]["selector"]["border"]["color"].is_null())
-            settings_["record"]["selector"]["border"]["color"] = QColor(Qt::cyan).name().toStdString();
-        _2_2->color(JSON_QSTR(settings_["record"]["selector"]["border"]["color"]));
-        connect(_2_2, &ColorButton::changed, [&](const QColor& color){
-            emit recordBorderColorChanged(color);
-            settings_["record"]["selector"]["border"]["color"] = color.name().toStdString();
-        });
+        connect(_2_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(RECORD_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -345,26 +267,17 @@ void SettingWindow::setupRecordWidget()
         _3_2->addItem("DashDotLine");
         _3_2->addItem("DashDotDotLine");
         _3_2->addItem("CustomDashLine");
-        if(settings_["record"]["selector"]["border"]["style"].is_null())
-            settings_["record"]["selector"]["border"]["style"] = (int)Qt::DashDotLine;
-        _3_2->setCurrentIndex(settings_["record"]["selector"]["border"]["style"].get<int>());
-        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
-            emit recordBorderStyleChanged(Qt::PenStyle(s));
-            settings_["record"]["selector"]["border"]["style"] = s;
+        _3_2->setCurrentIndex(cfg_->get<int>(RECORD_SBS));
+        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
+            cfg_->set(RECORD_SBS, s);
         });
         theme_layout->addWidget(_3_2, 3, 2);
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton();
+        auto _4_2 = new ColorButton(cfg_->get<QColor>(RECORD_SMC));
         _4_2->setFixedHeight(25);
-        if(settings_["record"]["selector"]["mask"]["color"].is_null())
-            settings_["record"]["selector"]["mask"]["color"] = QColor(0, 0, 0, 100).name(QColor::HexArgb).toStdString();
-        _4_2->color(JSON_QSTR(settings_["record"]["selector"]["mask"]["color"]));
-        connect(_4_2, &ColorButton::changed, [&](const QColor& color){
-            emit recordMaskColorChanged(color);
-            settings_["record"]["selector"]["mask"]["color"] = color.name().toStdString();
-        });
+        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(RECORD_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -376,11 +289,9 @@ void SettingWindow::setupRecordWidget()
     {
         auto behavier_layout = new QGridLayout();
         auto _01 = new QCheckBox("开启窗口探测");
-        if(settings_["record"]["detectwindow"].is_null()) settings_["record"]["detectwindow"] = true;
-        _01->setChecked(settings_["record"]["detectwindow"].get<bool>());
+        _01->setChecked(cfg_->get<bool>(RECORD_DW));
         connect(_01, &QCheckBox::stateChanged, [this](int state){
-            emit recordDetectWindowChanged(state == Qt::Checked);
-            settings_["record"]["detectwindow"] = (state == Qt::Checked);
+            cfg_->set(RECORD_DW, state == Qt::Checked);
         });
 
         behavier_layout->addWidget(_01);
@@ -393,14 +304,9 @@ void SettingWindow::setupRecordWidget()
         auto hotkey_layout = new QGridLayout();
 
         auto _1_1 = new QLabel("开始/结束");
-        if(settings_["record"]["hotkey"]["record"].is_null())
-            settings_["record"]["hotkey"]["record"] = "Ctrl+Alt+V";
-        auto _1_2 = new ShortcutInput(JSON_QSTR(settings_["record"]["hotkey"]["record"]));
+        auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(RECORD_HOTKEY));
         _1_2->setFixedHeight(25);
-        connect(_1_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
-            settings_["record"]["hotkey"]["record"] = ks.toString().toStdString();
-            emit videoShortcutChanged(ks);
-        });
+        connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(RECORD_HOTKEY, ks); });
         hotkey_layout->addWidget(_1_1, 1, 1);
         hotkey_layout->addWidget(_1_2, 1, 2);
         hotkey_layout->setRowStretch(5, 1);
@@ -436,12 +342,9 @@ void SettingWindow::setupGIFWidget()
         auto _1_1 = new QLabel("fps");
         auto _1_2 = new QSpinBox();
         _1_2->setFixedHeight(25);
-        if(settings_["gif"]["params"]["fps"].is_null())
-            settings_["gif"]["params"]["fps"] = 6;
-        _1_2->setValue(settings_["gif"]["params"]["fps"].get<int>());
-        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
-            emit gifFPSChanged(w);
-            settings_["gif"]["params"]["fps"] = w;
+        _1_2->setValue(cfg_->get<int>(GIF_FPS));
+        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
+            cfg_->set(GIF_FPS, w);
         });
         params_layout->addWidget(_1_1, 1, 1);
         params_layout->addWidget(_1_2, 1, 2);
@@ -458,26 +361,17 @@ void SettingWindow::setupGIFWidget()
         auto _1_1 = new QLabel("边框宽度");
         auto _1_2 = new QSpinBox();
         _1_2->setFixedHeight(25);
-        if(settings_["gif"]["selector"]["border"]["width"].is_null())
-            settings_["gif"]["selector"]["border"]["width"] = 1;
-        _1_2->setValue(settings_["gif"]["selector"]["border"]["width"].get<int>());
-        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [&](int w){
-            emit gifBorderWidthChanged(w);
-            settings_["gif"]["selector"]["border"]["width"] = w;
+        _1_2->setValue(cfg_->get<int>(GIF_SBW));
+        connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
+            cfg_->set(GIF_SBW, w);
         });
         theme_layout->addWidget(_1_1, 1, 1);
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton();
+        auto _2_2 = new ColorButton(cfg_->get<QColor>(GIF_SBC));
         _2_2->setFixedHeight(25);
-        if(settings_["gif"]["selector"]["border"]["color"].is_null())
-            settings_["gif"]["selector"]["border"]["color"] = QColor(Qt::cyan).name().toStdString();
-        _2_2->color(JSON_QSTR(settings_["gif"]["selector"]["border"]["color"]));
-        connect(_2_2, &ColorButton::changed, [&](const QColor& color){
-            emit gifBorderColorChanged(color);
-            settings_["gif"]["selector"]["border"]["color"] = color.name().toStdString();
-        });
+        connect(_2_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(GIF_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -491,26 +385,17 @@ void SettingWindow::setupGIFWidget()
         _3_2->addItem("DashDotLine");
         _3_2->addItem("DashDotDotLine");
         _3_2->addItem("CustomDashLine");
-        if(settings_["gif"]["selector"]["border"]["style"].is_null())
-            settings_["gif"]["selector"]["border"]["style"] = (int)Qt::DashDotLine;
-        _3_2->setCurrentIndex(settings_["gif"]["selector"]["border"]["style"].get<int>());
-        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [&](int s){
-            emit gifBorderStyleChanged(Qt::PenStyle(s));
-            settings_["gif"]["selector"]["border"]["style"] = s;
+        _3_2->setCurrentIndex(cfg_->get<int>(GIF_SBS));
+        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
+            cfg_->set(GIF_SBS, s);
         });
         theme_layout->addWidget(_3_2, 3, 2);
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton();
+        auto _4_2 = new ColorButton(cfg_->get<QColor>(GIF_SMC));
         _4_2->setFixedHeight(25);
-        if(settings_["gif"]["selector"]["mask"]["color"].is_null())
-            settings_["gif"]["selector"]["mask"]["color"] = QColor(0, 0, 0, 100).name(QColor::HexArgb).toStdString();
-        _4_2->color(JSON_QSTR(settings_["gif"]["selector"]["mask"]["color"]));
-        connect(_4_2, &ColorButton::changed, [&](const QColor& color){
-            emit gifMaskColorChanged(color);
-            settings_["gif"]["selector"]["mask"]["color"] = color.name().toStdString();
-        });
+        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(GIF_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -523,11 +408,9 @@ void SettingWindow::setupGIFWidget()
         auto behavier_layout = new QGridLayout();
 
         auto _01 = new QCheckBox("开启窗口探测");
-        if(settings_["gif"]["detectwindow"].is_null()) settings_["gif"]["detectwindow"] = true;
-        _01->setChecked(settings_["gif"]["detectwindow"].get<bool>());
+        _01->setChecked(cfg_->get<bool>(GIF_DW));
         connect(_01, &QCheckBox::stateChanged, [this](int state){
-            emit gifDetectWindowChanged(state == Qt::Checked);
-            settings_["gif"]["detectwindow"] = (state == Qt::Checked);
+            cfg_->set(GIF_DW, state == Qt::Checked);
         });
 
         behavier_layout->addWidget(_01);
@@ -541,13 +424,10 @@ void SettingWindow::setupGIFWidget()
         auto hotkey_layout = new QGridLayout();
 
         auto _1_1 = new QLabel("开始/结束");
-        if(settings_["gif"]["hotkey"]["record"].is_null())
-            settings_["gif"]["hotkey"]["record"] = "Ctrl+Alt+G";
-        auto _1_2 = new ShortcutInput(JSON_QSTR(settings_["gif"]["hotkey"]["record"]));
+        auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(GIF_HOTKEY));
         _1_2->setFixedHeight(25);
-        connect(_1_2, &ShortcutInput::changed, [&](const QKeySequence& ks){
-            settings_["gif"]["hotkey"]["record"] = ks.toString().toStdString();
-            emit gifShortcutChanged(ks);
+        connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){
+            cfg_->set(GIF_HOTKEY, ks);
         });
         hotkey_layout->addWidget(_1_1, 1, 1);
         hotkey_layout->addWidget(_1_2, 1, 2);

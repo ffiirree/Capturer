@@ -17,7 +17,7 @@ public slots:
     virtual void exit() override;
 
     void record();
-    void framerate(int fr) { framerate_ = fr; }
+    void setFramerate(int fr) { framerate_ = fr; }
 
 private:
     void setup();

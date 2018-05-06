@@ -24,8 +24,6 @@ public:
     explicit Capturer(QWidget *parent = nullptr);
     ~Capturer();
 
-    inline nlohmann::json settings() const { return setting_dialog_->settings(); }
-
 private slots:
     void pinImage(QPixmap image);
     void pinLastImage();
@@ -34,12 +32,12 @@ private slots:
     void setFixImgHotKey(const QKeySequence&);
     void setGIFHotKey(const QKeySequence&);
     void setVideoHotKey(const QKeySequence&);
+    void updateConfig();
 
 private:
     void keyPressEvent(QKeyEvent *event);
 
     void setupSystemTrayIcon();
-    void registerHotKeys();
 
     ScreenShoter * sniper_ = nullptr;
     ScreenRecorder * recorder_ = nullptr;

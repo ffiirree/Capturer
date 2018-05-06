@@ -1,7 +1,7 @@
 #ifndef CAPTURER_FIXEDWINDOW_H
 #define CAPTURER_FIXEDWINDOW_H
 
-#include <QDialog>
+#include <QWidget>
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QPoint>

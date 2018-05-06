@@ -10,6 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Capturer
 TEMPLATE = app
+CONFIG += c++14
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -48,7 +49,8 @@ SOURCES += \
     $$PWD/core/colorbutton.cpp \
     $$PWD/core/textedit.cpp \
     $$PWD/snip/fontmenu.cpp \
-    $$PWD/snip/command.cpp
+    $$PWD/snip/command.cpp \
+    core/config.cpp
 
 
 HEADERS += \
@@ -69,7 +71,8 @@ HEADERS += \
     $$PWD/core/colorbutton.h \
     $$PWD/core/textedit.h \
     $$PWD/snip/fontmenu.h \
-    $$PWD/snip/command.h
+    $$PWD/snip/command.h \
+    core/config.h
 
 RC_ICONS = $$PWD/res/icon.ico
 

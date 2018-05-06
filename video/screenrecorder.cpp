@@ -32,7 +32,7 @@ void ScreenRecorder::setup()
 
     QStringList args;
     auto selected_area = selected();
-#ifdef _LINUX
+#ifdef __linux__
     args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
          << "-framerate" << QString::number(framerate_)
          << "-f" << "x11grab"

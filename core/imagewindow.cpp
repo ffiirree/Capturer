@@ -1,11 +1,12 @@
 #include "imagewindow.h"
 #include <QKeyEvent>
+#include <QMainWindow>
 #include <QGraphicsDropShadowEffect>
 
 ImageWindow::ImageWindow(QWidget *parent)
     : QWidget(parent)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Dialog);
     setCursor(Qt::SizeAllCursor);
 
     label_ = new QLabel();

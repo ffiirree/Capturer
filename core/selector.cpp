@@ -16,8 +16,8 @@ Selector::Selector(QWidget * parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
 
-    connect(this, &Selector::moved, [&](){ this->update(); });
-    connect(this, &Selector::resized, [&](){ this->update(); });
+    connect(this, &Selector::moved, [this](){ update(); });
+    connect(this, &Selector::resized, [this](){ update(); });
 
     registerShortcuts();
 }
