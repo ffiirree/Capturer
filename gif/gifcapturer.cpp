@@ -57,7 +57,7 @@ void GifCapturer::exit()
     process_->waitForFinished();
     QStringList args;
     args << "-y"
-         << "-i" << "/tmp/Capturer_gif_" + current_time_str_ + ".mp4"
+         << "-i" << temp_video_path_
          << "-vf" << "fps=" + QString::number(fps_) + ",palettegen"
          << temp_palette_path_;
     process_->start("ffmpeg", args);

@@ -20,15 +20,22 @@
  - `Shift + UP/DOWN/LEFT/RIGHT` : (逐像)缩小边界
 
 ### Video
- - `Ctrl+Alt+V` : 开始
- - `Ctrl+Alt+V` : 结束
+ - `Ctrl+Alt+V`开始选择区域，回车后开始录屏
+ - `Ctrl+Alt+V`结束
 
 ### GIF
- - `Ctrl+Alt+G` : 开始
- - `Ctrl+Alt+G` : 结束
+ - `Ctrl+Alt+G`开始选择区域，回车后开始录屏
+ - `Ctrl+Alt+G`结束
 
 ### 其他
  - `ESC` : 退出(截图/贴图/GIF/录屏/...)
+
+## 使用
+```
+git clone https://github.com/ffiirree/Capturer.git
+git submodule init
+git submodule update
+```
 
 ## 效果
 ![image](https://github.com/ffiirree/Capturer/blob/master/capturer.gif)
