@@ -39,11 +39,12 @@ void ScreenRecorder::setup()
          << "-i" << ":0.0+" + QString::number((selected_area.x())) + "," + QString::number((selected_area.y()))
          << filename_;
 #elif _WIN32
-    args << "-f" << "gdigrab"
-         << "-framerate" << QString::number(framerate_)
-         << "-offset_x" << QString::number((selected_area.x())) << "-offset_y" << QString::number((selected_area.y()))
-         << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
-         << "-i" << "desktop"
+    args << "-f"            << "gdigrab"
+         << "-framerate"    << QString("%1").arg(framerate_)
+         << "-offset_x"     << QString("%1").arg(selected_area.x())
+         << "-offset_y"     << QString("%1").arg(selected_area.y())
+         << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
+         << "-i"            << "desktop"
          << filename_;
 #endif
     process_->start("ffmpeg", args);

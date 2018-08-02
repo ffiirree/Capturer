@@ -35,7 +35,7 @@ signals:
     void FIX_IMAGE(QPixmap image);
 
 public slots:
-    virtual void start();
+    virtual void start() override;
     virtual void exit() override;
 
     void save_image();

@@ -22,8 +22,8 @@ public slots:
 private:
     void setup();
 
-    void keyPressEvent(QKeyEvent *event);
-    void paintEvent(QPaintEvent *event);
+    void keyPressEvent(QKeyEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
     int framerate_ = 30;
 

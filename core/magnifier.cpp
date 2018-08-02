@@ -69,6 +69,6 @@ void Magnifier::paintEvent(QPaintEvent * e)
     painter.end();
 
     // 5. text
-    auto text = "RGB:(" + QString::number(color.red()) + ", " + QString::number(color.red()) + ", " + QString::number(color.red()) + ")";
+    auto text = QString("RGB:(%1, %2, %3)").arg(color.red()).arg(color.green()).arg(color.blue());
     label_->setText(text);
 }

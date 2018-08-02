@@ -40,11 +40,12 @@ void GifCapturer::setup()
          << "-i" << ":0.0+" + QString::number(selected_area.x()) + "," + QString::number(selected_area.y())
          << temp_video_path_;
 #elif _WIN32
-    args << "-f" << "gdigrab"
-         << "-framerate" << QString::number(framerate_)
-         << "-offset_x" << QString::number((selected_area.x())) << "-offset_y" << QString::number((selected_area.y()))
-         << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
-         << "-i" << "desktop"
+    args << "-f"            << "gdigrab"
+         << "-framerate"    << QString("%1").arg(framerate_)
+         << "-offset_x"     << QString("%1").arg(selected_area.x())
+         << "-offset_y"     << QString("%1").arg(selected_area.y())
+         << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
+         << "-i"            << "desktop"
          << temp_video_path_;
 #endif
     process_->start("ffmpeg", args);
@@ -57,8 +58,8 @@ void GifCapturer::exit()
     process_->waitForFinished();
     QStringList args;
     args << "-y"
-         << "-i" << temp_video_path_
-         << "-vf" << "fps=" + QString::number(fps_) + ",palettegen"
+         << "-i"    << temp_video_path_
+         << "-vf"   << QString("fps=%1,palettegen").arg(fps_)
          << temp_palette_path_;
     process_->start("ffmpeg", args);
     process_->waitForFinished();
@@ -66,7 +67,7 @@ void GifCapturer::exit()
     args.clear();
     args << "-i" << temp_video_path_
          << "-i" << temp_palette_path_
-         << "-filter_complex" << "fps=" + QString::number(fps_) + ",paletteuse"
+         << "-filter_complex" << QString("fps=%1,paletteuse").arg(fps_)
          << filename_;
 
     process_->start("ffmpeg", args);
