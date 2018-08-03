@@ -34,10 +34,10 @@ void GifCapturer::setup()
     temp_palette_path_ = temp_dir + QDir::separator() + "Capturer_palette_" + current_time_str_ + ".png";
 
 #ifdef __linux__
-    args << "-video_size" << QString::number(selected_area.width()) + "x" + QString::number(selected_area.height())
-         << "-framerate" << QString::number(framerate_)
-         << "-f" << "x11grab"
-         << "-i" << ":0.0+" + QString::number(selected_area.x()) + "," + QString::number(selected_area.y())
+    args << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
+         << "-framerate"    << QString("%1").arg(framerate_)
+         << "-f"            << "x11grab"
+         << "-i"            << QString(":0.0+%1x%2").arg(selected_area.x()).arg(selected_area.y())
          << temp_video_path_;
 #elif _WIN32
     args << "-f"            << "gdigrab"
