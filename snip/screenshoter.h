@@ -9,6 +9,7 @@
 #include "textedit.h"
 #include "fontmenu.h"
 #include "command.h"
+#include "resizer.h"
 
 #define  DO(COMMAND) do{ auto __command__ = COMMAND; focus_ = __command__; undo_stack_.push(__command__); redo_stack_.clear(); }while(0)
 
@@ -64,6 +65,8 @@ private:
 
     QPixmap captured_screen_, captured_image_;
 
+    Resizer::PointPosition cursor_graph_pos_ = Resizer::OUTSIDE;
+
     Command * command_ = nullptr;
     Command * focus_ = nullptr;
 
@@ -89,6 +92,7 @@ private:
     QPoint arrow_begin_{0, 0}, arrow_end_{0, 0};
     QPoint line_begin_{0, 0}, line_end_{0, 0};
     QPoint move_begin_{0, 0}, move_end_{0, 0};
+    QPoint resize_begin_{0, 0}, resize_end_{0, 0};
     std::vector<QPoint> curves_;
 
     CommandStack undo_stack_;

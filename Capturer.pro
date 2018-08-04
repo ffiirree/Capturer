@@ -72,7 +72,8 @@ HEADERS += \
     $$PWD/core/textedit.h \
     $$PWD/snip/fontmenu.h \
     $$PWD/snip/command.h \
-    core/config.h
+    core/config.h \
+    core/resizer.h
 
 RC_ICONS = $$PWD/res/icon.ico
 
