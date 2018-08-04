@@ -196,9 +196,13 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             case Command::DRAW_CIRCLE:
             {
-                QRegion r1(QRect(command->points()[0] - QPoint(2, 2), command->points()[1] + QPoint(2, 2)), QRegion::Ellipse);
-                QRegion r2(QRect(command->points()[0] + QPoint(2, 2), command->points()[1] - QPoint(2, 2)), QRegion::Ellipse);
+                auto x1 = command->points()[0].x() > command->points()[1].x() ? command->points()[1].x() : command->points()[0].x();
+                auto x2 = command->points()[0].x() > command->points()[1].x() ? command->points()[0].x() : command->points()[1].x();
+                auto y1 = command->points()[0].y() > command->points()[1].y() ? command->points()[1].y() : command->points()[0].y();
+                auto y2 = command->points()[0].y() > command->points()[1].y() ? command->points()[0].y() : command->points()[1].y();
 
+                QRegion r1(QRect(QPoint(x1 - 2, y1 - 2), QPoint(x2 + 2, y2 + 2)), QRegion::Ellipse);
+                QRegion r2(QRect(QPoint(x1 + 2, y1 + 2), QPoint(x2 - 2, y2 - 2)), QRegion::Ellipse);
 
                 Resizer resizer(command->points()[0], command->points()[1]);
                 if(resizer.isX1Y1Anchor(mouse_pos)){
@@ -303,6 +307,54 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 break;
             }
 
+            case Command::DRAW_ARROW:
+            {
+                QLine line(command->points()[0], command->points()[1]);
+                QRect area(command->points()[0], command->points()[1]);
+                float k = (float)line.dy()/line.dx();
+                float b = command->points()[0].y() - k * command->points()[0].x();
+                auto diff = mouse_pos.x() * k + b - mouse_pos.y();
+
+                auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
+                auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
+
+                if(x1_anchor.contains(mouse_pos)) {
+                    setCursor(Qt::ClosedHandCursor);
+
+                    resize_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_RESIZING;
+                }
+                else if(x2_anchor.contains(mouse_pos)) {
+                    setCursor(Qt::ClosedHandCursor);
+
+                    resize_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_RESIZING;
+                }
+                else if(diff >= -4 && diff <= 4 && area.contains(mouse_pos)) {
+                    setCursor(Qt::SizeAllCursor);
+
+                    move_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_MOVING;
+                }
+                this->update();
+                break;
+            }
+
             case Command::DRAW_BROKEN_LINE:
             {
                 QLine line(command->points()[0], command->points()[1]);
@@ -310,7 +362,33 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 float k = (float)line.dy()/line.dx();
                 float b = command->points()[0].y() - k * command->points()[0].x();
                 auto diff = mouse_pos.x() * k + b - mouse_pos.y();
-                if(diff >= -2 && diff <= 2 && area.contains(mouse_pos)) {
+
+                auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
+                auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
+
+                if(x1_anchor.contains(mouse_pos)) {
+                    setCursor(Qt::ClosedHandCursor);
+
+                    resize_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_RESIZING;
+                }
+                else if(x2_anchor.contains(mouse_pos)) {
+                    setCursor(Qt::ClosedHandCursor);
+
+                    resize_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_RESIZING;
+                }
+                else if(diff >= -2 && diff <= 2 && area.contains(mouse_pos)) {
                     setCursor(Qt::SizeAllCursor);
 
                     move_begin_ = mouse_pos;
@@ -474,8 +552,13 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                 {
                     cursor_graph_pos_ = Resizer(command->points()[0], command->points()[1]).position(mouse_pos);
 
-                    QRegion r1(QRect(command->points()[0] - QPoint(2, 2), command->points()[1] + QPoint(2, 2)), QRegion::Ellipse);
-                    QRegion r2(QRect(command->points()[0] + QPoint(2, 2), command->points()[1] - QPoint(2, 2)), QRegion::Ellipse);
+                    auto x1 = command->points()[0].x() > command->points()[1].x() ? command->points()[1].x() : command->points()[0].x();
+                    auto x2 = command->points()[0].x() > command->points()[1].x() ? command->points()[0].x() : command->points()[1].x();
+                    auto y1 = command->points()[0].y() > command->points()[1].y() ? command->points()[1].y() : command->points()[0].y();
+                    auto y2 = command->points()[0].y() > command->points()[1].y() ? command->points()[0].y() : command->points()[1].y();
+
+                    QRegion r1(QRect(QPoint(x1 - 2, y1 - 2), QPoint(x2 + 2, y2 + 2)), QRegion::Ellipse);
+                    QRegion r2(QRect(QPoint(x1 + 2, y1 + 2), QPoint(x2 - 2, y2 - 2)), QRegion::Ellipse);
 
                     Resizer resizer(command->points()[0], command->points()[1]);
                     if(resizer.isX1Y1Anchor(mouse_pos)){
@@ -520,6 +603,37 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                     break;
                 }
 
+                case Command::DRAW_ARROW:
+                {
+                    QLine line(command->points()[0], command->points()[1]);
+                    QRect area(command->points()[0], command->points()[1]);
+                    float k = (float)line.dy()/line.dx();
+                    float b = command->points()[0].y() - k * command->points()[0].x();
+                    auto diff = mouse_pos.x() * k + b - mouse_pos.y();
+
+                    auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
+                    auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
+
+                    if(x1_anchor.contains(mouse_pos)) {
+                        setCursor(Qt::ClosedHandCursor);
+
+                        cursor_graph_pos_ = Resizer::X1Y1_ANCHOR;
+                        goto end;
+                    }
+                    else if(x2_anchor.contains(mouse_pos)) {
+                        setCursor(Qt::ClosedHandCursor);
+                        cursor_graph_pos_ = Resizer::X2Y2_ANCHOR;
+                        goto end;
+                    }
+                    else if(diff >= -4 && diff <= 4 && area.contains(mouse_pos)) {
+                        setCursor(Qt::SizeAllCursor);
+                        goto end;
+                    }
+                    else {
+                        setCursor(Qt::CrossCursor);
+                    }
+                    break;
+                }
                 case Command::DRAW_BROKEN_LINE:
                 {
                     QLine line(command->points()[0], command->points()[1]);
@@ -527,7 +641,22 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                     float k = (float)line.dy()/line.dx();
                     float b = command->points()[0].y() - k * command->points()[0].x();
                     auto diff = mouse_pos.x() * k + b - mouse_pos.y();
-                    if(diff >= -2 && diff <= 2 && area.contains(mouse_pos)) {
+
+                    auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
+                    auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
+
+                    if(x1_anchor.contains(mouse_pos)) {
+                        setCursor(Qt::ClosedHandCursor);
+
+                        cursor_graph_pos_ = Resizer::X1Y1_ANCHOR;
+                        goto end;
+                    }
+                    else if(x2_anchor.contains(mouse_pos)) {
+                        setCursor(Qt::ClosedHandCursor);
+                        cursor_graph_pos_ = Resizer::X2Y2_ANCHOR;
+                        goto end;
+                    }
+                    else if(diff >= -2 && diff <= 2 && area.contains(mouse_pos)) {
                         setCursor(Qt::SizeAllCursor);
                         goto end;
                     }
