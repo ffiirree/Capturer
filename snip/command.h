@@ -40,7 +40,8 @@ public:
     inline bool isFill() const { return is_fill_; }
 
     inline void points(const std::vector<QPoint>& ps) { points_ = ps; }
-    inline std::vector<QPoint> points() const { return points_; }
+    inline const std::vector<QPoint>& points() const { return points_; }
+    inline std::vector<QPoint>& points() { return points_; }
 
     inline void widget(QWidget * widget) { widget_ = widget; }
     inline QWidget * widget() const { return widget_; }
@@ -59,7 +60,7 @@ class CommandStack : public QObject
     Q_OBJECT
 
 public:
-    inline void push(const Command& command)
+    inline void push(Command* command)
     {
         if(stack_.empty())
             emit empty(false);
@@ -84,9 +85,9 @@ public:
 
     inline size_t size() const { return stack_.size(); }
 
-    inline Command back() const { return stack_.back(); }
+    inline Command* back() const { return stack_.back(); }
 
-    inline std::vector<Command> commands() const { return stack_; }
+    inline std::vector<Command *> commands() const { return stack_; }
 
     inline bool empty() const { return stack_.empty(); }
 
@@ -101,7 +102,7 @@ public slots:
     inline void clear() { stack_.clear(); }
 
 private:
-    std::vector<Command> stack_;
+    std::vector<Command *> stack_;
 };
 
 

@@ -16,6 +16,7 @@
         <file>res/box.png</file>
         <file>res/rectangle.png</file>
         <file>res/icon.png</file>
+        <file>res/cursor-move.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu.qss</file>

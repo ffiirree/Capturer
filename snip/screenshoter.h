@@ -10,7 +10,7 @@
 #include "fontmenu.h"
 #include "command.h"
 
-#define  DO(command) do{ undo_stack_.push(command); redo_stack_.clear(); }while(0)
+#define  DO(COMMAND) do{ auto __command__ = COMMAND; focus_ = __command__; undo_stack_.push(__command__); redo_stack_.clear(); }while(0)
 
 class ScreenShoter : public Selector
 {
@@ -24,7 +24,8 @@ public:
         START_PAINTING_ARROW, PAINTING_ARROW, END_PAINTING_ARROW,
         START_PAINTING_LINE, PAINTING_LINE, END_PAINTING_LINE,
         START_PAINTING_CURVES, PAINTING_CURVES, END_PAINTING_CURVES,
-        START_PAINTING_TEXT, PAINTING_TEXT, END_PAINTING_TEXT
+        START_PAINTING_TEXT, PAINTING_TEXT, END_PAINTING_TEXT,
+        GRAPH_MOVING, GRAPH_RESIZING
     };
 
 public:
@@ -63,7 +64,10 @@ private:
 
     QPixmap captured_screen_, captured_image_;
 
-    EditStatus edit_status_ = NONE;
+    Command * command_ = nullptr;
+    Command * focus_ = nullptr;
+
+    EditStatus edit_status_ = NONE, last_edit_status_ = NONE;
     int pen_width_ = 1;
     bool fill_ = false;
     QColor color_ = Qt::cyan;
@@ -84,6 +88,7 @@ private:
     QPoint circle_begin_{0, 0}, circle_end_{0, 0};
     QPoint arrow_begin_{0, 0}, arrow_end_{0, 0};
     QPoint line_begin_{0, 0}, line_end_{0, 0};
+    QPoint move_begin_{0, 0}, move_end_{0, 0};
     std::vector<QPoint> curves_;
 
     CommandStack undo_stack_;
