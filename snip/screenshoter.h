@@ -61,6 +61,8 @@ private:
     void registerShortcuts();
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
 
+    void setCursorByPos(Resizer::PointPosition pos, const QCursor & default_cursor = Qt::CrossCursor);
+
     void upadateMagnifierPosition();
 
     QPixmap captured_screen_, captured_image_;
@@ -80,7 +82,6 @@ private:
     QString font_style_ = "regular";
     int font_size_ = 11;
     QColor font_color_ = Qt::cyan;
-    QPoint text_pos_{0, 0};
 
     MainMenu * menu_ = nullptr;
     GraphMenu * gmenu_ = nullptr;

@@ -87,14 +87,15 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     auto mouse_pos = event->pos();
     if(status_ == LOCKED) {
-        // BORDER
+        focus_ = nullptr;
         for(auto& command: undo_stack_.commands()) {
             switch (command->type()) {
             case Command::DRAW_RECTANGLE:
             {
                 Resizer resizer(command->points()[0], command->points()[1]);
-                if(resizer.isX1Y1Anchor(mouse_pos)){
-                    setCursor(Qt::SizeFDiagCursor);
+                auto cpos = resizer.position(mouse_pos);
+
+                if(cpos & Resizer::ANCHOR) {
                     resize_begin_ = mouse_pos;
 
                     command_ = command;
@@ -103,85 +104,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                     last_edit_status_ = edit_status_;
                     edit_status_ = GRAPH_RESIZING;
                 }
-                else if(resizer.isY1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeVerCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeHorCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isY2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeVerCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeHorCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Y1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeBDiagCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX1Y2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeBDiagCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Y2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeFDiagCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isBorder(mouse_pos)) {
-                    setCursor(Qt::SizeAllCursor);
+                else if(cpos & Resizer::BORDER) {
                     move_begin_ = mouse_pos;
 
                     command_ = command;
@@ -205,85 +128,8 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 QRegion r2(QRect(QPoint(x1 + 2, y1 + 2), QPoint(x2 - 2, y2 - 2)), QRegion::Ellipse);
 
                 Resizer resizer(command->points()[0], command->points()[1]);
-                if(resizer.isX1Y1Anchor(mouse_pos)){
-                    setCursor(Qt::SizeFDiagCursor);
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isY1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeVerCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeHorCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isY2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeVerCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeHorCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Y1Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeBDiagCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX1Y2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeBDiagCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(resizer.isX2Y2Anchor(mouse_pos)) {
-                    setCursor(Qt::SizeFDiagCursor);
-
+                auto cpos = resizer.position(mouse_pos);
+                if(cpos & Resizer::ANCHOR) {
                     resize_begin_ = mouse_pos;
 
                     command_ = command;
@@ -293,8 +139,6 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                     edit_status_ = GRAPH_RESIZING;
                 }
                 else if(r1.contains(mouse_pos) && !r2.contains(mouse_pos)) {
-                    setCursor(Qt::SizeAllCursor);
-
                     move_begin_ = mouse_pos;
 
                     command_ = command;
@@ -303,6 +147,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                     last_edit_status_ = edit_status_;
                     edit_status_ = GRAPH_MOVING;
                 }
+
                 this->update();
                 break;
             }
@@ -318,19 +163,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
                 auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
 
-                if(x1_anchor.contains(mouse_pos)) {
-                    setCursor(Qt::ClosedHandCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(x2_anchor.contains(mouse_pos)) {
-                    setCursor(Qt::ClosedHandCursor);
+                if(x1_anchor.contains(mouse_pos) || x2_anchor.contains(mouse_pos)) {
 
                     resize_begin_ = mouse_pos;
 
@@ -341,8 +174,6 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                     edit_status_ = GRAPH_RESIZING;
                 }
                 else if(diff >= -4 && diff <= 4 && area.contains(mouse_pos)) {
-                    setCursor(Qt::SizeAllCursor);
-
                     move_begin_ = mouse_pos;
 
                     command_ = command;
@@ -366,20 +197,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 auto x1_anchor = QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2));
                 auto x2_anchor = QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2));
 
-                if(x1_anchor.contains(mouse_pos)) {
-                    setCursor(Qt::ClosedHandCursor);
-
-                    resize_begin_ = mouse_pos;
-
-                    command_ = command;
-                    focus_ = command_;
-
-                    last_edit_status_ = edit_status_;
-                    edit_status_ = GRAPH_RESIZING;
-                }
-                else if(x2_anchor.contains(mouse_pos)) {
-                    setCursor(Qt::ClosedHandCursor);
-
+                if(x1_anchor.contains(mouse_pos) || x2_anchor.contains(mouse_pos)) {
                     resize_begin_ = mouse_pos;
 
                     command_ = command;
@@ -389,8 +207,6 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                     edit_status_ = GRAPH_RESIZING;
                 }
                 else if(diff >= -2 && diff <= 2 && area.contains(mouse_pos)) {
-                    setCursor(Qt::SizeAllCursor);
-
                     move_begin_ = mouse_pos;
 
                     command_ = command;
@@ -402,7 +218,25 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 this->update();
                 break;
             }
-            default: break;
+
+            case Command::DRAW_TEXT:
+            {
+                QRect resizer(command->widget()->pos(), command->widget()->size());
+                if(resizer.contains(event->pos())) {
+                    move_begin_ = mouse_pos;
+
+                    command_ = command;
+                    focus_ = command_;
+                    command->widget()->show();
+                    command->widget()->setFocus();
+
+                    last_edit_status_ = edit_status_;
+                    edit_status_ = GRAPH_MOVING;
+                }
+                update();
+                break;
+            }
+            default: /* 不应该运行到这里 */ break;
             }
         }
 
@@ -421,28 +255,23 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         case START_PAINTING_TEXT:
         case PAINTING_TEXT:
         case END_PAINTING_TEXT:
-            edit_status_ = PAINTING_TEXT;
-            text_pos_ = event->pos();
-
+        {
             if(!text_edit_ || !text_edit_->toPlainText().isEmpty()) {
                 text_edit_ = new TextEdit(this);
-            }
-            text_edit_->setFocus();
-            text_edit_->show();
-            text_edit_->move(text_pos_);
+                text_edit_->setFocus();
+                text_edit_->show();
 
-            connect(text_edit_, &TextEdit::focus, [=](TextEdit* that) {
-                return [=](bool f) {
-                    if(!f && !that->toPlainText().isEmpty()) {
-                        auto command = new Command(Command::DRAW_TEXT, QPen(font_color_));
-                        command->widget(that);
-                        DO(command);
-                    }
-                };
-            }(text_edit_));
+                text_edit_->ensureCursorVisible();
+
+                auto command = new Command(Command::DRAW_TEXT, QPen(font_color_));
+                command->widget(text_edit_);
+                DO(command);
+            }
+            text_edit_->move(event->pos());
+            edit_status_ = PAINTING_TEXT;
             break;
-        default:
-            break;
+        }
+        default: break;
         }
     }
 
@@ -467,8 +296,17 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 
             auto move_x = move_end_.x() - move_begin_.x();
             auto move_y = move_end_.y() - move_begin_.y();
-            command_->points()[0] += QPoint{move_x, move_y};
-            command_->points()[1] += QPoint{move_x, move_y};
+
+            switch (command_->type()) {
+            case  Command::DRAW_TEXT:
+                command_->widget()->move(command_->widget()->pos() + QPoint{move_x, move_y});
+                break;
+
+            default:
+                command_->points()[0] += QPoint{move_x, move_y};
+                command_->points()[1] += QPoint{move_x, move_y};
+                break;
+            }
 
             move_begin_ = move_end_;
             break;
@@ -505,53 +343,15 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                     cursor_graph_pos_ = Resizer(command->points()[0], command->points()[1]).position(mouse_pos);
 
                     Resizer resizer(command->points()[0], command->points()[1]);
-                    if(resizer.isX1Y1Anchor(mouse_pos)){
-                        setCursor(Qt::SizeFDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isY1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeVerCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeHorCursor);
-                        goto end;
-                    }
-                    else if(resizer.isY2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeVerCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeHorCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Y1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeBDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX1Y2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeBDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Y2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeFDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isBorder(mouse_pos)) {
-                        setCursor(Qt::SizeAllCursor);
-                        goto end;
-                    }
-                    else {
-                        setCursor(Qt::CrossCursor);
-                    }
+                    auto pos = resizer.position(mouse_pos);
+                    setCursorByPos(pos);
+                    if(pos & Resizer::BORDER || pos & Resizer::ANCHOR) goto end;
 
                     break;
                 }
 
                 case Command::DRAW_CIRCLE:
                 {
-                    cursor_graph_pos_ = Resizer(command->points()[0], command->points()[1]).position(mouse_pos);
-
                     auto x1 = command->points()[0].x() > command->points()[1].x() ? command->points()[1].x() : command->points()[0].x();
                     auto x2 = command->points()[0].x() > command->points()[1].x() ? command->points()[0].x() : command->points()[1].x();
                     auto y1 = command->points()[0].y() > command->points()[1].y() ? command->points()[1].y() : command->points()[0].y();
@@ -561,36 +361,9 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                     QRegion r2(QRect(QPoint(x1 + 2, y1 + 2), QPoint(x2 - 2, y2 - 2)), QRegion::Ellipse);
 
                     Resizer resizer(command->points()[0], command->points()[1]);
-                    if(resizer.isX1Y1Anchor(mouse_pos)){
-                        setCursor(Qt::SizeFDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isY1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeVerCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeHorCursor);
-                        goto end;
-                    }
-                    else if(resizer.isY2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeVerCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeHorCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Y1Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeBDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX1Y2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeBDiagCursor);
-                        goto end;
-                    }
-                    else if(resizer.isX2Y2Anchor(mouse_pos)) {
-                        setCursor(Qt::SizeFDiagCursor);
+                    cursor_graph_pos_ = resizer.position(mouse_pos);
+                    if(cursor_graph_pos_ & Resizer::ANCHOR) {
+                        setCursorByPos(cursor_graph_pos_);
                         goto end;
                     }
                     else if(r1.contains(mouse_pos) && !r2.contains(mouse_pos)) {
@@ -666,6 +439,19 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
                     break;
                 }
 
+                case Command::DRAW_TEXT:
+                {
+                    QRect resizer(command->widget()->pos(), command->widget()->size());
+                    if(resizer.contains(event->pos())) {
+                        setCursor(Qt::SizeAllCursor);
+                        goto end;
+                    }
+                    else {
+                        setCursor(Qt::CrossCursor);
+                    }
+                    break;
+                }
+
                 default:
                     break;
                 }
@@ -732,14 +518,29 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
             break;
         }
 
+        case PAINTING_TEXT:
+        {
+            edit_status_ = END_PAINTING_TEXT;
+            break;
+        }
+
         case GRAPH_MOVING:
         {
             move_end_ = event->pos();
 
             auto move_x = move_end_.x() - move_begin_.x();
             auto move_y = move_end_.y() - move_begin_.y();
-            command_->points()[0] += QPoint{move_x, move_y};
-            command_->points()[1] += QPoint{move_x, move_y};
+
+            switch (command_->type()) {
+            case  Command::DRAW_TEXT:
+                command_->widget()->move(command_->widget()->pos() + QPoint{move_x, move_y});
+                break;
+
+            default:
+                command_->points()[0] += QPoint{move_x, move_y};
+                command_->points()[1] += QPoint{move_x, move_y};
+                break;
+            }
 
             edit_status_ = last_edit_status_;
             break;
@@ -775,6 +576,26 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
     }
 
     Selector::mouseReleaseEvent(event);
+}
+
+void ScreenShoter::setCursorByPos(Resizer::PointPosition pos, const QCursor & default_cursor)
+{
+    switch (pos) {
+    case Resizer::X1_ANCHOR: setCursor(Qt::SizeHorCursor); break;
+    case Resizer::X2_ANCHOR: setCursor(Qt::SizeHorCursor); break;
+    case Resizer::Y1_ANCHOR: setCursor(Qt::SizeVerCursor); break;
+    case Resizer::Y2_ANCHOR: setCursor(Qt::SizeVerCursor); break;
+    case Resizer::X1Y1_ANCHOR: setCursor(Qt::SizeFDiagCursor); break;
+    case Resizer::X1Y2_ANCHOR: setCursor(Qt::SizeBDiagCursor); break;
+    case Resizer::X2Y1_ANCHOR: setCursor(Qt::SizeBDiagCursor); break;
+    case Resizer::X2Y2_ANCHOR: setCursor(Qt::SizeFDiagCursor); break;
+    case Resizer::X1_BORDER:
+    case Resizer::X2_BORDER:
+    case Resizer::Y1_BORDER:
+    case Resizer::Y2_BORDER: setCursor(Qt::SizeAllCursor); break;
+
+    default: setCursor(default_cursor); break;
+    }
 }
 
 void ScreenShoter::keyPressEvent(QKeyEvent *event)
@@ -826,6 +647,7 @@ void ScreenShoter::exit()
     menu_->hide();
     gmenu_->hide();
     fmenu_->hide();
+    text_edit_ = nullptr;
 
     Selector::exit();
 }
@@ -887,9 +709,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
             text_edit_->setTextColor(font_color_);
             text_edit_->setFont(font);
 
-            QRect text_rect(text_pos_, text_edit_->size());
-            edit_painter.drawRect(text_rect);
-
             break;
         }
 
@@ -907,7 +726,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
             switch (command->type()) {
             case Command::DRAW_RECTANGLE:
             {
-
                 edit_painter.setRenderHint(QPainter::Antialiasing, false);
                 if(command->isFill()) edit_painter.setBrush(command->pen().color());
 
@@ -1034,6 +852,20 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 auto edit = reinterpret_cast<TextEdit*>(command->widget());
                 edit_painter.setFont(edit->font());
                 edit_painter.drawText(edit->geometry() + QMargins(-4, -4, 0, 0), Qt::TextWordWrap, edit->toPlainText());
+
+                edit_painter.end();
+
+                if(focus_ == command) {
+                    QPainter tip_painter;
+                    tip_painter.begin(&background);
+                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                    tip_painter.setRenderHint(QPainter::Antialiasing, true);
+
+                    QRect text_rect(command->widget()->pos(), command->widget()->size());
+                    tip_painter.drawRect(text_rect);
+                    tip_painter.end();
+                }
+
                 break;
             }
 
@@ -1101,18 +933,24 @@ void ScreenShoter::pin_image()
 
 void ScreenShoter::registerShortcuts()
 {
-    auto save = new QShortcut(Qt::CTRL + Qt::Key_S, this);
-    connect(save, &QShortcut::activated, [this](){
+    connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, [this](){
         if(status_ == CAPTURED) {
             save_image();
         }
     });
 
-    auto pin = new QShortcut(Qt::Key_P, this);
-    connect(pin, &QShortcut::activated, [this](){
+    connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this](){
         if(status_ == CAPTURED) {
             pin_image();
         }
+    });
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, [this](){
+        undo();
+    });
+
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, [this](){
+        redo();
     });
 }
 

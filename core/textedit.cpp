@@ -34,13 +34,12 @@ void TextEdit::setFont(const QFont& font)
 
 void TextEdit::focusInEvent(QFocusEvent *e)
 {
-    Q_UNUSED(e);
     emit focus(true);
+    QTextEdit::focusInEvent(e);
 }
 void TextEdit::focusOutEvent(QFocusEvent *e)
 {
-    Q_UNUSED(e);
-
     emit focus(false);
     hide();
+    QTextEdit::focusOutEvent(e);
 }
