@@ -33,7 +33,7 @@ GraphMenu::GraphMenu(QWidget * parent)
     dot_02->setIconSize(QSize(10, 10));
     dot_02->setFixedSize(HEIGHT, HEIGHT);
     connect(dot_02, &QPushButton::clicked, [=]() {
-        emit setWidth(2);
+        emit setWidth(3);
         this->click(dot_02);
     });
     layout_->addWidget(dot_02);

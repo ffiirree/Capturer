@@ -7,7 +7,7 @@
 #include "detectwidgets.h"
 
 Selector::Selector(QWidget * parent)
-    : QWidget(parent)
+    : QWidget(parent), Resizer()
 {
     info_ = new Info(this);         // ???? 放在构造函数的末尾会造成全屏失败 ????
 
@@ -102,30 +102,35 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         case INSIDE:  setCursor(Qt::SizeAllCursor); break;
         case OUTSIDE: setCursor(Qt::ForbiddenCursor); break;
 
+        case Y1_ANCHOR:
+        case Y2_ANCHOR:
         case Y1_BORDER:
         case Y2_BORDER: setCursor(Qt::SizeVerCursor); break;
 
+        case X1_ANCHOR:
+        case X2_ANCHOR:
         case X1_BORDER:
         case X2_BORDER: setCursor(Qt::SizeHorCursor); break;
 
-        case X1Y1_DIAG:
+        case X1Y1_ANCHOR:
             ((x1_ < x2_ && y1_ < y2_) || (x1_ > x2_ && y1_ > y2_))
                     ? setCursor(Qt::SizeFDiagCursor)
                     : setCursor(Qt::SizeBDiagCursor);
             break;
 
-        case X1Y2_DIAG:
+        case X1Y2_ANCHOR:
             ((x1_ < x2_ && y2_ < y1_) || (x1_ > x2_ && y2_ > y1_))
                 ? setCursor(Qt::SizeFDiagCursor)
                 : setCursor(Qt::SizeBDiagCursor);
             break;
 
-        case X2Y1_DIAG:
-            ((x2_ < x1_ && y1_ < y2_) || (x2_ > x1_ && y1_ > y2_))
-                    ? setCursor(Qt::SizeFDiagCursor)
-                    : setCursor(Qt::SizeBDiagCursor);
+        case X2Y1_ANCHOR:
+            ((x1_ < x2_ && y2_ < y1_) || (x1_ > x2_ && y2_ > y1_))
+                ? setCursor(Qt::SizeFDiagCursor)
+                : setCursor(Qt::SizeBDiagCursor);
             break;
-        case X2Y2_DIAG:
+
+        case X2Y2_ANCHOR:
             ((x2_ < x1_ && y2_ < y1_) || (x2_ > x1_ && y2_ > y1_))
                     ? setCursor(Qt::SizeFDiagCursor)
                     : setCursor(Qt::SizeBDiagCursor);
@@ -244,21 +249,6 @@ void Selector::paintEvent(QPaintEvent *event)
     painter_.end();
 }
 
-Selector::PointPosition Selector::position(const QPoint& p)
-{
-    if(isX1Y1Anchor(p)) return X1Y1_DIAG;
-    if(isX1Y2Anchor(p)) return X1Y2_DIAG;
-    if(isX2Y1Anchor(p)) return X2Y1_DIAG;
-    if(isX2Y2Anchor(p)) return X2Y2_DIAG;
-
-    if(isX1Border(p)) return X1_BORDER;
-    if(isY2Border(p)) return Y2_BORDER;
-    if(isX2Border(p)) return X2_BORDER;
-    if(isY1Border(p)) return Y1_BORDER;
-
-    return isContains(p) ? INSIDE : OUTSIDE;
-}
-
 void Selector::updateSelected()
 {
     if(status_ == MOVING) {
@@ -282,80 +272,19 @@ void Selector::updateSelected()
         auto diff_y = rend_.y() - rbegin_.y();
 
         switch (cursor_pos_) {
-        case Y1_BORDER: y1_ += diff_y; break;
-        case Y2_BORDER: y2_ += diff_y; break;
-        case X1_BORDER: x1_ += diff_x; break;
-        case X2_BORDER: x2_ += diff_x; break;
+        case Y1_BORDER: case Y1_ANCHOR: y1_ += diff_y; break;
+        case Y2_BORDER: case Y2_ANCHOR: y2_ += diff_y; break;
+        case X1_BORDER: case X1_ANCHOR: x1_ += diff_x; break;
+        case X2_BORDER: case X2_ANCHOR: x2_ += diff_x; break;
 
-        case X1Y1_DIAG: x1_ += diff_x; y1_ += diff_y; break;
-        case X1Y2_DIAG: x1_ += diff_x; y2_ += diff_y; break;
-        case X2Y1_DIAG: x2_ += diff_x; y1_ += diff_y; break;
-        case X2Y2_DIAG: x2_ += diff_x; y2_ += diff_y; break;
+        case X1Y1_ANCHOR: x1_ += diff_x; y1_ += diff_y; break;
+        case X1Y2_ANCHOR: x1_ += diff_x; y2_ += diff_y; break;
+        case X2Y1_ANCHOR: x2_ += diff_x; y1_ += diff_y; break;
+        case X2Y2_ANCHOR: x2_ += diff_x; y2_ += diff_y; break;
 
         default:break;
         }
     }
-}
-
-QRect Selector::Y1Anchor() const
-{
-    return { (x1_ + x2_)/2 - ANCHOR_WIDTH/2, y1_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X1Anchor() const
-{
-    return { x1_ - ANCHOR_WIDTH/2, (y1_ + y2_)/2 - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::Y2Anchor() const
-{
-    return { (x1_ + x2_)/2 - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X2Anchor() const
-{
-    return { x2_ - ANCHOR_WIDTH/2, (y1_ + y2_)/2 - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X1Y1Anchor() const
-{
-    return { x1_ - ANCHOR_WIDTH/2, y1_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X1Y2Anchor() const
-{
-    return { x1_ - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X2Y1Anchor() const
-{
-    return { x2_ - ANCHOR_WIDTH/2, y1_- ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-QRect Selector::X2Y2Anchor() const
-{
-    return { x2_ - ANCHOR_WIDTH/2, y2_ - ANCHOR_WIDTH/2, ANCHOR_WIDTH, ANCHOR_WIDTH };
-}
-
-bool Selector::isX1Border(const QPoint& p) const
-{
-    return QRect(x1_ - RESIZE_BORDER_WIDTH/2, t() , RESIZE_BORDER_WIDTH, h()).contains(p)
-            || X1Anchor().contains(p);
-}
-bool Selector::isX2Border(const QPoint& p) const
-{
-    return QRect(x2_ - RESIZE_BORDER_WIDTH/2, t(), RESIZE_BORDER_WIDTH, h()).contains(p)
-            || X2Anchor().contains(p);
-}
-bool Selector::isY1Border(const QPoint& p) const
-{
-    return QRect(l(), y1_ - RESIZE_BORDER_WIDTH/2, w(), RESIZE_BORDER_WIDTH).contains(p)
-            || Y1Anchor().contains(p);
-}
-bool Selector::isY2Border(const QPoint& p) const
-{
-    return QRect(l(), y2_ - RESIZE_BORDER_WIDTH/2, w(), RESIZE_BORDER_WIDTH).contains(p)
-            || Y2Anchor().contains(p);
 }
 
 void Selector::registerShortcuts()

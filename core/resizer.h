@@ -5,7 +5,7 @@
 #include<QPoint>
 #include<QRect>
 
-#define ANCHOR_WIDTH        5
+#define ANCHOR_WIDTH        7
 
 #define MIN_W   1
 #define MIN_H   1
@@ -14,6 +14,7 @@ class Resizer
 {
 public:
     enum PointPosition {
+        DEFAULT = 0x0000,
         BORDER = 0x0001 | 0x0002 | 0x0004 | 0x0008,
         ANCHOR = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
 
@@ -36,11 +37,13 @@ public:
     };
 
 public:
-    Resizer(int x1, int y1, int x2, int y2, int resize_border_width = 4)
-        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), resize_border_width_(resize_border_width) { }
+    Resizer() = default;
 
-    Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 4)
-        : x1_(p1.x()), y1_(p1.y()), x2_(p2.x()), y2_(p2.y()), resize_border_width_(resize_border_width) { }
+    Resizer(int x1, int y1, int x2, int y2, int resize_border_width = 5)
+        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), RESIZE_BORDER_WIDTH_(resize_border_width) { }
+
+    Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
+        : x1_(p1.x()), y1_(p1.y()), x2_(p2.x()), y2_(p2.y()), RESIZE_BORDER_WIDTH_(resize_border_width) { }
 
     inline bool isContains(const QPoint& p) const { return QRect(l(), t(), w(), h()).contains(p); }
 
@@ -80,23 +83,23 @@ public:
     ////
     bool isX1Border(const QPoint& p) const
     {
-        return QRect(x1_ - resize_border_width_/2, t() , resize_border_width_, h()).contains(p);
+        return QRect(x1_ - RESIZE_BORDER_WIDTH_/2, t() , RESIZE_BORDER_WIDTH_, h()).contains(p);
     }
     bool isX2Border(const QPoint& p) const
     {
-        return QRect(x2_ - resize_border_width_/2, t(), resize_border_width_, h()).contains(p);
+        return QRect(x2_ - RESIZE_BORDER_WIDTH_/2, t(), RESIZE_BORDER_WIDTH_, h()).contains(p);
     }
     bool isY1Border(const QPoint& p) const
     {
-        return QRect(l(), y1_ - resize_border_width_/2, w(), resize_border_width_).contains(p);
+        return QRect(l(), y1_ - RESIZE_BORDER_WIDTH_/2, w(), RESIZE_BORDER_WIDTH_).contains(p);
     }
     bool isY2Border(const QPoint& p) const
     {
-        return QRect(l(), y2_ - resize_border_width_/2, w(), resize_border_width_).contains(p);
+        return QRect(l(), y2_ - RESIZE_BORDER_WIDTH_/2, w(), RESIZE_BORDER_WIDTH_).contains(p);
     }
-    bool isBorder(const QPoint& p)
+    bool isBorder(const QPoint& p) const
     {
-        return QRect(l() - resize_border_width_/2, t() - resize_border_width_/2, w() + resize_border_width_, h() + resize_border_width_).contains(p) && !QRect(l() + 2, t() + 2, w() - 4, h() - 4).contains(p);
+        return isX1Border(p) || isX2Border(p) || isY1Border(p) || isY2Border(p);
     }
 
     inline bool isY1Anchor(const QPoint& p) const { return Y1Anchor().contains(p); }
@@ -116,10 +119,10 @@ public:
     inline int w() const { auto w = std::abs(x1_ - x2_); return w > MIN_W ? w : MIN_W; }
     inline int h() const { auto h = std::abs(y1_ - y2_); return h > MIN_H ? h : MIN_H; }
 
-    inline QPoint topLeft() const { return {l(), t()}; }
-    inline QPoint bottomRight() const { return {r(), b()}; }
-    inline QPoint topRight() const { return {r(), t()}; }
-    inline QPoint bottomLeft() const { return {l(), b()}; }
+    inline QPoint topLeft() const       { return {l(), t()}; }
+    inline QPoint bottomRight() const   { return {r(), b()}; }
+    inline QPoint topRight() const      { return {r(), t()}; }
+    inline QPoint bottomLeft() const    { return {l(), b()}; }
 
     PointPosition position(const QPoint& p)
     {
@@ -141,13 +144,13 @@ public:
         return isContains(p) ? INSIDE : OUTSIDE;
     }
 
-private:
+protected:
     int x1_ = 0;
     int y1_ = 0;
     int x2_ = 0;
     int y2_ = 0;
 
-    int resize_border_width_ = 0;
+    int RESIZE_BORDER_WIDTH_ = 1;
 };
 
 #endif // RESIZER_H

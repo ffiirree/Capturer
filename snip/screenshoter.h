@@ -61,6 +61,7 @@ private:
     void registerShortcuts();
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
 
+    void getCursorByPos(const QPoint& pos);
     void setCursorByPos(Resizer::PointPosition pos, const QCursor & default_cursor = Qt::CrossCursor);
 
     void upadateMagnifierPosition();
@@ -73,25 +74,22 @@ private:
     Command * focus_ = nullptr;
 
     EditStatus edit_status_ = NONE, last_edit_status_ = NONE;
-    int pen_width_ = 1;
+    int pen_width_ = 3;
     bool fill_ = false;
-    QColor color_ = Qt::cyan;
+    QColor color_ = Qt::red;
 
     TextEdit * text_edit_ = nullptr;
     QString font_family_ = "宋体";
     QString font_style_ = "regular";
     int font_size_ = 11;
-    QColor font_color_ = Qt::cyan;
+    QColor font_color_ = Qt::red;
 
     MainMenu * menu_ = nullptr;
     GraphMenu * gmenu_ = nullptr;
     FontMenu * fmenu_ = nullptr;
     Magnifier * magnifier_ = nullptr;
 
-    QPoint rectangle_begin_{0, 0}, rectangle_end_{0, 0};
-    QPoint circle_begin_{0, 0}, circle_end_{0, 0};
-    QPoint arrow_begin_{0, 0}, arrow_end_{0, 0};
-    QPoint line_begin_{0, 0}, line_end_{0, 0};
+    QPoint painting_begin_{0, 0}, painting_end_{0, 0};
     QPoint move_begin_{0, 0}, move_end_{0, 0};
     QPoint resize_begin_{0, 0}, resize_end_{0, 0};
     std::vector<QPoint> curves_;
