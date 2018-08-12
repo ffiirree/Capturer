@@ -15,6 +15,8 @@ public:
     explicit MainMenu(QWidget* parent = nullptr);
     ~MainMenu() = default;
 
+    void reset();
+
 signals:
     void save();
     void fix();

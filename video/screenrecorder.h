@@ -23,7 +23,6 @@ private:
     void setup();
 
     void keyPressEvent(QKeyEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
 
     int framerate_ = 30;
 

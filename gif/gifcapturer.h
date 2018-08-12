@@ -23,7 +23,6 @@ public slots:
 
 protected:
     virtual void keyPressEvent(QKeyEvent *) override;
-    virtual void paintEvent(QPaintEvent *) override;
 
 private:
     void setup();

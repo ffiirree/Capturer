@@ -36,6 +36,9 @@ git clone https://github.com/ffiirree/Capturer.git
 git submodule init
 git submodule update
 ```
+在Qt Creator中打开
+
+> 录屏和录制gif依赖于`ffmpeg`
 
 ## 效果
 ![image](https://github.com/ffiirree/Capturer/blob/master/capturer.gif)

@@ -217,6 +217,13 @@ void Selector::paintEvent(QPaintEvent *event)
 
     auto srect = selected();
 
+    painter_.fillRect(rect(), QColor(0, 0, 0, 1)); // Make windows happy.
+
+    painter_.fillRect(QRect{ 0, 0, width(), srect.y() }, mask_color_);
+    painter_.fillRect(QRect{ 0, srect.y(), srect.x(), srect.height() }, mask_color_);
+    painter_.fillRect(QRect{ srect.x() + srect.width(), srect.y(), width() - srect.x() - srect.width(), srect.height()}, mask_color_);
+    painter_.fillRect(QRect{ 0, srect.y() + srect.height(), width(), height() - srect.y() - srect.height()}, mask_color_);
+
     if(status_ == NORMAL && use_detect_) {
         auto rect = DetectWidgets::window();
         x1_ = rect.left();

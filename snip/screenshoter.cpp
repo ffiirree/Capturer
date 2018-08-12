@@ -602,9 +602,11 @@ void ScreenShoter::exit()
     undo_stack_.clear();
 
     menu_->hide();
+    menu_->reset();
     gmenu_->hide();
     fmenu_->hide();
     text_edit_ = nullptr;
+    focus_ = nullptr;
 
     Selector::exit();
 }
@@ -672,11 +674,10 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
         default: break;
         }
 
-        edit_painter.end();
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // final
         for(auto& command: undo_stack_.commands()) {
-            edit_painter.begin(&background);
             edit_painter.setPen(command->pen());
             edit_painter.setBrush(Qt::NoBrush);
 
@@ -687,29 +688,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 if(command->isFill()) edit_painter.setBrush(command->pen().color());
 
                 edit_painter.drawRect(QRect(command->points()[0], command->points()[1]));
-                edit_painter.end();
-
-                if(focus_ == command) {
-                    QPainter tip_painter;
-                    tip_painter.begin(&background);
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
-                    tip_painter.setRenderHint(QPainter::Antialiasing, false);
-                    tip_painter.drawRect(QRect(command->points()[0], command->points()[1]));
-
-                    Resizer rectangle_resizer(command->points()[0], command->points()[1]);
-
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-                    tip_painter.drawRect(rectangle_resizer.X1Anchor());
-                    tip_painter.drawRect(rectangle_resizer.Y1Anchor());
-                    tip_painter.drawRect(rectangle_resizer.X2Anchor());
-                    tip_painter.drawRect(rectangle_resizer.Y2Anchor());
-                    tip_painter.drawRect(rectangle_resizer.X1Y1Anchor());
-                    tip_painter.drawRect(rectangle_resizer.X2Y1Anchor());
-                    tip_painter.drawRect(rectangle_resizer.X1Y2Anchor());
-                    tip_painter.drawRect(rectangle_resizer.X2Y2Anchor());
-
-                    tip_painter.end();
-                }
                 break;
             }
 
@@ -719,49 +697,12 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 
                 edit_painter.drawEllipse(QRect(command->points()[0], command->points()[1]));
 
-                edit_painter.end();
-
-                if(focus_ == command) {
-                    QPainter tip_painter;
-                    tip_painter.begin(&background);
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
-                    tip_painter.setRenderHint(QPainter::Antialiasing, true);
-                    tip_painter.drawRect(QRect(command->points()[0], command->points()[1]));
-
-                    Resizer circle_resizer(command->points()[0], command->points()[1]);
-
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-                    tip_painter.drawRect(circle_resizer.X1Anchor());
-                    tip_painter.drawRect(circle_resizer.Y1Anchor());
-                    tip_painter.drawRect(circle_resizer.X2Anchor());
-                    tip_painter.drawRect(circle_resizer.Y2Anchor());
-                    tip_painter.drawRect(circle_resizer.X1Y1Anchor());
-                    tip_painter.drawRect(circle_resizer.X2Y1Anchor());
-                    tip_painter.drawRect(circle_resizer.X1Y2Anchor());
-                    tip_painter.drawRect(circle_resizer.X2Y2Anchor());
-
-                    tip_painter.end();
-                }
                 break;
 
             case Command::DRAW_BROKEN_LINE:
             {
                 edit_painter.setRenderHint(QPainter::Antialiasing, true);
                 edit_painter.drawLine(command->points()[0], command->points()[1]);
-                edit_painter.end();
-
-                if(focus_ == command) {
-                    QPainter tip_painter;
-                    tip_painter.begin(&background);
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
-                    tip_painter.setRenderHint(QPainter::Antialiasing, true);
-                    tip_painter.drawLine(command->points()[0], command->points()[1]);
-
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-                    tip_painter.drawRect(QRect(command->points()[0] - QPoint(3, 3), command->points()[0] + QPoint(2, 2)));
-                    tip_painter.drawRect(QRect(command->points()[1] - QPoint(3, 3), command->points()[1] + QPoint(2, 2)));
-                    tip_painter.end();
-                }
                 break;
             }
 
@@ -773,21 +714,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 edit_painter.setBrush(command->pen().color());
                 edit_painter.drawPolygon(points, 6);
 
-                edit_painter.end();
-
-                if(focus_ == command) {
-                    QPainter tip_painter;
-                    tip_painter.begin(&background);
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
-                    tip_painter.setRenderHint(QPainter::Antialiasing, true);
-                    tip_painter.drawLine(command->points()[0], command->points()[1]);
-
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-                    tip_painter.drawRect(QRect(command->points()[0] - QPoint(2, 2), command->points()[0] + QPoint(2, 2)));
-                    tip_painter.drawRect(QRect(command->points()[1] - QPoint(2, 2), command->points()[1] + QPoint(2, 2)));
-
-                    tip_painter.end();
-                }
                 break;
             }
 
@@ -799,7 +725,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                     edit_painter.drawLine(points[i], points[i + 1]);
                 }
 
-                edit_painter.end();
                 break;
             }
 
@@ -808,21 +733,111 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 edit_painter.setRenderHint(QPainter::Antialiasing, false);
                 auto edit = reinterpret_cast<TextEdit*>(command->widget());
                 edit_painter.setFont(edit->font());
-                edit_painter.drawText(edit->geometry() + QMargins(-4, -4, 0, 0), Qt::TextWordWrap, edit->toPlainText());
+                edit_painter.drawText(edit->geometry() + QMargins(-4, -6, 0, 0), Qt::TextWordWrap, edit->toPlainText());
 
-                edit_painter.end();
+                break;
+            }
 
-                if(focus_ == command) {
-                    QPainter tip_painter;
-                    tip_painter.begin(&background);
-                    tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
-                    tip_painter.setRenderHint(QPainter::Antialiasing, true);
+            default: break;
+            }
+        }
 
-                    QRect text_rect(command->widget()->pos(), command->widget()->size());
-                    tip_painter.drawRect(text_rect);
-                    tip_painter.end();
-                }
+        edit_painter.end();
+        captured_image_ = background.copy(area);
 
+        ////
+        if(focus_ != nullptr) {
+            switch (focus_->type()) {
+            case Command::DRAW_RECTANGLE:
+            {
+                QPainter tip_painter;
+                tip_painter.begin(&background);
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                tip_painter.setRenderHint(QPainter::Antialiasing, false);
+                tip_painter.drawRect(QRect(focus_->points()[0], focus_->points()[1]));
+
+                Resizer rectangle_resizer(focus_->points()[0], focus_->points()[1]);
+
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
+                tip_painter.drawRect(rectangle_resizer.X1Anchor());
+                tip_painter.drawRect(rectangle_resizer.Y1Anchor());
+                tip_painter.drawRect(rectangle_resizer.X2Anchor());
+                tip_painter.drawRect(rectangle_resizer.Y2Anchor());
+                tip_painter.drawRect(rectangle_resizer.X1Y1Anchor());
+                tip_painter.drawRect(rectangle_resizer.X2Y1Anchor());
+                tip_painter.drawRect(rectangle_resizer.X1Y2Anchor());
+                tip_painter.drawRect(rectangle_resizer.X2Y2Anchor());
+
+                tip_painter.end();
+                break;
+            }
+
+            case Command::DRAW_CIRCLE:
+            {
+                QPainter tip_painter;
+                tip_painter.begin(&background);
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                tip_painter.setRenderHint(QPainter::Antialiasing, true);
+                tip_painter.drawRect(QRect(focus_->points()[0], focus_->points()[1]));
+
+                Resizer circle_resizer(focus_->points()[0], focus_->points()[1]);
+
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
+                tip_painter.drawRect(circle_resizer.X1Anchor());
+                tip_painter.drawRect(circle_resizer.Y1Anchor());
+                tip_painter.drawRect(circle_resizer.X2Anchor());
+                tip_painter.drawRect(circle_resizer.Y2Anchor());
+                tip_painter.drawRect(circle_resizer.X1Y1Anchor());
+                tip_painter.drawRect(circle_resizer.X2Y1Anchor());
+                tip_painter.drawRect(circle_resizer.X1Y2Anchor());
+                tip_painter.drawRect(circle_resizer.X2Y2Anchor());
+
+                tip_painter.end();
+                break;
+            }
+
+
+            case Command::DRAW_BROKEN_LINE:
+            {
+                QPainter tip_painter;
+                tip_painter.begin(&background);
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                tip_painter.setRenderHint(QPainter::Antialiasing, true);
+                tip_painter.drawLine(focus_->points()[0], focus_->points()[1]);
+
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
+                tip_painter.drawRect(QRect(focus_->points()[0] - QPoint(3, 3), focus_->points()[0] + QPoint(2, 2)));
+                tip_painter.drawRect(QRect(focus_->points()[1] - QPoint(3, 3), focus_->points()[1] + QPoint(2, 2)));
+                tip_painter.end();
+                break;
+            }
+
+            case Command::DRAW_ARROW:
+            {
+                QPainter tip_painter;
+                tip_painter.begin(&background);
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                tip_painter.setRenderHint(QPainter::Antialiasing, true);
+                tip_painter.drawLine(focus_->points()[0], focus_->points()[1]);
+
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
+                tip_painter.drawRect(QRect(focus_->points()[0] - QPoint(2, 2), focus_->points()[0] + QPoint(2, 2)));
+                tip_painter.drawRect(QRect(focus_->points()[1] - QPoint(2, 2), focus_->points()[1] + QPoint(2, 2)));
+
+                tip_painter.end();
+                break;
+            }
+
+            case Command::DRAW_TEXT:
+            {
+                QPainter tip_painter;
+                tip_painter.begin(&background);
+                tip_painter.setPen(QPen(Qt::black, 1, Qt::DashLine));
+                tip_painter.setRenderHint(QPainter::Antialiasing, true);
+
+                QRect text_rect(focus_->widget()->pos(), focus_->widget()->size());
+                tip_painter.drawRect(text_rect);
+                tip_painter.end();
                 break;
             }
 
@@ -831,12 +846,9 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
         }
     }
 
-    captured_image_ = background.copy(area);
     painter_.drawPixmap(0, 0, background);
-    painter_.fillRect(rect(), mask_color_);
-    painter_.drawPixmap(area.topLeft(), captured_image_);
-
     painter_.end();
+
     Selector::paintEvent(event);
 }
 

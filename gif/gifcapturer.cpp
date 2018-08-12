@@ -87,19 +87,3 @@ void GifCapturer::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void GifCapturer::paintEvent(QPaintEvent *event)
-{
-    painter_.begin(this);
-
-    auto roi = (status_ == NORMAL ? DetectWidgets::window() : selected());
-    painter_.fillRect(rect(), QColor(0, 0, 0, 1)); // Make windows happy.
-
-    painter_.fillRect(QRect{ 0, 0, width(), roi.y() }, mask_color_);
-    painter_.fillRect(QRect{ 0, roi.y(), roi.x(), roi.height() }, mask_color_);
-    painter_.fillRect(QRect{ roi.x() + roi.width(), roi.y(), width() - roi.x() - roi.width(), roi.height()}, mask_color_);
-    painter_.fillRect(QRect{ 0, roi.y() + roi.height(), width(), height() - roi.y() - roi.height()}, mask_color_);
-
-    painter_.end();
-
-    Selector::paintEvent(event);
-}

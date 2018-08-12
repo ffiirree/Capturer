@@ -168,6 +168,11 @@ MainMenu::MainMenu(QWidget* parent)
     hide();
 }
 
+void MainMenu::reset()
+{
+    unselectAll();
+}
+
 void MainMenu::click(QPushButton* btn)
 {
     if(selected_btn_ != nullptr) {
