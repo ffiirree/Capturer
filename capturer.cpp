@@ -149,11 +149,6 @@ void Capturer::pinLastImage()
     pinImage(images_.back());
 }
 
-void Capturer::keyPressEvent(QKeyEvent *event)
-{
-    Q_UNUSED(event);
-}
-
 Capturer::~Capturer()
 {
     delete sniper_;
