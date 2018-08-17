@@ -4,7 +4,10 @@
 #include <QObject>
 #include <QPen>
 #include <vector>
+#include <memory>
 #include "textedit.h"
+
+using std::shared_ptr;
 
 class Command
 {
@@ -60,7 +63,7 @@ class CommandStack : public QObject
     Q_OBJECT
 
 public:
-    inline void push(Command* command)
+    inline void push(shared_ptr<Command> command)
     {
         if(stack_.empty())
             emit empty(false);
@@ -85,9 +88,9 @@ public:
 
     inline size_t size() const { return stack_.size(); }
 
-    inline Command* back() const { return stack_.back(); }
+    inline shared_ptr<Command> back() const { return stack_.back(); }
 
-    inline std::vector<Command *> commands() const { return stack_; }
+    inline std::vector<shared_ptr<Command>> commands() const { return stack_; }
 
     inline bool empty() const { return stack_.empty(); }
 
@@ -102,7 +105,7 @@ public slots:
     inline void clear() { stack_.clear(); }
 
 private:
-    std::vector<Command *> stack_;
+    std::vector<shared_ptr<Command>> stack_;
 };
 
 

@@ -35,8 +35,6 @@ private slots:
     void updateConfig();
 
 private:
-    void keyPressEvent(QKeyEvent *event);
-
     void setupSystemTrayIcon();
 
     ScreenShoter * sniper_ = nullptr;

@@ -20,13 +20,14 @@ class ScreenShoter : public Selector
 public:
     enum EditStatus {
         NONE,
-        START_PAINTING_RECTANGLE, PAINTING_RECTANGLE, END_PAINTING_RECTANGLE,
-        START_PAINTING_CIRCLE, PAINTING_CIRCLE, END_PAINTING_CIRCLE,
-        START_PAINTING_ARROW, PAINTING_ARROW, END_PAINTING_ARROW,
-        START_PAINTING_LINE, PAINTING_LINE, END_PAINTING_LINE,
-        START_PAINTING_CURVES, PAINTING_CURVES, END_PAINTING_CURVES,
-        START_PAINTING_TEXT, PAINTING_TEXT, END_PAINTING_TEXT,
-        GRAPH_MOVING, GRAPH_RESIZING
+        START_PAINTING_RECTANGLE    = 0x0100, PAINTING_RECTANGLE    = 0x0200, END_PAINTING_RECTANGLE    = 0x0400,
+        START_PAINTING_CIRCLE       = 0x0101, PAINTING_CIRCLE       = 0x0201, END_PAINTING_CIRCLE       = 0x0401,
+        START_PAINTING_ARROW        = 0x0102, PAINTING_ARROW        = 0x0202, END_PAINTING_ARROW        = 0x0402,
+        START_PAINTING_LINE         = 0x0103, PAINTING_LINE         = 0x0203, END_PAINTING_LINE         = 0x0403,
+        START_PAINTING_CURVES       = 0x0104, PAINTING_CURVES       = 0x0204, END_PAINTING_CURVES       = 0x0404,
+        START_PAINTING_TEXT         = 0x0105, PAINTING_TEXT         = 0x0205, END_PAINTING_TEXT         = 0x0405,
+        GRAPH_MOVING, GRAPH_RESIZING,
+        END = 0x0600
     };
 
 public:
@@ -61,7 +62,7 @@ private:
     void registerShortcuts();
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
 
-    void getCursorByPos(const QPoint& pos);
+    shared_ptr<Command> getCursorPos(const QPoint& pos);
     void setCursorByPos(Resizer::PointPosition pos, const QCursor & default_cursor = Qt::CrossCursor);
 
     void upadateMagnifierPosition();
@@ -70,10 +71,10 @@ private:
 
     Resizer::PointPosition cursor_graph_pos_ = Resizer::OUTSIDE;
 
-    Command * command_ = nullptr;
-    Command * focus_ = nullptr;
+    shared_ptr<Command> command_ = nullptr;
+    shared_ptr<Command> focus_ = nullptr;
 
-    EditStatus edit_status_ = NONE, last_edit_status_ = NONE;
+    uint32_t edit_status_ = NONE, last_edit_status_ = NONE;
     int pen_width_ = 3;
     bool fill_ = false;
     QColor color_ = Qt::red;
@@ -89,7 +90,6 @@ private:
     FontMenu * fmenu_ = nullptr;
     Magnifier * magnifier_ = nullptr;
 
-    QPoint painting_begin_{0, 0}, painting_end_{0, 0};
     QPoint move_begin_{0, 0}, move_end_{0, 0};
     QPoint resize_begin_{0, 0}, resize_end_{0, 0};
     std::vector<QPoint> curves_;
