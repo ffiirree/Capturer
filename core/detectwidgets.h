@@ -6,8 +6,9 @@
 class DetectWidgets
 {
 public:
-    static QRect window();
+    static QRect display();
 
+    static QRect window();
     static QRect widget();
 private:
 };

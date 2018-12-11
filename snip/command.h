@@ -14,11 +14,12 @@ class Command
 public:
     enum CommandType{
         NONE,
-        DRAW_CIRCLE,
+        DRAW_ELLIPSE,
         DRAW_RECTANGLE,
         DRAW_ARROW,
         DRAW_BROKEN_LINE,
         DRAW_CURVE,
+        DRAW_MOSAIC,
         DRAW_TEXT,
     };
 public:
@@ -26,15 +27,12 @@ public:
     Command(CommandType type, const QPen& pen)
         : type_(type), pen_(pen)
     { }
-    Command(CommandType type, const QPen& pen, const QPoint& pos, bool is_fill, const std::vector<QPoint>& points)
-        : type_(type), pen_(pen), position_(pos), is_fill_(is_fill), points_(points)
+    Command(CommandType type, const QPen& pen, bool is_fill, const std::vector<QPoint>& points)
+        : type_(type), pen_(pen), is_fill_(is_fill), points_(points)
     { }
 
     inline void type(CommandType t) { type_ = t; }
     inline CommandType type() const  { return type_; }
-
-    inline void position(QPoint pos) { position_ = pos; }
-    inline QPoint position() const { return position_; }
 
     inline void pen(const QPen& pen) { pen_ = pen; }
     inline QPen pen() const { return pen_; }
@@ -52,7 +50,6 @@ public:
 private:
     CommandType type_{ NONE };
     QPen pen_{};
-    QPoint position_{ 0, 0 };
     bool is_fill_ = false;
     std::vector<QPoint> points_;
     QWidget * widget_ = nullptr;

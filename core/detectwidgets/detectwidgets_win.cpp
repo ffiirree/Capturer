@@ -5,9 +5,23 @@
 #include <QScreen>
 #include "Dwmapi.h"
 
+QRect DetectWidgets::display()
+{
+    auto screens = QGuiApplication::screens();
+    int width = 0, height = 0;
+    foreach(const auto& screen, screens) {
+        auto geometry = screen->geometry();
+        width += geometry.width();
+        if(height < geometry.height()) height = geometry.height();
+    }
+
+    return QRect(0, 0, width, height);
+}
+
 QRect DetectWidgets::window()
 {
-    QRect resoult = QGuiApplication::primaryScreen()->geometry();
+    auto resoult = display();
+
     auto cpos = QCursor::pos();
 
     auto hwnd = GetDesktopWindow();

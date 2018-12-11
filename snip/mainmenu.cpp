@@ -85,6 +85,18 @@ MainMenu::MainMenu(QWidget* parent)
     });
     layout_->addWidget(pen_btn);
 
+    // QPushButton * mosaic_btn = new QPushButton();
+    // mosaic_btn->setObjectName("mosaic_btn");
+    // mosaic_btn->setIcon(QIcon(":/icon/res/mosaic.png"));
+    // mosaic_btn->setIconSize(QSize(22, 22));
+    // mosaic_btn->setFixedSize(HEIGHT, HEIGHT);
+    // connect(mosaic_btn, &QPushButton::clicked, [=]() {
+    //     mosaic_btn == selected_btn_ ? emit END_PAINT_MOSAIC() : emit START_PAINT_MOSAIC();
+
+    //     this->click(mosaic_btn);
+    // });
+    // layout_->addWidget(mosaic_btn);
+
     QPushButton * text_btn = new QPushButton();
     text_btn->setObjectName("text_btn");
     text_btn->setIcon(QIcon(":/icon/res/text.png"));

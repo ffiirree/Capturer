@@ -35,6 +35,9 @@ signals:
     void START_PAINT_CURVES();
     void END_PAINT_CURVES();
 
+    void START_PAINT_MOSAIC();
+    void END_PAINT_MOSAIC();
+
     void START_PAINT_ARROW();
     void END_PAINT_ARROW();
 

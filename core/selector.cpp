@@ -3,7 +3,9 @@
 #include <QDebug>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QApplication>
 #include <QShortcut>
+#include <QDesktopWidget>
 #include "detectwidgets.h"
 
 Selector::Selector(QWidget * parent)
@@ -14,12 +16,28 @@ Selector::Selector(QWidget * parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-    setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
+
+//    setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
+    setMaxSize();
 
     connect(this, &Selector::moved, [this](){ update(); });
     connect(this, &Selector::resized, [this](){ update(); });
+    connect(QApplication::desktop(), &QDesktopWidget::screenCountChanged, [this](){ setMaxSize(); });
 
     registerShortcuts();
+}
+
+void Selector::setMaxSize()
+{
+    auto screens = QGuiApplication::screens();
+
+    int width = 0, height = 0;
+    foreach(const auto& screen, screens) {
+        auto geometry = screen->geometry();
+        width += geometry.width();
+        if(height < geometry.height()) height = geometry.height();
+    }
+    setFixedSize(width, height);
 }
 
 void Selector::start()

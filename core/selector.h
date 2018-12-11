@@ -23,10 +23,11 @@ public:
 
 public:
     explicit Selector(QWidget *parent = nullptr);
-    virtual ~Selector() = default;
+    virtual ~Selector() override = default;
 
 public slots:
     virtual void start();
+    void setMaxSize();
     void setBorderColor(const QColor&);
     void setBorderWidth(int);
     void setBorderStyle(Qt::PenStyle s);

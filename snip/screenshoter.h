@@ -3,6 +3,7 @@
 
 #include <selector.h>
 #include <QTextEdit>
+#include <QPixmap>
 #include "mainmenu.h"
 #include "graphmenu.h"
 #include "magnifier.h"
@@ -25,13 +26,15 @@ public:
         START_PAINTING_ARROW        = 0x0102, PAINTING_ARROW        = 0x0202, END_PAINTING_ARROW        = 0x0402,
         START_PAINTING_LINE         = 0x0103, PAINTING_LINE         = 0x0203, END_PAINTING_LINE         = 0x0403,
         START_PAINTING_CURVES       = 0x0104, PAINTING_CURVES       = 0x0204, END_PAINTING_CURVES       = 0x0404,
-        START_PAINTING_TEXT         = 0x0105, PAINTING_TEXT         = 0x0205, END_PAINTING_TEXT         = 0x0405,
+        START_PAINTING_MOSAIC       = 0x0105, PAINTING_MOSAIC       = 0x0205, END_PAINTING_MOSAIC       = 0x0405,
+        START_PAINTING_TEXT         = 0x0106, PAINTING_TEXT         = 0x0206, END_PAINTING_TEXT         = 0x0406,
         GRAPH_MOVING, GRAPH_RESIZING,
         END = 0x0600
     };
 
 public:
     explicit ScreenShoter(QWidget *parent = nullptr);
+    QPixmap grabScreens();
 
 signals:
     void CAPTURE_SCREEN_DONE(QPixmap image);
@@ -59,6 +62,7 @@ protected:
     virtual void paintEvent(QPaintEvent *event) override;
 
 private:
+    QImage mosaic();
     void registerShortcuts();
     void getArrowPoints(QPoint begin, QPoint end_, QPoint* points);
 

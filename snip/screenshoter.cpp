@@ -1,5 +1,6 @@
 #include "screenshoter.h"
 #include <QApplication>
+#include <QGuiApplication>
 #include <QScreen>
 #include <QDesktopWidget>
 #include <QFileDialog>
@@ -53,6 +54,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &MainMenu::START_PAINT_CURVES, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_CURVES; fmenu_->hide(); gmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_CURVES, end_edit_functor);
 
+    connect(menu_, &MainMenu::START_PAINT_MOSAIC, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_MOSAIC; fmenu_->hide(); gmenu_->show(); });
+    connect(menu_, &MainMenu::END_PAINT_MOSAIC, end_edit_functor);
+
     connect(menu_, &MainMenu::START_PAINT_TEXT, [=]() { status_ = LOCKED;  edit_status_ = START_PAINTING_TEXT; gmenu_->hide(); fmenu_->show(); });
     connect(menu_, &MainMenu::END_PAINT_TEXT, end_edit_functor);
 
@@ -78,9 +82,35 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 void ScreenShoter::start()
 {
     if(status_ == INITIAL)
-        captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId());
+        captured_screen_ = grabScreens();
 
     Selector::start();
+}
+
+QPixmap ScreenShoter::grabScreens()
+{
+    auto screens = QGuiApplication::screens();
+    QList<QPixmap> pixmaps;
+    int width = 0;
+    int height = 0;
+
+    foreach(auto screen, screens) {
+        QPixmap pixmap = screen->grabWindow(0);
+        width += pixmap.width();
+        if(height < pixmap.height())
+            height = pixmap.height();
+        pixmaps << pixmap;
+    }
+
+    QPixmap final(width, height);
+    QPainter painter(&final);
+    final.fill(Qt::black);
+    int width_pos = 0;
+    foreach(auto pixmap, pixmaps) {
+        painter.drawPixmap(QPoint(width_pos, 0), pixmap);
+        width_pos += pixmap.width();
+    }
+    return final;
 }
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
@@ -127,7 +157,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             case START_PAINTING_CIRCLE:
             case END_PAINTING_CIRCLE:
-                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_CIRCLE, QPen(color_, pen_width_, Qt::SolidLine)));
+                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_ELLIPSE, QPen(color_, pen_width_, Qt::SolidLine)));
                 command_->points({ event->pos(), event->pos() });
                 DO(command_);
                 edit_status_ = PAINTING_CIRCLE;
@@ -143,7 +173,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             case START_PAINTING_LINE:
             case END_PAINTING_LINE:
-                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_BROKEN_LINE, QPen(color_, pen_width_, Qt::SolidLine)));
+                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_BROKEN_LINE, QPen(color_, pen_width_, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin)));
                 command_->points({ event->pos(), event->pos() });
                 DO(command_);
                 edit_status_ = PAINTING_LINE;
@@ -151,10 +181,19 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             case START_PAINTING_CURVES:
             case END_PAINTING_CURVES:
-                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_CURVE, QPen(color_, pen_width_, Qt::SolidLine)));
+                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_CURVE, QPen(color_, pen_width_, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin)));
                 command_->points({ event->pos() });
                 DO(command_);
                 edit_status_ = PAINTING_CURVES; break;
+
+            case START_PAINTING_MOSAIC:
+            case END_PAINTING_MOSAIC:
+                command_ = focus_ = shared_ptr<Command>(new Command(Command::DRAW_MOSAIC, QPen(color_, 1, Qt::SolidLine)));
+                command_->points({ event->pos(), event->pos() });
+                DO(command_);
+                edit_status_ = PAINTING_MOSAIC;
+                break;
+
             case START_PAINTING_TEXT:
             case PAINTING_TEXT:
             case END_PAINTING_TEXT:
@@ -198,7 +237,8 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
         case PAINTING_RECTANGLE:
         case PAINTING_CIRCLE:
         case PAINTING_ARROW:
-        case PAINTING_LINE:  command_->points()[1] = event->pos(); break;
+        case PAINTING_LINE:
+        case PAINTING_MOSAIC: command_->points()[1] = event->pos(); break;
 
         case PAINTING_CURVES: command_->points().push_back(event->pos()); break;
         case PAINTING_TEXT: break;
@@ -266,6 +306,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
         case PAINTING_ARROW:
         case PAINTING_LINE:
         case PAINTING_CURVES:
+        case PAINTING_MOSAIC:
             if(command_->points().size() > 1 && command_->points()[0] == command_->points()[1])
                 undo_stack_.pop();
 
@@ -336,6 +377,7 @@ shared_ptr<Command> ScreenShoter::getCursorPos(const QPoint& pos)
     for(auto& command: undo_stack_.commands()) {
         switch (command->type()) {
         case Command::DRAW_RECTANGLE:
+        case Command::DRAW_MOSAIC:
         {
             Resizer resizer(command->points()[0], command->points()[1]);
             cursor_graph_pos_ = resizer.position(pos);
@@ -347,7 +389,7 @@ shared_ptr<Command> ScreenShoter::getCursorPos(const QPoint& pos)
             break;
         }
 
-        case Command::DRAW_CIRCLE:
+        case Command::DRAW_ELLIPSE:
         {
             auto x1 = std::min(command->points()[0].x(), command->points()[1].x());
             auto x2 = std::max(command->points()[0].x(), command->points()[1].x());
@@ -515,6 +557,27 @@ void ScreenShoter::exit()
     Selector::exit();
 }
 
+QImage ScreenShoter::mosaic()
+{
+    auto image = captured_screen_.copy().toImage();
+
+    for(auto h = 0; h < image.height(); h += 10) {
+        for(auto w = 0; w < image.width(); w += 10) {
+
+            //
+            for(auto i = 0; i < 10; ++i) {
+                for(auto j = 0; j < 10; ++j) {
+                    image.setPixelColor(w + j, h + i, image.pixel(w, h));
+                }
+            }
+        }
+    }
+
+//    auto i2 = image.scaled(captured_screen_.width()/10, captured_screen_.height()/10);
+//    auto i3 = i2.scaled(captured_screen_.width(), captured_screen_.height());
+    return image;
+}
+
 void ScreenShoter::paintEvent(QPaintEvent *event)
 {
     updateMenuPosition();
@@ -529,7 +592,6 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     if(status_ == LOCKED) {
         QPainter edit_painter;
         edit_painter.begin(&background);
-        edit_painter.setPen(QPen(color_, 1, Qt::DashDotLine));
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         // final
@@ -547,7 +609,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 break;
             }
 
-            case Command::DRAW_CIRCLE:
+            case Command::DRAW_ELLIPSE:
                 edit_painter.setRenderHint(QPainter::Antialiasing, true);
                 if(command->isFill()) edit_painter.setBrush(command->pen().color());
 
@@ -584,6 +646,13 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
                 break;
             }
 
+            case Command::DRAW_MOSAIC:
+            {
+                edit_painter.setBackground(mosaic());
+                edit_painter.eraseRect(QRect(command->points()[0], command->points()[1]));
+                break;
+            }
+
             case Command::DRAW_TEXT:
             {
                 edit_painter.setRenderHint(QPainter::Antialiasing, false);
@@ -607,6 +676,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     if(focus_ != nullptr) {
         switch (focus_->type()) {
         case Command::DRAW_RECTANGLE:
+        case Command::DRAW_MOSAIC:
         {
             QPainter tip_painter;
             tip_painter.begin(&background);
@@ -630,7 +700,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
             break;
         }
 
-        case Command::DRAW_CIRCLE:
+        case Command::DRAW_ELLIPSE:
         {
             QPainter tip_painter;
             tip_painter.begin(&background);
