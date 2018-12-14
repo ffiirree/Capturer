@@ -806,6 +806,7 @@ void ScreenShoter::save_image()
 
     if(!filename.isEmpty()) {
         captured_image_.save(filename);
+        emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
         CAPTURE_SCREEN_DONE(captured_image_);
         exit();
     }

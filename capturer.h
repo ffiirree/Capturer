@@ -34,6 +34,9 @@ private slots:
     void setVideoHotKey(const QKeySequence&);
     void updateConfig();
 
+    void showMessage(const QString &title, const QString &msg,
+                     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
+
 private:
     void setupSystemTrayIcon();
 

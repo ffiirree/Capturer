@@ -18,6 +18,10 @@
         <file>res/icon.png</file>
         <file>res/cursor-move.png</file>
         <file>res/mosaic.png</file>
+        <file>res/microphone.png</file>
+        <file>res/microphone-mute.png</file>
+        <file>res/red_circle.png</file>
+        <file>res/stop.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu.qss</file>

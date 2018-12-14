@@ -36,6 +36,11 @@ Capturer::Capturer(QWidget *parent)
     // System tray icon
     // @attention Must after setting.
     setupSystemTrayIcon();
+
+    // show message
+    connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
+    connect(recorder_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
+    connect(gifcptr_, &GifCapturer::SHOW_MESSAGE, this, &Capturer::showMessage);
 }
 
 void Capturer::updateConfig()
@@ -100,6 +105,11 @@ void Capturer::setupSystemTrayIcon()
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));
     setWindowIcon(QIcon(":/icon/res/icon.png"));
     sys_tray_icon_->show();
+}
+
+void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
+{
+    sys_tray_icon_->showMessage(title, msg, icon, msecs);
 }
 
 void Capturer::setSnipHotKey(const QKeySequence &sc)

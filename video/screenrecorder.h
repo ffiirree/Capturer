@@ -1,8 +1,10 @@
 #ifndef CAPTURER_VIDEOCAPTURER_H
 #define CAPTURER_VIDEOCAPTURER_H
 
-#include "selector.h"
 #include <QProcess>
+#include <QSystemTrayIcon>
+#include "selector.h"
+#include "record_menu.h"
 
 class ScreenRecorder : public Selector
 {
@@ -10,9 +12,15 @@ class ScreenRecorder : public Selector
 
 public:
     explicit ScreenRecorder(QWidget *parent = nullptr);
+    virtual ~ScreenRecorder() override {
+        delete menu_;
+    }
 
     inline int framerate() { return framerate_; }
 
+signals:
+    void SHOW_MESSAGE(const QString &title, const QString &msg,
+                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 public slots:
     virtual void exit() override;
 
@@ -29,6 +37,8 @@ private:
     QProcess *process_ = nullptr;
 
     QString filename_;
+
+    RecordMenu *menu_ = nullptr;
 };
 
 #endif //! CAPTURER_VIDEOCAPTURER_H

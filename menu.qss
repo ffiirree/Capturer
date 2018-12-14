@@ -21,3 +21,49 @@ MainMenu, GraphMenu, FontMenu {
 QTextEdit#text_area {
     background-color: rgba(0, 0, 0, 1);
 }
+
+
+RecordMenu {
+    background-color: black;
+}
+
+QPushButton#RecordStopButton {
+    background-color: black;
+    border-width: 0px;
+}
+
+QPushButton#RecordStopButton::hovered {
+    border-width: 0px;
+}
+
+QPushButton#RecordStopButton::pressed {
+    border-width: 0px;
+}
+
+QCheckBox#MicrophoneButton{
+    padding: 10px;
+}
+QCheckBox#MicrophoneButton::indicator {
+    width: 22px;
+    height: 22px;
+}
+QCheckBox#MicrophoneButton::indicator:unchecked {
+    image: url(:/icon/res/microphone-mute.png);
+}
+QCheckBox#MicrophoneButton::indicator:unchecked:hover {
+    image: url(:/icon/res/microphone-mute.png);
+}
+QCheckBox#MicrophoneButton::indicator:unchecked:pressed {
+    image: url(:/icon/res/microphone-mute.png);
+}
+QCheckBox#MicrophoneButton::indicator:checked {
+    image: url(:/icon/res/microphone.png);
+}
+QCheckBox#MicrophoneButton::indicator:checked:hover {
+    image: url(:/icon/res/microphone.png);
+}
+QCheckBox#MicrophoneButton::indicator:checked:pressed {
+    image: url(:/icon/res/microphone.png);
+}
+
+

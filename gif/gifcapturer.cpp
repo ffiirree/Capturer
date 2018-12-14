@@ -10,6 +10,9 @@ GifCapturer::GifCapturer(QWidget * parent)
     : Selector(parent)
 {
     process_ = new QProcess(this);
+    record_menu_ = new RecordMenu();
+
+    connect(record_menu_, &RecordMenu::STOP, this, &GifCapturer::exit);
 }
 
 void GifCapturer::record()
@@ -19,6 +22,8 @@ void GifCapturer::record()
 
 void GifCapturer::setup()
 {
+    record_menu_->start();
+
     status_ = LOCKED;
     hide();
 
@@ -72,6 +77,9 @@ void GifCapturer::exit()
 
     process_->start("ffmpeg", args);
 
+    record_menu_->stop();
+    emit SHOW_MESSAGE("Capturer<GIF>", "Path: " + filename_);
+
     Selector::exit();
 }
 
@@ -79,7 +87,7 @@ void GifCapturer::exit()
 void GifCapturer::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        exit();
+        Selector::exit();
     }
 
     if(event->key() == Qt::Key_Return) {

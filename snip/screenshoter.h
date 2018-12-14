@@ -4,6 +4,7 @@
 #include <selector.h>
 #include <QTextEdit>
 #include <QPixmap>
+#include <QSystemTrayIcon>
 #include "mainmenu.h"
 #include "graphmenu.h"
 #include "magnifier.h"
@@ -39,6 +40,8 @@ public:
 signals:
     void CAPTURE_SCREEN_DONE(QPixmap image);
     void FIX_IMAGE(QPixmap image);
+    void SHOW_MESSAGE(const QString &title, const QString &msg,
+                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
 public slots:
     virtual void start() override;

@@ -43,6 +43,7 @@ SOURCES += \
     $$PWD/snip/mainmenu.cpp \
     $$PWD/snip/graphmenu.cpp \
     $$PWD/snip/screenshoter.cpp \
+    $$PWD/video/record_menu.cpp \
     $$PWD/video/screenrecorder.cpp \
     $$PWD/gif/gifcapturer.cpp \
     $$PWD/setting/settingdialog.cpp \
@@ -50,7 +51,8 @@ SOURCES += \
     $$PWD/core/textedit.cpp \
     $$PWD/snip/fontmenu.cpp \
     $$PWD/snip/command.cpp \
-    core/config.cpp
+    $$PWD/core/config.cpp
+
 
 
 HEADERS += \
@@ -64,6 +66,7 @@ HEADERS += \
     $$PWD/snip/mainmenu.h \
     $$PWD/snip/graphmenu.h \
     $$PWD/snip/screenshoter.h \
+    $$PWD/video/record_menu.h \
     $$PWD/video/screenrecorder.h \
     $$PWD/gif/gifcapturer.h \
     $$PWD/setting/settingdialog.h \
@@ -72,8 +75,8 @@ HEADERS += \
     $$PWD/core/textedit.h \
     $$PWD/snip/fontmenu.h \
     $$PWD/snip/command.h \
-    core/config.h \
-    core/resizer.h
+    $$PWD/core/config.h \
+    $$PWD/core/resizer.h
 
 RC_ICONS = $$PWD/res/icon.ico
 

@@ -2,7 +2,9 @@
 #define CAPTURER_GIFCAPTURER_H
 
 #include <QProcess>
+#include <QSystemTrayIcon>
 #include "selector.h"
+#include "record_menu.h"
 
 class GifCapturer : public Selector
 {
@@ -10,9 +12,14 @@ class GifCapturer : public Selector
 
 public:
     explicit GifCapturer(QWidget * parent = nullptr);
+    virtual ~GifCapturer() override { delete record_menu_; }
 
     inline int framerate() const { return framerate_; }
     inline int fps() const { return fps_; }
+
+signals:
+    void SHOW_MESSAGE(const QString &title, const QString &msg,
+                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
 public slots:
     virtual void exit() override;
@@ -35,6 +42,8 @@ private:
     QString temp_video_path_;
     QString temp_palette_path_;
     QProcess *process_ = nullptr;
+
+    RecordMenu * record_menu_ = nullptr;
 };
 
 #endif //! CAPTURER_GIFCAPTURER_H

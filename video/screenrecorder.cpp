@@ -13,6 +13,9 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
 {
     process_ = new QProcess(this);
+    menu_ = new RecordMenu();
+
+    connect(menu_, &RecordMenu::STOP, this, &ScreenRecorder::exit);
 }
 
 void ScreenRecorder::record()
@@ -22,6 +25,8 @@ void ScreenRecorder::record()
 
 void ScreenRecorder::setup()
 {
+    menu_->start();
+
     status_ = LOCKED;
     hide();
 
@@ -57,14 +62,15 @@ void ScreenRecorder::setup()
 void ScreenRecorder::exit()
 {
     process_->write("q\n\r");
-
+    menu_->stop();
+    emit SHOW_MESSAGE("Capturer<VIDEO>", "Path: " + filename_);
     Selector::exit();
 }
 
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        exit();
+        Selector::exit();
     }
 
     if(event->key() == Qt::Key_Return) {
