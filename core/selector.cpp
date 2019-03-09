@@ -15,7 +15,7 @@ Selector::Selector(QWidget * parent)
 
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint);
 
 //    setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
     setMaxSize();

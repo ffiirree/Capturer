@@ -82,7 +82,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 void ScreenShoter::start()
 {
     if(status_ == INITIAL)
-        captured_screen_ = grabScreens();
+        captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(0);
 
     Selector::start();
 }
@@ -567,7 +567,7 @@ QImage ScreenShoter::mosaic()
             //
             for(auto i = 0; i < 10; ++i) {
                 for(auto j = 0; j < 10; ++j) {
-                    image.setPixelColor(w + j, h + i, image.pixel(w, h));
+                    //image.setPixelColor(w + j, h + i, image.pixel(w, h));
                 }
             }
         }
