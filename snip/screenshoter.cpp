@@ -81,38 +81,17 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
 void ScreenShoter::start()
 {
-    if(status_ == INITIAL)
-        captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(0);
+    if(status_ == INITIAL) {
+        auto virtual_geometry = QGuiApplication::primaryScreen()->virtualGeometry();
+        captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId(),
+                                                                        virtual_geometry.left(),
+                                                                        virtual_geometry.top(),
+                                                                        virtual_geometry.width(),
+                                                                        virtual_geometry.height());
+    }
 
     Selector::start();
 }
-
-QPixmap ScreenShoter::grabScreens()
-{
-    auto screens = QGuiApplication::screens();
-    QList<QPixmap> pixmaps;
-    int width = 0;
-    int height = 0;
-
-    foreach(auto screen, screens) {
-        QPixmap pixmap = screen->grabWindow(0);
-        width += pixmap.width();
-        if(height < pixmap.height())
-            height = pixmap.height();
-        pixmaps << pixmap;
-    }
-
-    QPixmap final(width, height);
-    QPainter painter(&final);
-    final.fill(Qt::black);
-    int width_pos = 0;
-    foreach(auto pixmap, pixmaps) {
-        painter.drawPixmap(QPoint(width_pos, 0), pixmap);
-        width_pos += pixmap.width();
-    }
-    return final;
-}
-
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     auto mouse_pos = event->pos();

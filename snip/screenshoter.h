@@ -35,7 +35,6 @@ public:
 
 public:
     explicit ScreenShoter(QWidget *parent = nullptr);
-    QPixmap grabScreens();
 
 signals:
     void CAPTURE_SCREEN_DONE(QPixmap image);
