@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QLabel>
 #include <QHBoxLayout>
-#include <QPoint>
 
 class ImageWindow : public QWidget
 {
@@ -12,21 +11,19 @@ class ImageWindow : public QWidget
 
 public:
     explicit ImageWindow(QWidget *parent = nullptr);
-    ~ImageWindow();
+    virtual ~ImageWindow() override = default;
 
     void fix(QPixmap image);
 
 private:
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent* event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void keyPressEvent(QKeyEvent *event);
-
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void mouseMoveEvent(QMouseEvent* event) override;
+    virtual void keyPressEvent(QKeyEvent *event) override;
 
     QHBoxLayout *layout_ = nullptr;
     QLabel *label_= nullptr;
 
-    QPoint begin_, end_;
+    QPoint begin_{0, 0};
 };
 
 #endif //! CAPTURER_FIXEDWINDOW_H

@@ -1,12 +1,14 @@
 #ifndef CAPTURER_MAINWINDOW_H
 #define CAPTURER_MAINWINDOW_H
 
-#include <QFrame>
+#include <vector>
+#include <queue>
+#include <memory>
 #include <QPixmap>
 #include <QSystemTrayIcon>
-#include <vector>
+#include <QMimeData>
 #include <QMenu>
-#include <memory>
+#include "webview.h"
 #include "screenshoter.h"
 #include "imagewindow.h"
 #include "screenrecorder.h"
@@ -15,6 +17,13 @@
 #include "gifcapturer.h"
 #include "settingdialog.h"
 #include "json.hpp"
+
+template <typename T, int MAX_SIZE = 10>
+class LimitSizeQueue : public std::queue<T> {
+public:
+    void push(const T& value) { std::queue<T>::push(value); if(this->size() > MAX_SIZE) this->pop(); }
+    void push(T&& value) { std::queue<T>::push(value); if(this->size() > MAX_SIZE) this->pop();}
+};
 
 class Capturer : public QWidget
 {
@@ -25,7 +34,7 @@ public:
     ~Capturer();
 
 private slots:
-    void pinImage(QPixmap image);
+    void pinImage(const QPixmap& image, const QPoint& pos);
     void pinLastImage();
 
     void setSnipHotKey(const QKeySequence&);
@@ -35,7 +44,10 @@ private slots:
     void updateConfig();
 
     void showMessage(const QString &title, const QString &msg,
-                     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
+                     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information,
+                     int msecs = 10000);
+
+    void clipboardChanged();
 
 private:
     void setupSystemTrayIcon();
@@ -44,8 +56,7 @@ private:
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
 
-    std::vector<QPixmap> images_;
-    std::vector<ImageWindow *> fix_windows_;
+    LimitSizeQueue<std::pair<QPixmap, QPoint>, 10> clipboard_history_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;

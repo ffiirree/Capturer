@@ -37,8 +37,8 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
-    void CAPTURE_SCREEN_DONE(QPixmap image);
-    void FIX_IMAGE(QPixmap image);
+    void SNIP_DONE(const QPixmap image, const QPoint& pos);
+    void FIX_IMAGE(const QPixmap image, const QPoint& pos);
     void SHOW_MESSAGE(const QString &title, const QString &msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
@@ -49,6 +49,7 @@ public slots:
     void save_image();
     void copy2clipboard();
     void pin_image();
+    void snip_done();
 
     void undo();
     void redo();

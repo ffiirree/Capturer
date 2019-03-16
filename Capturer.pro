@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -56,6 +56,7 @@ SOURCES += \
 
 
 HEADERS += \
+    $$PWD/core/webview.h \
     $$PWD/capturer.h \
     $$PWD/core/magnifier.h \
     $$PWD/core/detectwidgets.h \

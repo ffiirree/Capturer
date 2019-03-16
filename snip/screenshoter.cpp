@@ -395,7 +395,7 @@ shared_ptr<Command> ScreenShoter::getCursorPos(const QPoint& pos)
         {
             QLine line(command->points()[0], command->points()[1]);
             QRect area(command->points()[0], command->points()[1]);
-            float k = (float)line.dy()/line.dx();
+            float k = static_cast<float>(line.dy())/line.dx();
             float b = command->points()[0].y() - k * command->points()[0].x();
             auto diff = pos.x() * k + b - pos.y();
 
@@ -420,7 +420,7 @@ shared_ptr<Command> ScreenShoter::getCursorPos(const QPoint& pos)
         {
             QLine line(command->points()[0], command->points()[1]);
             QRect area(command->points()[0], command->points()[1]);
-            float k = (float)line.dy()/line.dx();
+            float k = static_cast<float>(line.dy())/line.dx();
             float b = command->points()[0].y() - k * command->points()[0].x();
             auto diff = pos.x() * k + b - pos.y();
 
@@ -776,6 +776,13 @@ void ScreenShoter::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
 }
 
 
+void ScreenShoter::snip_done()
+{
+    QApplication::clipboard()->setPixmap(captured_image_);
+
+    emit SNIP_DONE(captured_image_, { l(), t() });
+}
+
 void ScreenShoter::save_image()
 {
     auto filename = QFileDialog::getSaveFileName(this,
@@ -786,23 +793,24 @@ void ScreenShoter::save_image()
     if(!filename.isEmpty()) {
         captured_image_.save(filename);
         emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
-        CAPTURE_SCREEN_DONE(captured_image_);
+
+        snip_done();
+
         exit();
     }
 }
 
 void ScreenShoter::copy2clipboard()
 {
-    QApplication::clipboard()->setPixmap(captured_image_);
-    CAPTURE_SCREEN_DONE(captured_image_);
+    snip_done();
 
     exit();
 }
 
 void ScreenShoter::pin_image()
 {
-    FIX_IMAGE(captured_image_);
-    CAPTURE_SCREEN_DONE(captured_image_);
+    snip_done();
+    emit FIX_IMAGE(captured_image_, { l(), t() });
 
     exit();
 }

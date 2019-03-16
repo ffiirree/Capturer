@@ -19,6 +19,8 @@ ImageWindow::ImageWindow(QWidget *parent)
     layout_->setMargin(10);
 
     setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_DeleteOnClose);
+
     auto effect = new QGraphicsDropShadowEffect(this);
     effect->setBlurRadius(10);
     effect->setOffset(0);
@@ -41,21 +43,9 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
     move(event->pos() - begin_ + pos());
 }
-
-void ImageWindow::mouseReleaseEvent(QMouseEvent *event)
-{
-    Q_UNUSED(event);
-}
-
 void ImageWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
-        hide();
+        close();
     }
-}
-
-ImageWindow::~ImageWindow()
-{
-    delete label_;
-    delete layout_;
 }

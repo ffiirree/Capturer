@@ -1,7 +1,10 @@
 #include "capturer.h"
 #include <QKeyEvent>
+#include <QApplication>
+#include <QClipboard>
 #include <QDebug>
 #include "imagewindow.h"
+#include "webview.h"
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
@@ -11,7 +14,9 @@ Capturer::Capturer(QWidget *parent)
     gifcptr_ = new GifCapturer();
 
     connect(sniper_, &ScreenShoter::FIX_IMAGE, this, &Capturer::pinImage);
-    connect(sniper_, &ScreenShoter::CAPTURE_SCREEN_DONE, [&](QPixmap image){ images_.push_back(image); });
+    connect(sniper_, &ScreenShoter::SNIP_DONE, [&](const QPixmap image, const QPoint& pos) {
+        clipboard_history_.push({image, pos});
+    });
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
 
@@ -41,6 +46,9 @@ Capturer::Capturer(QWidget *parent)
     connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
     connect(recorder_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
     connect(gifcptr_, &GifCapturer::SHOW_MESSAGE, this, &Capturer::showMessage);
+
+    // clipboard
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &Capturer::clipboardChanged);
 }
 
 void Capturer::updateConfig()
@@ -110,6 +118,7 @@ void Capturer::setupSystemTrayIcon()
 void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
 {
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
+    qDebug() << msg;
 }
 
 void Capturer::setSnipHotKey(const QKeySequence &sc)
@@ -144,19 +153,80 @@ void Capturer::setVideoHotKey(const QKeySequence &sc)
     }
 }
 
-void Capturer::pinImage(QPixmap image)
+void Capturer::clipboardChanged()
+{
+    const auto mimedata = QApplication::clipboard()->mimeData();
+
+    if(mimedata->hasFormat("application/x-qt-image"))  return;
+
+    if(mimedata->hasHtml()) {
+        auto view = new WebView();
+
+#if (QT_VERSION > 0x050700)
+        connect(view, &WebView::contentsSizeChanged, [&, view](const QSize& size){
+            view->resize(size);
+#else
+        connect(view, &WebView::loadFinished, [&, view](){
+
+            view->page()->runJavaScript("document.documentElement.scrollWidth;",[=](const QVariant& width){
+                view->resize(width.toInt() + 10,view->height());
+            });
+
+            view->page()->runJavaScript("document.documentElement.scrollHeight;",[=](const QVariant& height){
+                view->resize(view->width(), height.toInt());
+            });
+#endif
+            QTimer::singleShot(100, [&, view](){
+                clipboard_history_.push({ view->grab(), QCursor::pos() });
+                view->close();
+            });
+        });
+
+        view->setHtml(mimedata->html());
+        view->show();
+    }
+    else if(mimedata->hasText()) {
+        auto label = new QLabel(mimedata->text());
+        label->setWordWrap(true);
+
+        QPalette palette = label->palette();
+        palette.setColor(label->backgroundRole(), Qt::white);
+        label->setPalette(palette);
+        label->setMargin(10);
+
+        QFont font;
+        font.setPointSize(12);
+        font.setFamily("Consolas");
+        label->setFont(font);
+
+        clipboard_history_.push({ label->grab(), QCursor::pos() });
+    }
+    else if(mimedata->hasImage()) {
+        QPixmap p;
+        p.loadFromData(mimedata->data("image/ *"), "PNG");
+        clipboard_history_.push({ p, QCursor::pos() });
+    }
+    else if(mimedata->hasUrls()) {
+        // Do nothing.
+    }
+    else if(mimedata->hasColor()) {
+        // Do nothing.
+    }
+}
+
+void Capturer::pinImage(const QPixmap& image, const QPoint& pos)
 {
     auto fixed_image = new ImageWindow(this);
     fixed_image->fix(image);
-    fix_windows_.push_back(fixed_image);
-    fixed_image->show();
+    fixed_image->move(pos - QPoint{ 10, 10 }/*window margin*/);
 }
 
 void Capturer::pinLastImage()
 {
-    if(images_.empty()) return;
+    if(clipboard_history_.empty()) return;
 
-    pinImage(images_.back());
+    const auto& last = clipboard_history_.back();
+    pinImage(last.first, last.second);
 }
 
 Capturer::~Capturer()

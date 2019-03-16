@@ -235,7 +235,7 @@ void Selector::paintEvent(QPaintEvent *event)
 
     auto srect = selected();
 
-    painter_.fillRect(rect(), QColor(0, 0, 0, 1)); // Make windows happy.
+    painter_.fillRect(rect(), QColor(0, 0, 0, 1)); // Make Windows(OS) happy.
 
     painter_.fillRect(QRect{ 0, 0, width(), srect.y() }, mask_color_);
     painter_.fillRect(QRect{ 0, srect.y(), srect.x(), srect.height() }, mask_color_);
@@ -420,8 +420,8 @@ void Selector::registerShortcuts()
 
     auto select_all = new QShortcut(Qt::CTRL + Qt::Key_A, this);
     connect(select_all, &QShortcut::activated, [&]() {
-        x1_ = 0, x2_ = rect().width();
-        y1_ = 0, y2_ = rect().height();
+        x1_ = 0; x2_ = rect().width();
+        y1_ = 0; y2_ = rect().height();
         emit resized();
         status_ = CAPTURED;
     });
