@@ -9,16 +9,17 @@ TextEdit::TextEdit(QWidget * parent)
    viewport()->setAutoFillBackground(false);
 
    setTextColor(QColor(0, 0, 0, 0));
+   document()->setDocumentMargin(2);
 
    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
    setLineWrapMode(QTextEdit::NoWrap);
 
-   setFixedSize(document()->size().width(), document()->size().height());
+   setFixedSize(document()->size().toSize());
 
    auto resize_fuctor = [=](){
-       setFixedSize(QSize(document()->size().width(), document()->size().height()));
+       setFixedSize(document()->size().toSize());
    };
 
    connect(this, &TextEdit::documentSizeChanged, resize_fuctor);

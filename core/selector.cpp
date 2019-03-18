@@ -178,7 +178,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     default: break;
     }
 
-    this->update();
+    this->update();     // TODO: 减少刷新次数，提升性能
     QWidget::mouseMoveEvent(event);
 }
 

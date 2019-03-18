@@ -8,6 +8,8 @@
 #include "textedit.h"
 
 using std::shared_ptr;
+using std::make_shared;
+using std::vector;
 
 class Command
 {

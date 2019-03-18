@@ -75,6 +75,7 @@ private:
     void upadateMagnifierPosition();
 
     QPixmap captured_screen_, captured_image_;
+    QImage mosaic_background_;
 
     Resizer::PointPosition cursor_graph_pos_ = Resizer::OUTSIDE;
 
