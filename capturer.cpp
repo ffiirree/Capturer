@@ -218,7 +218,7 @@ void Capturer::pinImage(const QPixmap& image, const QPoint& pos)
 {
     auto fixed_image = new ImageWindow(this);
     fixed_image->fix(image);
-    fixed_image->move(pos - QPoint{ 10, 10 }/*window margin*/);
+    fixed_image->move(pos - QPoint{ 5, 5 }/*window margin*/);
 }
 
 void Capturer::pinLastImage()

@@ -1,6 +1,7 @@
 #include "imagewindow.h"
 #include <QKeyEvent>
 #include <QMainWindow>
+#include <QPainter>
 #include <QGraphicsDropShadowEffect>
 
 ImageWindow::ImageWindow(QWidget *parent)
@@ -8,15 +9,6 @@ ImageWindow::ImageWindow(QWidget *parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Dialog);
     setCursor(Qt::SizeAllCursor);
-
-    label_ = new QLabel();
-
-    layout_ = new QHBoxLayout();
-    layout_->setMargin(0);
-    layout_->addWidget(label_);
-    setLayout(layout_);
-
-    layout_->setMargin(10);
 
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -30,7 +22,12 @@ ImageWindow::ImageWindow(QWidget *parent)
 
 void ImageWindow::fix(QPixmap image)
 {
-    label_->setPixmap(image);
+    pixmap_ = image;
+    size_ = pixmap_.size();
+
+    resize(size_ + QSize{10, 10});
+
+    update();
     show();
 }
 
@@ -43,6 +40,26 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
     move(event->pos() - begin_ + pos());
 }
+
+void ImageWindow::wheelEvent(QWheelEvent *event)
+{
+    scale_ += (event->delta()/12000.0);         // +/-1%
+    scale_ = scale_ < 0.1 ? 0.1 : scale_;
+
+    center_ = geometry().center();
+    auto _size = (size_) * scale_ + QSize{10, 10};
+    setGeometry(center_.x() - _size.width()/2, center_.y() - _size.height()/2, _size.width(), _size.height());
+
+    update();
+}
+
+void ImageWindow::paintEvent(QPaintEvent *)
+{
+    QPainter p{this};
+    auto pixmap = pixmap_.scaled(size_ * scale_);
+    p.drawPixmap(5, 5, pixmap);
+}
+
 void ImageWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape) {
