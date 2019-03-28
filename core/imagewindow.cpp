@@ -56,7 +56,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
 void ImageWindow::paintEvent(QPaintEvent *)
 {
     QPainter p{this};
-    auto pixmap = pixmap_.scaled(size_ * scale_);
+    auto pixmap = pixmap_.scaled(size_ * scale_, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     p.drawPixmap(5, 5, pixmap);
 }
 
