@@ -1,4 +1,5 @@
 #include "screenshoter.h"
+#include <cmath>
 #include <QApplication>
 #include <QGuiApplication>
 #include <QScreen>
@@ -8,7 +9,7 @@
 #include <QMouseEvent>
 #include <QStandardPaths>
 #include <QShortcut>
-#include <QDebug>
+#include <QDateTime>
 
 ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
@@ -786,6 +787,7 @@ void ScreenShoter::snip_done()
 
 void ScreenShoter::save_image()
 {
+#ifdef _WIN32
     auto filename = QFileDialog::getSaveFileName(this,
                                                  tr("Save Image"),
                                                  QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
@@ -799,6 +801,17 @@ void ScreenShoter::save_image()
 
         exit();
     }
+#elif __linux__
+    auto filename = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) + QDir::separator()
+            + "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
+
+    captured_image_.save(filename);
+    emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
+
+    snip_done();
+
+    exit();
+#endif
 }
 
 void ScreenShoter::copy2clipboard()

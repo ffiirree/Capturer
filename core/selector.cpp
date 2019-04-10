@@ -15,9 +15,8 @@ Selector::Selector(QWidget * parent)
 
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint);
 
-//    setWindowState(Qt::WindowActive | Qt::WindowFullScreen);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint);
     setMaxSize();
 
     connect(this, &Selector::moved, [this](){ update(); });
@@ -45,6 +44,8 @@ void Selector::start()
     if(status_ == INITIAL) {
         status_ = NORMAL;
         show();
+
+        activateWindow(); //  Qt::BypassWindowManagerhint: no keyboard input unless call QWidget::activateWindow()
 
         if(use_detect_) {
             auto rect = DetectWidgets::window();

@@ -41,11 +41,11 @@ signals:
     void resized();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *event) override;
-    virtual void mouseMoveEvent(QMouseEvent* event) override;
-    virtual void mouseReleaseEvent(QMouseEvent *event) override;
-    virtual void keyPressEvent(QKeyEvent *event) override;
-    virtual void paintEvent(QPaintEvent *event) override;
+    virtual void mousePressEvent(QMouseEvent *) override;
+    virtual void mouseMoveEvent(QMouseEvent * ) override;
+    virtual void mouseReleaseEvent(QMouseEvent *) override;
+    virtual void keyPressEvent(QKeyEvent *) override;
+    virtual void paintEvent(QPaintEvent *) override;
 
     // selected area
     inline QRect selected() const { return {l(), t(), w(), h()}; }

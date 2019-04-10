@@ -24,14 +24,23 @@ https://github.com/ffiirree/Capturer/releases
  - `ESC`                        : 退出
 
 ## 源码使用
+### 源代码下载
 ```
 git clone https://github.com/ffiirree/Capturer.git
 git submodule init
 git submodule update
 ```
-在Qt Creator中打开
+### 安装FFmpeg
+#### Windows
+从[官网](https://ffmpeg.zeranoe.com/builds/)下载编译好的二进制文件。
 
-> 注: 录屏和录制gif依赖于`ffmpeg`，需要先安装`ffmpeg`
+#### Ubuntu
+```
+sudo apt install ffmpeg
+```
+
+> 注意，`qt`安装时需要安装`qtwebengine`组件
+
 
 ## 效果
 ![image](https://github.com/ffiirree/Capturer/blob/master/capturer.gif)
