@@ -31,7 +31,7 @@ class Capturer : public QWidget
 
 public:
     explicit Capturer(QWidget *parent = nullptr);
-    ~Capturer();
+    virtual ~Capturer() override = default;
 
 private slots:
     void pinImage(const QPixmap& image, const QPoint& pos);

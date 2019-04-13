@@ -9,9 +9,9 @@
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
-    sniper_ = new ScreenShoter();
-    recorder_ = new ScreenRecorder();
-    gifcptr_ = new GifCapturer();
+    sniper_ = new ScreenShoter(this);
+    recorder_ = new ScreenRecorder(this);
+    gifcptr_ = new GifCapturer(this);
 
     connect(sniper_, &ScreenShoter::FIX_IMAGE, this, &Capturer::pinImage);
     connect(sniper_, &ScreenShoter::SNIP_DONE, [&](const QPixmap image, const QPoint& pos) {
@@ -227,11 +227,4 @@ void Capturer::pinLastImage()
 
     const auto& last = clipboard_history_.back();
     pinImage(last.first, last.second);
-}
-
-Capturer::~Capturer()
-{
-    delete sniper_;
-    delete recorder_;
-    delete gifcptr_;
 }
