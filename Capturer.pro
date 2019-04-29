@@ -26,6 +26,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 include(3rdparty/qxtglobalshortcut/qxt.pri)
 INCLUDEPATH += \
     $$PWD/core \
+    $$PWD/menu \
     $$PWD/snip \
     $$PWD/video \
     $$PWD/gif \
@@ -38,46 +39,69 @@ SOURCES += \
     $$PWD/core/imagewindow.cpp \
     $$PWD/core/shortcutinput.cpp \
     $$PWD/core/magnifier.cpp \
-    $$PWD/core/info.cpp \
+    $$PWD/core/sizeinfo.cpp \
     $$PWD/core/selector.cpp \
-    $$PWD/snip/mainmenu.cpp \
-    $$PWD/snip/graphmenu.cpp \
+    $$PWD/menu/imageeditmenu.cpp \
+    $$PWD/menu/grapheditmenu.cpp \
+    $$PWD/menu/record_menu.cpp \
+    $$PWD/menu/texteditmenu.cpp \
+    $$PWD/menu/lineeditmenu.cpp \
+    $$PWD/menu/linewidthwidget.cpp \
+    $$PWD/menu/arroweditmenu.cpp \
+    $$PWD/menu/editmenu.cpp \
+    $$PWD/menu/erasemenu.cpp \
     $$PWD/snip/screenshoter.cpp \
-    $$PWD/video/record_menu.cpp \
     $$PWD/video/screenrecorder.cpp \
     $$PWD/gif/gifcapturer.cpp \
     $$PWD/setting/settingdialog.cpp \
-    $$PWD/core/colorbutton.cpp \
+    $$PWD/core/colorpanel.cpp \
     $$PWD/core/textedit.cpp \
-    $$PWD/snip/fontmenu.cpp \
     $$PWD/snip/command.cpp \
-    $$PWD/core/config.cpp
-
+    $$PWD/core/config.cpp \
+    $$PWD/core/separator.cpp \
+    $$PWD/snip/circlecursor.cpp \
+    $$PWD/menu/iconbutton.cpp \
+    $$PWD/core/displayinfo.cpp \
+    $$PWD/core/buttongroup.cpp \
+    core/paintwidget.cpp
 
 
 HEADERS += \
+    $$PWD/core/utils.h \
     $$PWD/core/webview.h \
     $$PWD/capturer.h \
     $$PWD/core/magnifier.h \
     $$PWD/core/detectwidgets.h \
-    $$PWD/core/info.h \
+    $$PWD/core/sizeinfo.h \
     $$PWD/core/imagewindow.h \
     $$PWD/core/shortcutinput.h \
     $$PWD/core/selector.h \
-    $$PWD/snip/mainmenu.h \
-    $$PWD/snip/graphmenu.h \
+    $$PWD/menu/imageeditmenu.h \
+    $$PWD/menu/grapheditmenu.h \
+    $$PWD/menu/texteditmenu.h \
+    $$PWD/menu/arroweditmenu.h \
+    $$PWD/menu/lineeditmenu.h \
+    $$PWD/menu/erasemenu.h \
+    $$PWD/menu/editmenu.h \
+    $$PWD/menu/linewidthwidget.h \
+    $$PWD/menu/record_menu.h \
     $$PWD/snip/screenshoter.h \
-    $$PWD/video/record_menu.h \
     $$PWD/video/screenrecorder.h \
     $$PWD/gif/gifcapturer.h \
     $$PWD/setting/settingdialog.h \
     $$PWD/3rdparty/json.hpp \
-    $$PWD/core/colorbutton.h \
+    $$PWD/core/colorpanel.h \
     $$PWD/core/textedit.h \
-    $$PWD/snip/fontmenu.h \
     $$PWD/snip/command.h \
     $$PWD/core/config.h \
-    $$PWD/core/resizer.h
+    $$PWD/core/resizer.h \
+    $$PWD/core/separator.h \
+    $$PWD/snip/circlecursor.h \
+    $$PWD/menu/iconbutton.h \
+    $$PWD/core/displayinfo.h \
+    $$PWD/core/buttongroup.h \
+    core/paintwidget.h
+
 
 RC_ICONS = $$PWD/res/icon.ico
 

@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QTextStream>
 #include <QDebug>
+#include "utils.h"
 
 JSON Config::settings_ = JSON::parse("{}");
 

@@ -5,12 +5,12 @@
 #include <QLabel>
 #include <QPainter>
 
-class Info : public QWidget
+class SizeInfoWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit Info(QWidget *parent = nullptr);
+    explicit SizeInfoWidget(QWidget *parent = nullptr);
 
     void size(const QSize& size);
 

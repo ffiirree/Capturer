@@ -5,7 +5,7 @@
 #include <QStandardPaths>
 #include <QSpinBox>
 #include <QComboBox>
-#include "colorbutton.h"
+#include "colorpanel.h"
 
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)
@@ -16,8 +16,10 @@ SettingWindow::SettingWindow(QWidget * parent)
                     | Qt::WindowStaysOnTopHint | Qt::Dialog);
 
     tabw_ = new QTabWidget(this);
-    tabw_->setFixedSize(300, 400);
-    setFixedSize(300, 400);
+    tabw_->setMinimumSize(300, 400);
+    tabw_->setFixedWidth(500);
+    tabw_->setMinimumHeight(100);
+//    setFixedSize(300, 400);
 
     // tab widget
     general_ = new QWidget(this);
@@ -128,9 +130,9 @@ void SettingWindow::setupSnipWidget()
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton(cfg_->get<QColor>(SNIP_SBC));
+        auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(SNIP_SBC));
         _2_2->setFixedHeight(25);
-        connect(_2_2, &ColorButton::changed, [this](auto&& c) { cfg_->set(SNIP_SBC, c); });
+        connect(_2_2, &ColorDialogButton::changed, [this](auto&& c) { cfg_->set(SNIP_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -152,9 +154,9 @@ void SettingWindow::setupSnipWidget()
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton(cfg_->get<QColor>(SNIP_SMC));
+        auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(SNIP_SMC));
         _4_2->setFixedHeight(25);
-        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(SNIP_SMC, c); });
+        connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(SNIP_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -251,9 +253,9 @@ void SettingWindow::setupRecordWidget()
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton(cfg_->get<QColor>(RECORD_SBC));
+        auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(RECORD_SBC));
         _2_2->setFixedHeight(25);
-        connect(_2_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(RECORD_SBC, c); });
+        connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(RECORD_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -275,9 +277,9 @@ void SettingWindow::setupRecordWidget()
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton(cfg_->get<QColor>(RECORD_SMC));
+        auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(RECORD_SMC));
         _4_2->setFixedHeight(25);
-        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(RECORD_SMC, c); });
+        connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(RECORD_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -369,9 +371,9 @@ void SettingWindow::setupGIFWidget()
         theme_layout->addWidget(_1_2, 1, 2);
 
         auto _2_1 = new QLabel("边框颜色");
-        auto _2_2 = new ColorButton(cfg_->get<QColor>(GIF_SBC));
+        auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(GIF_SBC));
         _2_2->setFixedHeight(25);
-        connect(_2_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(GIF_SBC, c); });
+        connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(GIF_SBC, c); });
         theme_layout->addWidget(_2_2, 2, 2);
         theme_layout->addWidget(_2_1, 2, 1);
 
@@ -393,9 +395,9 @@ void SettingWindow::setupGIFWidget()
         theme_layout->addWidget(_3_1, 3, 1);
 
         auto _4_1 = new QLabel("遮罩颜色");
-        auto _4_2 = new ColorButton(cfg_->get<QColor>(GIF_SMC));
+        auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(GIF_SMC));
         _4_2->setFixedHeight(25);
-        connect(_4_2, &ColorButton::changed, [this](auto&& c){ cfg_->set(GIF_SMC, c); });
+        connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(GIF_SMC, c); });
         theme_layout->addWidget(_4_2, 4, 2);
         theme_layout->addWidget(_4_1, 4, 1);
 
@@ -445,6 +447,6 @@ void SettingWindow::setupGIFWidget()
 
 void SettingWindow::setupAboutWidget()
 {
-    new QLabel("Copyright (C) 2018 Zhang Liangqi", about_);
+    new QLabel("Copyright (C) 2018 - 2019 ffiirree", about_);
 }
 

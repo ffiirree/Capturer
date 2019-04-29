@@ -3,10 +3,14 @@
 
 #include <QWidget>
 #include <QPainter>
-#include "info.h"
+#include "sizeinfo.h"
 #include "resizer.h"
+#include "displayinfo.h"
 
-class Selector : public QWidget, public Resizer
+#define LOCKED()            do{ status_ = LOCKED; emit locked(); } while(0)
+#define CAPTURED()          do{ status_ = CAPTURED; emit captured(); } while(0)
+
+class Selector : public QWidget
 {
     Q_OBJECT
 
@@ -27,7 +31,6 @@ public:
 
 public slots:
     virtual void start();
-    void setMaxSize();
     void setBorderColor(const QColor&);
     void setBorderWidth(int);
     void setBorderStyle(Qt::PenStyle s);
@@ -36,9 +39,13 @@ public slots:
 
     virtual void exit();
 
+    static void drawSelector(QPainter *, const Resizer&);
+
 signals:
+    void captured();
     void moved();
     void resized();
+    void locked();
 
 protected:
     virtual void mousePressEvent(QMouseEvent *) override;
@@ -48,30 +55,29 @@ protected:
     virtual void paintEvent(QPaintEvent *) override;
 
     // selected area
-    inline QRect selected() const { return {l(), t(), w(), h()}; }
+    inline QRect selected() const { return box_.rect(); }
 
     void updateSelected();
 
     QPainter painter_;
     Status status_ = INITIAL;
-    PointPosition cursor_pos_ = OUTSIDE;
+    Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
 
     // move
     QPoint mbegin_{0, 0}, mend_{0, 0};
     // resize
     QPoint rbegin_{0, 0}, rend_{0, 0};
 
-    Info * info_ = nullptr;
-
-    QColor mask_color_{0, 0, 0, 100};
+	bool modified_ = true;
+    Resizer box_;
 
 private:
     void registerShortcuts();
 
-    QColor border_color_ = Qt::cyan;
-    int border_width_ = 1;
-    Qt::PenStyle border_style_ = Qt::DashDotLine;
+    SizeInfoWidget * info_ = nullptr;
 
+    QPen pen_{Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin};
+    QColor mask_color_{0, 0, 0, 100};
     bool use_detect_ = true;
 };
 

@@ -5,36 +5,26 @@
 #include <QPen>
 #include <vector>
 #include <memory>
+#include "utils.h"
 #include "textedit.h"
 
 using std::shared_ptr;
 using std::make_shared;
 using std::vector;
 
-class Command
+class PaintCommand
 {
 public:
-    enum CommandType{
-        NONE,
-        DRAW_ELLIPSE,
-        DRAW_RECTANGLE,
-        DRAW_ARROW,
-        DRAW_BROKEN_LINE,
-        DRAW_CURVE,
-        DRAW_MOSAIC,
-        DRAW_TEXT,
-    };
-public:
-    Command(CommandType type) : type_(type) { }
-    Command(CommandType type, const QPen& pen)
-        : type_(type), pen_(pen)
+    PaintCommand(Graph type) : graph_(type) { }
+    PaintCommand(Graph type, const QPen& pen)
+        : graph_(type), pen_(pen)
     { }
-    Command(CommandType type, const QPen& pen, bool is_fill, const std::vector<QPoint>& points)
-        : type_(type), pen_(pen), is_fill_(is_fill), points_(points)
+    PaintCommand(Graph type, const QPen& pen, bool is_fill, const QVector<QPoint>& points)
+        : graph_(type), pen_(pen), is_fill_(is_fill), points_(points)
     { }
 
-    inline void type(CommandType t) { type_ = t; }
-    inline CommandType type() const  { return type_; }
+    inline void graph(Graph t) { graph_ = t; }
+    inline Graph graph() const  { return graph_; }
 
     inline void pen(const QPen& pen) { pen_ = pen; }
     inline QPen pen() const { return pen_; }
@@ -42,19 +32,28 @@ public:
     inline void setFill(bool fill) { is_fill_ = fill; }
     inline bool isFill() const { return is_fill_; }
 
-    inline void points(const std::vector<QPoint>& ps) { points_ = ps; }
-    inline const std::vector<QPoint>& points() const { return points_; }
-    inline std::vector<QPoint>& points() { return points_; }
+    inline void points(const QVector<QPoint>& ps) { points_ = ps; }
+    inline const QVector<QPoint>& points() const { return points_; }
+    inline QVector<QPoint>& points() { return points_; }
 
     inline void widget(QWidget * widget) { widget_ = widget; }
     inline QWidget * widget() const { return widget_; }
 
+    void execute(QPainter *);
+
+    QRect rect();
+    QSize size();
+
 private:
-    CommandType type_{ NONE };
+    void getArrowPoints(QPoint, QPoint, QPoint*);
+
+    Graph graph_{ NONE };
     QPen pen_{};
     bool is_fill_ = false;
-    std::vector<QPoint> points_;
+    QVector<QPoint> points_;
     QWidget * widget_ = nullptr;
+
+    QRect rect_;
 };
 
 class CommandStack : public QObject
@@ -62,10 +61,22 @@ class CommandStack : public QObject
     Q_OBJECT
 
 public:
-    inline void push(shared_ptr<Command> command)
+    CommandStack() = default;
+
+    CommandStack(const CommandStack& other) {
+        stack_ = other.stack_;
+    }
+    CommandStack& operator=(const CommandStack& other){
+        stack_ = other.stack_;
+        emit changed(stack_.size());
+        emit emptied(!stack_.size());
+        return *this;
+    }
+
+    inline void push(shared_ptr<PaintCommand> command)
     {
         if(stack_.empty())
-            emit empty(false);
+            emit emptied(false);
 
         stack_.push_back(command);
 
@@ -78,18 +89,17 @@ public:
         stack_.pop_back();
 
         if(stack_.empty())
-            emit empty(true);
+            emit emptied(true);
 
         emit changed(stack_.size());
         emit poped();
     }
 
-
     inline size_t size() const { return stack_.size(); }
 
-    inline shared_ptr<Command> back() const { return stack_.back(); }
+    inline shared_ptr<PaintCommand> back() const { return stack_.back(); }
 
-    inline std::vector<shared_ptr<Command>> commands() const { return stack_; }
+    inline vector<shared_ptr<PaintCommand>> commands() const { return stack_; }
 
     inline bool empty() const { return stack_.empty(); }
 
@@ -98,13 +108,21 @@ signals:
     void pushed();
     void poped();
 
-    void empty(bool);
+    void emptied(bool);               // emit when stack changed to be empty or not.
 
 public slots:
-    inline void clear() { stack_.clear(); }
+    inline void clear()
+    {
+        if(!stack_.empty()) {
+            emit changed(0);
+            emit emptied(true);
+        }
+
+        stack_.clear();
+    }
 
 private:
-    std::vector<shared_ptr<Command>> stack_;
+    vector<shared_ptr<PaintCommand>> stack_;
 };
 
 

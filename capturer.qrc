@@ -3,25 +3,30 @@
         <file>res/close.png</file>
         <file>res/save.png</file>
         <file>res/copy.png</file>
-        <file>res/fixed.png</file>
-        <file>res/arrow-up-right2.png</file>
         <file>res/circle.png</file>
         <file>res/eraser.png</file>
         <file>res/feather.png</file>
         <file>res/text.png</file>
-        <file>res/dot.png</file>
         <file>res/line.png</file>
         <file>res/redo.png</file>
         <file>res/undo.png</file>
-        <file>res/box.png</file>
         <file>res/rectangle.png</file>
         <file>res/icon.png</file>
-        <file>res/cursor-move.png</file>
         <file>res/mosaic.png</file>
         <file>res/microphone.png</file>
         <file>res/microphone-mute.png</file>
         <file>res/red_circle.png</file>
         <file>res/stop.png</file>
+        <file>res/wrong.png</file>
+        <file>res/right.png</file>
+        <file>res/gif.png</file>
+        <file>res/screenshot.png</file>
+        <file>res/setting.png</file>
+        <file>res/exit.png</file>
+        <file>res/arrow.png</file>
+        <file>res/fill.png</file>
+        <file>res/pin.png</file>
+        <file>res/rotate.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu.qss</file>

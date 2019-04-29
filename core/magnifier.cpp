@@ -6,7 +6,7 @@
 #include <QDebug>
 
 Magnifier::Magnifier(QWidget *parent)
-    :QFrame(parent)
+    :QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 

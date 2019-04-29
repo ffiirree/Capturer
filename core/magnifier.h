@@ -5,7 +5,7 @@
 #include <QLabel>
 #include <QPixmap>
 
-class Magnifier : public QFrame
+class Magnifier : public QWidget
 {
 public:
     explicit Magnifier(QWidget *parent = nullptr);

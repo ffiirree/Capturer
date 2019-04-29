@@ -13,6 +13,7 @@ public:
     explicit WebView(QWidget *parent = nullptr)
         : QWebEngineView(parent)
     {
+        setWindowFlags(Qt::FramelessWindowHint);
         setAttribute(Qt::WA_DontShowOnScreen);
         setAttribute(Qt::WA_DeleteOnClose);
 

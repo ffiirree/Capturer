@@ -41,3 +41,13 @@ CMakeLists.txt.user*
 build
 .vscode
 debian
+.vs
+x64
+*.user*
+*.vc*
+*.vs*
+*.json
+debug
+release
+*.rc
+TODO.md

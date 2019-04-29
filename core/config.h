@@ -8,11 +8,6 @@
 
 using JSON = nlohmann::json;
 
-// defines
-#ifndef st
-#define st(X) do{X}while(0)
-#endif
-
 #define IF_NULL_SET(X, default_value) st(if(X.is_null())  X = default_value;)
 #define GET_INT(X)  X.get<int>()
 #define GET_STR(X)  X.get<std::string>()

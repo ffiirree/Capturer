@@ -1,6 +1,6 @@
-#include "info.h"
+#include "sizeinfo.h"
 
-Info::Info(QWidget *parent)
+SizeInfoWidget::SizeInfoWidget(QWidget *parent)
     : QWidget(parent)
 {
     label_ = new QLabel(this);
@@ -18,13 +18,13 @@ Info::Info(QWidget *parent)
     label_->setPalette(p);
 }
 
-void Info::size(const QSize &size)
+void SizeInfoWidget::size(const QSize &size)
 {
     auto text  = QString::number(size.width()) + " x " + QString::number(size.height());
     label_->setText(text);
 }
 
-void Info::paintEvent(QPaintEvent *e)
+void SizeInfoWidget::paintEvent(QPaintEvent *e)
 {
     Q_UNUSED(e);
 
