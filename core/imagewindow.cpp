@@ -122,7 +122,7 @@ void ImageWindow::saveAs()
 #elif __linux__
     auto filename = default_filepath + QDir::separator() + default_filename;
 
-    captured_image_.save(filename);
+    pixmap_.save(filename);
 #endif
 }
 

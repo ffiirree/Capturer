@@ -63,7 +63,8 @@ class CommandStack : public QObject
 public:
     CommandStack() = default;
 
-    CommandStack(const CommandStack& other) {
+    CommandStack(const CommandStack& other)
+    {
         stack_ = other.stack_;
     }
     CommandStack& operator=(const CommandStack& other){

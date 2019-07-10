@@ -8,7 +8,7 @@ EditMenu::EditMenu(QWidget *parent)
     setFixedHeight(HEIGHT);
 
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowStaysOnTopHint);
 
     auto layout = new QHBoxLayout();
     layout->setSpacing(0);

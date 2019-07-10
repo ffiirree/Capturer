@@ -63,7 +63,7 @@ SOURCES += \
     $$PWD/menu/iconbutton.cpp \
     $$PWD/core/displayinfo.cpp \
     $$PWD/core/buttongroup.cpp \
-    core/paintwidget.cpp
+    $$PWD/core/paintwidget.cpp
 
 
 HEADERS += \
@@ -100,7 +100,7 @@ HEADERS += \
     $$PWD/menu/iconbutton.h \
     $$PWD/core/displayinfo.h \
     $$PWD/core/buttongroup.h \
-    core/paintwidget.h
+    $$PWD/core/paintwidget.h
 
 
 RC_ICONS = $$PWD/res/icon.ico

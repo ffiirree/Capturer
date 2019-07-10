@@ -32,7 +32,6 @@ void Selector::start()
     if(status_ == INITIAL) {
         status_ = NORMAL;
         setMouseTracking(true);
-        activateWindow(); //  Qt::BypassWindowManagerhint: no keyboard input unless call QWidget::activateWindow()
 
         if(use_detect_) {
             box_.reset(DetectWidgets::window());
@@ -40,6 +39,7 @@ void Selector::start()
         }
 
         show();
+        activateWindow(); //  Qt::BypassWindowManagerhint: no keyboard input unless call QWidget::activateWindow()
     }
 }
 

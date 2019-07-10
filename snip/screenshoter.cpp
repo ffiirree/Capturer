@@ -68,7 +68,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 
     // show menu
-    connect(this, &ScreenShoter::captured, [this](){ menu_->show(); moveMenu(); });
+    connect(this, &ScreenShoter::captured, [this](){ LOG(INFO) << "captured"; menu_->show(); moveMenu(); });
 
     // reset menu
     connect(&undo_stack_, &CommandStack::emptied, [this](bool empty) { if(empty) menu_->reset(); });
@@ -536,6 +536,10 @@ void ScreenShoter::paintOnCanvas()
     painter_.end();
 }
 
+// TODO:1.保存一份背景图片
+//      2. 将背景mask
+//      3. 将选择框画出，使用擦除的方法，去除mask
+//      问题是，超出选择区的部分，会绘制在mask上面，限制绘制区域？
 void ScreenShoter::paintEvent(QPaintEvent *event)
 {
     paintOnCanvas();
@@ -646,7 +650,7 @@ void ScreenShoter::save()
     snippedImage().save(filename);
     emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
 
-    snip_done();
+    snipped();
 
     exit();
 #endif

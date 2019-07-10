@@ -1,4 +1,5 @@
 #include "command.h"
+#include <cmath>
 
 void PaintCommand::getArrowPoints(QPoint begin, QPoint end, QPoint* points)
 {
