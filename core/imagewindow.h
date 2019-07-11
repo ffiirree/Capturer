@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QMenu>
+#include <QPainter>
+#include <QLabel>
 
 class ImageWindow : public QWidget
 {
@@ -41,6 +43,9 @@ private:
     QMenu * menu_;
 
     bool ctrl_ = false;
+
+    QPainter painter_;
+    const int SHANDOW_RADIUS_{ 10 };
 };
 
 #endif //! CAPTURER_FIXEDWINDOW_H

@@ -12,7 +12,7 @@ EraseMenu::EraseMenu(QWidget *parent)
 
         emit changed();
     });
-    addWidget(width_);
+    addButton(width_);
 
     // after added to the group
     width_->setChecked(true);

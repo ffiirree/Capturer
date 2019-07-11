@@ -9,6 +9,8 @@
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
+    LOAD_QSS(this, ":/qss/capturer.qss");
+
     sniper_ = new ScreenShoter(this);
     recorder_ = new ScreenRecorder(this);
     gifcptr_ = new GifCapturer(this);
@@ -84,28 +86,29 @@ void Capturer::setupSystemTrayIcon()
 {
     // SystemTrayIcon
     sys_tray_icon_menu_ = new QMenu(this);
+    sys_tray_icon_menu_->setObjectName("sys_tray_menu");
 
-    auto screen_shot = new QAction(QIcon(":/icon/res/screenshot"), "Screen Shot", this);
+    auto screen_shot = new QAction(QIcon(":/icon/res/screenshot"), tr("Snip"), this);
     connect(screen_shot, &QAction::triggered, sniper_, &ScreenShoter::start);
     sys_tray_icon_menu_->addAction(screen_shot);
 
-    auto record_screen = new QAction(QIcon(":/icon/res/stop"),"Screen Record", this);
+    auto record_screen = new QAction(QIcon(":/icon/res/sr"),tr("Screen Record"), this);
     connect(record_screen, &QAction::triggered, recorder_, &ScreenRecorder::record);
     sys_tray_icon_menu_->addAction(record_screen);
 
-    auto gif = new QAction(QIcon(":/icon/res/gif"), "GIF", this);
+    auto gif = new QAction(QIcon(":/icon/res/gif"), tr("GIF Record"), this);
     connect(gif, &QAction::triggered, gifcptr_, &GifCapturer::record);
     sys_tray_icon_menu_->addAction(gif);
 
     sys_tray_icon_menu_->addSeparator();
 
-    auto setting = new QAction(QIcon(":/icon/res/setting"), "Setting", this);
+    auto setting = new QAction(QIcon(":/icon/res/setting"), tr("Settings"), this);
     connect(setting, &QAction::triggered, setting_dialog_, &SettingWindow::show);
     sys_tray_icon_menu_->addAction(setting);
 
     sys_tray_icon_menu_->addSeparator();
 
-    auto exit_action = new QAction(QIcon(":/icon/res/exit"), "Quit", this);
+    auto exit_action = new QAction(QIcon(":/icon/res/exit"), tr("Quit"), this);
     connect(exit_action, &QAction::triggered, qApp, &QCoreApplication::exit);
     sys_tray_icon_menu_->addAction(exit_action);
 
@@ -123,7 +126,7 @@ void Capturer::showMessage(const QString &title, const QString &msg, QSystemTray
 void Capturer::setSnipHotKey(const QKeySequence &sc)
 {
     if(!snip_sc_->setShortcut(sc)) {
-        auto msg = "截屏快捷键<" + sc.toString() + ">注册失败!";
+        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
         sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
         LOG(ERROR) << msg;
     }
@@ -132,7 +135,7 @@ void Capturer::setSnipHotKey(const QKeySequence &sc)
 void Capturer::setFixImgHotKey(const QKeySequence &sc)
 {
     if(!pin_sc_->setShortcut(sc)){
-        auto msg = "贴图快捷键<" + sc.toString() + ">注册失败!";
+        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
         sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
         LOG(ERROR) << msg;
     }
@@ -141,7 +144,7 @@ void Capturer::setFixImgHotKey(const QKeySequence &sc)
 void Capturer::setGIFHotKey(const QKeySequence &sc)
 {
     if(!gif_sc_->setShortcut(sc)){
-        auto msg = "GIF快捷键<" + sc.toString() + ">注册失败!";
+        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
         sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
         LOG(ERROR) << msg;
     }
@@ -150,7 +153,7 @@ void Capturer::setGIFHotKey(const QKeySequence &sc)
 void Capturer::setVideoHotKey(const QKeySequence &sc)
 {
     if(!video_sc_->setShortcut(sc)){
-        auto msg = "录屏快捷键<" + sc.toString() + ">注册失败!";
+        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
         sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
         LOG(ERROR) << msg;
     }
@@ -221,7 +224,7 @@ void Capturer::pinImage(const QPixmap& image, const QPoint& pos)
 {
     auto fixed_image = new ImageWindow(this);
     fixed_image->fix(image);
-    fixed_image->move(pos - QPoint{ 5, 5 }/*window margin*/);
+    fixed_image->move(pos + QPoint{-10, -10});
 }
 
 void Capturer::pinLastImage()

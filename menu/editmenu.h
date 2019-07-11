@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QPen>
+#include "iconbutton.h"
 
 class EditMenu : public QWidget
 {
@@ -19,6 +20,8 @@ signals:
     void changed();
 
 protected:
+    void addButton(CustomButton *);
+    void addSeparator();
     void addWidget(QWidget *);
 
     const int HEIGHT = 34;

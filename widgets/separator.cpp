@@ -19,5 +19,4 @@ Separator::Separator(Shape shape, int len, QWidget *parent)
     }
 
     setFrameStyle(QFrame::Raised);
-
 }

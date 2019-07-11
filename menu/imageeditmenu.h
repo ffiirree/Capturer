@@ -10,6 +10,7 @@
 #include "texteditmenu.h"
 #include "erasemenu.h"
 #include "iconbutton.h"
+#include "buttongroup.h"
 
 class ImageEditMenu : public EditMenu
 {
@@ -24,6 +25,9 @@ public:
     void pen(Graph, int);
     bool fill(Graph);
     QFont font(Graph);
+
+    void setSubMenuShowAbove() { sub_menu_show_pos_ = true; }
+    void setSubMenuShowBelow() { sub_menu_show_pos_ = false; }
 
 signals:
     void save();
@@ -43,8 +47,8 @@ public slots:
     void disableRedo(bool val) { redo_btn_->setDisabled(val); }
 
 private:
-    QAbstractButton* undo_btn_ = nullptr;
-    QAbstractButton* redo_btn_ = nullptr;
+    IconButton* undo_btn_ = nullptr;
+    IconButton* redo_btn_ = nullptr;
 
     GraphMenu * rectangle_menu_ = nullptr;
     GraphMenu * circle_menu_ = nullptr;
@@ -56,6 +60,8 @@ private:
     EraseMenu *erase_menu_ = nullptr;
 
     ButtonGroup * group_ = nullptr;
+
+    bool sub_menu_show_pos_ = false;
 };
 
 

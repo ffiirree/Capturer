@@ -23,8 +23,8 @@ ImageWindow::ImageWindow(QWidget *parent)
     setAttribute(Qt::WA_DeleteOnClose);
 
     auto effect = new QGraphicsDropShadowEffect(this);
-    effect->setBlurRadius(10);
-    effect->setOffset(0);
+    effect->setBlurRadius(SHANDOW_RADIUS_);
+    effect->setOffset(0, 0);
     effect->setColor(QColor(0, 125, 255));
     setGraphicsEffect(effect);
 
@@ -36,7 +36,7 @@ void ImageWindow::fix(QPixmap image)
     pixmap_ = image;
     size_ = pixmap_.size();
 
-    resize(size_ + QSize{10, 10});
+    resize(size_ + QSize{ SHANDOW_RADIUS_ * 2, SHANDOW_RADIUS_ * 2 });
 
     update();
     show();
@@ -59,6 +59,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
     if(ctrl_) {
         opacity_ += delta;
         if(opacity_ < 0.01) opacity_ = 0.01;
+        if(opacity_ > 1.00) opacity_ = 1.00;
 
         setWindowOpacity(opacity_);
     }
@@ -66,7 +67,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
         scale_ += delta;
         scale_ = scale_ < 0.01 ? 0.01 : scale_;
 
-        QRect rect({0, 0}, (size_) * scale_ + QSize{10, 10});
+        QRect rect({0, 0}, (size_) * scale_ + QSize{SHANDOW_RADIUS_ * 2, SHANDOW_RADIUS_ * 2});
         rect.moveCenter(geometry().center());
 
         setGeometry(rect);
@@ -77,22 +78,25 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
 
 void ImageWindow::paintEvent(QPaintEvent *)
 {
-    QPainter p{this};
-    auto pixmap = pixmap_.scaled(size_ * scale_, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    p.drawPixmap(5, 5, pixmap);
-    p.end();
+    painter_.begin(this);
+
+    painter_.drawPixmap(SHANDOW_RADIUS_, SHANDOW_RADIUS_, pixmap_.scaled(size_ * scale_, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+
+    painter_.end();
 }
 
 void ImageWindow::copy()
 {
     QApplication::clipboard()->setPixmap(pixmap_);
 }
+
 void ImageWindow::paste()
 {
     pixmap_ = QApplication::clipboard()->pixmap();
     size_ = pixmap_.size();
-    resize(size_ + QSize{10, 10});
+    resize(size_ + QSize{ SHANDOW_RADIUS_ * 2, SHANDOW_RADIUS_ * 2});
 }
+
 void ImageWindow::open()
 {
     auto filename = QFileDialog::getOpenFileName(this,
@@ -102,7 +106,7 @@ void ImageWindow::open()
     if(!filename.isEmpty()) {
         pixmap_ = QPixmap(filename);
         size_ = pixmap_.size();
-        resize(size_ + QSize{10, 10});
+        resize(size_ + QSize{ SHANDOW_RADIUS_ * 2, SHANDOW_RADIUS_ * 2});
     }
 }
 
@@ -130,11 +134,11 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 {
     QMenu *menu = new QMenu(this);
 
-    auto copy = new QAction("复制");
+    auto copy = new QAction(tr("Copy image"));
     menu->addAction(copy);
     connect(copy, &QAction::triggered, this, &ImageWindow::copy);
 
-    auto paste = new QAction("粘贴");
+    auto paste = new QAction(tr("Paste image"));
     menu->addAction(paste);
     connect(paste, &QAction::triggered, this, &ImageWindow::paste);
 
@@ -146,25 +150,25 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
 //    });
 
-    auto open = new QAction("打开...");
+    auto open = new QAction(tr("Open image..."));
     menu->addAction(open);
     connect(open, &QAction::triggered, this, &ImageWindow::open);
 
-    auto save = new QAction("另存为...");
+    auto save = new QAction(tr("Save as..."));
     menu->addAction(save);
     connect(save, &QAction::triggered, this, &ImageWindow::saveAs);
 
     menu->addSeparator();
 
-    auto zoom = new QAction("缩放比例: " + QString::number(static_cast<int>(scale_ * 100)) + "%");
+    auto zoom = new QAction(tr("Zoom: ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
     menu->addAction(zoom);
 
-    auto opacity = new QAction("不透明度: " + QString::number(static_cast<int>(opacity_ * 100)) + "%");
+    auto opacity = new QAction(tr("Opacity: ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
     menu->addAction(opacity);
 
     menu->addSeparator();
 
-    auto close = new QAction("关闭");
+    auto close = new QAction(tr("Close"));
     menu->addAction(close);
     connect(close,SIGNAL(triggered(bool)),this,SLOT(close()));
 

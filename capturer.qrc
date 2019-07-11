@@ -27,8 +27,11 @@
         <file>res/fill.png</file>
         <file>res/pin.png</file>
         <file>res/rotate.png</file>
+        <file>res/sr.png</file>
     </qresource>
     <qresource prefix="/qss">
-        <file>menu.qss</file>
+        <file>menu/menu.qss</file>
+        <file>setting/settingswindow.qss</file>
+        <file>capturer.qss</file>
     </qresource>
 </RCC>

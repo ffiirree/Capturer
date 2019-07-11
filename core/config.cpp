@@ -41,9 +41,10 @@ Config::Config()
 
     // default
     IF_NULL_SET(AUTORUN, true);
+    IF_NULL_SET(SETTINGS["language"], "zh_CN");
 
     IF_NULL_SET(SNIP_SBW, 1);
-    IF_NULL_SET(SNIP_SBC, "#00ffff");
+    IF_NULL_SET(SNIP_SBC, "#2080F0");
     IF_NULL_SET(SNIP_SBS, Qt::DashDotLine);
     IF_NULL_SET(SNIP_SMC, "#64000000");
 

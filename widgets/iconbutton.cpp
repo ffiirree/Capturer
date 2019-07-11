@@ -12,12 +12,11 @@ IconButton::IconButton(const QPixmap &icon, const QSize& size, const QSize&icon_
 
 void IconButton::paint(QPainter *painter)
 {
-    if(isCheckable()){
-        auto mask = icon_.createMaskFromColor(Qt::transparent);
+    auto mask = icon_.createMaskFromColor(Qt::transparent);
 
-        icon_.fill(icon_color_);
-        icon_.setMask(mask);
-    }
+    icon_.fill(icon_color_);
+    icon_.setMask(mask);
+
     auto c = rect().center();
     QIcon(icon_).paint(painter, {c.x() - iconSize().width()/2, c.y() - iconSize().height()/2, iconSize().width(), iconSize().height()});
 }

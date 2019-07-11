@@ -2,7 +2,6 @@
 #include <QFrame>
 #include "linewidthwidget.h"
 #include "colorpanel.h"
-#include "separator.h"
 
 LineEditMenu::LineEditMenu(QWidget * parent)
     : EditMenu(parent)
@@ -12,15 +11,15 @@ LineEditMenu::LineEditMenu(QWidget * parent)
         emit changed();
         pen_.setWidth(width);
     });
-    addWidget(line_width);
+    addButton(line_width);
 
-    addWidget(new Separator());
+    addSeparator();
 
     // color button
     auto color_panel = new ColorPanel();
     connect(color_panel, &ColorPanel::changed, [this](const QColor& color){
-        emit changed();
         pen_.setColor(color);
+        emit changed();
     });
     addWidget(color_panel);
 

@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QSpinBox>
-#include "buttongroup.h"
+#include "custombutton.h"
 
 class WidthButton : public CustomButton
 {

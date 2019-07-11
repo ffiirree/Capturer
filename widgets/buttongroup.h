@@ -2,30 +2,6 @@
 #define BUTTONGROUP_H
 
 #include <QAbstractButton>
-#include <QPainter>
-
-class CustomButton : public QAbstractButton
-{
-public:
-    CustomButton(QWidget *parent = nullptr);
-    CustomButton(const QSize&, bool checkable = false, QWidget *parent = nullptr);
-
-    virtual void paint(QPainter* painter) = 0;
-
-protected:
-    virtual void paintEvent(QPaintEvent *) override;
-    virtual void enterEvent(QEvent *event) override;
-    virtual void leaveEvent(QEvent *event) override;
-
-protected:
-    QPainter painter_;
-
-    QColor icon_color_ = Qt::black;
-    QColor background_ = Qt::white;
-    QColor normal_color_ = Qt::white;
-    QColor hover_color_{0xcc, 0xcc, 0xcc};
-    QColor checked_color_{0x20, 0x80, 0xF0};
-};
 
 class ButtonGroup: public QObject
 {

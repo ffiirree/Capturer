@@ -2,7 +2,7 @@
 #define ICONBUTTON_H
 
 #include "utils.h"
-#include "buttongroup.h"
+#include "custombutton.h"
 
 class IconButton : public CustomButton
 {

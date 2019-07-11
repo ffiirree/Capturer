@@ -5,6 +5,7 @@
 #include "linewidthwidget.h"
 #include "separator.h"
 #include "iconbutton.h"
+#include "buttongroup.h"
 
 GraphMenu::GraphMenu(QWidget * parent)
     : EditMenu(parent)
@@ -18,10 +19,10 @@ GraphMenu::GraphMenu(QWidget * parent)
 
         emit changed();
     });
-    addWidget(width_btn);
+    addButton(width_btn);
     group->addButton(width_btn);
 
-    addWidget(new Separator());
+    addSeparator();
 
     auto fill_btn = new IconButton(QPixmap(":/icon/res/fill"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true);
     connect(fill_btn, &IconButton::toggled, [=](bool checked) {
@@ -30,16 +31,16 @@ GraphMenu::GraphMenu(QWidget * parent)
 
         emit changed();
     });
-    addWidget(fill_btn);
+    addButton(fill_btn);
     group->addButton(fill_btn);
 
-    addWidget(new Separator());
+    addSeparator();
 
     // color button
     auto color_panel = new ColorPanel();
     connect(color_panel, &ColorPanel::changed, [this](const QColor& c){
-        emit changed();
         pen_.setColor(c);
+        emit changed();
     });
     addWidget(color_panel);
 

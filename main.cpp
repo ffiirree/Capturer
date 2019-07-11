@@ -1,5 +1,7 @@
 #include <QApplication>
 #include <QFile>
+#include <QTranslator>
+#include "utils.h"
 #include "displayinfo.h"
 #include "capturer.h"
 
@@ -16,13 +18,17 @@ int main(int argc, char *argv[])
     // displays
     DisplayInfo::instance();
 
-    QFile file(":/qss/menu.qss");
-    file.open(QFile::ReadOnly);
+    LOAD_QSS(qApp, ":/qss/menu/menu.qss");
 
-    if(file.isOpen()) {
-        qApp->setStyleSheet(file.readAll());
-        file.close();
-    }
+
+    auto settings = Config::Instance();
+    auto language = settings->get<QString>(SETTINGS["language"]);
+
+    LOG(INFO) << language;
+
+    QTranslator translator;
+    translator.load("languages/capturer_" + language);
+    qApp->installTranslator(&translator);
 
     Capturer window;
 

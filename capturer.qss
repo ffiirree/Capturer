@@ -1,0 +1,27 @@
+QMenu#sys_tray_menu {
+    background-color: #ffffff;
+    border: 1px solid #e5e5e6;
+    padding: 3px;
+}
+
+QMenu#sys_tray_menu::item {    
+    background-color:#ffffff;
+    border-left: 15px solid #ffffff;
+    height: 45px;
+    width: 150px;
+
+    padding-left: 35px;
+
+    font-size: 10pt;
+    color: #333333;
+}
+
+QMenu#sys_tray_menu::item:selected {
+    background-color:#e5e5e6;
+    border-left: 15px solid #e5e5e6;
+}
+
+QMenu#sys_tray_menu::separator {
+    height: 1px;
+    background-color: #e5e5e6;
+}

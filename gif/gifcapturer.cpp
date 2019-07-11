@@ -78,7 +78,7 @@ void GifCapturer::exit()
     process_->start("ffmpeg", args);
 
     record_menu_->stop();
-    emit SHOW_MESSAGE("Capturer<GIF>", "Path: " + filename_);
+    emit SHOW_MESSAGE("Capturer<GIF>", tr("Path: ") + filename_);
 
     Selector::exit();
 }

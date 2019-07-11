@@ -1,12 +1,15 @@
-ImageEditMenu, GraphMenu, FontMenu {
+QWidget#EditMenu {
     background-color: white;
     border: 1px solid #2080F0;
 }
 
+/*///////////////////////////////////////////////////////////////*/
 QTextEdit#text_area {
     background-color: rgba(0, 0, 0, 1);
 }
 
+
+/*///////////////////////////////////////////////////////////////*/
 RecordMenu {
     background-color: black;
 }
@@ -49,5 +52,3 @@ QCheckBox#MicrophoneButton::indicator:checked:hover {
 QCheckBox#MicrophoneButton::indicator:checked:pressed {
     image: url(:/icon/res/microphone.png);
 }
-
-

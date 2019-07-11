@@ -76,7 +76,7 @@ ColorPanel::ColorPanel(QWidget * parent)
     : QWidget(parent)
 {
     auto layout = new QGridLayout();
-    layout->setMargin(0);
+    layout->setContentsMargins(5, 0, 5, 0);
     layout->setSpacing(2);
 
     color_dialog_btn_ = new ColorDialogButton(Qt::red);

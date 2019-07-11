@@ -59,8 +59,8 @@ void Magnifier::paintEvent(QPaintEvent * e)
     painter.drawLine(QPoint(psize_.width()/2,   0),                    QPoint(psize_.width()/2,  psize_.height()));
 
     // 3.
-    auto color = QColor(draw_.toImage().pixel(psize_.width()/2, psize_.height()/2));
-    painter.setPen(QPen(color, 5, Qt::SolidLine, Qt::FlatCap));
+    center_color_ = QColor(draw_.toImage().pixel(psize_.width()/2, psize_.height()/2));
+    painter.setPen(QPen(center_color_, 5, Qt::SolidLine, Qt::FlatCap));
     painter.drawLine(QPoint(psize_.width()/2 - 2, psize_.height()/2),  QPoint(psize_.width()/2 + 3, psize_.height()/2));
 
     // 4. border
@@ -69,6 +69,6 @@ void Magnifier::paintEvent(QPaintEvent * e)
     painter.end();
 
     // 5. text
-    auto text = QString("RGB:(%1, %2, %3)").arg(color.red()).arg(color.green()).arg(color.blue());
+    auto text = getColorStringValue();
     label_->setText(text);
 }

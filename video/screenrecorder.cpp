@@ -63,7 +63,7 @@ void ScreenRecorder::exit()
 {
     process_->write("q\n\r");
     menu_->stop();
-    emit SHOW_MESSAGE("Capturer<VIDEO>", "Path: " + filename_);
+    emit SHOW_MESSAGE("Capturer<VIDEO>", tr("Path: ") + filename_);
     Selector::exit();
 }
 

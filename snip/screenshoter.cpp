@@ -55,6 +55,10 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             circle_cursor_.setWidth(menu_->pen(graph).width());
             setCursor(QCursor(circle_cursor_.cursor()));
         }
+
+        if(focus_ && focus_->graph() == graph && graph == TEXT) {
+            focus_->widget()->setFont(menu_->font(Graph::TEXT));
+        }
     });
 
     // repaint when stack changed
@@ -474,9 +478,20 @@ void ScreenShoter::keyPressEvent(QKeyEvent *event)
 void ScreenShoter::moveMenu()
 {
     auto area = selected();
-    menu_->height() * 2 + area.bottomRight().y() > rect().height()
-        ? menu_->move(area.topRight().x() - menu_->width() + 1, area.topRight().y() - 1) // topright
-        : menu_->move(area.bottomRight().x() - menu_->width() + 1, area.bottomRight().y() + 3); // bottomright
+    auto right = area.right() - menu_->width() + 1;
+
+    if(area.bottom() + (menu_->height() * 2 + 5/*margin*/) < rect().height()) {
+        menu_->move(right, area.bottom() + 3);
+        menu_->setSubMenuShowBelow();
+    }
+    else if(area.top() - (menu_->height() * 2 + 5) > 0) {
+        menu_->move(right, area.top() - menu_->height() - 3);
+        menu_->setSubMenuShowAbove();
+    }
+    else {
+        menu_->move(right, area.bottom() - menu_->height() - 3);
+        menu_->setSubMenuShowAbove();
+    }
 }
 
 void ScreenShoter::moveMagnifier()
@@ -710,6 +725,13 @@ void ScreenShoter::registerShortcuts()
         if(history_idx_ < history_.size()) {
             setCurrent(history_[history_idx_]);
             if(history_idx_ < history_.size() - 1) history_idx_++;
+        }
+    });
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [=](){
+        if(status_ < CAPTURED) {
+            LOG(INFO) << "CTRL + C";
+            QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
     });
 }

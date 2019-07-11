@@ -32,4 +32,13 @@ enum Graph:unsigned int {
     #define LOG(X)      X
 #endif
 
+#define LOAD_QSS(X, Y)			QFile file(Y);						\
+								file.open(QFile::ReadOnly);			\
+																	\
+								if (file.isOpen()) {				\
+									auto style = file.readAll();	\
+									X->setStyleSheet(style);		\
+									file.close();					\
+								}	
+
 #endif // CAPTURER_H

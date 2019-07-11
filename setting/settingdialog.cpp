@@ -5,49 +5,79 @@
 #include <QStandardPaths>
 #include <QSpinBox>
 #include <QComboBox>
+#include <QVBoxLayout>
+#include <QGraphicsDropShadowEffect>
 #include "colorpanel.h"
+#include "apptabcontrol.h"
+#include "titlebar.h"
+
 
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)
 {
     cfg_ = Config::Instance();
 
-    setWindowFlags((windowFlags()&~Qt::WindowMinMaxButtonsHint)
-                    | Qt::WindowStaysOnTopHint | Qt::Dialog);
+    LOAD_QSS(this, ":/qss/setting/settingswindow.qss");
 
-    tabw_ = new QTabWidget(this);
-    tabw_->setMinimumSize(300, 400);
-    tabw_->setFixedWidth(500);
-    tabw_->setMinimumHeight(100);
-//    setFixedSize(300, 400);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setMouseTracking(true);
 
-    // tab widget
-    general_ = new QWidget(this);
-    snip_ = new QWidget(this);
-    record_ = new QWidget(this);
-    gif_ = new QWidget(this);
-    about_ = new QWidget(this);
+    setMinimumSize(850, 600);
 
-    tabw_->addTab(general_, "常规");
-    tabw_->addTab(snip_, "截屏");
-    tabw_->addTab(record_, "录屏");
-    tabw_->addTab(gif_, "GIF");
-    tabw_->addTab(about_, "关于");
+    setContentsMargins(25, 25, 25, 25);
 
-    //
+    auto shadow_layout = new QVBoxLayout();
+    shadow_layout->setSpacing(0);
+    shadow_layout->setMargin(0);
+    auto window = new QWidget();
+    window->setObjectName("settingswindow");
+    shadow_layout->addWidget(window);
+    setLayout(shadow_layout);
+
+
+    auto effect = new QGraphicsDropShadowEffect(this);
+    effect->setBlurRadius(20);
+    effect->setOffset(0);
+    effect->setColor(QColor(0, 0, 0, 175));
+    window->setGraphicsEffect(effect);
+
+    auto layout = new QVBoxLayout();
+    layout->setSpacing(0);
+    layout->setMargin(0);
+    window->setLayout(layout);
+
+    auto titlebar = new TitleBar();
+    titlebar->setFixedHeight(50);
+    titlebar->setTitle(tr("Settings"));
+    connect(titlebar, &TitleBar::close, this, &QWidget::close);
+    connect(titlebar, &TitleBar::moved, this, [this](const QPoint& m) {
+        this->move(this->pos() + m);
+    });
+    layout->addWidget(titlebar);
+
+    auto tabwidget = new AppTabControl(45, 225);
+    tabwidget->setObjectName("firstmenu");
+    tabwidget->tabBar()->setObjectName("fristtab");
+    layout->addWidget(tabwidget);
+
+    general_ = new QWidget();
+    snip_ = new QWidget();
+    record_ = new QWidget();
+    gif_ = new QWidget();
+    about_ = new QWidget();
+
+    tabwidget->addTab(general_, tr("General"));
+    tabwidget->addTab(snip_, tr("Snip"));
+    tabwidget->addTab(record_, tr("Screen Record"));
+    tabwidget->addTab(gif_, tr("Gif Record"));
+    tabwidget->addTab(about_, tr("About..."));
+
     setupGeneralWidget();
     setupSnipWidget();
     setupRecordWidget();
     setupGIFWidget();
     setupAboutWidget();
-
-    auto layout = new QVBoxLayout();
-
-    // tab widget
-    layout->addWidget(tabw_);
-    layout->setMargin(0);
-    layout->setSpacing(0);
-    setLayout(layout);
 }
 
 void SettingWindow::setAutoRun(int statue)
@@ -88,16 +118,34 @@ void SettingWindow::setAutoRun(int statue)
 
 void SettingWindow::setupGeneralWidget()
 {
-    auto layout = new QVBoxLayout();
+    auto layout = new QGridLayout();
+    layout->setContentsMargins(35, 15, 35, 15);
 
     //
-    auto _01 = new QCheckBox("开机自动启动");
+    auto _01 = new QCheckBox(tr("Run on startup"));
     _01->setChecked(cfg_->get<bool>(AUTORUN));
     setAutoRun(_01->checkState());
     connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
 
-    layout->addWidget(_01);
-    layout->addStretch();
+    layout->addWidget(_01, 0, 0, 1, 2);
+
+    auto _1_2 = new QComboBox();
+    _1_2->addItem("English");
+    _1_2->addItem("简体中文");
+    auto language = cfg_->get<QString>(SETTINGS["language"]);
+    if (language == "en_US") {
+        _1_2->setCurrentIndex(0);
+    }
+    else if (language == "zh_CN") {
+        _1_2->setCurrentIndex(1);
+    }
+    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this](int i){
+        cfg_->set(SETTINGS["language"], i ? "zh_CN" : "en_US");
+    });
+    layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
+    layout->addWidget(_1_2, 1, 1, 1, 2);
+
+    layout->setRowStretch(2, 1);
 
     general_->setLayout(layout);
 }
@@ -105,99 +153,87 @@ void SettingWindow::setupGeneralWidget()
 void SettingWindow::setupSnipWidget()
 {
     auto tabwidget = new QTabWidget(snip_);
+    tabwidget->setObjectName("subtw");
+    tabwidget->tabBar()->setObjectName("subtwtab");
 
     auto theme = new QWidget(snip_);
     auto hotkey = new QWidget(snip_);
     auto behavior = new QWidget(snip_);
     auto pin = new QWidget(snip_);
 
-    tabwidget->addTab(theme, "外观");
-    tabwidget->addTab(hotkey, "快捷键");
-    tabwidget->addTab(behavior, "行为");
-    tabwidget->addTab(pin, "贴图");
+    tabwidget->addTab(theme, tr("Appearance"));
+    tabwidget->addTab(hotkey, tr("Hotkey"));
+    tabwidget->addTab(behavior, tr("Behavior"));
+    tabwidget->addTab(pin, tr("Paste"));
 
     // theme
     {
-        auto theme_layout = new QGridLayout();
-        auto _1_1 = new QLabel("边框宽度");
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
+
         auto _1_2 = new QSpinBox();
-        _1_2->setFixedHeight(25);
         _1_2->setValue(cfg_->get<int>(SNIP_SBW));
         connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
             cfg_->set(SNIP_SBW, w);
         });
-        theme_layout->addWidget(_1_1, 1, 1);
-        theme_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(new QLabel(tr("Border width")), 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 2);
 
-        auto _2_1 = new QLabel("边框颜色");
         auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(SNIP_SBC));
-        _2_2->setFixedHeight(25);
         connect(_2_2, &ColorDialogButton::changed, [this](auto&& c) { cfg_->set(SNIP_SBC, c); });
-        theme_layout->addWidget(_2_2, 2, 2);
-        theme_layout->addWidget(_2_1, 2, 1);
+        layout->addWidget(new QLabel(tr("Border color")), 2, 1, 1, 1);
+        layout->addWidget(_2_2, 2, 2, 1, 2);
 
-        auto _3_1 = new QLabel("边框线条");
         auto _3_2 = new QComboBox();
-        _3_2->setFixedHeight(25);
-        _3_2->addItem("NoPen");
-        _3_2->addItem("SolidLine");
-        _3_2->addItem("DashLine");
-        _3_2->addItem("DotLine");
-        _3_2->addItem("DashDotLine");
-        _3_2->addItem("DashDotDotLine");
-        _3_2->addItem("CustomDashLine");
+        _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
         _3_2->setCurrentIndex(cfg_->get<int>(SNIP_SBS));
-        connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
+        connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
             cfg_->set(SNIP_SBS, s);
         });
-        theme_layout->addWidget(_3_2, 3, 2);
-        theme_layout->addWidget(_3_1, 3, 1);
+        layout->addWidget(new QLabel(tr("Line type")), 3, 1, 1, 1);
+        layout->addWidget(_3_2, 3, 2, 1, 2);
 
-        auto _4_1 = new QLabel("遮罩颜色");
         auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(SNIP_SMC));
-        _4_2->setFixedHeight(25);
         connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(SNIP_SMC, c); });
-        theme_layout->addWidget(_4_2, 4, 2);
-        theme_layout->addWidget(_4_1, 4, 1);
+        layout->addWidget(new QLabel(tr("Mask color")), 4, 1, 1, 1);
+        layout->addWidget(_4_2, 4, 2, 1, 2);
 
-        theme_layout->setRowStretch(5, 1);
-        theme->setLayout(theme_layout);
+        layout->setRowStretch(5, 1);
+        theme->setLayout(layout);
     }
 
     // behavier
     {
-        auto behavier_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _01 = new QCheckBox("开启窗口探测");
+        auto _01 = new QCheckBox(tr("Auto detect windows"));
         _01->setChecked(cfg_->get<bool>(SNIP_DW));
         connect(_01, &QCheckBox::stateChanged, [this](int state){ cfg_->set(SNIP_DW, state == Qt::Checked); });
 
-        behavier_layout->addWidget(_01);
-        behavier_layout->setRowStretch(2, 1);
+        layout->addWidget(_01);
+        layout->setRowStretch(2, 1);
 
-        behavior->setLayout(behavier_layout);
+        behavior->setLayout(layout);
     }
 
     // hotkey
     {
-        auto hotkey_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("截屏");
         auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(SNIP_HOTKEY));
-        _1_2->setFixedHeight(25);
         connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(SNIP_HOTKEY, ks); });
-        hotkey_layout->addWidget(_1_1, 1, 1);
-        hotkey_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(new QLabel(tr("Snip")), 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 3);
 
-        auto _2_1 = new QLabel("贴图");
         auto _2_2 = new ShortcutInput(cfg_->get<QKeySequence>(PIN_HOTKEY));
-        _2_2->setFixedHeight(20);
         connect(_2_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(PIN_HOTKEY, ks); });
-        hotkey_layout->addWidget(_2_1, 2, 1);
-        hotkey_layout->addWidget(_2_2, 2, 2);
+        layout->addWidget(new QLabel(tr("Paste")), 2, 1, 1, 1);
+        layout->addWidget(_2_2, 2, 2, 1, 3);
 
-        hotkey_layout->setRowStretch(5, 1);
-        hotkey->setLayout(hotkey_layout);
+        layout->setRowStretch(5, 1);
+        hotkey->setLayout(layout);
     }
 
     //
@@ -209,111 +245,107 @@ void SettingWindow::setupSnipWidget()
 void SettingWindow::setupRecordWidget()
 {
     auto tabwidget = new QTabWidget(record_);
+    tabwidget->setObjectName("subtw");
+    tabwidget->tabBar()->setObjectName("subtwtab");
 
     auto params = new QWidget(record_);
     auto theme = new QWidget(record_);
     auto hotkey = new QWidget(record_);
     auto behavior = new QWidget(record_);
 
-    tabwidget->addTab(params, "参数");
-    tabwidget->addTab(theme, "外观");
-    tabwidget->addTab(hotkey, "快捷键");
-    tabwidget->addTab(behavior, "行为");
+    tabwidget->addTab(params, tr("Params"));
+    tabwidget->addTab(theme, tr("Appearance"));
+    tabwidget->addTab(hotkey, tr("Hotkey"));
+    tabwidget->addTab(behavior, tr("Behavior"));
 
     // params
     {
-        auto params_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("framerate");
+        auto _1_1 = new QLabel(tr("Framerate"));
         auto _1_2 = new QSpinBox();
-        _1_2->setFixedHeight(25);
         _1_2->setValue(cfg_->get<int>(RECORD_FRAMERATE));
         connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
             cfg_->set(RECORD_FRAMERATE, w);
         });
-        params_layout->addWidget(_1_1, 1, 1);
-        params_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 2);
 
-        params_layout->setRowStretch(2, 1);
+        layout->setRowStretch(2, 1);
 
-        params->setLayout(params_layout);
+        params->setLayout(layout);
     }
 
     // theme
     {
-        auto theme_layout = new QGridLayout();
-        auto _1_1 = new QLabel("边框宽度");
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
+
+        auto _1_1 = new QLabel(tr("Border width"));
         auto _1_2 = new QSpinBox();
-        _1_2->setFixedHeight(25);
         _1_2->setValue(cfg_->get<int>(RECORD_SBW));
         connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
             cfg_->set(RECORD_SBW, w);
         });
-        theme_layout->addWidget(_1_1, 1, 1);
-        theme_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 2);
 
-        auto _2_1 = new QLabel("边框颜色");
+        auto _2_1 = new QLabel(tr("Border color"));
         auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(RECORD_SBC));
-        _2_2->setFixedHeight(25);
         connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(RECORD_SBC, c); });
-        theme_layout->addWidget(_2_2, 2, 2);
-        theme_layout->addWidget(_2_1, 2, 1);
+        layout->addWidget(_2_1, 2, 1, 1, 1);
+        layout->addWidget(_2_2, 2, 2, 1, 2);
 
-        auto _3_1 = new QLabel("边框线条");
+        auto _3_1 = new QLabel(tr("Line type"));
         auto _3_2 = new QComboBox();
-        _3_2->setFixedHeight(25);
-        _3_2->addItem("NoPen");
-        _3_2->addItem("SolidLine");
-        _3_2->addItem("DashLine");
-        _3_2->addItem("DotLine");
-        _3_2->addItem("DashDotLine");
-        _3_2->addItem("DashDotDotLine");
-        _3_2->addItem("CustomDashLine");
+        _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
         _3_2->setCurrentIndex(cfg_->get<int>(RECORD_SBS));
         connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
             cfg_->set(RECORD_SBS, s);
         });
-        theme_layout->addWidget(_3_2, 3, 2);
-        theme_layout->addWidget(_3_1, 3, 1);
+        layout->addWidget(_3_2, 3, 2, 1, 2);
+        layout->addWidget(_3_1, 3, 1, 1, 1);
 
-        auto _4_1 = new QLabel("遮罩颜色");
+        auto _4_1 = new QLabel(tr("Mask color"));
         auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(RECORD_SMC));
-        _4_2->setFixedHeight(25);
         connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(RECORD_SMC, c); });
-        theme_layout->addWidget(_4_2, 4, 2);
-        theme_layout->addWidget(_4_1, 4, 1);
+        layout->addWidget(_4_2, 4, 2, 1, 2);
+        layout->addWidget(_4_1, 4, 1, 1, 1);
 
-        theme_layout->setRowStretch(5, 1);
-        theme->setLayout(theme_layout);
+        layout->setRowStretch(5, 1);
+        theme->setLayout(layout);
     }
 
     // behavier
     {
-        auto behavier_layout = new QGridLayout();
-        auto _01 = new QCheckBox("开启窗口探测");
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
+
+        auto _01 = new QCheckBox(tr("Auto detect windows"));
         _01->setChecked(cfg_->get<bool>(RECORD_DW));
         connect(_01, &QCheckBox::stateChanged, [this](int state){
             cfg_->set(RECORD_DW, state == Qt::Checked);
         });
 
-        behavier_layout->addWidget(_01);
-        behavier_layout->setRowStretch(2, 1);
-        behavior->setLayout(behavier_layout);
+        layout->addWidget(_01);
+        layout->setRowStretch(2, 1);
+        behavior->setLayout(layout);
     }
 
     // hotkey
     {
-        auto hotkey_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("开始/结束");
+        auto _1_1 = new QLabel(tr("Begin/Finish"));
         auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(RECORD_HOTKEY));
-        _1_2->setFixedHeight(25);
         connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){ cfg_->set(RECORD_HOTKEY, ks); });
-        hotkey_layout->addWidget(_1_1, 1, 1);
-        hotkey_layout->addWidget(_1_2, 1, 2);
-        hotkey_layout->setRowStretch(5, 1);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 3);
 
-        hotkey->setLayout(hotkey_layout);
+        layout->setRowStretch(5, 1);
+        hotkey->setLayout(layout);
     }
 
     //
@@ -325,6 +357,8 @@ void SettingWindow::setupRecordWidget()
 void SettingWindow::setupGIFWidget()
 {
     auto tabwidget = new QTabWidget(gif_);
+    tabwidget->setObjectName("subtw");
+    tabwidget->tabBar()->setObjectName("subtwtab");
 
     auto params = new QWidget(gif_);
     auto theme = new QWidget(gif_);
@@ -332,111 +366,104 @@ void SettingWindow::setupGIFWidget()
     auto behavior = new QWidget(gif_);
 
 
-    tabwidget->addTab(params, "参数");
-    tabwidget->addTab(theme, "外观");
-    tabwidget->addTab(hotkey, "快捷键");
-    tabwidget->addTab(behavior, "行为");
+    tabwidget->addTab(params, tr("Params"));
+    tabwidget->addTab(theme, tr("Appearance"));
+    tabwidget->addTab(hotkey, tr("Hotkey"));
+    tabwidget->addTab(behavior, tr("Behavior"));
 
     // params
     {
-        auto params_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("fps");
+        auto _1_1 = new QLabel(tr("FPS"));
         auto _1_2 = new QSpinBox();
-        _1_2->setFixedHeight(25);
         _1_2->setValue(cfg_->get<int>(GIF_FPS));
         connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
             cfg_->set(GIF_FPS, w);
         });
-        params_layout->addWidget(_1_1, 1, 1);
-        params_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 2);
 
-        params_layout->setRowStretch(2, 1);
+        layout->setRowStretch(2, 1);
 
-        params->setLayout(params_layout);
+        params->setLayout(layout);
     }
 
     // theme
     {
-        auto theme_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("边框宽度");
+        auto _1_1 = new QLabel(tr("Border width"));
         auto _1_2 = new QSpinBox();
-        _1_2->setFixedHeight(25);
         _1_2->setValue(cfg_->get<int>(GIF_SBW));
         connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
             cfg_->set(GIF_SBW, w);
         });
-        theme_layout->addWidget(_1_1, 1, 1);
-        theme_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 2);
 
-        auto _2_1 = new QLabel("边框颜色");
+        auto _2_1 = new QLabel(tr("Border color"));
         auto _2_2 = new ColorDialogButton(cfg_->get<QColor>(GIF_SBC));
-        _2_2->setFixedHeight(25);
         connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(GIF_SBC, c); });
-        theme_layout->addWidget(_2_2, 2, 2);
-        theme_layout->addWidget(_2_1, 2, 1);
+        layout->addWidget(_2_2, 2, 2, 1, 2);
+        layout->addWidget(_2_1, 2, 1, 1, 1);
 
-        auto _3_1 = new QLabel("边框线条");
+        auto _3_1 = new QLabel(tr("Line type"));
         auto _3_2 = new QComboBox();
-        _3_2->setFixedHeight(25);
-        _3_2->addItem("NoPen");
-        _3_2->addItem("SolidLine");
-        _3_2->addItem("DashLine");
-        _3_2->addItem("DotLine");
-        _3_2->addItem("DashDotLine");
-        _3_2->addItem("DashDotDotLine");
-        _3_2->addItem("CustomDashLine");
+        _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
         _3_2->setCurrentIndex(cfg_->get<int>(GIF_SBS));
         connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
             cfg_->set(GIF_SBS, s);
         });
-        theme_layout->addWidget(_3_2, 3, 2);
-        theme_layout->addWidget(_3_1, 3, 1);
+        layout->addWidget(_3_2, 3, 2, 1, 2);
+        layout->addWidget(_3_1, 3, 1, 1, 1);
 
-        auto _4_1 = new QLabel("遮罩颜色");
+        auto _4_1 = new QLabel(tr("Mask color"));
         auto _4_2 = new ColorDialogButton(cfg_->get<QColor>(GIF_SMC));
-        _4_2->setFixedHeight(25);
         connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ cfg_->set(GIF_SMC, c); });
-        theme_layout->addWidget(_4_2, 4, 2);
-        theme_layout->addWidget(_4_1, 4, 1);
+        layout->addWidget(_4_2, 4, 2, 1, 2);
+        layout->addWidget(_4_1, 4, 1, 1, 1);
 
-        theme_layout->setRowStretch(5, 1);
-        theme->setLayout(theme_layout);
+        layout->setRowStretch(5, 1);
+        theme->setLayout(layout);
     }
 
     // behavier
     {
-        auto behavier_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _01 = new QCheckBox("开启窗口探测");
+        auto _01 = new QCheckBox(tr("Auto detect windows"));
         _01->setChecked(cfg_->get<bool>(GIF_DW));
         connect(_01, &QCheckBox::stateChanged, [this](int state){
             cfg_->set(GIF_DW, state == Qt::Checked);
         });
 
-        behavier_layout->addWidget(_01);
-        behavier_layout->setRowStretch(2, 1);
+        layout->addWidget(_01);
+        layout->setRowStretch(2, 1);
 
-        behavior->setLayout(behavier_layout);
+        behavior->setLayout(layout);
     }
 
     // hotkey
     {
-        auto hotkey_layout = new QGridLayout();
+        auto layout = new QGridLayout();
+        layout->setContentsMargins(35, 15, 35, 15);
 
-        auto _1_1 = new QLabel("开始/结束");
+        auto _1_1 = new QLabel(tr("Begin/Finish"));
         auto _1_2 = new ShortcutInput(cfg_->get<QKeySequence>(GIF_HOTKEY));
         _1_2->setFixedHeight(25);
         connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){
             cfg_->set(GIF_HOTKEY, ks);
         });
-        hotkey_layout->addWidget(_1_1, 1, 1);
-        hotkey_layout->addWidget(_1_2, 1, 2);
+        layout->addWidget(_1_1, 1, 1, 1, 1);
+        layout->addWidget(_1_2, 1, 2, 1, 3);
 
-        hotkey_layout->setRowStretch(5, 1);
+        layout->setRowStretch(5, 1);
 
-        hotkey->setLayout(hotkey_layout);
+        hotkey->setLayout(layout);
     }
 
     //
@@ -447,6 +474,11 @@ void SettingWindow::setupGIFWidget()
 
 void SettingWindow::setupAboutWidget()
 {
-    new QLabel("Copyright (C) 2018 - 2019 ffiirree", about_);
+    auto layout = new QVBoxLayout();
+    layout->setContentsMargins(35, 15, 35, 15);
+
+    about_->setLayout(layout);
+    layout->addWidget(new QLabel(tr("Copyright © 2018 - 2019 ffiirree")));
+    layout->addStretch();
 }
 

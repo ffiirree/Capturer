@@ -25,6 +25,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 include(3rdparty/qxtglobalshortcut/qxt.pri)
 INCLUDEPATH += \
+    $$PWD/widgets \
     $$PWD/core \
     $$PWD/menu \
     $$PWD/snip \
@@ -36,11 +37,17 @@ INCLUDEPATH += \
 SOURCES += \
     $$PWD/main.cpp \
     $$PWD/capturer.cpp \
+    $$PWD/widgets/colorpanel.cpp \
+    $$PWD/widgets/textedit.cpp \
+    $$PWD/widgets/buttongroup.cpp \
+    $$PWD/widgets/shortcutinput.cpp \
+    $$PWD/widgets/sizeinfo.cpp \
+    $$PWD/widgets/separator.cpp \
     $$PWD/core/imagewindow.cpp \
-    $$PWD/core/shortcutinput.cpp \
     $$PWD/core/magnifier.cpp \
-    $$PWD/core/sizeinfo.cpp \
+    $$PWD/core/config.cpp \
     $$PWD/core/selector.cpp \
+    $$PWD/core/displayinfo.cpp \
     $$PWD/menu/imageeditmenu.cpp \
     $$PWD/menu/grapheditmenu.cpp \
     $$PWD/menu/record_menu.cpp \
@@ -54,28 +61,31 @@ SOURCES += \
     $$PWD/video/screenrecorder.cpp \
     $$PWD/gif/gifcapturer.cpp \
     $$PWD/setting/settingdialog.cpp \
-    $$PWD/core/colorpanel.cpp \
-    $$PWD/core/textedit.cpp \
     $$PWD/snip/command.cpp \
-    $$PWD/core/config.cpp \
-    $$PWD/core/separator.cpp \
     $$PWD/snip/circlecursor.cpp \
-    $$PWD/menu/iconbutton.cpp \
-    $$PWD/core/displayinfo.cpp \
-    $$PWD/core/buttongroup.cpp \
-    $$PWD/core/paintwidget.cpp
-
+    $$PWD/widgets/iconbutton.cpp \
+    $$PWD/widgets/apptabbar.cpp \
+    $$PWD/widgets/apptabcontrol.cpp \
+    $$PWD/widgets/titlebar.cpp \
+    $$PWD/widgets/custombutton.cpp
 
 HEADERS += \
+    $$PWD/widgets/colorpanel.h \
+    $$PWD/widgets/textedit.h \
+    $$PWD/widgets/sizeinfo.h \
+    $$PWD/widgets/buttongroup.h \
+    $$PWD/widgets/shortcutinput.h \
+    $$PWD/widgets/separator.h \
     $$PWD/core/utils.h \
     $$PWD/core/webview.h \
     $$PWD/capturer.h \
     $$PWD/core/magnifier.h \
     $$PWD/core/detectwidgets.h \
-    $$PWD/core/sizeinfo.h \
-    $$PWD/core/imagewindow.h \
-    $$PWD/core/shortcutinput.h \
     $$PWD/core/selector.h \
+    $$PWD/core/displayinfo.h \
+    $$PWD/core/config.h \
+    $$PWD/core/resizer.h \
+    $$PWD/core/imagewindow.h \
     $$PWD/menu/imageeditmenu.h \
     $$PWD/menu/grapheditmenu.h \
     $$PWD/menu/texteditmenu.h \
@@ -90,20 +100,19 @@ HEADERS += \
     $$PWD/gif/gifcapturer.h \
     $$PWD/setting/settingdialog.h \
     $$PWD/3rdparty/json.hpp \
-    $$PWD/core/colorpanel.h \
-    $$PWD/core/textedit.h \
     $$PWD/snip/command.h \
-    $$PWD/core/config.h \
-    $$PWD/core/resizer.h \
-    $$PWD/core/separator.h \
     $$PWD/snip/circlecursor.h \
-    $$PWD/menu/iconbutton.h \
-    $$PWD/core/displayinfo.h \
-    $$PWD/core/buttongroup.h \
-    $$PWD/core/paintwidget.h
+    $$PWD/widgets/iconbutton.h \
+    $$PWD/widgets/apptabbar.h \
+    $$PWD/widgets/apptabcontrol.h \
+    $$PWD/widgets/titlebar.h \
+    $$PWD/widgets/custombutton.h
 
 
 RC_ICONS = $$PWD/res/icon.ico
+
+TRANSLATIONS += $$PWD/languages/capturer_zh_CN.ts \
+               $$PWD/languages/capturer_en_US.ts
 
 # Linux
 unix:!macx {

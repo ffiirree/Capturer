@@ -1,45 +1,5 @@
 #include "buttongroup.h"
 
-CustomButton::CustomButton(QWidget *parent)
-    : QAbstractButton (parent)
-{
-    connect(this, &CustomButton::toggled, [this](bool checked){
-        background_ = checked ? checked_color_ : normal_color_;
-        icon_color_ = checked ? Qt::white : Qt::black;
-        update();
-    });
-}
-
-CustomButton::CustomButton(const QSize& size, bool checkable, QWidget *parent)
-    : CustomButton(parent)
-{
-    setFixedSize(size);
-    setCheckable(checkable);
-}
-
-void CustomButton::enterEvent(QEvent *)
-{
-    background_ = isChecked() ? background_ : hover_color_;
-}
-
-void CustomButton::leaveEvent(QEvent *)
-{
-    background_ = isChecked() ? background_ : normal_color_;
-}
-
-void CustomButton::paintEvent(QPaintEvent *)
-{
-    painter_.begin(this);
-    painter_.fillRect(rect(), background_);
-
-    paint(&painter_);
-
-    if(!isEnabled())
-        painter_.fillRect(rect(), QColor{ 200, 200, 200, 150});
-    painter_.end();
-}
-
-
 void ButtonGroup::addButton(QAbstractButton *btn)
 {
     if(!btn) return;
