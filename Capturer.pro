@@ -4,9 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui webenginewidgets
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core gui widgets
 
 TARGET = Capturer
 TEMPLATE = app
@@ -70,6 +68,7 @@ SOURCES += \
     $$PWD/widgets/custombutton.cpp
 
 HEADERS += \
+    $$PWD/core/logging.h \
     $$PWD/widgets/colorpanel.h \
     $$PWD/widgets/textedit.h \
     $$PWD/widgets/sizeinfo.h \
@@ -77,7 +76,6 @@ HEADERS += \
     $$PWD/widgets/shortcutinput.h \
     $$PWD/widgets/separator.h \
     $$PWD/core/utils.h \
-    $$PWD/core/webview.h \
     $$PWD/capturer.h \
     $$PWD/core/magnifier.h \
     $$PWD/core/detectwidgets.h \
@@ -106,28 +104,33 @@ HEADERS += \
     $$PWD/widgets/apptabbar.h \
     $$PWD/widgets/apptabcontrol.h \
     $$PWD/widgets/titlebar.h \
-    $$PWD/widgets/custombutton.h
+    $$PWD/widgets/custombutton.h \
+    $$PWD/core/devices.h \
+    $$PWD/core/json.h
 
 
 RC_ICONS = $$PWD/res/icon.ico
 
 TRANSLATIONS += $$PWD/languages/capturer_zh_CN.ts \
-               $$PWD/languages/capturer_en_US.ts
+                $$PWD/languages/capturer_en_US.ts
 
 # Linux
 unix:!macx {
-    SOURCES += $$PWD/core/detectwidgets/detectwidgets_x11.cpp
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_x11.cpp\
+               $$PWD/core/devices/devices_x11.cpp
 }
 
 # OS X
 macx: {
-    SOURCES += $$PWD/core/detectwidgets/detectwidgets_mac.cpp
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_mac.cpp\
+               $$PWD/core/devices/devices_mac.cpp
 }
 
 # Windows
 win32: {
-    SOURCES += $$PWD/core/detectwidgets/detectwidgets_win.cpp
-    LIBS += -ldwmapi
+    SOURCES += $$PWD/core/detectwidgets/detectwidgets_win.cpp \
+               $$PWD/core/devices/devices_win.cpp
+    LIBS += -ldwmapi -lstrmiids -lole32 -loleAut32
 }
 
 RESOURCES += capturer.qrc

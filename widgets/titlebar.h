@@ -1,5 +1,5 @@
-#ifndef __TITLE_BAR_H
-#define __TITLE_BAR_H
+#ifndef TITLE_BAR_H
+#define TITLE_BAR_H
 
 #include <QWidget>
 #include <QLabel>
@@ -34,4 +34,4 @@ private:
 	bool moving = false;
 	bool is_maximized_ = false;
 };
-#endif // __TITLE_BAR_H
+#endif // TITLE_BAR_H

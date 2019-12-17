@@ -7,6 +7,7 @@
 #include <QShortcut>
 #include <QDesktopWidget>
 #include "utils.h"
+#include "logging.h"
 #include "detectwidgets.h"
 
 Selector::Selector(QWidget * parent)
@@ -34,6 +35,7 @@ void Selector::start()
         setMouseTracking(true);
 
         if(use_detect_) {
+            DetectWidgets::reset();
             box_.reset(DetectWidgets::window());
             info_->show();
         }
@@ -77,8 +79,6 @@ void Selector::mousePressEvent(QMouseEvent *event)
         default: LOG(ERROR) << "error status"; break;
         }
     }
-
-    //QWidget::mousePressEvent(event);
 }
 
 void Selector::mouseMoveEvent(QMouseEvent* event)
@@ -146,9 +146,6 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     case LOCKED:
     default: break;
     }
-
-
-    //QWidget::mouseMoveEvent(event);
 }
 
 void Selector::mouseReleaseEvent(QMouseEvent *event)
@@ -170,7 +167,6 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
         default: break;
         }
     }
-    //QWidget::mouseReleaseEvent(event);
 }
 
 void Selector::keyPressEvent(QKeyEvent *event)
@@ -246,7 +242,7 @@ void Selector::paintEvent(QPaintEvent *)
     }
     painter_.end();
 
-	modified_ = false;
+    modified_ = PaintType::UNMODIFIED;
 }
 
 void Selector::updateSelected()
@@ -384,6 +380,14 @@ void Selector::registerShortcuts()
             CAPTURED();
         }
     });
+}
+
+void Selector::updateTheme(json& setting)
+{
+    setBorderColor(setting["border"]["color"].get<QColor>());
+    setBorderWidth(setting["border"]["width"].get<int>());
+    setBorderStyle(setting["border"]["style"].get<Qt::PenStyle>());
+    setMaskColor(setting["mask"]["color"].get<QColor>());
 }
 
 void Selector::setBorderColor(const QColor &c)

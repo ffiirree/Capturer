@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include "selector.h"
 #include "record_menu.h"
+#include "config.h"
 
 class GifCapturer : public Selector
 {
@@ -27,7 +28,10 @@ public slots:
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
     void setFPS(int setFPS) { fps_ = setFPS; }
-
+    void updateTheme()
+    {
+        Selector::updateTheme(Config::instance()["gif"]["selector"]);
+    }
 protected:
     virtual void keyPressEvent(QKeyEvent *) override;
 

@@ -8,6 +8,8 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include "detectwidgets.h"
+#include "devices.h"
+#include "logging.h"
 
 ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
@@ -16,11 +18,18 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     menu_ = new RecordMenu();
 
     connect(menu_, &RecordMenu::STOP, this, &ScreenRecorder::exit);
+//    connect(menu_, &RecordMenu::mute, this, &ScreenRecorder::mute);
 }
 
 void ScreenRecorder::record()
 {
     status_ == INITIAL ? start() : exit();
+}
+
+void ScreenRecorder::start()
+{
+    Devices::refresh();
+    Selector::start();
 }
 
 void ScreenRecorder::setup()
@@ -46,6 +55,11 @@ void ScreenRecorder::setup()
          << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
          << filename_;
 #elif _WIN32
+    auto audio_devices = Devices::audioDevices();
+    if(!audio_devices.empty() && !mute_) {
+        args << "-f" << "dshow"
+             << "-i" << "audio=" + audio_devices.at(0).first;
+    }
     args << "-f"            << "gdigrab"
          << "-framerate"    << QString("%1").arg(framerate_)
          << "-offset_x"     << QString("%1").arg(selected_area.x())
@@ -55,6 +69,8 @@ void ScreenRecorder::setup()
          << "-pix_fmt"      << "yuv420p"
          << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
          << filename_;
+
+    LOG(INFO) << args;
 #endif
     process_->start("ffmpeg", args);
 }

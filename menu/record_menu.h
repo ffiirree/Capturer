@@ -29,7 +29,6 @@ public slots:
 
 private:
     QPushButton * close_btn_ = nullptr;
-    QCheckBox * mic_btn_ = nullptr;
     QHBoxLayout * layout_ = nullptr;
     QLabel * flag_label_ = nullptr;
     QLabel * time_label_ = nullptr;

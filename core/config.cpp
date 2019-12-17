@@ -2,16 +2,8 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QTextStream>
-#include <QDebug>
 #include "utils.h"
-
-JSON Config::settings_ = JSON::parse("{}");
-
-Config* Config::Instance()
-{
-    static Config instance;
-    return &instance;
-}
+#include "logging.h"
 
 Config::Config()
 {
@@ -20,62 +12,56 @@ Config::Config()
     if(!config_dir.exists()) {
         config_dir.mkpath(config_dir_path_);
     }
-    config_file_path_ = config_dir_path_ + QDir::separator() + "config.json";
+    filepath_ = config_dir_path_ + QDir::separator() + "config.json";
 
     QString text;
-    QFile config_file(config_file_path_);
+    QFile config_file(filepath_);
     if(config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         QTextStream in(&config_file);
         text = in.readAll();
     }
 
     try {
-        settings_ = JSON::parse(text.toStdString());
+        settings_ = json::parse(text.toStdString());
     }
-    catch (JSON::parse_error& e) {
-        settings_ = JSON::parse("{}");
-
-        Q_UNUSED(e);
-        qDebug() << "Parse config.json failed!";
+    catch (json::parse_error&) {
+        settings_ = json::parse("{}");
     }
 
     // default
-    IF_NULL_SET(AUTORUN, true);
-    IF_NULL_SET(SETTINGS["language"], "zh_CN");
+    IF_NULL_SET(settings_["autorun"], true);
+    IF_NULL_SET(settings_["language"], "zh_CN");
+    IF_NULL_SET(settings_["detectwindow"], true);
 
-    IF_NULL_SET(SNIP_SBW, 1);
-    IF_NULL_SET(SNIP_SBC, "#2080F0");
-    IF_NULL_SET(SNIP_SBS, Qt::DashDotLine);
-    IF_NULL_SET(SNIP_SMC, "#64000000");
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   1);
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#2080F0");
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["style"],   Qt::DashDotLine);
+    IF_NULL_SET(settings_["snip"]["selector"]["mask"]["color"],     "#64000000");
 
-    IF_NULL_SET(RECORD_SBW, 1);
-    IF_NULL_SET(RECORD_SBC, "#ffff5500");
-    IF_NULL_SET(RECORD_SBS, Qt::DashDotLine);
-    IF_NULL_SET(RECORD_SMC, "#64000000");
+    IF_NULL_SET(settings_["record"]["selector"]["border"]["width"], 1);
+    IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
+    IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
+    IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#64000000");
 
-    IF_NULL_SET(GIF_SBW, 1);
-    IF_NULL_SET(GIF_SBC, "#ffff00ff");
-    IF_NULL_SET(GIF_SBS, Qt::DashDotLine);
-    IF_NULL_SET(GIF_SMC, "#64000000");
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"], 1);
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"], "#ffff00ff");
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"], Qt::DashDotLine);
+    IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],   "#64000000");
 
-    IF_NULL_SET(SNIP_HOTKEY, "F1");
-    IF_NULL_SET(PIN_HOTKEY, "F3");
-    IF_NULL_SET(RECORD_HOTKEY, "Ctrl+Alt+V");
-    IF_NULL_SET(GIF_HOTKEY, "Ctrl+Alt+G");
+    IF_NULL_SET(settings_["snip"]["hotkey"],    "F1");
+    IF_NULL_SET(settings_["pin"]["hotkey"],     "F3");
+    IF_NULL_SET(settings_["record"]["hotkey"],  "Ctrl+Alt+V");
+    IF_NULL_SET(settings_["gif"]["hotkey"],     "Ctrl+Alt+G");
 
-    IF_NULL_SET(SNIP_DW, true);
-    IF_NULL_SET(RECORD_DW, true);
-    IF_NULL_SET(GIF_DW, true);
+    IF_NULL_SET(settings_["record"]["framerate"],   30);
+    IF_NULL_SET(settings_["gif"]["framerate"],      6);
 
-    IF_NULL_SET(RECORD_FRAMERATE, 30);
-    IF_NULL_SET(GIF_FPS, 6);
-
-    connect(this, &Config::changed, [this]() { save(); });
+    connect(this, &Config::changed, this, &Config::save);
 }
 
 void Config::save()
 {
-    QFile file(config_file_path_);
+    QFile file(filepath_);
 
     if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
         return;

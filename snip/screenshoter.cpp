@@ -11,6 +11,7 @@
 #include <QShortcut>
 #include <QDateTime>
 #include "circlecursor.h"
+#include "logging.h"
 
 ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
@@ -29,53 +30,52 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     connect(menu_, &ImageEditMenu::paint, [this](Graph graph) {
         switch (graph) {
-        case Graph::NONE:   edit_status_ = NONE; if(undo_stack_.empty()) CAPTURED(); break;
-        default:            edit_status_ = START_PAINTING | graph;      LOCKED();    break;
+        case Graph::NONE:   edit_status_ = EditStatus::NONE; if(commands_.empty()) CAPTURED(); break;
+        default:            edit_status_ = EditStatus::READY | graph; LOCKED();break;
         }
-        focus_ = nullptr; update();
+        focus_cmd_ = nullptr; update();
     });
 
     // attrs changed
     connect(menu_, &ImageEditMenu::changed, [this](Graph graph){
-        if(focus_ && focus_->graph() == graph) {
+        if(focus_cmd_ && focus_cmd_->graph() == graph) {
             switch (graph) {
-            case ERASER:
-            case MOSAIC: break;
+            case Graph::ERASER:
+            case Graph::MOSAIC: break;
             default:
-                focus_->pen(menu_->pen(graph));
-                focus_->setFill(menu_->fill(graph));
+                focus_cmd_->pen(menu_->pen(graph));
+                focus_cmd_->setFill(menu_->fill(graph));
                 break;
             }
-
-            modified();
         }
 
         // change the cursor
-        if(graph == ERASER || graph == MOSAIC) {
+        if(graph == Graph::ERASER || graph == Graph::MOSAIC) {
             circle_cursor_.setWidth(menu_->pen(graph).width());
             setCursor(QCursor(circle_cursor_.cursor()));
         }
 
-        if(focus_ && focus_->graph() == graph && graph == TEXT) {
-            focus_->widget()->setFont(menu_->font(Graph::TEXT));
+        if(focus_cmd_ && focus_cmd_->graph() == graph && graph == Graph::TEXT) {
+            focus_cmd_->font(menu_->font(Graph::TEXT));
         }
     });
 
     // repaint when stack changed
-    connect(&undo_stack_, SIGNAL(changed(size_t)), this, SLOT(modified()));
-    connect(&undo_stack_, &CommandStack::emptied, [this](bool empty) {
+    connect(&commands_, &CommandStack::increased, [this]() { focusOn(commands_.back()); modified(PaintType::DRAW_FINISHED); });
+    connect(&commands_, &CommandStack::decreased, [this]() { modified(PaintType::REPAINT_ALL); });
+    connect(&commands_, &CommandStack::emptied, [this](bool empty) {
         if(empty) CAPTURED(); else LOCKED();
     });
 
     // disable redo/undo
-    connect(&undo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableUndo);
+    connect(&commands_, &CommandStack::emptied, menu_, &ImageEditMenu::disableUndo);
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 
     // show menu
     connect(this, &ScreenShoter::captured, [this](){ LOG(INFO) << "captured"; menu_->show(); moveMenu(); });
 
     // reset menu
-    connect(&undo_stack_, &CommandStack::emptied, [this](bool empty) { if(empty) menu_->reset(); });
+    connect(&commands_, &CommandStack::emptied, [this](bool empty) { if(empty) menu_->reset(); });
 
     // move menu
     connect(this, &ScreenShoter::moved, this, &ScreenShoter::moveMenu);
@@ -95,112 +95,92 @@ void ScreenShoter::start()
                                                                     virtual_geometry.top(),
                                                                     virtual_geometry.width(),
                                                                     virtual_geometry.height());
-    modified_ = true;
-    paintOnCanvas();
+    modified(PaintType::REPAINT_ALL);
 
     Selector::start();
 }
+
+void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
+{
+    if(focus_cmd_ != nullptr && focus_cmd_ != cmd) {
+        focus_cmd_->setFocus(false);
+        if(!focus_cmd_->isValid()) {
+            commands_.remove(focus_cmd_);
+        }
+    }
+    focus_cmd_ = cmd;
+    if(cmd) focus_cmd_->setFocus(true);
+}
+
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
-    if(event->button() != Qt::LeftButton) return;
+    if(event->button() != Qt::LeftButton)
+        return;
 
     auto mouse_pos = event->pos();
+
     if(status_ == LOCKED) {
-        focus_ = nullptr;
+        focusOn(nullptr);
         // Border => move
-        if(cursor_graph_pos_ & Resizer::BORDER) {
+        if(hover_position_ & Resizer::BORDER) {
             move_begin_ = mouse_pos;
 
-            focus_ = command_;
+            focusOn(hover_cmd_);
 
-            // Text
-            if(command_->widget() != nullptr) {
-                command_->widget()->show();
-                command_->widget()->setFocus();
-            }
-
-            last_edit_status_ = edit_status_;
-            edit_status_ = GRAPH_MOVING;
-            modified();
+            edit_status_ |= EditStatus::GRAPH_MOVING;
         }
-        // Anchor => Resize
-        else if(cursor_graph_pos_ & Resizer::ANCHOR) {
+        // Anchor => resize
+        else if(hover_position_ & Resizer::ANCHOR) {
             resize_begin_ = mouse_pos;
 
-            focus_ = command_;
+            focusOn(hover_cmd_);
 
-            last_edit_status_ = edit_status_;
-            edit_status_ = GRAPH_RESIZING;
-            modified();
+            edit_status_ |= GRAPH_RESIZING;
         }
         // rotate
-        else if(cursor_graph_pos_ == Resizer::ROTATE_ANCHOR) {
-            focus_ = command_;
+        else if(hover_position_ == Resizer::ROTATE_ANCHOR) {
+            focusOn(hover_cmd_);
 
-            last_edit_status_ = edit_status_;
-            edit_status_ = GRAPH_ROTATING;
-            modified();
+            edit_status_ |= GRAPH_ROTATING;
         }
         // Not border and anchor => Paint
         else {
             auto graph = Graph(edit_status_ & GRAPH_MASK);
             auto pen = menu_->pen(graph);
-            auto fill = menu_->fill(Graph::RECTANGLE);
+            auto fill = menu_->fill(graph);
 
             switch (graph) {
-            case RECTANGLE:
-            case CIRCLE:
-            case ARROW:
-            case LINE:
-                command_ = focus_ = make_shared<PaintCommand>(graph, pen, fill, QVector<QPoint>{ event->pos(), event->pos() });
-                DO(command_);
+            case Graph::RECTANGLE:
+            case Graph::CIRCLE:
+            case Graph::ARROW:
+            case Graph::LINE:
+            case Graph::CURVES:
+                hover_cmd_ = make_shared<PaintCommand>(graph, pen, fill, event->pos());
                 break;
 
-            case CURVES:
-                command_ = focus_ = make_shared<PaintCommand>(graph, pen);
-                command_->points({ event->pos() });
-                DO(command_);
-                break;
-
-            case MOSAIC:
+            case Graph::MOSAIC:
                 pen.setBrush(QBrush(mosaic(canvas_.toImage())));
-                command_ = focus_ = make_shared<PaintCommand>(graph, pen);
-                command_->points({ event->pos() });
-                DO(command_);
+                hover_cmd_ = make_shared<PaintCommand>(graph, pen, false, event->pos());
                 break;
 
-            case TEXT:
-            {
-                if(!text_edit_ || !text_edit_->toPlainText().isEmpty()) {
-                    text_edit_ = new TextEdit(this);
-
-                    text_edit_->setTextColor(pen.color());
-                    text_edit_->setFont(menu_->font(Graph::TEXT));
-                    text_edit_->setFocus();
-                    text_edit_->show();
-
-                    text_edit_->ensureCursorVisible();
-                    connect(text_edit_, &TextEdit::textChanged, [this](){ modified(); });
-
-                    auto command = make_shared<PaintCommand>(graph, pen);
-                    command->widget(text_edit_);
-                    DO(command);
-                }
-                text_edit_->move(event->pos());
+            case Graph::TEXT:
+                hover_cmd_ = make_shared<PaintCommand>(graph, pen, false, event->pos());
+                hover_cmd_->font(menu_->font(Graph::TEXT));
                 break;
-            }
 
-            case ERASER:
+            case Graph::ERASER:
                 pen.setBrush(QBrush(captured_screen_));
-                command_ = focus_ = make_shared<PaintCommand>(graph, pen);
-                command_->points({ event->pos() });
-
-                DO(command_);
+                hover_cmd_ = make_shared<PaintCommand>(graph, pen, false, event->pos());
                 break;
 
-            default: LOG(INFO) << "Error type:" << graph; break;
+            default: LOG(ERROR) << "Error type:" << graph; break;
             }
-            edit_status_ = PAINTING | graph;
+            if(hover_cmd_) {
+                DO(hover_cmd_);
+                modified(PaintType::DRAW_MODIFING);
+                connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
+                edit_status_ |= GRAPH_PAINTING;
+            }
         }
     }
 
@@ -213,76 +193,37 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 
     if(event->buttons() & Qt::LeftButton) {
         if(status_ == LOCKED) {
-            switch (edit_status_) {
-            case PAINTING_RECTANGLE:
-            case PAINTING_CIRCLE:
-            case PAINTING_ARROW:
-            case PAINTING_LINE:     command_->points()[1] = event->pos(); modified(); break;
-
-            case PAINTING_MOSAIC:
-            case ERASING:
-            case PAINTING_CURVES:   command_->points().push_back(event->pos()); modified(); break;
-            case PAINTING_TEXT: break;
+            switch (edit_status_ & OPERATION_MASK) {
+            case GRAPH_PAINTING:
+                hover_cmd_->push_point(mouse_pos);
+                break;
 
             case GRAPH_MOVING:
-            {
-                move_end_ = mouse_pos;
-                auto moved_d = move_end_ - move_begin_;
-                switch (command_->graph()) {
-                case  Graph::TEXT:
-                    command_->widget()->move(command_->widget()->pos() + moved_d);
-                    break;
-
-                default:
-                    command_->points()[0] += moved_d;
-                    command_->points()[1] += moved_d;
-                    break;
-                }
-
-                move_begin_ = move_end_;
-                modified();
+                hover_cmd_->move(mouse_pos - move_begin_);
+                move_begin_ = mouse_pos;
                 break;
-            }
 
             case GRAPH_RESIZING:
-            {
-                resize_end_ = mouse_pos;
-
-                auto rx = resize_end_.x() - resize_begin_.x();
-                auto ry = resize_end_.y() - resize_begin_.y();
-
-                switch (cursor_graph_pos_) {
-                case Resizer::X1Y1_ANCHOR:  command_->points()[0].rx() += rx; command_->points()[0].ry() += ry; break;
-                case Resizer::X2Y1_ANCHOR:  command_->points()[1].rx() += rx; command_->points()[0].ry() += ry; break;
-                case Resizer::X1Y2_ANCHOR:  command_->points()[0].rx() += rx; command_->points()[1].ry() += ry; break;
-                case Resizer::X2Y2_ANCHOR:  command_->points()[1].rx() += rx; command_->points()[1].ry() += ry; break;
-                case Resizer::X1_ANCHOR:    command_->points()[0].rx() += rx; break;
-                case Resizer::X2_ANCHOR:    command_->points()[1].rx() += rx; break;
-                case Resizer::Y1_ANCHOR:    command_->points()[0].ry() += ry; break;
-                case Resizer::Y2_ANCHOR:    command_->points()[1].ry() += ry; break;
-                default: break;
-                }
-
+                hover_cmd_->resize(hover_position_, mouse_pos - resize_begin_);
                 resize_begin_ = mouse_pos;
-                modified();
                 break;
-            }
 
             default:  break;
             }
         }
         else if(status_ == MOVING) {
             redo_stack_.clear();
-            undo_stack_.clear();
+            commands_.clear();
         }
     }
 
     // setCursor
-    if(edit_status_ & ERASER || edit_status_ & MOSAIC) {
+    if(edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
         setCursor(QCursor(circle_cursor_.cursor()));
     }
     else if(event->buttons() == Qt::NoButton && status_ == LOCKED) {
-        command_ = getCursorPos(event->pos()); setCursorByPos(cursor_graph_pos_);
+        updateHoverPos(event->pos());
+        setCursorByHoverPos(hover_position_);
     }
 
     moveMagnifier();
@@ -291,39 +232,11 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton) {
-        if(status_ == LOCKED) {
-            switch (edit_status_) {
-            case PAINTING_RECTANGLE:
-            case PAINTING_CIRCLE:
-            case PAINTING_ARROW:
-            case PAINTING_LINE:
-            case PAINTING_CURVES:
-            case ERASING:
-            case PAINTING_MOSAIC:
-                if(command_->points().size() > 1 && command_->points()[0] == command_->points()[1]) {
-                    undo_stack_.pop();
-                    focus_ = nullptr;
-                }
+    if(event->button() == Qt::LeftButton && status_ == LOCKED) {
+        if((edit_status_ & OPERATION_MASK) == GRAPH_PAINTING)
+            emit modified(PaintType::DRAW_FINISHED);
 
-                edit_status_ = edit_status_ ^ END;
-                break;
-
-            case PAINTING_TEXT:
-                edit_status_ = END_PAINTING_TEXT;
-                break;
-
-            case GRAPH_MOVING:
-                edit_status_ = last_edit_status_;
-                break;
-
-            case GRAPH_RESIZING:
-                edit_status_ = last_edit_status_;
-                break;
-
-            default: break;
-            }
-        }
+        edit_status_ &= ~OPERATION_MASK;
     }
 
     Selector::mouseReleaseEvent(event);
@@ -332,102 +245,101 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 void ScreenShoter::wheelEvent(QWheelEvent * event)
 {
     auto delta = event->delta() / 120;
-    if(edit_status_ & ERASER ) {
-        menu_->pen(ERASER, menu_->pen(ERASER).width() + delta);
+    if(edit_status_ & Graph::ERASER) {
+        menu_->pen(Graph::ERASER, menu_->pen(Graph::ERASER).width() + delta);
     }
-    else if(edit_status_ & MOSAIC){
-        menu_->pen(MOSAIC, menu_->pen(MOSAIC).width() + delta);
+    else if(edit_status_ & Graph::MOSAIC) {
+        menu_->pen(Graph::MOSAIC, menu_->pen(Graph::MOSAIC).width() + delta);
     }
 }
 
-double ScreenShoter::distance(const QPoint& p, const QPoint& p1, const QPoint&p2)
+void ScreenShoter::updateHoverPos(const QPoint& pos)
 {
-    auto d1s = std::pow(p1.x() - p.x(),  2) + std::pow(p1.y() - p.y(),  2);
-    auto d2s = std::pow(p2.x() - p.x(),  2) + std::pow(p2.y() - p.y(),  2);
-    auto d3s = std::pow(p1.x() - p2.x(), 2) + std::pow(p1.y() - p2.y(), 2);
-    auto d3  = std::sqrt(d3s);
+    hover_position_ = Resizer::DEFAULT;
+    hover_cmd_ = shared_ptr<PaintCommand>(nullptr);
 
-    // d1^2 - x^2 = d2^2 - (d3 - x)^2
-    // x = (d1^2 - d2^2 + d3^2)/ (2 * d3)
-    auto x = (d1s - d2s + d3s)/(2 * d3);
-    // d = sqrt(d1^2 - x^2)
-    return std::sqrt(d1s - std::pow(x, 2));
-}
-
-shared_ptr<PaintCommand> ScreenShoter::getCursorPos(const QPoint& pos)
-{
-    for(auto& command: undo_stack_.commands()) {
+    for(auto& command: commands_.commands()) {
         switch (command->graph()) {
-        case RECTANGLE:
+        case Graph::RECTANGLE:
         {
-            Resizer resizer(command->points()[0], command->points()[1]);
-            cursor_graph_pos_ = resizer.absolutePos(pos);
+            hover_position_ = command->resizer().absolutePos(pos);
 
-            if(cursor_graph_pos_ & Resizer::ADJUST_AREA) {
-                return command;
+            if(hover_position_ & Resizer::ADJUST_AREA) {
+                hover_cmd_ = command;
+                return;
             }
             break;
         }
 
-        case CIRCLE:
+        case Graph::CIRCLE:
         {
-            Resizer resizer(command->points()[0], command->points()[1]);
+            auto resizer = command->resizer();
 
             QRegion r1(resizer.rect().adjusted(-2, -2, 2, 2), QRegion::Ellipse);
             QRegion r2(resizer.rect().adjusted(2, 2, -2, -2), QRegion::Ellipse);
 
             if(r1.contains(pos) && !r2.contains(pos)) {
-                cursor_graph_pos_ = Resizer::BORDER;
-                return command;
+                hover_position_ = Resizer::BORDER;
+                hover_cmd_ = command;
+                return;
             }
             else {
-                cursor_graph_pos_ = resizer.absolutePos(pos);
-                if(cursor_graph_pos_ & Resizer::ANCHOR)
-                    return command;
+                hover_position_ = resizer.absolutePos(pos);
+                if(hover_position_ & Resizer::ANCHOR) {
+                    hover_cmd_ = command;
+                    return;
+                }
             }
             break;
         }
 
-        case ARROW:
-        case LINE:
+        case Graph::ARROW:
+        case Graph::LINE:
         {
-            auto d = distance(command->points()[0], command->points()[1], pos);
-            auto area = QRect(command->points()[0], command->points()[1]).adjusted(-2, -2, 2, 2);
+            auto x1y1_anchor = command->resizer().X1Y1Anchor();
+            auto x2y2_anchor = command->resizer().X2Y2Anchor();
+            QPolygon polygon;
+            polygon.push_back(x1y1_anchor.topLeft());
+            polygon.push_back(x1y1_anchor.bottomRight());
+            polygon.push_back(x2y2_anchor.bottomRight());
+            polygon.push_back(x2y2_anchor.topLeft());
 
-            auto x1_anchor = QRect(command->points()[0], command->points()[0]).adjusted(-3, -3, 2, 2);
-            auto x2_anchor = QRect(command->points()[1], command->points()[1]).adjusted(-3, -3, 2, 2);
 
-            if(x1_anchor.contains(pos)) {
-                cursor_graph_pos_ = Resizer::X1Y1_ANCHOR;
-                return command;
+            if(x1y1_anchor.contains(pos)) {
+                hover_position_ = Resizer::X1Y1_ANCHOR;
+                hover_cmd_ = command;
+                return;
             }
-            else if(x2_anchor.contains(pos)) {
-                cursor_graph_pos_ = Resizer::X2Y2_ANCHOR;
-                return command;
+            else if(x2y2_anchor.contains(pos)) {
+                hover_position_ = Resizer::X2Y2_ANCHOR;
+                hover_cmd_ = command;
+                return;
             }
-            else if(std::fabs(d) < 4 && area.contains(pos)) {
-                cursor_graph_pos_ = Resizer::BORDER;
-                return command;
+            else if(polygon.containsPoint(pos, Qt::OddEvenFill)) {
+                hover_position_ = Resizer::BORDER;
+                hover_cmd_ = command;
+                return;
             }
             break;
         }
 
-        case TEXT:
+        case Graph::TEXT:
         {
-            Resizer resizer(command->widget()->geometry().adjusted(-5, -5, 5, 5));
+            Resizer resizer(command->geometry().adjusted(-5, -5, 5, 5));
             resizer.enableRotate(true);
-            cursor_graph_pos_ = resizer.absolutePos(pos);
-            switch (cursor_graph_pos_) {
+            hover_position_ = resizer.absolutePos(pos);
+            switch (hover_position_) {
             case Resizer::INSIDE:
             case Resizer::X1_ANCHOR:
             case Resizer::Y2_ANCHOR:
             case Resizer::Y1_ANCHOR:
-            case Resizer::X2_ANCHOR: cursor_graph_pos_ = Resizer::BORDER; break;
+            case Resizer::X2_ANCHOR: hover_position_ = Resizer::BORDER; break;
             default: break;
             }
 
-            if(cursor_graph_pos_ & Resizer::ADJUST_AREA || cursor_graph_pos_ == Resizer::ROTATE_ANCHOR) {
-                return command;
+            if(hover_position_ & Resizer::ADJUST_AREA || hover_position_ == Resizer::ROTATE_ANCHOR) {
+                hover_cmd_ = command;
+                return;
             }
             break;
         }
@@ -435,11 +347,9 @@ shared_ptr<PaintCommand> ScreenShoter::getCursorPos(const QPoint& pos)
         default: break;
         }
     }
-    cursor_graph_pos_ = Resizer::DEFAULT;
-    return shared_ptr<PaintCommand>(nullptr);
 }
 
-void ScreenShoter::setCursorByPos(Resizer::PointPosition pos, const QCursor & default_cursor)
+void ScreenShoter::setCursorByHoverPos(Resizer::PointPosition pos, const QCursor & default_cursor)
 {
     switch (pos) {
     case Resizer::X1_ANCHOR:    setCursor(Qt::SizeHorCursor); break;
@@ -479,6 +389,7 @@ void ScreenShoter::moveMenu()
 {
     auto area = selected();
     auto right = area.right() - menu_->width() + 1;
+    if(right < 0) right = 0;
 
     if(area.bottom() + (menu_->height() * 2 + 5/*margin*/) < rect().height()) {
         menu_->move(right, area.bottom() + 3);
@@ -507,11 +418,12 @@ void ScreenShoter::moveMagnifier()
 
 void ScreenShoter::exit()
 {
-    undo_stack_.clear();
+    commands_.clear();
 
+    menu_->reset();
     menu_->hide();
     text_edit_ = nullptr;
-    focus_ = nullptr;
+    focus_cmd_ = nullptr;
 
     Selector::exit();
 }
@@ -520,13 +432,13 @@ QImage ScreenShoter::mosaic(const QImage& _image)
 {
     auto image = _image.copy();
 
-    for(auto h = 4; h < image.height(); h += 9) {
-        for(auto w = 4; w < image.width(); w += 9) {
+    for(auto h = 3; h < image.height(); h += 7) {
+        for(auto w = 3; w < image.width(); w += 7) {
 
             //
-            for(auto i = 0; i < 9 && h + i - 4 < image.height(); ++i) {
-                for(auto j = 0; j < 9 && w + j - 4 < image.width(); ++j) {
-                    image.setPixel(w + j - 4, h + i - 4, image.pixel(w, h));
+            for(auto i = 0; i < 7 && h + i - 3 < image.height(); ++i) {
+                for(auto j = 0; j < 7 && w + j - 3 < image.width(); ++j) {
+                    image.setPixel(w + j - 3, h + i - 3, image.pixel(w, h));
                 }
             }
         }
@@ -535,65 +447,78 @@ QImage ScreenShoter::mosaic(const QImage& _image)
     return image;
 }
 
-void ScreenShoter::paintOnCanvas()
+void ScreenShoter::updateCanvas()
 {
-    if(!modified_) return;
-
     painter_.begin(&canvas_);
-    painter_.drawPixmap(0, 0, captured_screen_);
-
-    if(status_ == LOCKED) {
-        for(auto& command: undo_stack_.commands()) {
-            command->execute(&painter_);
+    switch (modified_) {
+    case PaintType::DRAW_FINISHED:
+        if(focus_cmd_ == nullptr) {
+            LOG(ERROR) << "nullptr";
+            return;
         }
-    }
 
+        focus_cmd_->repaint(&painter_);
+        break;
+
+    case PaintType::DRAW_MODIFIED:
+        if(focus_cmd_ == nullptr) {
+            LOG(ERROR) << "nullptr";
+            return;
+        }
+
+        focus_cmd_->draw_modified(&painter_);
+        break;
+
+    case PaintType::REPAINT_ALL:
+        painter_.drawPixmap(0, 0, captured_screen_);
+        for(auto& command: commands_.commands()) {
+            command->repaint(&painter_);
+        }
+        break;
+
+    default: break;
+    }
     painter_.end();
 }
 
-// TODO:1.保存一份背景图片
-//      2. 将背景mask
-//      3. 将选择框画出，使用擦除的方法，去除mask
-//      问题是，超出选择区的部分，会绘制在mask上面，限制绘制区域？
 void ScreenShoter::paintEvent(QPaintEvent *event)
 {
-    paintOnCanvas();
+    // 1. canvas
+    updateCanvas();
 
+    // 2. window
     painter_.begin(this);
     painter_.drawPixmap(0, 0, canvas_);
 
-    ////
-    if(focus_ != nullptr) {
+    if(modified_ == PaintType::DRAW_MODIFING) {
+        if(focus_cmd_) {
+            focus_cmd_->draw_modified(&painter_);
+        }
+    }
+
+    //
+    if(focus_cmd_ != nullptr) {
         painter_.save();
-        switch (focus_->graph()) {
-        case RECTANGLE:
-        case ELLIPSE:
-            drawSelector(&painter_, Resizer(focus_->points()[0], focus_->points()[1]));
+        switch (focus_cmd_->graph()) {
+        case Graph::RECTANGLE:
+        case Graph::ELLIPSE:
+            drawSelector(&painter_, focus_cmd_->resizer());
             break;
 
-        case LINE:
+        case Graph::LINE:
+        case Graph::ARROW:
             painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
             painter_.setRenderHint(QPainter::Antialiasing, true);
-            painter_.drawLine(focus_->points()[0], focus_->points()[1]);
+            painter_.drawLine(focus_cmd_->resizer().point1(), focus_cmd_->resizer().point2());
 
             painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-            painter_.drawRect(QRect(focus_->points()[0] - QPoint(3, 3), focus_->points()[0] + QPoint(2, 2)));
-            painter_.drawRect(QRect(focus_->points()[1] - QPoint(3, 3), focus_->points()[1] + QPoint(2, 2)));
+            painter_.drawRect(focus_cmd_->resizer().X1Y1Anchor());
+            painter_.drawRect(focus_cmd_->resizer().X2Y2Anchor());
             break;
 
-        case ARROW:
-            painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
-            painter_.setRenderHint(QPainter::Antialiasing, true);
-            painter_.drawLine(focus_->points()[0], focus_->points()[1]);
-
-            painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-            painter_.drawRect(QRect(focus_->points()[0] - QPoint(2, 2), focus_->points()[0] + QPoint(2, 2)));
-            painter_.drawRect(QRect(focus_->points()[1] - QPoint(2, 2), focus_->points()[1] + QPoint(2, 2)));
-            break;
-
-        case TEXT:
+        case Graph::TEXT:
         {
-            Resizer resizer(focus_->widget()->geometry().adjusted(-5, -5, 5, 5));
+            Resizer resizer(focus_cmd_->geometry().adjusted(-5, -5, 5, 5));
 
             painter_.save();
             painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
@@ -632,7 +557,7 @@ void ScreenShoter::snipped()
 
     emit SNIPPED(image, selected().topLeft());
 
-    history_.push_back({captured_screen_, selected(), undo_stack_});
+    history_.push_back({captured_screen_, selected(), commands_});
     history_idx_ = history_.size() - 1;
 }
 
@@ -706,9 +631,9 @@ void ScreenShoter::registerShortcuts()
     auto setCurrent = [this](const History& history) {
         captured_screen_ = history.image_;
         box_.reset(history.rect_);
-        undo_stack_ = history.commands_;
+        commands_ = history.commands_;
         redo_stack_.clear();
-        modified();
+        modified(PaintType::REPAINT_ALL);
 
         CAPTURED();
         LOCKED();
@@ -739,20 +664,20 @@ void ScreenShoter::registerShortcuts()
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
 void ScreenShoter::undo()
 {
-    if(undo_stack_.empty()) return;
+    if(commands_.empty()) return;
 
-    auto temp = undo_stack_.back();
-    if(focus_ == temp)
-        focus_ = nullptr;
+    auto temp = commands_.back();
+    if(focus_cmd_ == temp)
+        focusOn(nullptr);
 
     redo_stack_.push(temp);
-    undo_stack_.pop();
+    commands_.pop();
 }
 
 void ScreenShoter::redo()
 {
     if(redo_stack_.empty()) return;
 
-    undo_stack_.push(redo_stack_.back());
+    commands_.push(redo_stack_.back());
     redo_stack_.pop();
 }

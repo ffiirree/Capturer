@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include "utils.h"
+#include "logging.h"
 
 QSize DisplayInfo::max_size_{0, 0};
 

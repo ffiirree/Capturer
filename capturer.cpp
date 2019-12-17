@@ -2,9 +2,12 @@
 #include <QKeyEvent>
 #include <QApplication>
 #include <QClipboard>
-#include <QDebug>
+#include <QTextEdit>
+#include <QScrollBar>
+#include "logging.h"
 #include "imagewindow.h"
-#include "webview.h"
+
+#define SET_HOTKEY(X, Y)  st(if(!X->setShortcut(Y)) showMessage("Capturer", tr("Failed to register shortcut <%1>").arg(Y.toString()), QSystemTrayIcon::Critical);)
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
@@ -34,8 +37,7 @@ Capturer::Capturer(QWidget *parent)
     gif_sc_ = new QxtGlobalShortcut(this);
     connect(gif_sc_, &QxtGlobalShortcut::activated, gifcptr_, &GifCapturer::record);
 
-    connect(Config::Instance(), &Config::changed, this, &Capturer::updateConfig);
-    updateConfig();
+    connect(&Config::instance(), &Config::changed, this, &Capturer::updateConfig);
 
     // setting
     setting_dialog_ = new SettingWindow(this);
@@ -43,6 +45,8 @@ Capturer::Capturer(QWidget *parent)
     // System tray icon
     // @attention Must after setting.
     setupSystemTrayIcon();
+
+    updateConfig();
 
     // show message
     connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
@@ -55,31 +59,18 @@ Capturer::Capturer(QWidget *parent)
 
 void Capturer::updateConfig()
 {
-    auto cfg = Config::Instance();
-    setSnipHotKey(cfg->get<QKeySequence>(SNIP_HOTKEY));
-    setFixImgHotKey(cfg->get<QKeySequence>(PIN_HOTKEY));
-    setVideoHotKey(cfg->get<QKeySequence>(RECORD_HOTKEY));
-    setGIFHotKey(cfg->get<QKeySequence>(GIF_HOTKEY));
+    auto &config = Config::instance();
+    SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(pin_sc_, config["pin"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
 
-    sniper_->setBorderColor(cfg->get<QColor>(SNIP_SBC));
-    sniper_->setBorderWidth(cfg->get<int>(SNIP_SBW));
-    sniper_->setBorderStyle(cfg->get<Qt::PenStyle>(SNIP_SBS));
-    sniper_->setMaskColor(cfg->get<QColor>(SNIP_SMC));
-    sniper_->setUseDetectWindow(cfg->get<bool>(SNIP_DW));
+    recorder_->setFramerate(config["record"]["framerate"].get<int>());
+    gifcptr_->setFramerate(config["gif"]["framerate"].get<int>());
 
-    recorder_->setBorderColor(cfg->get<QColor>(RECORD_SBC));
-    recorder_->setBorderWidth(cfg->get<int>(RECORD_SBW));
-    recorder_->setBorderStyle(cfg->get<Qt::PenStyle>(RECORD_SBS));
-    recorder_->setMaskColor(cfg->get<QColor>(RECORD_SMC));
-    recorder_->setUseDetectWindow(cfg->get<bool>(RECORD_DW));
-    recorder_->setFramerate(cfg->get<int>(RECORD_FRAMERATE));
-
-    gifcptr_->setBorderColor(cfg->get<QColor>(GIF_SBC));
-    gifcptr_->setBorderWidth(cfg->get<int>(GIF_SBW));
-    gifcptr_->setBorderStyle(cfg->get<Qt::PenStyle>(GIF_SBS));
-    gifcptr_->setMaskColor(cfg->get<QColor>(GIF_SMC));
-    gifcptr_->setUseDetectWindow(cfg->get<bool>(GIF_DW));
-    gifcptr_->setFPS(cfg->get<int>(GIF_FPS));
+    sniper_->updateTheme();
+    recorder_->updateTheme();
+    gifcptr_->updateTheme();
 }
 
 void Capturer::setupSystemTrayIcon()
@@ -118,45 +109,12 @@ void Capturer::setupSystemTrayIcon()
     sys_tray_icon_->show();
 }
 
+
 void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
 {
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
-}
 
-void Capturer::setSnipHotKey(const QKeySequence &sc)
-{
-    if(!snip_sc_->setShortcut(sc)) {
-        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
-        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
-        LOG(ERROR) << msg;
-    }
-}
-
-void Capturer::setFixImgHotKey(const QKeySequence &sc)
-{
-    if(!pin_sc_->setShortcut(sc)){
-        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
-        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
-        LOG(ERROR) << msg;
-    }
-}
-
-void Capturer::setGIFHotKey(const QKeySequence &sc)
-{
-    if(!gif_sc_->setShortcut(sc)){
-        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
-        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
-        LOG(ERROR) << msg;
-    }
-}
-
-void Capturer::setVideoHotKey(const QKeySequence &sc)
-{
-    if(!video_sc_->setShortcut(sc)){
-        auto msg = tr("Failed to register shortcut <%1>").arg(sc.toString());
-        sys_tray_icon_->showMessage("Capturer", msg, QSystemTrayIcon::Critical);
-        LOG(ERROR) << msg;
-    }
+    if(icon == QSystemTrayIcon::Critical) LOG(ERROR) << msg;
 }
 
 void Capturer::clipboardChanged()
@@ -166,30 +124,16 @@ void Capturer::clipboardChanged()
     if(mimedata->hasFormat("application/x-qt-image"))  return;
 
     if(mimedata->hasHtml()) {
-        auto view = new WebView();
+        QTextEdit view;
+        view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setLineWrapMode(QTextEdit::NoWrap);
 
-#if (QT_VERSION > 0x050700)
-        connect(view, &WebView::contentsSizeChanged, [&, view](const QSize& size){
-            view->resize(size);
-#else
-        connect(view, &WebView::loadFinished, [&, view](){
+        view.setHtml(mimedata->html());
+        view.setFixedSize(view.document()->size().toSize());
 
-            view->page()->runJavaScript("document.documentElement.scrollWidth;",[=](const QVariant& width){
-                view->resize(width.toInt() + 10,view->height());
-            });
 
-            view->page()->runJavaScript("document.documentElement.scrollHeight;",[=](const QVariant& height){
-                view->resize(view->width(), height.toInt());
-            });
-#endif
-            QTimer::singleShot(100, [&, view](){
-                clipboard_history_.push({ view->grab(), QCursor::pos() });
-                view->close();
-            });
-        });
-
-        view->setHtml(mimedata->html());
-        view->show();
+        clipboard_history_.push({ view.grab(), QCursor::pos() });
     }
     else if(mimedata->hasText()) {
         auto label = new QLabel(mimedata->text());

@@ -8,7 +8,6 @@
 #include <QSystemTrayIcon>
 #include <QMimeData>
 #include <QMenu>
-#include "webview.h"
 #include "screenshoter.h"
 #include "imagewindow.h"
 #include "screenrecorder.h"
@@ -37,10 +36,6 @@ private slots:
     void pinImage(const QPixmap& image, const QPoint& pos);
     void pinLastImage();
 
-    void setSnipHotKey(const QKeySequence&);
-    void setFixImgHotKey(const QKeySequence&);
-    void setGIFHotKey(const QKeySequence&);
-    void setVideoHotKey(const QKeySequence&);
     void updateConfig();
 
     void showMessage(const QString &title, const QString &msg,

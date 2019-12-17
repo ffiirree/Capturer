@@ -14,7 +14,6 @@ public:
     void setFont(const QFont& font);
 
 signals:
-    void documentSizeChanged();
     void focus(bool);
 
 protected:

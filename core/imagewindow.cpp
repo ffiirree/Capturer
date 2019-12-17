@@ -44,12 +44,13 @@ void ImageWindow::fix(QPixmap image)
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
 {
-    begin_ = event->pos();
+    begin_ = event->globalPos();
 }
 
 void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    move(event->pos() - begin_ + pos());
+    move(event->globalPos() - begin_ + pos());
+    begin_ = event->globalPos();
 }
 
 void ImageWindow::wheelEvent(QWheelEvent *event)

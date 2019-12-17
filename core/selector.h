@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QPainter>
+#include "json.h"
+#include "utils.h"
 #include "sizeinfo.h"
 #include "resizer.h"
 #include "displayinfo.h"
@@ -41,6 +43,8 @@ public slots:
 
     static void drawSelector(QPainter *, const Resizer&);
 
+    void updateTheme(json& setting);
+
 signals:
     void captured();
     void moved();
@@ -68,7 +72,7 @@ protected:
     // resize
     QPoint rbegin_{0, 0}, rend_{0, 0};
 
-	bool modified_ = true;
+    PaintType modified_ = PaintType::UNMODIFIED;
     Resizer box_;
 
 private:

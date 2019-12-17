@@ -1,13 +1,15 @@
 #ifndef CAPTURER_H
 #define CAPTURER_H
 
-#include <QDebug>
+#include <vector>
+#include <memory>
+#include <utility>
 
 #ifndef st
 #define st(X) do{X}while(0)
 #endif
 
-enum Graph:unsigned int {
+enum Graph : uint32_t {
     NONE,
     RECTANGLE   = 0x0001,
     CIRCLE      = 0x0002,
@@ -21,24 +23,30 @@ enum Graph:unsigned int {
     BROKEN_LINE = 0x0100,
 };
 
-// Log
-#ifndef LOG
-    #define ERROR       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).critical()
-    #define INFO        QMessageLogger(__FILE__, __LINE__, __FUNCTION__).info()
-    #define DEBUG       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).debug()
-    #define WARNING     QMessageLogger(__FILE__, __LINE__, __FUNCTION__).warning()
-    #define FATAL       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).fatal()
+enum class PaintType : uint32_t {
+    UNMODIFIED      = 0x0000,
+    UPDATE_MASK     = 0x0001,
+    DRAW_MODIFING   = 0x0010,
+    DRAW_MODIFIED   = 0x0020 | UPDATE_MASK,
+    DRAW_FINISHED   = 0x0040 | UPDATE_MASK,
+    REPAINT_ALL     = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
+};
 
-    #define LOG(X)      X
-#endif
+using std::shared_ptr;
+using std::make_shared;
+using std::vector;
+using std::pair;
+using std::make_pair;
 
-#define LOAD_QSS(X, Y)			QFile file(Y);						\
-								file.open(QFile::ReadOnly);			\
-																	\
-								if (file.isOpen()) {				\
-									auto style = file.readAll();	\
-									X->setStyleSheet(style);		\
-									file.close();					\
-								}	
+#define LOAD_QSS(X, Y)			st(                                     \
+                                    QFile file(Y);                      \
+                                    file.open(QFile::ReadOnly);			\
+                                                                        \
+                                    if (file.isOpen()) {				\
+                                        auto style = file.readAll();	\
+                                        X->setStyleSheet(style);		\
+                                        file.close();					\
+                                    }                                   \
+                                )
 
 #endif // CAPTURER_H

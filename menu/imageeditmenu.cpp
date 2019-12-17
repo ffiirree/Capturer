@@ -24,71 +24,71 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     : EditMenu(parent)
 {
     group_ = new ButtonGroup(this);
-    connect(group_, &ButtonGroup::uncheckedAll, [this](){ paint(NONE); });
+    connect(group_, &ButtonGroup::uncheckedAll, [this](){ paint(Graph::NONE); });
 
     const auto icon_size = QSize(HEIGHT, HEIGHT);
 
     auto rectangle_btn = new IconButton(QPixmap(":/icon/res/rectangle"), icon_size, { ICON_W, 22 }, true);
     rectangle_btn->setToolTip(tr("Rectangle"));
     rectangle_menu_ = new GraphMenu(this);
-    connect(rectangle_menu_, &EditMenu::changed, [this](){ emit changed(RECTANGLE); });
-    CONNECT_BTN_MENU(RECTANGLE, rectangle_btn, rectangle_menu_);
+    connect(rectangle_menu_, &EditMenu::changed, [this](){ emit changed(Graph::RECTANGLE); });
+    CONNECT_BTN_MENU(Graph::RECTANGLE, rectangle_btn, rectangle_menu_);
     group_->addButton(rectangle_btn);
     addButton(rectangle_btn);
 
     auto circle_btn = new IconButton(QPixmap(":/icon/res/circle"), icon_size, { ICON_W, ICON_W }, true);
     circle_btn->setToolTip(tr("Ellipse"));
     circle_menu_ = new GraphMenu(this);
-    connect(circle_menu_, &EditMenu::changed, [this](){ emit changed(CIRCLE); });
-    CONNECT_BTN_MENU(CIRCLE, circle_btn, circle_menu_);
+    connect(circle_menu_, &EditMenu::changed, [this](){ emit changed(Graph::CIRCLE); });
+    CONNECT_BTN_MENU(Graph::CIRCLE, circle_btn, circle_menu_);
     group_->addButton(circle_btn);
     addButton(circle_btn);
 
     auto arrow_btn = new IconButton(QPixmap(":/icon/res/arrow"), icon_size, { ICON_W, ICON_W }, true);
     arrow_btn->setToolTip(tr("Arrow"));
     arrow_menu_ = new ArrowEditMenu(this);
-    connect(arrow_menu_, &EditMenu::changed, [this](){ emit changed(ARROW); });
-    CONNECT_BTN_MENU(ARROW, arrow_btn, arrow_menu_);
+    connect(arrow_menu_, &EditMenu::changed, [this](){ emit changed(Graph::ARROW); });
+    CONNECT_BTN_MENU(Graph::ARROW, arrow_btn, arrow_menu_);
     group_->addButton(arrow_btn);
     addButton(arrow_btn);
 
     auto line_btn = new IconButton(QPixmap(":/icon/res/line"), icon_size, { ICON_W, ICON_W }, true);
     line_btn->setToolTip(tr("Line"));
     line_menu_ = new LineEditMenu(this);
-    connect(line_menu_, &EditMenu::changed, [this](){ emit changed(LINE); });
-    CONNECT_BTN_MENU(LINE, line_btn, line_menu_);
+    connect(line_menu_, &EditMenu::changed, [this](){ emit changed(Graph::LINE); });
+    CONNECT_BTN_MENU(Graph::LINE, line_btn, line_menu_);
     group_->addButton(line_btn);
     addButton(line_btn);
 
     auto pen_btn = new IconButton(QPixmap(":/icon/res/feather"), icon_size, { ICON_W, ICON_W }, true);
     pen_btn->setToolTip(tr("Pencil"));
     curves_menu_ = new LineEditMenu(this);
-    connect(curves_menu_, &EditMenu::changed, [this](){ emit changed(CURVES); });
-    CONNECT_BTN_MENU(CURVES, pen_btn, curves_menu_);
+    connect(curves_menu_, &EditMenu::changed, [this](){ emit changed(Graph::CURVES); });
+    CONNECT_BTN_MENU(Graph::CURVES, pen_btn, curves_menu_);
     group_->addButton(pen_btn);
     addButton(pen_btn);
 
     auto text_btn = new IconButton(QPixmap(":/icon/res/text"), icon_size, { ICON_W, ICON_W }, true);
     text_btn->setToolTip(tr("Text"));
     text_menu_ = new FontMenu(this);
-    connect(text_menu_, &EditMenu::changed, [this](){ emit changed(TEXT); });
-    CONNECT_BTN_MENU(TEXT, text_btn, text_menu_);
+    connect(text_menu_, &EditMenu::changed, [this](){ emit changed(Graph::TEXT); });
+    CONNECT_BTN_MENU(Graph::TEXT, text_btn, text_menu_);
     group_->addButton(text_btn);
     addButton(text_btn);
 
     auto mosaic_btn = new IconButton(QPixmap(":/icon/res/mosaic"), icon_size, { ICON_W, ICON_W }, true);
     mosaic_btn->setToolTip(tr("Mosaic"));
     mosaic_menu_ = new EraseMenu(this);
-    connect(mosaic_menu_, &EditMenu::changed, [this](){ emit changed(MOSAIC); });
-    CONNECT_BTN_MENU(MOSAIC, mosaic_btn, mosaic_menu_);
+    connect(mosaic_menu_, &EditMenu::changed, [this](){ emit changed(Graph::MOSAIC); });
+    CONNECT_BTN_MENU(Graph::MOSAIC, mosaic_btn, mosaic_menu_);
     group_->addButton(mosaic_btn);
     addButton(mosaic_btn);
 
     auto eraser_btn = new IconButton(QPixmap(":/icon/res/eraser"), icon_size, { ICON_W, ICON_W }, true);
     eraser_btn->setToolTip(tr("Eraser"));
     erase_menu_ = new EraseMenu(this);
-    connect(erase_menu_, &EditMenu::changed, [this](){ emit changed(ERASER); });
-    CONNECT_BTN_MENU(ERASER, eraser_btn, erase_menu_);
+    connect(erase_menu_, &EditMenu::changed, [this](){ emit changed(Graph::ERASER); });
+    CONNECT_BTN_MENU(Graph::ERASER, eraser_btn, erase_menu_);
     group_->addButton(eraser_btn);
     addButton(eraser_btn);
 
@@ -140,14 +140,14 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
 QPen ImageEditMenu::pen(Graph graph)
 {
     switch (graph) {
-    case RECTANGLE: return rectangle_menu_->pen();
-    case CIRCLE:    return circle_menu_->pen();
-    case LINE:      return line_menu_->pen();
-    case CURVES:    return curves_menu_->pen();
-    case MOSAIC:    return mosaic_menu_->pen();
-    case ARROW:     return arrow_menu_->pen();
-    case TEXT:      return text_menu_->pen();
-    case ERASER:    return erase_menu_->pen();
+    case Graph::RECTANGLE: return rectangle_menu_->pen();
+    case Graph::CIRCLE:    return circle_menu_->pen();
+    case Graph::LINE:      return line_menu_->pen();
+    case Graph::CURVES:    return curves_menu_->pen();
+    case Graph::MOSAIC:    return mosaic_menu_->pen();
+    case Graph::ARROW:     return arrow_menu_->pen();
+    case Graph::TEXT:      return text_menu_->pen();
+    case Graph::ERASER:    return erase_menu_->pen();
     default:        break;
     }
     return QPen();
@@ -155,15 +155,17 @@ QPen ImageEditMenu::pen(Graph graph)
 
 void ImageEditMenu::pen(Graph graph, int width)
 {
+    if(width < 1) width = 1;
+
     switch (graph) {
-    case RECTANGLE: rectangle_menu_->pen(width);    break;
-    case CIRCLE:    circle_menu_->pen(width);       break;
-    case LINE:      line_menu_->pen(width);         break;
-    case CURVES:    curves_menu_->pen(width);       break;
-    case MOSAIC:    mosaic_menu_->pen(width);       break;
-    case ARROW:     arrow_menu_->pen(width);        break;
-    case TEXT:      text_menu_->pen(width);         break;
-    case ERASER:    erase_menu_->pen(width);        break;
+    case Graph::RECTANGLE: rectangle_menu_->pen(width);    break;
+    case Graph::CIRCLE:    circle_menu_->pen(width);       break;
+    case Graph::LINE:      line_menu_->pen(width);         break;
+    case Graph::CURVES:    curves_menu_->pen(width);       break;
+    case Graph::MOSAIC:    mosaic_menu_->pen(width);       break;
+    case Graph::ARROW:     arrow_menu_->pen(width);        break;
+    case Graph::TEXT:      text_menu_->pen(width);         break;
+    case Graph::ERASER:    erase_menu_->pen(width);        break;
     default:        break;
     }
     emit changed(graph);
@@ -172,14 +174,14 @@ void ImageEditMenu::pen(Graph graph, int width)
 bool ImageEditMenu::fill(Graph graph)
 {
     switch (graph) {
-    case RECTANGLE: return rectangle_menu_->fill();
-    case CIRCLE:    return circle_menu_->fill();
-    case LINE:      return line_menu_->fill();
-    case CURVES:    return curves_menu_->fill();
-    case MOSAIC:    break;
-    case ARROW:     return arrow_menu_->fill();
-    case TEXT:      return text_menu_->fill();
-    case ERASER:    break;
+    case Graph::RECTANGLE: return rectangle_menu_->fill();
+    case Graph::CIRCLE:    return circle_menu_->fill();
+    case Graph::LINE:      return line_menu_->fill();
+    case Graph::CURVES:    return curves_menu_->fill();
+    case Graph::MOSAIC:    break;
+    case Graph::ARROW:     return true;
+    case Graph::TEXT:      return text_menu_->fill();
+    case Graph::ERASER:    break;
     default:        break;
     }
     return false;
@@ -188,7 +190,7 @@ bool ImageEditMenu::fill(Graph graph)
 QFont ImageEditMenu::font(Graph graph)
 {
     switch (graph) {
-    case TEXT:      return text_menu_->font();
+    case Graph::TEXT:      return text_menu_->font();
     default:        break;
     }
     return QFont();

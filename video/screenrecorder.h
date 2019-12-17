@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include "selector.h"
 #include "record_menu.h"
+#include "config.h"
 
 class ScreenRecorder : public Selector
 {
@@ -24,9 +25,15 @@ signals:
 public slots:
     virtual void exit() override;
 
+    void start() override;
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
 
+    void mute(bool v) { mute_ = v; }
+    void updateTheme()
+    {
+        Selector::updateTheme(Config::instance()["record"]["selector"]);
+    }
 private:
     void setup();
 
@@ -39,6 +46,7 @@ private:
     QString filename_;
 
     RecordMenu *menu_ = nullptr;
+    bool mute_ = true;
 };
 
 #endif //! CAPTURER_VIDEOCAPTURER_H

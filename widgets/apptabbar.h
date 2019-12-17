@@ -20,7 +20,7 @@ public:
 	}
 
     QSize tabSizeHint(int index) const override;
-	~AppTabBar() = default;
+    ~AppTabBar() override = default;
 
 protected:
     void paintEvent(QPaintEvent *event) override;

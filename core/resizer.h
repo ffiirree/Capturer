@@ -238,6 +238,9 @@ public:
     inline QPoint topRight()    const { return {right(), top()}; }
     inline QPoint bottomLeft()  const { return {left(), bottom()}; }
 
+    inline QPoint point1()      const { return {x1_, y1_}; }
+    inline QPoint point2()      const { return {x2_, y2_}; }
+
     inline QRect rect() const { return QRect(QPoint{left(), top()}, QPoint{right(), bottom()}); }
 
     PointPosition absolutePos(const QPoint& p)

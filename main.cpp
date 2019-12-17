@@ -13,18 +13,12 @@ int main(int argc, char *argv[])
     // log pattern
     qSetMessagePattern("%{time yyyy-MM-dd hh:mm:ss.zzz} (%{type}) %{file}:%{line}] %{message}");
 
-    LOG(INFO) << "Logging for Capturer";  LOG(INFO);
-
     // displays
     DisplayInfo::instance();
 
     LOAD_QSS(qApp, ":/qss/menu/menu.qss");
 
-
-    auto settings = Config::Instance();
-    auto language = settings->get<QString>(SETTINGS["language"]);
-
-    LOG(INFO) << language;
+    auto language = Config::instance()["language"].get<QString>();
 
     QTranslator translator;
     translator.load("languages/capturer_" + language);

@@ -9,7 +9,7 @@ RecordMenu::RecordMenu(QWidget* parent)
 {
     auto last_screen = QGuiApplication::screens().back();
     auto right = last_screen->geometry().right();
-    setGeometry(right - 275, 175, 250, MENU_HEIGHT);
+    setGeometry(right - 185, 175, 175, MENU_HEIGHT);
 
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 
@@ -19,13 +19,13 @@ RecordMenu::RecordMenu(QWidget* parent)
     setLayout(layout_);
 
     flag_label_ = new QLabel();
-    flag_label_->setPixmap(QPixmap::fromImage(QImage(":/icon/res/red_circle.png").scaled(15,15,Qt::KeepAspectRatio)));
+    flag_label_->setPixmap(QPixmap::fromImage(QImage(":/icon/res/red_circle.png").scaled(15, 15, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
     flag_label_->setAlignment(Qt::AlignCenter);
     flag_label_->setFixedSize(MENU_HEIGHT, MENU_HEIGHT);
     layout_->addWidget(flag_label_);
 
     time_label_ = new QLabel("00:00:00");
-    time_label_->setFixedSize(100, MENU_HEIGHT);
+    time_label_->setFixedSize(85, MENU_HEIGHT);
     QFont font;
     font.setPointSize(10);
     font.setFamily("Consolas");
@@ -47,11 +47,6 @@ RecordMenu::RecordMenu(QWidget* parent)
         close();
     });
     layout_->addWidget(close_btn_);
-
-    mic_btn_ = new QCheckBox();
-    mic_btn_->setObjectName("MicrophoneButton");
-    mic_btn_->setFixedSize(MENU_HEIGHT, MENU_HEIGHT);
-    layout_->addWidget(mic_btn_);
 
     // Timer
     timer_ = new QTimer(this);

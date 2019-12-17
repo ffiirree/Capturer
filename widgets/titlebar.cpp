@@ -43,18 +43,21 @@ TitleBar::TitleBar(QWidget *parent)
 void TitleBar::mousePressEvent(QMouseEvent * event)
 {
 	if (event->button() == Qt::LeftButton) {
-		begin_ = event->pos();
+        begin_ = event->globalPos();
 		moving = true;
 	}
 }
 
 void TitleBar::mouseMoveEvent(QMouseEvent * event)
 {
-	if (moving)
-		moved(event->pos() - begin_);
+    auto mouse_global_pos = event->globalPos();
+    if (moving) {
+        moved(mouse_global_pos - begin_);
+        begin_ = mouse_global_pos;
+    }
 }
 
-void TitleBar::mouseReleaseEvent(QMouseEvent * event)
+void TitleBar::mouseReleaseEvent(QMouseEvent *)
 {
-	moving = false;
+    moving = false;
 }

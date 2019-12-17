@@ -33,7 +33,7 @@ private:
     void setupHotkeyWidget();
     void setupAboutWidget();
 
-    Config * cfg_ = nullptr;
+    Config &config = Config::instance();
 
     QTabWidget * tabw_ = nullptr;
 
