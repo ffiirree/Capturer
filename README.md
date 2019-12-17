@@ -39,8 +39,5 @@ git submodule update
 sudo apt install ffmpeg
 ```
 
-> 注意，`qt`安装时需要安装`qtwebengine`组件
-
-
 ## 效果
-![image](https://github.com/ffiirree/Capturer/blob/master/capturer.gif)
+![image](/capturer.gif)
