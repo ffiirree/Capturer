@@ -22,10 +22,10 @@ void CircleCursor::repaint()
 
     QPainter painter(&cursor_);
 
-    painter.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-    painter.setBrush(QColor(255, 255, 0, 150));
+    painter.setPen(QPen(QColor("#888888"), 2, Qt::SolidLine));
+    painter.setBrush(QColor(225, 200, 0, 175));
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawEllipse(center.x()-width_/2, center.y()- width_/2, width_, width_);
+    painter.drawEllipse(center.x() - width_/2, center.y() - width_/2, width_, width_);
 
     painter.end();
 }

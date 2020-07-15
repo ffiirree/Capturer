@@ -12,6 +12,8 @@
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
+    LOG(INFO) << "initializing.";
+
     LOAD_QSS(this, ":/qss/capturer.qss");
 
     sniper_ = new ScreenShoter(this);
@@ -19,9 +21,6 @@ Capturer::Capturer(QWidget *parent)
     gifcptr_ = new GifCapturer(this);
 
     connect(sniper_, &ScreenShoter::FIX_IMAGE, this, &Capturer::pinImage);
-    connect(sniper_, &ScreenShoter::SNIPPED, [&](const QPixmap image, const QPoint& pos) {
-        clipboard_history_.push({image, pos});
-    });
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
 
@@ -55,6 +54,8 @@ Capturer::Capturer(QWidget *parent)
 
     // clipboard
     connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &Capturer::clipboardChanged);
+
+    LOG(INFO) << "initialized.";
 }
 
 void Capturer::updateConfig()
@@ -121,9 +122,17 @@ void Capturer::clipboardChanged()
 {
     const auto mimedata = QApplication::clipboard()->mimeData();
 
-    if(mimedata->hasFormat("application/x-qt-image"))  return;
+    // only image
+    if(mimedata->hasHtml() && mimedata->hasImage()) {
+        LOG(INFO) << "IAMGE";
 
-    if(mimedata->hasHtml()) {
+        auto image_rect = mimedata->imageData().value<QPixmap>().rect();
+        image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
+        clipboard_history_.push({ mimedata->imageData().value<QPixmap>(), image_rect.topLeft()});
+    }
+    else if(mimedata->hasHtml()) {
+        LOG(INFO) << "HTML";
+
         QTextEdit view;
         view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -132,35 +141,38 @@ void Capturer::clipboardChanged()
         view.setHtml(mimedata->html());
         view.setFixedSize(view.document()->size().toSize());
 
-
         clipboard_history_.push({ view.grab(), QCursor::pos() });
     }
+    else if(mimedata->hasFormat("application/qpoint") && mimedata->hasImage()) {
+        LOG(INFO) << "SNIP";
+
+        auto pos = *reinterpret_cast<QPoint *>(mimedata->data("application/qpoint").data());
+        clipboard_history_.push({ mimedata->imageData().value<QPixmap>(), pos });
+    }
+
+    else if(mimedata->hasUrls() && QString("jpg;jpeg;png;JPG;JPEG;PNG").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
+        LOG(INFO) << "IMAGE URL";
+
+        QPixmap pixmap;
+        pixmap.load(mimedata->urls()[0].toLocalFile());
+        auto image_rect = pixmap.rect();
+        image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
+        clipboard_history_.push({ pixmap, image_rect.topLeft()});
+    }
     else if(mimedata->hasText()) {
+        LOG(INFO) << "TEXT";
+
         auto label = new QLabel(mimedata->text());
         label->setWordWrap(true);
-
-        QPalette palette = label->palette();
-        palette.setColor(label->backgroundRole(), Qt::white);
-        label->setPalette(palette);
         label->setMargin(10);
-
-        QFont font;
-        font.setPointSize(12);
-        font.setFamily("Consolas");
-        label->setFont(font);
+        label->setStyleSheet("background-color:white");
+        label->setFont({"Consolas", 12});
 
         clipboard_history_.push({ label->grab(), QCursor::pos() });
     }
-    else if(mimedata->hasImage()) {
-        QPixmap p;
-        p.loadFromData(mimedata->data("image/ *"), "PNG");
-        clipboard_history_.push({ p, QCursor::pos() });
-    }
-    else if(mimedata->hasUrls()) {
-        // Do nothing.
-    }
     else if(mimedata->hasColor()) {
         // Do nothing.
+        LOG(WARNING) << "COLOR";
     }
 }
 
@@ -168,6 +180,7 @@ void Capturer::pinImage(const QPixmap& image, const QPoint& pos)
 {
     auto fixed_image = new ImageWindow(this);
     fixed_image->fix(image);
+
     fixed_image->move(pos + QPoint{-10, -10});
 }
 

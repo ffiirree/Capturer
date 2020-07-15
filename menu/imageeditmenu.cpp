@@ -28,7 +28,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
 
     const auto icon_size = QSize(HEIGHT, HEIGHT);
 
-    auto rectangle_btn = new IconButton(QPixmap(":/icon/res/rectangle"), icon_size, { ICON_W, 22 }, true);
+    auto rectangle_btn = new IconButton(QPixmap(":/icon/res/rectangle"), icon_size, { ICON_W, ICON_W }, true);
     rectangle_btn->setToolTip(tr("Rectangle"));
     rectangle_menu_ = new GraphMenu(this);
     connect(rectangle_menu_, &EditMenu::changed, [this](){ emit changed(Graph::RECTANGLE); });
@@ -118,23 +118,23 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     connect(save_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
     addButton(save_btn);
 
+    addSeparator();
+
     auto close_btn = new IconButton(QPixmap(":/icon/res/wrong"), icon_size, { ICON_W, ICON_W });
     connect(close_btn, &IconButton::clicked, this, &ImageEditMenu::exit);
     connect(close_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
-    close_btn->setIconColor(QColor("#ff0000"));
-    close_btn->setIconHoverColor(QColor("#ff0000"));
-    close_btn->setBackgroundColor(QColor("#ffffff"));
+    close_btn->setIconColor(QColor("#ee0000"));
+    close_btn->setIconHoverColor(QColor("#ee0000"));
     close_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
     addWidget(close_btn);
 
-    auto copy_btn = new IconButton(QPixmap(":/icon/res/right"), icon_size, { ICON_W, ICON_W });
-    connect(copy_btn, &IconButton::clicked, this, &ImageEditMenu::copy);
-    connect(copy_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
-    copy_btn->setIconColor(QColor("#00ff00"));
-    copy_btn->setIconHoverColor(QColor("#00ff00"));
-    copy_btn->setBackgroundColor(QColor("#ffffff"));
-    copy_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
-    addWidget(copy_btn);
+    auto ok_btn = new IconButton(QPixmap(":/icon/res/right"), icon_size, { ICON_W, ICON_W });
+    connect(ok_btn, &IconButton::clicked, this, &ImageEditMenu::ok);
+    connect(ok_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
+    ok_btn->setIconColor(QColor("#07b913"));
+    ok_btn->setIconHoverColor(QColor("#07b913"));
+    ok_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
+    addWidget(ok_btn);
 }
 
 QPen ImageEditMenu::pen(Graph graph)

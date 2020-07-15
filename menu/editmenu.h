@@ -24,8 +24,8 @@ protected:
     void addSeparator();
     void addWidget(QWidget *);
 
-    const int HEIGHT = 34;
-    const int ICON_W = 24;
+    const int HEIGHT = 35;
+    const int ICON_W = 25;
 
     QPen pen_;
     bool fill_ = false;

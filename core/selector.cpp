@@ -169,11 +169,6 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-void Selector::keyPressEvent(QKeyEvent *event)
-{
-    QWidget::keyPressEvent(event);
-}
-
 void Selector::exit()
 {
     status_ = INITIAL;
@@ -197,24 +192,17 @@ void Selector::drawSelector(QPainter *painter, const Resizer& resizer)
 
     // anchors
     painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
-    painter->drawRect(resizer.X1Anchor());
-    painter->drawRect(resizer.Y1Anchor());
-    painter->drawRect(resizer.X2Anchor());
-    painter->drawRect(resizer.Y2Anchor());
-    painter->drawRect(resizer.X1Y1Anchor());
-    painter->drawRect(resizer.X2Y1Anchor());
-    painter->drawRect(resizer.X1Y2Anchor());
-    painter->drawRect(resizer.X2Y2Anchor());
+    painter->drawRects(resizer.anchors());
 }
 
 void Selector::paintEvent(QPaintEvent *)
 {
     painter_.begin(this);
 
-    auto srect = selected().adjusted(-pen_.width()/2, -pen_.width()/2, pen_.width()/2, pen_.width()/2);
+    auto srect = selected();
 
-    painter_.fillRect(QRect{ 0, 0, width(), box_.top() }, mask_color_);
-    painter_.fillRect(QRect{ 0, box_.top(), srect.x(), srect.height() }, mask_color_);
+    painter_.fillRect(QRect{ 0, 0, width(), srect.y() }, mask_color_);
+    painter_.fillRect(QRect{ 0, srect.y(), srect.x(), srect.height() }, mask_color_);
     painter_.fillRect(QRect{ srect.x() + srect.width(), srect.y(), width() - srect.x() - srect.width(), srect.height()}, mask_color_);
     painter_.fillRect(QRect{ 0, srect.y() + srect.height(), width(), height() - srect.y() - srect.height()}, mask_color_);
 
@@ -229,16 +217,9 @@ void Selector::paintEvent(QPaintEvent *)
         painter_.setBrush(QColor(0, 0, 0, 1));
         painter_.drawRect(srect);
 
-        // draw anchor
-        painter_.fillRect(box_.X1Y1Anchor(), pen_.color());
-        painter_.fillRect(box_.X1Y2Anchor(), pen_.color());
-        painter_.fillRect(box_.X2Y1Anchor(), pen_.color());
-        painter_.fillRect(box_.X2Y2Anchor(), pen_.color());
-
-        painter_.fillRect(box_.Y1Anchor(), pen_.color());
-        painter_.fillRect(box_.X2Anchor(), pen_.color());
-        painter_.fillRect(box_.Y2Anchor(), pen_.color());
-        painter_.fillRect(box_.X1Anchor(), pen_.color());
+        // draw anchors
+        painter_.setBrush(pen_.color());
+        painter_.drawRects(box_.anchors());
     }
     painter_.end();
 

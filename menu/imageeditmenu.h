@@ -32,7 +32,7 @@ public:
 signals:
     void save();
     void fix();
-    void copy();
+    void ok();
     void exit();
 
     void paint(Graph);

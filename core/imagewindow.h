@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <QLabel>
+#include "imageeditmenu.h"
 
 class ImageWindow : public QWidget
 {
@@ -16,13 +17,14 @@ public:
 
     void fix(QPixmap image);
 
-    void regSCs();
+    void registerShortcuts();
 
 public slots:
     void copy();
     void paste();
     void open();
     void saveAs();
+    void recover();
 
 private:
     virtual void mousePressEvent(QMouseEvent *) override;
@@ -32,6 +34,11 @@ private:
     virtual void keyReleaseEvent(QKeyEvent *) override;
     virtual void paintEvent(QPaintEvent *) override;
     virtual void contextMenuEvent(QContextMenuEvent *) override;
+    virtual void moveEvent(QMoveEvent *event) override;
+    virtual void dropEvent(QDropEvent *event) override;
+    virtual void dragEnterEvent(QDragEnterEvent *event) override;
+
+    void moveMenu();
 
     QPoint begin_{0, 0};
 
@@ -45,7 +52,10 @@ private:
     bool ctrl_ = false;
 
     QPainter painter_;
-    const int SHANDOW_RADIUS_{ 10 };
+    bool editing_ = false;
+    bool thumbnail_ = false;
+    ImageEditMenu edit_menu_;
+    const int SHANDOW_R_{ 10 };
 };
 
 #endif //! CAPTURER_FIXEDWINDOW_H

@@ -10,6 +10,7 @@
 #include <QStandardPaths>
 #include <QShortcut>
 #include <QDateTime>
+#include <QMimeData>
 #include "circlecursor.h"
 #include "logging.h"
 
@@ -21,7 +22,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     canvas_ = QPixmap(size());
 
     connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
-    connect(menu_, &ImageEditMenu::copy, this, &ScreenShoter::copy);
+    connect(menu_, &ImageEditMenu::ok, this, &ScreenShoter::copy);
     connect(menu_, &ImageEditMenu::fix,  this, &ScreenShoter::pin);
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
@@ -72,7 +73,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 
     // show menu
-    connect(this, &ScreenShoter::captured, [this](){ LOG(INFO) << "captured"; menu_->show(); moveMenu(); });
+    connect(this, &ScreenShoter::captured, [this](){ /*LOG(INFO) << "captured";*/ menu_->show(); moveMenu(); });
 
     // reset menu
     connect(&commands_, &CommandStack::emptied, [this](bool empty) { if(empty) menu_->reset(); });
@@ -100,6 +101,7 @@ void ScreenShoter::start()
     Selector::start();
 }
 
+// TODO: [BUG] valid graph can be not removed.
 void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
 {
     if(focus_cmd_ != nullptr && focus_cmd_ != cmd) {
@@ -164,7 +166,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
                 break;
 
             case Graph::TEXT:
-                hover_cmd_ = make_shared<PaintCommand>(graph, pen, false, event->pos());
+                hover_cmd_ = make_shared<PaintCommand>(graph, pen, false, event->pos(), this);
                 hover_cmd_->font(menu_->font(Graph::TEXT));
                 break;
 
@@ -219,6 +221,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 
     // setCursor
     if(edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
+        circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
         setCursor(QCursor(circle_cursor_.cursor()));
     }
     else if(event->buttons() == Qt::NoButton && status_ == LOCKED) {
@@ -246,10 +249,10 @@ void ScreenShoter::wheelEvent(QWheelEvent * event)
 {
     auto delta = event->delta() / 120;
     if(edit_status_ & Graph::ERASER) {
-        menu_->pen(Graph::ERASER, menu_->pen(Graph::ERASER).width() + delta);
+        menu_->pen(Graph::ERASER, std::min(menu_->pen(Graph::ERASER).width() + delta, 49));
     }
     else if(edit_status_ & Graph::MOSAIC) {
-        menu_->pen(Graph::MOSAIC, menu_->pen(Graph::MOSAIC).width() + delta);
+        menu_->pen(Graph::MOSAIC, std::min(menu_->pen(Graph::MOSAIC).width() + delta, 49));
     }
 }
 
@@ -365,7 +368,7 @@ void ScreenShoter::setCursorByHoverPos(Resizer::PointPosition pos, const QCursor
     case Resizer::X2_BORDER:
     case Resizer::Y1_BORDER:
     case Resizer::Y2_BORDER:    setCursor(Qt::SizeAllCursor); break;
-    case Resizer::ROTATE_ANCHOR: setCursor(QPixmap(":/icon/res/rotate").scaled(20, 20)); break;
+    case Resizer::ROTATE_ANCHOR: setCursor(QPixmap(":/icon/res/rotate").scaled(22, 22, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)); break;
 
     default: setCursor(default_cursor); break;
     }
@@ -419,6 +422,7 @@ void ScreenShoter::moveMagnifier()
 void ScreenShoter::exit()
 {
     commands_.clear();
+    redo_stack_.clear();
 
     menu_->reset();
     menu_->hide();
@@ -430,21 +434,9 @@ void ScreenShoter::exit()
 
 QImage ScreenShoter::mosaic(const QImage& _image)
 {
-    auto image = _image.copy();
-
-    for(auto h = 3; h < image.height(); h += 7) {
-        for(auto w = 3; w < image.width(); w += 7) {
-
-            //
-            for(auto i = 0; i < 7 && h + i - 3 < image.height(); ++i) {
-                for(auto j = 0; j < 7 && w + j - 3 < image.width(); ++j) {
-                    image.setPixel(w + j - 3, h + i - 3, image.pixel(w, h));
-                }
-            }
-        }
-    }
-
-    return image;
+    return _image.copy()
+            .scaled(_image.width() / 9, _image.height() / 9, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+            .scaled(_image.width(), _image.height());
 }
 
 void ScreenShoter::updateCanvas()
@@ -521,23 +513,19 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
             Resizer resizer(focus_cmd_->geometry().adjusted(-5, -5, 5, 5));
 
             painter_.save();
-            painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
+            painter_.setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
             painter_.setRenderHint(QPainter::Antialiasing, true);
             painter_.setBrush(Qt::white);
             painter_.drawEllipse(resizer.rotateAnchor());
             painter_.restore();
 
-            painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
             // box border
             painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
             painter_.drawRect(resizer.rect());
 
             // anchors
             painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-            painter_.drawRect(resizer.X1Y1Anchor());
-            painter_.drawRect(resizer.X2Y1Anchor());
-            painter_.drawRect(resizer.X1Y2Anchor());
-            painter_.drawRect(resizer.X2Y2Anchor());
+            painter_.drawRects(resizer.cornerAnchors());
             break;
         }
 
@@ -552,10 +540,11 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 
 void ScreenShoter::snipped()
 {
-    auto image = snippedImage();
-    QApplication::clipboard()->setPixmap(image);
-
-    emit SNIPPED(image, selected().topLeft());
+    auto mimedata = new QMimeData();
+    auto position = selected().topLeft();
+    mimedata->setData("application/qpoint", QByteArray().append(reinterpret_cast<char*>(&position), sizeof (QPoint)));
+    mimedata->setImageData(QVariant(snippedImage()));
+    QApplication::clipboard()->setMimeData(mimedata);
 
     history_.push_back({captured_screen_, selected(), commands_});
     history_idx_ = history_.size() - 1;
@@ -659,6 +648,14 @@ void ScreenShoter::registerShortcuts()
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
     });
+
+    connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){
+        if(status_ >= CAPTURED && focus_cmd_) {
+            focus_cmd_->setFocus(false);
+            commands_.remove(focus_cmd_);
+            focus_cmd_ = nullptr;
+        }
+    });
 }
 
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
@@ -669,6 +666,9 @@ void ScreenShoter::undo()
     auto temp = commands_.back();
     if(focus_cmd_ == temp)
         focusOn(nullptr);
+
+    // The function focusOn() may empty the commands_.
+    if(commands_.empty()) return;
 
     redo_stack_.push(temp);
     commands_.pop();

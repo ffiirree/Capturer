@@ -2,7 +2,6 @@
     <qresource prefix="/icon">
         <file>res/close.png</file>
         <file>res/save.png</file>
-        <file>res/copy.png</file>
         <file>res/circle.png</file>
         <file>res/eraser.png</file>
         <file>res/feather.png</file>
@@ -28,6 +27,10 @@
         <file>res/pin.png</file>
         <file>res/rotate.png</file>
         <file>res/sr.png</file>
+        <file>res/arrow_down.png</file>
+        <file>res/arrow_up.png</file>
+        <file>res/spin_down.png</file>
+        <file>res/spin_up.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu/menu.qss</file>

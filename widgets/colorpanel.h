@@ -29,9 +29,9 @@ protected:
 
 protected:
     QColor color_ = Qt::blue;
-    QPen border_pen_{Qt::black, 1};
-    QColor default_color_ = Qt::black;
-    QColor hover_color_ = Qt::blue;
+    QColor default_color_{"#bfbfbf"};
+    QPen border_pen_{default_color_, 2};
+    QColor hover_color_ = QColor("#2080f0");
 };
 
 ///////////////////////////////////////////////////////////////////////////

@@ -17,10 +17,10 @@ public:
     inline int width() const { return width_; }
 
 public slots:
-    void setWidth(int val) { width_ = val; width_ = std::min(val, 50); repaint(); }
+    void setWidth(int val) { width_ = val; width_ = std::min(val, 49); repaint(); }
 
 private:
-    QPixmap cursor_{50, 50};
+    QPixmap cursor_{51, 51};
     int width_;
 };
 

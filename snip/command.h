@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "resizer.h"
 #include "textedit.h"
+#include "logging.h"
 
 class PaintCommand : public QObject
 {
@@ -18,7 +19,7 @@ public:
         : PaintCommand(type, pen, false, QPoint{})
     { }
 
-    PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point);
+    PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point, QWidget *parent = nullptr);
 
     ~PaintCommand()
     {

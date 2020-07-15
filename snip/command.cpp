@@ -1,7 +1,7 @@
 #include "command.h"
 #include <cmath>
 
-PaintCommand::PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point)
+PaintCommand::PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point, QWidget * parent)
     : graph_(type), pen_(pen), is_fill_(is_fill)
 {
     switch (graph_) {
@@ -20,7 +20,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoi
     case TEXT:
         resizer_ = Resizer(start_point, start_point);
 
-        widget_ = new TextEdit(); //TODO: 父窗口 与 显示
+        widget_ = new TextEdit(parent);
         connect(widget_, &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
 
         widget_->setTextColor(pen.color());

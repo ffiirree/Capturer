@@ -16,6 +16,7 @@
 #include "gifcapturer.h"
 #include "settingdialog.h"
 #include "json.hpp"
+#include "clipboardhistorywindow.h"
 
 template <typename T, int MAX_SIZE = 10>
 class LimitSizeQueue : public std::queue<T> {

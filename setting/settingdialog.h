@@ -11,6 +11,7 @@
 #include <QCoreApplication>
 #include <QLabel>
 #include <QLineEdit>
+#include "apptabcontrol.h"
 #include "config.h"
 
 class SettingWindow : public QWidget
@@ -35,17 +36,7 @@ private:
 
     Config &config = Config::instance();
 
-    QTabWidget * tabw_ = nullptr;
-
-    QWidget * background_ = nullptr;
-
-    QWidget * general_ = nullptr;
-    QWidget * appearance_ = nullptr;
-    QWidget * snip_ = nullptr;
-    QWidget * record_ = nullptr;
-    QWidget * gif_ = nullptr;
-    QWidget * hotkey_ = nullptr;
-    QWidget * about_ = nullptr;
+    AppTabControl *tabwidget_ = nullptr;
 };
 
 #endif // SETTINGDIALOG_H

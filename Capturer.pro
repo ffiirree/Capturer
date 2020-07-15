@@ -65,9 +65,12 @@ SOURCES += \
     $$PWD/widgets/apptabbar.cpp \
     $$PWD/widgets/apptabcontrol.cpp \
     $$PWD/widgets/titlebar.cpp \
-    $$PWD/widgets/custombutton.cpp
+    $$PWD/widgets/custombutton.cpp \
+    $$PWD/snip/clipboardhistorywindow.cpp \
+    core/canvas.cpp
 
 HEADERS += \
+    $$PWD/core/version.h\
     $$PWD/core/logging.h \
     $$PWD/widgets/colorpanel.h \
     $$PWD/widgets/textedit.h \
@@ -106,7 +109,9 @@ HEADERS += \
     $$PWD/widgets/titlebar.h \
     $$PWD/widgets/custombutton.h \
     $$PWD/core/devices.h \
-    $$PWD/core/json.h
+    $$PWD/core/json.h \
+    $$PWD/snip/clipboardhistorywindow.h \
+    core/canvas.h
 
 
 RC_ICONS = $$PWD/res/icon.ico

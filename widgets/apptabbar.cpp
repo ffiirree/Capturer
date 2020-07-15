@@ -1,6 +1,5 @@
 #include "apptabbar.h"
 
-
 QSize AppTabBar::tabSizeHint(int index) const
 {
     QSize s = QTabBar::tabSizeHint(index);

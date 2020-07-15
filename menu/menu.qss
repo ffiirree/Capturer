@@ -1,6 +1,5 @@
 QWidget#EditMenu {
-    background-color: white;
-    border: 1px solid #2080F0;
+    background-color: #f0f0f6;
 }
 
 /*///////////////////////////////////////////////////////////////*/

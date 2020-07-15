@@ -23,9 +23,6 @@
 class ScreenShoter : public Selector
 {
     Q_OBJECT
-
-    using super = Selector;
-
 public:
     enum EditStatus: std::uint32_t {
         NONE            = 0x0000'0000,
@@ -44,7 +41,6 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
-    void SNIPPED(const QPixmap image, const QPoint& pos);
     void FIX_IMAGE(const QPixmap image, const QPoint& pos);
     void SHOW_MESSAGE(const QString &title, const QString &msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);

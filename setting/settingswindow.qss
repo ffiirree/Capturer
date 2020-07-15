@@ -1,106 +1,75 @@
-QWidget#settingswindow {
+#settings-mainwindow {
     background-color: #f5f5f7;
 }
 
 QWidget {
-    color: #333; 
-    font-size: 16px; 
+    color: #333;
+    font-size: 16px;
     font-family: "Microsoft Yahei";
 }
 
 /*///////////////////////////////////////////////////////////////*/
 TitleBar {
-    background-color: #c62f2f;
+    height: 50px;
+    background-color: #fbfbfd;
+}
+
+QLabel#logo {
+    background-color: #f5f5f7;
 }
 
 QLabel#title {
-    color: #ffffff;
+    height: 50px;
+    padding-left； 15px;
+
+    color: #606060;
     font-size: 24px;
     font-family: "华文新魏";
-    background-color: #c62f2f;
-    margin-left: 5px;
+    background-color: #f5f5f7;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
     border: none;
-    background: #ffffff;
-    border-right: 1px solid #e1e1e1;
+    background: #fbfbfd;
 }
 
 QTabWidget#firstmenu::tab-bar {
 }
 
 QTabBar#fristtab::tab {
-    border: none;
     margin: 0;
     padding: 0;
-    color: #666; 
-    font-size: 17px; 
+    color: #666;
+    font-size: 17px;
     font-family: "Microsoft Yahei";
     border-left: 5px solid #f5f5f7;
 }
 
-QTabBar#fristtab::tab:selected { 
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: #e6e6e6; 
-    color: #333; 
-    border-left: 5px solid #ff0000;
+QTabBar#fristtab::tab:selected,
+QTabBar#fristtab::tab:selected:hover {
+    background: #e9e9eb;
+    color: #333;
+    border-left: 5px solid #409eff;
 }
 
-QTabBar#fristtab::tab:selected:hover { 
-    background: #e6e6e6; 
+QTabBar#fristtab::tab:hover {
     color: #333;
-    border-left: 5px solid #ff0000;
-}
-
-QTabBar#fristtab::tab:hover { 
-    color: #333;
-    border-left: 5px solid #f5f5f7;
 }
 
 /*///////////////////////////////////////////////////////////////*/
-QTabWidget#subtw::pane {
-    border-top: 1px solid #e1e1e1;
-    background: #ffffff;
-}
-
-QTabWidget#subtw::tab-bar {
-    alignment: center;
-}
-
-QTabBar#subtwtab::tab {
-    height: 45px;
-    width: 125px;
-    background: #ffffff;
-    border: none;
-
-    color: #333; 
-    font-size: 16px; 
-    font-family: "Microsoft Yahei";
-}
-
-QTabBar#subtwtab::tab:selected  {
-    border-bottom: 2px solid #c62f2f;
-    color: #c62f2f;
-}
-
-QTabBar#subtwtab::tab:hover {
-    color: #c62f2f;
-}
-
-/*///////////////////////////////////////////////////////////////*/
-
-QSpinBox {
-    height: 30px;
-}
-
-ShortcutInput {
-    height: 30px;
-}
-
 ShortcutInput:focus {
-    border: 1px solid #2080F0;
+    color: #409eff;
+}
+
+ColorDialogButton {
+    height: 34px;
+    margin: 1px 0px;
+}
+#sub-title {
+    font-weight: bold;
+}
+#copyright-label {
+    color: #888888;
+    font-size: 15px;
 }

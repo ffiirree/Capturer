@@ -29,7 +29,7 @@ protected:
     QPainter painter_;
 
     // icon
-    QColor icon_color_ = Qt::black;
+    QColor icon_color_ = { 0x38, 0x38, 0x38 };
     QColor icon_normal_color_ = icon_color_;
     QColor icon_hover_color_ = icon_color_;
     QColor icon_checked_color_ = icon_color_;

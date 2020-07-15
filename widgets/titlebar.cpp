@@ -8,36 +8,39 @@ TitleBar::TitleBar(QWidget *parent)
 	: QWidget(parent)
 {
 	setAttribute(Qt::WA_StyledBackground);
-	setAutoFillBackground(true);
-
-	setContentsMargins(15, 0, 10, 0);
+    setAutoFillBackground(true);
 
 	auto layout = new QHBoxLayout();
-	layout->setSpacing(0);
-	layout->setMargin(5);
+    layout->setMargin(0);
+    layout->setSpacing(0);
 	setLayout(layout);
 
+    // logo & title
 	icon_label_ = new QLabel();
+    icon_label_->setObjectName("logo");
+    auto logo = QPixmap(":/icon/res/icon");
+    icon_label_->setPixmap(logo);
+    icon_label_->setFixedSize(50, 50);
+    icon_label_->setContentsMargins({10, 10, 10, 10});
+    icon_label_->setScaledContents(true);
+
 	title_label_ = new QLabel("");
+    title_label_->setFixedWidth(175);
 	title_label_->setObjectName("title");
 
-	layout->addWidget(icon_label_);			// logo
-	layout->addWidget(title_label_);		// title
+    layout->addWidget(icon_label_);
+    layout->addWidget(title_label_);
 
+    // blank
 	layout->addSpacerItem(new QSpacerItem(20, 50, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
-    close_btn_ = new IconButton(QPixmap(":/icon/res/close"), { 30, 30 }, {16, 16 });
-    close_btn_->setIconColor(QColor("#d0d0d0"));
-    close_btn_->setIconHoverColor(QColor("#ffffff"));
+    // close button
+    close_btn_ = new IconButton(QPixmap(":/icon/res/close"), { 50, 50 }, { 24, 24 });
+    close_btn_->setIconColor(QColor("#afafaf"));
+    close_btn_->setIconHoverColor(QColor("#409eff"));
 	connect(close_btn_, &QPushButton::clicked, this, &TitleBar::close);
 
 	layout->addWidget(close_btn_);
-
-	// 
-    auto logo = QPixmap(":/icon/res/icon");
-	icon_label_->setPixmap(logo);
-	icon_label_->setFixedSize(30, 30);
-	icon_label_->setScaledContents(true);
 }
 
 void TitleBar::mousePressEvent(QMouseEvent * event)

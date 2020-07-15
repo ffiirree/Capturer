@@ -13,6 +13,7 @@ Config::Config()
         config_dir.mkpath(config_dir_path_);
     }
     filepath_ = config_dir_path_ + QDir::separator() + "config.json";
+    LOG(INFO) << "config file path: " << filepath_;
 
     QString text;
     QFile config_file(filepath_);
@@ -34,19 +35,19 @@ Config::Config()
     IF_NULL_SET(settings_["detectwindow"], true);
 
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   1);
-    IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#2080F0");
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#409EFF");
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["style"],   Qt::DashDotLine);
-    IF_NULL_SET(settings_["snip"]["selector"]["mask"]["color"],     "#64000000");
+    IF_NULL_SET(settings_["snip"]["selector"]["mask"]["color"],     "#88000000");
 
     IF_NULL_SET(settings_["record"]["selector"]["border"]["width"], 1);
     IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
     IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
-    IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#64000000");
+    IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
 
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"], 1);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"], "#ffff00ff");
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"], Qt::DashDotLine);
-    IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],   "#64000000");
+    IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],   "#88000000");
 
     IF_NULL_SET(settings_["snip"]["hotkey"],    "F1");
     IF_NULL_SET(settings_["pin"]["hotkey"],     "F3");

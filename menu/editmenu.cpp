@@ -10,23 +10,22 @@ EditMenu::EditMenu(QWidget *parent)
     setAutoFillBackground(true);
 
     setCursor(Qt::ArrowCursor);
-    setFixedHeight(HEIGHT + 2);
+    setFixedHeight(HEIGHT);
 
     setAttribute(Qt::WA_ShowWithoutActivating);
     setWindowFlags(Qt::ToolTip | Qt::WindowStaysOnTopHint);
 
     auto layout = new QHBoxLayout();
     layout->setSpacing(0);
-    layout->setMargin(1);
+    layout->setMargin(0);
     setLayout(layout);
 }
 
 void EditMenu::addButton(CustomButton * btn)
 {
     btn->setIconCheckedColor(QColor("#ffffff"));
-    btn->setBackgroundColor(QColor("#ffffff"));
     btn->setBackgroundHoverColor(QColor("#d0d0d5"));
-    btn->setBackgroundCheckedColor(QColor("#2080F0"));
+    btn->setBackgroundCheckedColor(QColor("#409eff"));
 
     layout()->addWidget(btn);
 }

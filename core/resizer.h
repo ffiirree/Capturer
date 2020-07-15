@@ -6,7 +6,7 @@
 #include<QRect>
 #include "displayinfo.h"
 
-#define ANCHOR_W        7
+#define ANCHOR_W        5
 
 #define MIN_W   1
 #define MIN_H   1
@@ -146,10 +146,24 @@ public:
         return { right() - ANCHOR_W/2, bottom() - ANCHOR_W/2, ANCHOR_W, ANCHOR_W };
     }
 
+    QVector<QRect> anchors() const {
+        return QVector<QRect>{
+            rightAnchor(),topAnchor(), bottomAnchor(), leftAnchor(),
+            topLeftAnchor(), topRightAnchor(), bottomLeftAnchor(), bottomRightAnchor()
+        };
+    }
+
+    QVector<QRect> cornerAnchors() const {
+        return QVector<QRect>{
+            topLeftAnchor(), topRightAnchor(), bottomLeftAnchor(), bottomRightAnchor()
+        };
+    }
+
     QRect rotateAnchor() const
     {
-        QPoint centor((x1_ + x2_)/2, top() - 13);
-        return QRect(centor-QPoint{5, 5}, QSize(10, 10));
+        QRect anchor{0, 0, 9, 9};
+        anchor.moveCenter({(x1_ + x2_)/2, top() - 10});
+        return anchor;
     }
 
     ////

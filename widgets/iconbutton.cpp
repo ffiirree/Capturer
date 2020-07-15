@@ -8,7 +8,9 @@ IconButton::IconButton(const QPixmap &icon, QWidget *parent)
 
 IconButton::IconButton(const QPixmap &icon, const QSize& size, const QSize&icon_size, bool checkable, QWidget *parent)
     : CustomButton(size, checkable, parent), icon_(icon), isize_(icon_size)
-{ }
+{
+    setIconSize(isize_);
+}
 
 void IconButton::paint(QPainter *painter)
 {

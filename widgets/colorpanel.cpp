@@ -25,7 +25,8 @@ void ColorButton::paintEvent(QPaintEvent *)
     // border & color
     painter.setPen(border_pen_);
     painter.setBrush(QBrush(color_));
-    painter.drawRect(rect().adjusted(0, 0, -1, -1));
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.drawRect(rect());
 
     painter.end();
 }
@@ -33,13 +34,11 @@ void ColorButton::paintEvent(QPaintEvent *)
 void ColorButton::enterEvent(QEvent *)
 {
     border_pen_.setColor(hover_color_);
-//    border_pen_.setWidth(2);
 }
 
 void ColorButton::leaveEvent(QEvent *)
 {
     border_pen_.setColor(default_color_);
-//    border_pen_.setWidth(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -77,22 +76,23 @@ ColorPanel::ColorPanel(QWidget * parent)
 {
     auto layout = new QGridLayout();
     layout->setContentsMargins(5, 0, 5, 0);
-    layout->setSpacing(2);
+    layout->setVerticalSpacing(1);
+    layout->setHorizontalSpacing(2);
 
     color_dialog_btn_ = new ColorDialogButton(Qt::red);
-    color_dialog_btn_->setFixedSize(28, 28);
+    color_dialog_btn_->setFixedSize(29, 29);
     layout->addWidget(color_dialog_btn_, 0, 0, 2, 2);
 
 #define ADD_COLOR(COLOR, X, Y)   do {                                   \
                                     auto cbtn = new ColorButton(COLOR); \
-                                    cbtn->setFixedSize(12, 12);         \
+                                    cbtn->setFixedSize(14, 14);         \
                                     layout->addWidget(cbtn, X, Y);       \
                                     connect(cbtn, &ColorButton::clicked, this, &ColorPanel::setColor);\
                                 } while(0)
     ADD_COLOR(QColor(000, 000, 000), 0, 2);
-    ADD_COLOR(QColor(255, 255, 255), 1, 2);
-    ADD_COLOR(QColor(128, 128, 128), 0, 3);
-    ADD_COLOR(QColor(192, 192, 192), 1, 3);
+    ADD_COLOR(QColor(128, 128, 128), 1, 2);
+    ADD_COLOR(QColor(192, 192, 192), 0, 3);
+    ADD_COLOR(QColor(255, 255, 255), 1, 3);
     ADD_COLOR(QColor(255, 000, 000), 0, 4);
     ADD_COLOR(QColor(255, 255, 000), 1, 4);
     ADD_COLOR(QColor(128, 000, 000), 0, 5);

@@ -4,7 +4,7 @@ QMenu#sys_tray_menu {
     padding: 3px;
 }
 
-QMenu#sys_tray_menu::item {    
+QMenu#sys_tray_menu::item {
     background-color:#ffffff;
     border-left: 15px solid #ffffff;
     height: 45px;
@@ -24,4 +24,150 @@ QMenu#sys_tray_menu::item:selected {
 QMenu#sys_tray_menu::separator {
     height: 1px;
     background-color: #e5e5e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QComboBox {
+    border: 1px solid #dcdfe6;
+    border-radius: 3px;
+    background-color: white;
+    height: 36px;
+    padding: 0 10px;
+    margin: 1px 0px;
+    color: #50505f;
+}
+
+QComboBox:hover {
+    border: 1px solid #909399;
+}
+
+QComboBox:on {
+    border: 1px solid #409eff;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 22px;
+    padding: 4px;
+
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icon/res/arrow_down.png);
+}
+
+QComboBox::down-arrow:on {
+    image: url(:/icon/res/arrow_up.png);
+}
+
+QComboBox QAbstractItemView {
+    outline: 0px;
+    border: 1px solid #e4e7ed;
+}
+
+QComboBox QListView::item {
+    padding-left: 10px;
+    height: 34px;
+    color: #505255;
+    background: white;
+}
+
+QComboBox QListView::item:hover,
+QComboBox QListView::item:selected,
+QComboBox QListView::item:checked {
+    padding-left: 10px;
+    color: #505255;
+    background-color: #f5f7fa;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLineEdit {
+    border: 1px solid #dcdfe6;
+    border-radius: 3px;
+    height: 36px;
+    padding: 0 10px;
+    margin: 1px 0px;
+    color: #50505f;
+}
+
+QLineEdit:hover {
+    border: 1px solid #909399;
+}
+
+QLineEdit:focus {
+    color: #409eff;
+    border: 1px solid #409eff;
+}
+
+QLineEdit[readOnly="true"] {
+    color: gray
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QSpinBox {
+    border: 1px solid #dcdfe6;
+    border-radius: 3px;
+    background-color: white;
+    height: 36px;
+    padding: 0 10px;
+    margin: 1px 0px;
+    color: #50505f;
+}
+
+QSpinBox:hover {
+    border: 1px solid #909399;
+}
+
+QSpinBox:focus {
+    border: 1px solid #409eff;
+}
+
+QSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+
+    border: none;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+
+    width: 20px;
+    margin-right: 1px;
+    margin-top: 1px;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::up-button:pressed {
+    background-color: #e0e0e0;
+}
+
+QSpinBox::up-arrow {
+    image: url(:/icon/res/spin_up.png);
+    width: 20px;
+    height: 16px;
+}
+
+QSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+
+    border: none;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+
+    width: 20px;
+    height: 16px;
+    margin-right: 1px;
+    margin-bottom: 1px;
+}
+
+QSpinBox::down-button:hover,
+QSpinBox::down-button:pressed {
+    background-color: #e0e0e0;
+}
+
+QSpinBox::down-arrow {
+    image: url(:/icon/res/spin_down.png);
 }

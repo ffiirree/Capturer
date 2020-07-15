@@ -4,6 +4,7 @@
 #include <QTabBar>
 #include <QStylePainter>
 #include <QStyleOptionTab>
+#include <QProxyStyle>
 
 class AppTabBar : public QTabBar
 {
