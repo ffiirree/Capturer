@@ -150,7 +150,7 @@ void Capturer::clipboardChanged()
         clipboard_history_.push({ mimedata->imageData().value<QPixmap>(), pos });
     }
 
-    else if(mimedata->hasUrls() && QString("jpg;jpeg;png;JPG;JPEG;PNG").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
+    else if(mimedata->hasUrls() && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
         LOG(INFO) << "IMAGE URL";
 
         QPixmap pixmap;
