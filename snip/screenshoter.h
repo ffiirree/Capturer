@@ -13,13 +13,6 @@
 #include "circlecursor.h"
 #include "config.h"
 
-#define  DO(COMMAND)    do {                                    \
-                            auto __command__ = COMMAND;         \
-                            focusOn(__command__);               \
-                            commands_.push(__command__);        \
-                            redo_stack_.clear();                \
-                        } while(0)
-
 class ScreenShoter : public Selector
 {
     Q_OBJECT
@@ -27,7 +20,7 @@ public:
     enum EditStatus: std::uint32_t {
         NONE            = 0x0000'0000,
         READY           = 0x0001'0000,
-        GRAPH_PAINTING  = 0x0010'0000,
+        GRAPH_CREATING  = 0x0010'0000,
         GRAPH_MOVING    = 0x0020'0000,
         GRAPH_RESIZING  = 0x0040'0000,
         GRAPH_ROTATING  = 0x0080'0000,
@@ -41,6 +34,7 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
+    void focusOnGraph(Graph);
     void FIX_IMAGE(const QPixmap image, const QPoint& pos);
     void SHOW_MESSAGE(const QString &title, const QString &msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
@@ -63,7 +57,7 @@ public slots:
     }
 
 public slots:
-    void modified(PaintType type) { modified_ = type; update(); }
+    void modified(PaintType type) { modified_ = (type > modified_) ? type : modified_; update(); }
 
 private slots:
     void moveMenu();

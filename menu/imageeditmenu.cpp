@@ -35,6 +35,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::RECTANGLE, rectangle_btn, rectangle_menu_);
     group_->addButton(rectangle_btn);
     addButton(rectangle_btn);
+    buttons_[Graph::RECTANGLE] = rectangle_btn;
 
     auto circle_btn = new IconButton(QPixmap(":/icon/res/circle"), icon_size, { ICON_W, ICON_W }, true);
     circle_btn->setToolTip(tr("Ellipse"));
@@ -43,6 +44,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::CIRCLE, circle_btn, circle_menu_);
     group_->addButton(circle_btn);
     addButton(circle_btn);
+    buttons_[Graph::CIRCLE] = circle_btn;
 
     auto arrow_btn = new IconButton(QPixmap(":/icon/res/arrow"), icon_size, { ICON_W, ICON_W }, true);
     arrow_btn->setToolTip(tr("Arrow"));
@@ -51,6 +53,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::ARROW, arrow_btn, arrow_menu_);
     group_->addButton(arrow_btn);
     addButton(arrow_btn);
+    buttons_[Graph::ARROW] = arrow_btn;
 
     auto line_btn = new IconButton(QPixmap(":/icon/res/line"), icon_size, { ICON_W, ICON_W }, true);
     line_btn->setToolTip(tr("Line"));
@@ -59,6 +62,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::LINE, line_btn, line_menu_);
     group_->addButton(line_btn);
     addButton(line_btn);
+    buttons_[Graph::LINE] = line_btn;
 
     auto pen_btn = new IconButton(QPixmap(":/icon/res/feather"), icon_size, { ICON_W, ICON_W }, true);
     pen_btn->setToolTip(tr("Pencil"));
@@ -67,6 +71,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::CURVES, pen_btn, curves_menu_);
     group_->addButton(pen_btn);
     addButton(pen_btn);
+    buttons_[Graph::CURVES] = pen_btn;
 
     auto text_btn = new IconButton(QPixmap(":/icon/res/text"), icon_size, { ICON_W, ICON_W }, true);
     text_btn->setToolTip(tr("Text"));
@@ -75,6 +80,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::TEXT, text_btn, text_menu_);
     group_->addButton(text_btn);
     addButton(text_btn);
+    buttons_[Graph::TEXT] = text_btn;
 
     auto mosaic_btn = new IconButton(QPixmap(":/icon/res/mosaic"), icon_size, { ICON_W, ICON_W }, true);
     mosaic_btn->setToolTip(tr("Mosaic"));
@@ -83,6 +89,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::MOSAIC, mosaic_btn, mosaic_menu_);
     group_->addButton(mosaic_btn);
     addButton(mosaic_btn);
+    buttons_[Graph::MOSAIC] = mosaic_btn;
 
     auto eraser_btn = new IconButton(QPixmap(":/icon/res/eraser"), icon_size, { ICON_W, ICON_W }, true);
     eraser_btn->setToolTip(tr("Eraser"));
@@ -91,6 +98,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     CONNECT_BTN_MENU(Graph::ERASER, eraser_btn, erase_menu_);
     group_->addButton(eraser_btn);
     addButton(eraser_btn);
+    buttons_[Graph::ERASER] = eraser_btn;
 
     /////////////////////////////////////////////////////////////////////////////////
     addSeparator();

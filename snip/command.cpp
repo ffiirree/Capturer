@@ -32,6 +32,37 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoi
     }
 }
 
+PaintCommand& PaintCommand::operator=(const PaintCommand& cmd)
+{
+    this->graph_ = cmd.graph_;
+    this->pen_ = cmd.pen_;
+    this->font_ = cmd.font_;
+    this->is_fill_ = cmd.is_fill_;
+    this->points_ = cmd.points_;
+    this->points_buff_ = cmd.points_buff_;
+
+    this->resizer_ = cmd.resizer_;
+
+    if(cmd.widget_ != nullptr) {
+        widget_ = new TextEdit(static_cast<QWidget *>(cmd.parent()));
+        connect(widget_, &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
+
+        widget_->setFont(this->font_);
+        widget_->setTextColor(this->pen_.color());
+        widget_->text(cmd.widget_->text());
+
+        widget_->setFocus();
+        widget_->move(cmd.widget()->pos());
+        widget_->show();
+    }
+
+    this->visible_ = cmd.visible_;
+    this->pre_ = cmd.pre_;
+    this->adjusted_ = false;
+
+    return *this;
+}
+
 bool PaintCommand::push_point(const QPoint& pos)
 {
     switch (graph()) {
@@ -78,7 +109,9 @@ void PaintCommand::move(const QPoint& diff)
 
     default: break;
     }
-    emit modified(PaintType::REPAINT_ALL);
+
+    adjusted_ = true;
+    emit modified(PaintType::DRAW_MODIFING);
 }
 
 bool PaintCommand::isValid()
@@ -87,11 +120,11 @@ bool PaintCommand::isValid()
     case RECTANGLE:
     case ELLIPSE:
     case LINE:      return size() != QSize(1, 1);
-    case CURVES:    return points_.size() > 1;
-    case MOSAIC:    return true;
+    case CURVES:
+    case MOSAIC:
+    case ERASER:    return true;
     case ARROW:     return size() != QSize(1, 1);
     case TEXT:      return !widget_->toPlainText().isEmpty();
-    case ERASER:    return true;
     case BROKEN_LINE: return true;
     default: return true;
     }
@@ -112,7 +145,8 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& diff)
     }
     if(graph() == Graph::ARROW) updateArrowPoints(resizer_.point1(), resizer_.point2());
 
-    emit modified(PaintType::REPAINT_ALL);
+    adjusted_ = true;
+    emit modified(PaintType::DRAW_MODIFING);
 }
 
 void PaintCommand::updateArrowPoints(QPoint begin, QPoint end)
@@ -136,6 +170,8 @@ void PaintCommand::updateArrowPoints(QPoint begin, QPoint end)
 
 void PaintCommand::draw(QPainter *painter, bool modified)
 {
+    if(!visible()) return;
+
     painter->save();
     painter->setPen(pen());
     if(isFill()) painter->setBrush(pen().color());
@@ -171,8 +207,9 @@ void PaintCommand::draw(QPainter *painter, bool modified)
             points_buff_.clear();
             points_buff_ << points_.last();
         }
+        // repaint
         else {
-            painter->drawPolyline(points_);
+            (points().size() == 1) ? painter->drawPoint(points()[0]) : painter->drawPolyline(points_);
         }
         break;
 

@@ -13,6 +13,9 @@ public:
 
     void setFont(const QFont& font);
 
+    QString text() const { return this->toPlainText(); }
+    void text(const QString& v) { setText(v); }
+
 signals:
     void focus(bool);
 

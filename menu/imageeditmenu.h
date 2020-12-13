@@ -35,16 +35,17 @@ signals:
     void ok();
     void exit();
 
-    void paint(Graph);
+    void paint(Graph);          // start painting
 
     void undo();
     void redo();
 
-    void changed(Graph);
+    void changed(Graph);        // the style changed
 
 public slots:
     void disableUndo(bool val) { undo_btn_->setDisabled(val); }
     void disableRedo(bool val) { redo_btn_->setDisabled(val); }
+    void paintGraph(Graph graph) { buttons_[graph]->setChecked(true); }
 
 private:
     IconButton* undo_btn_ = nullptr;
@@ -60,6 +61,7 @@ private:
     EraseMenu *erase_menu_ = nullptr;
 
     ButtonGroup * group_ = nullptr;
+    std::map<Graph, IconButton*> buttons_; // bind graph with buttons
 
     bool sub_menu_show_pos_ = false;
 };

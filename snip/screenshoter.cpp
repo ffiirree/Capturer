@@ -31,11 +31,22 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     connect(menu_, &ImageEditMenu::paint, [this](Graph graph) {
         switch (graph) {
-        case Graph::NONE:   edit_status_ = EditStatus::NONE; if(commands_.empty()) CAPTURED(); break;
-        default:            edit_status_ = EditStatus::READY | graph; LOCKED();break;
+        case Graph::NONE:
+            edit_status_ = EditStatus::NONE;
+            if(commands_.empty())
+                CAPTURED();
+            focusOn(nullptr);
+            break;
+
+        default:
+            edit_status_ = (edit_status_ & 0xffff'0000) | graph;
+            LOCKED();
+            focusOn((focus_cmd_ && focus_cmd_->graph() == graph) ? focus_cmd_ : nullptr);
+            break;
         }
-        focus_cmd_ = nullptr; update();
     });
+
+    connect(this, &ScreenShoter::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
 
     // attrs changed
     connect(menu_, &ImageEditMenu::changed, [this](Graph graph){
@@ -62,7 +73,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     });
 
     // repaint when stack changed
-    connect(&commands_, &CommandStack::increased, [this]() { focusOn(commands_.back()); modified(PaintType::DRAW_FINISHED); });
+    connect(&commands_, &CommandStack::increased, [this]() { modified(PaintType::DRAW_FINISHED); });
     connect(&commands_, &CommandStack::decreased, [this]() { modified(PaintType::REPAINT_ALL); });
     connect(&commands_, &CommandStack::emptied, [this](bool empty) {
         if(empty) CAPTURED(); else LOCKED();
@@ -101,18 +112,37 @@ void ScreenShoter::start()
     Selector::start();
 }
 
-// TODO: [BUG] valid graph can be not removed.
 void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
 {
-    if(focus_cmd_ != nullptr && focus_cmd_ != cmd) {
-        focus_cmd_->setFocus(false);
-        if(!focus_cmd_->isValid()) {
-            commands_.remove(focus_cmd_);
+    if(focus_cmd_ == cmd) return;
+
+    auto previous_focus_cmd = focus_cmd_;
+    if(previous_focus_cmd) {
+        previous_focus_cmd->setFocus(false);
+        if(!previous_focus_cmd->isValid()) {
+            commands_.remove(previous_focus_cmd);
         }
     }
+
+    // switch
     focus_cmd_ = cmd;
-    if(cmd) focus_cmd_->setFocus(true);
+
+    if(focus_cmd_) {
+        focus_cmd_->setFocus(true);
+    }
+
+    if(!previous_focus_cmd || (focus_cmd_ && previous_focus_cmd->graph() != focus_cmd_->graph())) {
+        emit focusOnGraph(focus_cmd_->graph());  // must after focus_cmd_ = cmd
+    }
 }
+
+#define CPPY_AND_MODIFY_CMD(CMD)                         \
+        do {                                             \
+            auto pre_cmd = CMD;                          \
+            pre_cmd->visible(false);                     \
+            CMD = make_shared<PaintCommand>(*pre_cmd);   \
+            CMD->previous(pre_cmd);                      \
+        } while(0)
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
@@ -122,30 +152,30 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
     auto mouse_pos = event->pos();
 
     if(status_ == LOCKED) {
-        focusOn(nullptr);
         // Border => move
-        if(hover_position_ & Resizer::BORDER) {
+        if((hover_position_ & Resizer::BORDER) && hover_cmd_) {
             move_begin_ = mouse_pos;
 
-            focusOn(hover_cmd_);
+            CPPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= EditStatus::GRAPH_MOVING;
         }
         // Anchor => resize
-        else if(hover_position_ & Resizer::ANCHOR) {
+        else if((hover_position_ & Resizer::ANCHOR) && hover_cmd_) {
             resize_begin_ = mouse_pos;
 
-            focusOn(hover_cmd_);
+            CPPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_RESIZING;
         }
         // rotate
-        else if(hover_position_ == Resizer::ROTATE_ANCHOR) {
-            focusOn(hover_cmd_);
+        else if((hover_position_ == Resizer::ROTATE_ANCHOR) && hover_cmd_) {
+            CPPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_ROTATING;
         }
-        // Not border and anchor => Paint
+
+        // Not borders and anchors => Create
         else {
             auto graph = Graph(edit_status_ & GRAPH_MASK);
             auto pen = menu_->pen(graph);
@@ -177,17 +207,20 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             default: LOG(ERROR) << "Error type:" << graph; break;
             }
-            if(hover_cmd_) {
-                DO(hover_cmd_);
-                modified(PaintType::DRAW_MODIFING);
-                connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
-                edit_status_ |= GRAPH_PAINTING;
-            }
+            edit_status_ |= GRAPH_CREATING;
+        }
+
+        if(hover_cmd_) {
+            hover_cmd_->visible(true);
+            focusOn(hover_cmd_);
+            modified(PaintType::DRAW_MODIFING);
+            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
         }
     }
 
     Selector::mousePressEvent(event);
 }
+#undef CPPY_AND_MODIFY_CMD
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
@@ -196,7 +229,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
     if(event->buttons() & Qt::LeftButton) {
         if(status_ == LOCKED) {
             switch (edit_status_ & OPERATION_MASK) {
-            case GRAPH_PAINTING:
+            case GRAPH_CREATING:
                 hover_cmd_->push_point(mouse_pos);
                 break;
 
@@ -236,8 +269,21 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton && status_ == LOCKED) {
-        if((edit_status_ & OPERATION_MASK) == GRAPH_PAINTING)
-            emit modified(PaintType::DRAW_FINISHED);
+        if(!focus_cmd_) LOG(ERROR) << "Focused cmd is nullptr!";
+
+        if((!focus_cmd_->previous() && focus_cmd_->isValid())           // created
+                || (focus_cmd_->previous() && focus_cmd_->adjusted())   // moved/resized..
+                || ( (edit_status_ & GRAPH_MASK) == Graph::TEXT)) {     // check text is valid when it loses focus
+            commands_.push(focus_cmd_);
+            redo_stack_.clear();
+        }
+        else {
+            if(focus_cmd_->previous()) {
+                focus_cmd_->previous()->visible(true);
+            }
+            // foucs on null or the previous cmd
+            focusOn(focus_cmd_->previous());
+        }
 
         edit_status_ &= ~OPERATION_MASK;
     }
@@ -262,6 +308,7 @@ void ScreenShoter::updateHoverPos(const QPoint& pos)
     hover_cmd_ = shared_ptr<PaintCommand>(nullptr);
 
     for(auto& command: commands_.commands()) {
+        if(!command->visible()) continue;
         switch (command->graph()) {
         case Graph::RECTANGLE:
         {
@@ -442,6 +489,7 @@ QImage ScreenShoter::mosaic(const QImage& _image)
 void ScreenShoter::updateCanvas()
 {
     painter_.begin(&canvas_);
+
     switch (modified_) {
     case PaintType::DRAW_FINISHED:
         if(focus_cmd_ == nullptr) {
@@ -482,7 +530,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     painter_.begin(this);
     painter_.drawPixmap(0, 0, canvas_);
 
-    if(modified_ == PaintType::DRAW_MODIFING) {
+    if(modified_ == PaintType::DRAW_MODIFING || modified_ == PaintType::REPAINT_ALL) {
         if(focus_cmd_) {
             focus_cmd_->draw_modified(&painter_);
         }
@@ -534,6 +582,9 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
         painter_.restore();
     }
     painter_.end();
+
+    // clear the modified flag
+    modified_ = PaintType::UNMODIFIED;
 
     Selector::paintEvent(event);
 }
@@ -644,16 +695,14 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [=](){
         if(status_ < CAPTURED) {
-            LOG(INFO) << "CTRL + C";
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
     });
 
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){
         if(status_ >= CAPTURED && focus_cmd_) {
-            focus_cmd_->setFocus(false);
             commands_.remove(focus_cmd_);
-            focus_cmd_ = nullptr;
+            focusOn(nullptr);
         }
     });
 }
@@ -661,23 +710,33 @@ void ScreenShoter::registerShortcuts()
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
 void ScreenShoter::undo()
 {
-    if(commands_.empty()) return;
+    while(!commands_.empty()) {
+        auto ptr = commands_.back();
 
-    auto temp = commands_.back();
-    if(focus_cmd_ == temp)
-        focusOn(nullptr);
+        // text cmd may be invalid
+        if(ptr->isValid()) {
+            redo_stack_.push(ptr);
+            commands_.pop();
 
-    // The function focusOn() may empty the commands_.
-    if(commands_.empty()) return;
+            focusOn(commands_.empty() ? nullptr : commands_.back());
 
-    redo_stack_.push(temp);
-    commands_.pop();
+            if(ptr->previous() != nullptr) ptr->previous()->visible(true);
+
+            break;
+        }
+        commands_.pop();
+    }
 }
 
 void ScreenShoter::redo()
 {
     if(redo_stack_.empty()) return;
 
-    commands_.push(redo_stack_.back());
+    auto ptr = redo_stack_.back();
+    commands_.push(ptr);
     redo_stack_.pop();
+
+    focusOn(commands_.back());
+
+    if(ptr->previous() != nullptr) ptr->previous()->visible(false);
 }

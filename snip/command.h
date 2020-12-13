@@ -21,6 +21,12 @@ public:
 
     PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point, QWidget *parent = nullptr);
 
+    PaintCommand(const PaintCommand& cmd) {
+        *this = cmd;
+    }
+
+    PaintCommand& operator=(const PaintCommand& cmd);
+
     ~PaintCommand()
     {
         if(widget_) {
@@ -51,10 +57,16 @@ public:
 
     inline void setFocus(bool f)
     {
-        if(widget_ && f) {
-            widget_->show();
-            widget_->setFocus();
+        if(widget_) {
+            if(f) {
+                widget_->show();
+                widget_->setFocus();
+            }
+            else {
+                widget_->hide();
+            }
         }
+
         emit modified(PaintType::UPDATE_MASK);
     }
 
@@ -71,6 +83,19 @@ public:
 
     Resizer resizer() const { return resizer_; }
 
+    void visible(bool v)
+    {
+        if(visible_ != v) {
+            emit modified(v ? PaintType::DRAW_FINISHED : PaintType::REPAINT_ALL);
+            visible_ = v;
+        }
+    }
+    bool visible() const { return visible_; }
+
+    void previous(shared_ptr<PaintCommand> pre) { pre_ = pre; }
+    shared_ptr<PaintCommand> previous() const { return pre_; }
+
+    bool adjusted() const { return adjusted_; }
 signals:
     void modified(PaintType);
 
@@ -86,7 +111,12 @@ private:
     QVector<QPoint> points_buff_;
     TextEdit * widget_ = nullptr;
 
-    Resizer resizer_;           // 可调整大小图形使用该属性
+    Resizer resizer_;
+
+    bool visible_ = true;
+    shared_ptr<PaintCommand> pre_;
+
+    bool adjusted_ = false;
 };
 
 class CommandStack : public QObject
