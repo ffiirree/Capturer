@@ -302,6 +302,17 @@ void ScreenShoter::wheelEvent(QWheelEvent * event)
     }
 }
 
+void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if(event->button() == Qt::LeftButton && status_ >= CAPTURED) {
+        snipped();
+
+        exit();
+    }
+
+    Selector::mouseDoubleClickEvent(event);
+}
+
 void ScreenShoter::updateHoverPos(const QPoint& pos)
 {
     hover_position_ = Resizer::DEFAULT;

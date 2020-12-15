@@ -69,6 +69,7 @@ protected:
     virtual void keyPressEvent(QKeyEvent *) override;
     virtual void paintEvent(QPaintEvent *) override;
     virtual void wheelEvent(QWheelEvent *) override;
+    virtual void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
     void updateCanvas();
