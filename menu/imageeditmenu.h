@@ -21,9 +21,11 @@ public:
 
     void reset();
 
-    QPen pen(Graph);
-    void pen(Graph, int);
     bool fill(Graph);
+    void fill(Graph, bool);
+    QPen pen(Graph);
+    void pen(Graph, QPen);
+    void style(Graph, QPen, bool);
     QFont font(Graph);
 
     void setSubMenuShowAbove() { sub_menu_show_pos_ = true; }

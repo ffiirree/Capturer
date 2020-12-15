@@ -11,10 +11,10 @@ public:
     explicit EraseMenu(QWidget *parent = nullptr);
 
     QPen pen() const  override { return pen_; }
-    void pen(int width) override
+    void pen(QPen pen) override
     {
-        pen_.setWidth(width);
-        width_->setValue(width);
+        pen_ = pen;
+        width_->setValue(pen.width());
     }
 
 private:

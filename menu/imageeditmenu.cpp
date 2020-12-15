@@ -161,19 +161,37 @@ QPen ImageEditMenu::pen(Graph graph)
     return QPen();
 }
 
-void ImageEditMenu::pen(Graph graph, int width)
+void ImageEditMenu::pen(Graph graph, QPen pen)
 {
-    if(width < 1) width = 1;
+    if(pen.width() < 1) pen.setWidth(1);
 
     switch (graph) {
-    case Graph::RECTANGLE: rectangle_menu_->pen(width);    break;
-    case Graph::CIRCLE:    circle_menu_->pen(width);       break;
-    case Graph::LINE:      line_menu_->pen(width);         break;
-    case Graph::CURVES:    curves_menu_->pen(width);       break;
-    case Graph::MOSAIC:    mosaic_menu_->pen(width);       break;
-    case Graph::ARROW:     arrow_menu_->pen(width);        break;
-    case Graph::TEXT:      text_menu_->pen(width);         break;
-    case Graph::ERASER:    erase_menu_->pen(width);        break;
+    case Graph::RECTANGLE: rectangle_menu_->pen(pen);    break;
+    case Graph::CIRCLE:    circle_menu_->pen(pen);       break;
+    case Graph::LINE:      line_menu_->pen(pen);         break;
+    case Graph::CURVES:    curves_menu_->pen(pen);       break;
+    case Graph::MOSAIC:    mosaic_menu_->pen(pen);       break;
+    case Graph::ARROW:     arrow_menu_->pen(pen);        break;
+    case Graph::TEXT:      text_menu_->pen(pen);         break;
+    case Graph::ERASER:    erase_menu_->pen(pen);        break;
+    default:        break;
+    }
+    emit changed(graph);
+}
+
+void ImageEditMenu::style(Graph graph, QPen pen, bool fill)
+{
+    if(pen.width() < 1) pen.setWidth(1);
+
+    switch (graph) {
+    case Graph::RECTANGLE: rectangle_menu_->style(pen, fill);   break;
+    case Graph::CIRCLE:    circle_menu_->style(pen, fill);              break;
+    case Graph::LINE:      line_menu_->pen(pen);                break;
+    case Graph::CURVES:    curves_menu_->pen(pen);              break;
+    case Graph::MOSAIC:    mosaic_menu_->pen(pen);              break;
+    case Graph::ARROW:     arrow_menu_->pen(pen);               break;
+    case Graph::TEXT:      text_menu_->pen(pen);                break;
+    case Graph::ERASER:    erase_menu_->pen(pen);               break;
     default:        break;
     }
     emit changed(graph);
@@ -193,6 +211,17 @@ bool ImageEditMenu::fill(Graph graph)
     default:        break;
     }
     return false;
+}
+
+void ImageEditMenu::fill(Graph graph, bool fill)
+{
+    switch (graph) {
+    case Graph::RECTANGLE: rectangle_menu_->fill(fill); break;
+    case Graph::CIRCLE:    circle_menu_->fill(fill);    break;
+    default:        break;
+    }
+
+    emit changed(graph);
 }
 
 QFont ImageEditMenu::font(Graph graph)

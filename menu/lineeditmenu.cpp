@@ -25,4 +25,9 @@ LineEditMenu::LineEditMenu(QWidget * parent)
 
     line_width->setChecked(true);
     pen_ = QPen(color_panel->color(), line_width->value(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+
+    connect(this, &EditMenu::styleChanged, [=]() {
+        line_width->setValue(pen().width());
+        color_panel->setColor(pen().color());
+    });
 }

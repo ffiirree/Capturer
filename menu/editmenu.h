@@ -12,12 +12,16 @@ public:
     explicit EditMenu(QWidget *parent = nullptr);
 
     virtual QPen pen() const { return pen_; }
-    virtual void pen(int w) { pen_.setWidth(w); }
+    virtual void pen(QPen pen) { pen_ = pen; emit styleChanged(); }
 
     virtual bool fill() const { return fill_; }
+    virtual void fill(bool fill) { fill_ = fill; emit styleChanged(); }
+
+    virtual void style(QPen pen, bool fill) { fill_ = fill; pen_ = pen; emit styleChanged(); }
 
 signals:
     void changed();
+    void styleChanged();
 
 protected:
     void addButton(CustomButton *);

@@ -129,6 +129,7 @@ void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
 
     if(focus_cmd_) {
         focus_cmd_->setFocus(true);
+        menu_->style(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill());
     }
 
     if(!previous_focus_cmd || (focus_cmd_ && previous_focus_cmd->graph() != focus_cmd_->graph())) {
@@ -293,12 +294,13 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 
 void ScreenShoter::wheelEvent(QWheelEvent * event)
 {
-    auto delta = event->delta() / 120;
-    if(edit_status_ & Graph::ERASER) {
-        menu_->pen(Graph::ERASER, std::min(menu_->pen(Graph::ERASER).width() + delta, 49));
-    }
-    else if(edit_status_ & Graph::MOSAIC) {
-        menu_->pen(Graph::MOSAIC, std::min(menu_->pen(Graph::MOSAIC).width() + delta, 49));
+    if((edit_status_ & Graph::ERASER) || (edit_status_ & Graph::MOSAIC)) {
+        auto delta = event->delta() / 120;
+        auto graph = static_cast<Graph>(edit_status_ & GRAPH_MASK);
+        auto pen = menu_->pen(graph);
+
+        pen.setWidth(std::min(pen.width() + delta, 49));
+        menu_->pen(graph, pen);
     }
 }
 

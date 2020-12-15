@@ -63,6 +63,7 @@ FontMenu::FontMenu(QWidget *parent)
         pen_.setColor(color);
         emit changed();
     });
+    connect(this, &EditMenu::styleChanged, [=]() { color_panel_->setColor(pen().color()); });
     addWidget(color_panel_);
 
     pen_ = QPen(color_panel_->color());

@@ -10,6 +10,7 @@ ArrowEditMenu::ArrowEditMenu(QWidget * parent)
         pen_.setColor(color);
         emit changed();
     });
+    connect(this, &EditMenu::styleChanged, [=]() { color_panel->setColor(pen().color()); });
     addWidget(color_panel);
 
     pen_ = QPen(color_panel->color(), 1, Qt::SolidLine);

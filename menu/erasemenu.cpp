@@ -5,13 +5,13 @@
 EraseMenu::EraseMenu(QWidget *parent)
     : EditMenu(parent)
 {
-
     width_ = new WidthButton({HEIGHT, HEIGHT}, 15, true);
     connect(width_, &WidthButton::changed, [=](int w){
         pen_.setWidth(w);
 
         emit changed();
     });
+    connect(this, &EditMenu::styleChanged, [=](){ width_->setValue(pen().width()); });
     addButton(width_);
 
     // after added to the group
