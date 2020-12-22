@@ -40,7 +40,7 @@ void DisplayInfo::update()
 
     foreach(const auto& screen, screens) {
         auto geometry = screen->geometry();
-        LOG(INFO) << "\t" << geometry << "DPR:" << screen->devicePixelRatio() << "DPI" << screen->logicalDotsPerInch();
+        LOG(INFO) << "\t" << geometry << "  DPR: " << screen->devicePixelRatio() << "  DPI: " << screen->logicalDotsPerInch();
 
         width += geometry.width();
 

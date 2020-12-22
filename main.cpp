@@ -1,6 +1,8 @@
 #include <QApplication>
+#include <QOperatingSystemVersion>
 #include <QFile>
 #include <QTranslator>
+#include "version.h"
 #include "utils.h"
 #include "displayinfo.h"
 #include "capturer.h"
@@ -13,6 +15,18 @@ int main(int argc, char *argv[])
 
     // log pattern
     qSetMessagePattern("%{time yyyy-MM-dd hh:mm:ss.zzz} (%{type}) %{file}:%{line}] %{message}");
+
+    LOG(INFO) << QCoreApplication::applicationName() << " "
+              << CAPTURER_VERSION_MAJOR << "." << CAPTURER_VERSION_MINOR << "." << CAPTURER_VERSION_PATCH
+              << " (Qt " << qVersion() << ")";
+
+    LOG(INFO) << "Operating System: " << QOperatingSystemVersion::current().name() << " "
+              <<  QOperatingSystemVersion::current().majorVersion() << "."
+              <<  QOperatingSystemVersion::current().minorVersion() << "."
+              <<  QOperatingSystemVersion::current().microVersion() << " ("
+              << QSysInfo::currentCpuArchitecture() << ")";
+
+    LOG(INFO) << "Application Dir: " << QCoreApplication::applicationDirPath();
 
     // displays
     DisplayInfo::instance();

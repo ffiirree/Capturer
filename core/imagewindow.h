@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <QLabel>
+#include <QGraphicsDropShadowEffect>
 #include "imageeditmenu.h"
 
 class ImageWindow : public QWidget
@@ -25,6 +26,7 @@ public slots:
     void open();
     void saveAs();
     void recover();
+    void effectEnabled();
 
 private:
     virtual void mousePressEvent(QMouseEvent *) override;
@@ -55,7 +57,10 @@ private:
     bool editing_ = false;
     bool thumbnail_ = false;
     ImageEditMenu edit_menu_;
-    const int SHANDOW_R_{ 10 };
+    const static int DEFAULT_SHADOW_R_{ 10 };
+    int shadow_r_ = DEFAULT_SHADOW_R_;
+    bool effect_enabled_ = true;
+    QGraphicsDropShadowEffect *effect_;
 };
 
 #endif //! CAPTURER_FIXEDWINDOW_H

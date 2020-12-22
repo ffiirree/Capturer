@@ -36,6 +36,7 @@ public:
 private slots:
     void pinImage(const QPixmap& image, const QPoint& pos);
     void pinLastImage();
+    void showImages();
 
     void updateConfig();
 
@@ -61,9 +62,12 @@ private:
 
     // hotkey
     QxtGlobalShortcut *snip_sc_ = nullptr;
+    QxtGlobalShortcut *show_pin_sc_ = nullptr;
     QxtGlobalShortcut *pin_sc_ = nullptr;
     QxtGlobalShortcut *gif_sc_ = nullptr;
     QxtGlobalShortcut *video_sc_ = nullptr;
+
+    bool images_visible_ = true;
 };
 
 #endif // MAINWINDOW_H

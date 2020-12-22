@@ -1,7 +1,6 @@
 #include "imagewindow.h"
 #include <QKeyEvent>
 #include <QPainter>
-#include <QGraphicsDropShadowEffect>
 #include <QMenu>
 #include <QApplication>
 #include <QClipboard>
@@ -24,11 +23,11 @@ ImageWindow::ImageWindow(QWidget *parent)
     setAttribute(Qt::WA_DeleteOnClose);
     setAcceptDrops(true);
 
-    auto effect = new QGraphicsDropShadowEffect(this);
-    effect->setBlurRadius(SHANDOW_R_);
-    effect->setOffset(0, 0);
-    effect->setColor(QColor("#409eff"));
-    setGraphicsEffect(effect);
+    effect_ = new QGraphicsDropShadowEffect(this);
+    effect_->setBlurRadius(shadow_r_);
+    effect_->setOffset(0, 0);
+    effect_->setColor(QColor("#409eff"));
+    setGraphicsEffect(effect_);
 
     registerShortcuts();
 
@@ -46,7 +45,7 @@ void ImageWindow::fix(QPixmap image)
     pixmap_ = image;
     size_ = pixmap_.size();
 
-    resize(size_ + QSize{ SHANDOW_R_ * 2, SHANDOW_R_ * 2 });
+    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2 });
 
     update();
     show();
@@ -59,7 +58,7 @@ void ImageWindow::mousePressEvent(QMouseEvent *event)
     // thumbnail_
     if(event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
         thumbnail_ = !thumbnail_;
-        QRect rect({0, 0}, (thumbnail_ ? QSize{125, 125} : size_ * scale_) + QSize{SHANDOW_R_ * 2, SHANDOW_R_ * 2});
+        QRect rect({0, 0}, (thumbnail_ ? QSize{125, 125} : size_ * scale_) + QSize{shadow_r_ * 2, shadow_r_ * 2});
         rect.moveCenter(geometry().center());
         setGeometry(rect);
 
@@ -95,7 +94,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
         scale_ += delta;
         scale_ = scale_ < 0.01 ? 0.01 : scale_;
 
-        QRect rect({0, 0}, (size_) * scale_ + QSize{SHANDOW_R_ * 2, SHANDOW_R_ * 2});
+        QRect rect({0, 0}, (size_) * scale_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
         rect.moveCenter(geometry().center());
 
         setGeometry(rect);
@@ -113,7 +112,7 @@ void ImageWindow::paintEvent(QPaintEvent *)
     }
 
     painter_.begin(this);
-    painter_.drawPixmap(SHANDOW_R_, SHANDOW_R_, pixmap);
+    painter_.drawPixmap(shadow_r_, shadow_r_, pixmap);
     painter_.end();
 }
 
@@ -126,7 +125,7 @@ void ImageWindow::paste()
 {
     pixmap_ = QApplication::clipboard()->pixmap();
     size_ = pixmap_.size();
-    resize(size_ + QSize{ SHANDOW_R_ * 2, SHANDOW_R_ * 2});
+    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2});
 }
 
 void ImageWindow::open()
@@ -138,7 +137,7 @@ void ImageWindow::open()
     if(!filename.isEmpty()) {
         pixmap_ = QPixmap(filename);
         size_ = pixmap_.size();
-        resize(size_ + QSize{ SHANDOW_R_ * 2, SHANDOW_R_ * 2});
+        resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2});
     }
 }
 
@@ -166,15 +165,31 @@ void ImageWindow::recover()
 {
     if(thumbnail_) return;
 
+    effect_enabled_ = true;
+    effect_->setEnabled(effect_enabled_);
+
     opacity_ = 1.0;
     setWindowOpacity(opacity_);
 
     scale_ = 1.0;
-    QRect rect({0, 0}, size_ + QSize{SHANDOW_R_ * 2, SHANDOW_R_ * 2});
+    QRect rect({0, 0}, size_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
     rect.moveCenter(geometry().center());
     setGeometry(rect);
 
     update();
+}
+
+void ImageWindow::effectEnabled()
+{
+    effect_enabled_ = !effect_enabled_;
+    shadow_r_ = effect_enabled_ ? DEFAULT_SHADOW_R_ : 0;
+
+    QRect rect({0, 0}, (size_) * scale_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
+    rect.moveCenter(geometry().center());
+
+    setGeometry(rect);
+
+    effect_->setEnabled(effect_enabled_);
 }
 
 void ImageWindow::contextMenuEvent(QContextMenuEvent *)
@@ -213,6 +228,10 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
     menu->addSeparator();
 
+    auto effect = new QAction((effect_enabled_ ? "Hide " : "Show ") + tr("Shadow"));
+    menu->addAction(effect);
+    connect(effect, &QAction::triggered, this, &ImageWindow::effectEnabled);
+
     auto zoom = new QAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
     menu->addAction(zoom);
 
@@ -246,7 +265,7 @@ void ImageWindow::dropEvent(QDropEvent *event)
     scale_ = 1.0;
     pixmap_.load(path);
     size_ = pixmap_.size();
-    resize(size_ + QSize{ SHANDOW_R_ * 2, SHANDOW_R_ * 2 });
+    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2 });
     repaint();
 
     event->acceptProposedAction();
@@ -261,7 +280,7 @@ void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
 
 void ImageWindow::moveMenu()
 {
-    auto rect = geometry().adjusted(SHANDOW_R_, SHANDOW_R_, -SHANDOW_R_ - edit_menu_.width(), -SHANDOW_R_ + 5);
+    auto rect = geometry().adjusted(shadow_r_, shadow_r_, -shadow_r_ - edit_menu_.width(), -shadow_r_ + 5);
     edit_menu_.move(rect.bottomRight());
     edit_menu_.setSubMenuShowBelow();
 }

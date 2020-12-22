@@ -30,6 +30,9 @@ Capturer::Capturer(QWidget *parent)
     pin_sc_ = new QxtGlobalShortcut(this);
     connect(pin_sc_, &QxtGlobalShortcut::activated, this, &Capturer::pinLastImage);
 
+    show_pin_sc_ = new QxtGlobalShortcut(this);
+    connect(show_pin_sc_, &QxtGlobalShortcut::activated, this, &Capturer::showImages);
+
     video_sc_ = new QxtGlobalShortcut(this);
     connect(video_sc_, &QxtGlobalShortcut::activated, recorder_, &ScreenRecorder::record);
 
@@ -63,6 +66,7 @@ void Capturer::updateConfig()
     auto &config = Config::instance();
     SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(pin_sc_, config["pin"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(show_pin_sc_, config["pin"]["visiable"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
 
@@ -190,4 +194,9 @@ void Capturer::pinLastImage()
 
     const auto& last = clipboard_history_.back();
     pinImage(last.first, last.second);
+}
+
+void Capturer::showImages()
+{
+    images_visible_ = !images_visible_;
 }
