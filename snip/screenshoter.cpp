@@ -689,7 +689,11 @@ void ScreenShoter::registerShortcuts()
         modified(PaintType::REPAINT_ALL);
 
         CAPTURED();
-        LOCKED();
+
+        if(!commands_.empty()) {
+            focusOn(commands_.back());
+            LOCKED();
+        }
     };
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=](){
