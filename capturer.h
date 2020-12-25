@@ -18,11 +18,17 @@
 #include "json.hpp"
 #include "clipboardhistorywindow.h"
 
-template <typename T, int MAX_SIZE = 10>
-class LimitSizeQueue : public std::queue<T> {
+template <typename T, int MAX_SIZE = 100>
+class LimitSizeVector : public std::vector<T> {
 public:
-    void push(const T& value) { std::queue<T>::push(value); if(this->size() > MAX_SIZE) this->pop(); }
-    void push(T&& value) { std::queue<T>::push(value); if(this->size() > MAX_SIZE) this->pop();}
+    void push(const T& value)
+    {
+        push_back(value);
+
+        if(this->size() > MAX_SIZE) {
+            this->erase(this->begin());
+        }
+    }
 };
 
 class Capturer : public QWidget
@@ -34,7 +40,6 @@ public:
     virtual ~Capturer() override = default;
 
 private slots:
-    void pinImage(const QPixmap& image, const QPoint& pos);
     void pinLastImage();
     void showImages();
 
@@ -53,7 +58,7 @@ private:
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
 
-    LimitSizeQueue<std::pair<QPixmap, QPoint>, 10> clipboard_history_;
+    LimitSizeVector<std::shared_ptr<ImageWindow>> clipboard_history_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;

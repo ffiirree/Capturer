@@ -40,15 +40,19 @@ ImageWindow::ImageWindow(QWidget *parent)
     connect(&edit_menu_, &ImageEditMenu::redo, [](){});
 }
 
-void ImageWindow::fix(QPixmap image)
+void ImageWindow::fix()
 {
-    pixmap_ = image;
+    if(status_ == 1) return;
+
+    status_ = 1;
+
     size_ = pixmap_.size();
 
     resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2 });
 
     update();
-    show();
+    QWidget::show();
+    move(original_pos_ - QPoint{shadow_r_, shadow_r_});
 }
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)

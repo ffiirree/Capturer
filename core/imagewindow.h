@@ -14,13 +14,36 @@ class ImageWindow : public QWidget
 
 public:
     explicit ImageWindow(QWidget *parent = nullptr);
+    ImageWindow(const QPixmap& image, const QPoint& pos, QWidget * parent = nullptr)
+        : ImageWindow(parent)
+    {
+        pixmap_ = image;
+        original_pos_ = pos;
+    }
     virtual ~ImageWindow() override = default;
 
-    void fix(QPixmap image);
+    bool operator==(const ImageWindow& r) const
+    {
+        return pixmap_.cacheKey() == r.pixmap_.cacheKey();
+    }
+
+    void show()
+    {
+        if(status_ == 0) {
+            status_ = 1;
+            QWidget::show();
+        }
+    }
+
+    void fix();
 
     void registerShortcuts();
 
+    QPixmap image() const { return pixmap_; }
+
 public slots:
+    void hide() { if(status_ == 1) { status_ = 0; QWidget::hide(); } }
+    void close() { status_ = -1; QWidget::hide(); }
     void copy();
     void paste();
     void open();
@@ -42,11 +65,14 @@ private:
 
     void moveMenu();
 
+    int8_t status_ = -1; // -1: init or closed. 0: hided 1: show
+
     QPoint begin_{0, 0};
 
     qreal scale_ = 1.0;
     qreal opacity_ = 1.0;
     QPixmap pixmap_;
+    QPoint original_pos_ = {0, 0};
     QSize size_{0, 0};
     QPoint center_{0, 0};
     QMenu * menu_;

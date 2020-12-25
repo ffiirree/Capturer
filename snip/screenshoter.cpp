@@ -137,7 +137,7 @@ void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
     }
 }
 
-#define CPPY_AND_MODIFY_CMD(CMD)                         \
+#define COPY_AND_MODIFY_CMD(CMD)                         \
         do {                                             \
             auto pre_cmd = CMD;                          \
             pre_cmd->visible(false);                     \
@@ -157,7 +157,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         if((hover_position_ & Resizer::BORDER) && hover_cmd_) {
             move_begin_ = mouse_pos;
 
-            CPPY_AND_MODIFY_CMD(hover_cmd_);
+            COPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= EditStatus::GRAPH_MOVING;
         }
@@ -165,13 +165,13 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         else if((hover_position_ & Resizer::ANCHOR) && hover_cmd_) {
             resize_begin_ = mouse_pos;
 
-            CPPY_AND_MODIFY_CMD(hover_cmd_);
+            COPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_RESIZING;
         }
         // rotate
         else if((hover_position_ == Resizer::ROTATE_ANCHOR) && hover_cmd_) {
-            CPPY_AND_MODIFY_CMD(hover_cmd_);
+            COPY_AND_MODIFY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_ROTATING;
         }
@@ -221,7 +221,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     Selector::mousePressEvent(event);
 }
-#undef CPPY_AND_MODIFY_CMD
+#undef COPY_AND_MODIFY_CMD
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
@@ -602,16 +602,19 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     Selector::paintEvent(event);
 }
 
-void ScreenShoter::snipped()
+QPixmap ScreenShoter::snipped()
 {
     auto mimedata = new QMimeData();
     auto position = selected().topLeft();
+    auto&& image = snippedImage();
     mimedata->setData("application/qpoint", QByteArray().append(reinterpret_cast<char*>(&position), sizeof (QPoint)));
-    mimedata->setImageData(QVariant(snippedImage()));
+    mimedata->setImageData(QVariant(image));
     QApplication::clipboard()->setMimeData(mimedata);
 
     history_.push_back({captured_screen_, selected(), commands_});
     history_idx_ = history_.size() - 1;
+
+    return image;
 }
 
 QPixmap ScreenShoter::snippedImage()
@@ -658,8 +661,7 @@ void ScreenShoter::copy()
 
 void ScreenShoter::pin()
 {
-    snipped();
-    emit FIX_IMAGE(snippedImage(), { selected().topLeft() });
+    emit FIX_IMAGE(snipped(), { selected().topLeft() });
 
     exit();
 }

@@ -35,7 +35,7 @@ public:
 
 signals:
     void focusOnGraph(Graph);
-    void FIX_IMAGE(const QPixmap image, const QPoint& pos);
+    void FIX_IMAGE(const QPixmap& image, const QPoint& pos);
     void SHOW_MESSAGE(const QString &title, const QString &msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
@@ -46,7 +46,7 @@ public slots:
     void save();
     void copy();
     void pin();
-    void snipped();
+    QPixmap snipped();
 
     void undo();
     void redo();

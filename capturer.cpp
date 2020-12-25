@@ -7,7 +7,10 @@
 #include "logging.h"
 #include "imagewindow.h"
 
-#define SET_HOTKEY(X, Y)  st(if(!X->setShortcut(Y)) showMessage("Capturer", tr("Failed to register shortcut <%1>").arg(Y.toString()), QSystemTrayIcon::Critical);)
+#define SET_HOTKEY(X, Y)    st(                                 \
+                                if(!X->setShortcut(Y))          \
+                                    showMessage("Capturer", tr("Failed to register shortcut <%1>").arg(Y.toString()), QSystemTrayIcon::Critical); \
+                            )
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
@@ -20,7 +23,11 @@ Capturer::Capturer(QWidget *parent)
     recorder_ = new ScreenRecorder(this);
     gifcptr_ = new GifCapturer(this);
 
-    connect(sniper_, &ScreenShoter::FIX_IMAGE, this, &Capturer::pinImage);
+    connect(sniper_, &ScreenShoter::FIX_IMAGE, [this](const QPixmap& image, const QPoint& pos) {
+        auto window = make_shared<ImageWindow>(image, pos, this);
+        clipboard_history_.push(window);
+        window->fix();
+    });
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
 
@@ -132,7 +139,7 @@ void Capturer::clipboardChanged()
 
         auto image_rect = mimedata->imageData().value<QPixmap>().rect();
         image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
-        clipboard_history_.push({ mimedata->imageData().value<QPixmap>(), image_rect.topLeft()});
+        clipboard_history_.push(make_shared<ImageWindow>(mimedata->imageData().value<QPixmap>(), image_rect.topLeft()));
     }
     else if(mimedata->hasHtml()) {
         LOG(INFO) << "HTML";
@@ -145,13 +152,18 @@ void Capturer::clipboardChanged()
         view.setHtml(mimedata->html());
         view.setFixedSize(view.document()->size().toSize());
 
-        clipboard_history_.push({ view.grab(), QCursor::pos() });
+        clipboard_history_.push(make_shared<ImageWindow>(view.grab(), QCursor::pos(), this));
     }
     else if(mimedata->hasFormat("application/qpoint") && mimedata->hasImage()) {
         LOG(INFO) << "SNIP";
 
         auto pos = *reinterpret_cast<QPoint *>(mimedata->data("application/qpoint").data());
-        clipboard_history_.push({ mimedata->imageData().value<QPixmap>(), pos });
+        for(const auto& item : clipboard_history_) {
+            if(item->image().cacheKey() == mimedata->imageData().value<QPixmap>().cacheKey()) {
+                return;
+            }
+        }
+        clipboard_history_.push(make_shared<ImageWindow>(mimedata->imageData().value<QPixmap>(), pos, this));
     }
 
     else if(mimedata->hasUrls() && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
@@ -161,7 +173,7 @@ void Capturer::clipboardChanged()
         pixmap.load(mimedata->urls()[0].toLocalFile());
         auto image_rect = pixmap.rect();
         image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
-        clipboard_history_.push({ pixmap, image_rect.topLeft()});
+        clipboard_history_.push(make_shared<ImageWindow>(pixmap, image_rect.topLeft(), this));
     }
     else if(mimedata->hasText()) {
         LOG(INFO) << "TEXT";
@@ -172,7 +184,7 @@ void Capturer::clipboardChanged()
         label->setStyleSheet("background-color:white");
         label->setFont({"Consolas", 12});
 
-        clipboard_history_.push({ label->grab(), QCursor::pos() });
+        clipboard_history_.push(make_shared<ImageWindow>(label->grab(), QCursor::pos(), this));
     }
     else if(mimedata->hasColor()) {
         // Do nothing.
@@ -180,23 +192,18 @@ void Capturer::clipboardChanged()
     }
 }
 
-void Capturer::pinImage(const QPixmap& image, const QPoint& pos)
-{
-    auto fixed_image = new ImageWindow(this);
-    fixed_image->fix(image);
-
-    fixed_image->move(pos + QPoint{-10, -10});
-}
-
 void Capturer::pinLastImage()
 {
     if(clipboard_history_.empty()) return;
 
     const auto& last = clipboard_history_.back();
-    pinImage(last.first, last.second);
+    last->fix();
 }
 
 void Capturer::showImages()
 {
     images_visible_ = !images_visible_;
+    for(auto& window: clipboard_history_) {
+        images_visible_ ? window->show() : window->hide();
+    }
 }
