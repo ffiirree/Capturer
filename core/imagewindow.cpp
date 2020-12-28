@@ -57,28 +57,41 @@ void ImageWindow::fix()
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
 {
-    if(editing_) return;
+    if(editing_) {
 
-    // thumbnail_
-    if(event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
-        thumbnail_ = !thumbnail_;
-        QRect rect({0, 0}, (thumbnail_ ? QSize{125, 125} : size_ * scale_) + QSize{shadow_r_ * 2, shadow_r_ * 2});
-        rect.moveCenter(geometry().center());
-        setGeometry(rect);
+    } else {
+        // thumbnail_
+        if(event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
+            thumbnail_ = !thumbnail_;
+            QRect rect({0, 0}, (thumbnail_ ? QSize{125, 125} : size_ * scale_) + QSize{shadow_r_ * 2, shadow_r_ * 2});
+            rect.moveCenter(geometry().center());
+            setGeometry(rect);
 
-        update();
+            update();
+        }
+
+        setCursor(Qt::SizeAllCursor);
+        begin_ = event->globalPos();
     }
-
-    setCursor(Qt::SizeAllCursor);
-    begin_ = event->globalPos();
 }
 
 void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    if(editing_) return;
+    if(editing_) {
 
-    move(event->globalPos() - begin_ + pos());
-    begin_ = event->globalPos();
+    } else {
+        move(event->globalPos() - begin_ + pos());
+        begin_ = event->globalPos();
+    }
+}
+
+void ImageWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    if(editing_) {
+
+    } else {
+
+    }
 }
 
 void ImageWindow::wheelEvent(QWheelEvent *event)

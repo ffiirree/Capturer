@@ -42,8 +42,8 @@ public:
     QPixmap image() const { return pixmap_; }
 
 public slots:
-    void hide() { if(status_ == 1) { status_ = 0; QWidget::hide(); } }
-    void close() { status_ = -1; QWidget::hide(); }
+    void hide() { if(status_ == 1) { status_ = 0; edit_menu_.reset(); edit_menu_.hide(); QWidget::hide(); } }
+    void close() { status_ = -1; edit_menu_.reset(); edit_menu_.hide(); QWidget::hide(); }
     void copy();
     void paste();
     void open();
@@ -54,6 +54,7 @@ public slots:
 private:
     virtual void mousePressEvent(QMouseEvent *) override;
     virtual void mouseMoveEvent(QMouseEvent *) override;
+    virtual void mouseReleaseEvent(QMouseEvent *) override;
     virtual void wheelEvent(QWheelEvent *) override;
     virtual void keyPressEvent(QKeyEvent *) override;
     virtual void keyReleaseEvent(QKeyEvent *) override;
