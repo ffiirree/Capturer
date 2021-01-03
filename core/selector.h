@@ -76,6 +76,7 @@ protected:
 
 private:
     void registerShortcuts();
+    void moveSelectedBox(int x, int y);
 
     SizeInfoWidget * info_ = nullptr;
 

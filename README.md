@@ -19,11 +19,13 @@ https://github.com/ffiirree/Capturer/releases
 ### 贴图
 
 - `F3` : 将粘贴板中的内容作为图片贴出(文本内容也会渲染为图片)，如果粘贴板中的路径(路径为文本)为图片，则会贴出该图片
+- `Shift + F3` : 显示/隐藏所有贴出的贴图
 - 鼠标滚轮 : 缩放贴图
 - `Ctrl` + 鼠标滚轮 ：更改贴图透明度
 - 鼠标左键双击 : 缩略图模式，贴图显示中心区域125x125的内容
 - 拖拽 : 拖拽图片到贴图上，则打开并显示拖拽图片
 - `ESC` : 关闭贴图窗
+- `W / A / S / D` or `Up / Down / Left / Right` : 逐像素移动窗口
 - 右键菜单更多操作
 
 ### 录屏
@@ -38,7 +40,7 @@ https://github.com/ffiirree/Capturer/releases
 
 ### 选择框通用快捷键
 
-- `W / A / S / D`              : (逐像素)移动选中区域
+- `W / A / S / D` or `Up / Down / Left / Right`              : (逐像素)移动选中区域
 - `Ctrl + UP/DOWN/LEFT/RIGHT`  : (逐像素)扩大边界
 - `Shift + UP/DOWN/LEFT/RIGHT` : (逐像素)缩小边界
 - `Ctrl + A`                   : 全屏

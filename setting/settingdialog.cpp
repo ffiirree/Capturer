@@ -275,6 +275,7 @@ void SettingWindow::setupGIFWidget()
 void SettingWindow::setupHotkeyWidget()
 {
     auto index = tabwidget_->addTab(new QWidget(), tr("Shortcuts"));
+    auto idx_row = 1;
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -284,31 +285,38 @@ void SettingWindow::setupHotkeyWidget()
     connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["snip"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Screenshot")), 1, 1, 1, 1);
-    layout->addWidget(_1_2, 1, 2, 1, 3);
+    layout->addWidget(new QLabel(tr("Screenshot")), idx_row, 1, 1, 1);
+    layout->addWidget(_1_2, idx_row++, 2, 1, 3);
 
     auto _2_2 = new ShortcutInput(config["pin"]["hotkey"].get<QKeySequence>());
     connect(_2_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["pin"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Paste")), 2, 1, 1, 1);
-    layout->addWidget(_2_2, 2, 2, 1, 3);
+    layout->addWidget(new QLabel(tr("Paste")), idx_row, 1, 1, 1);
+    layout->addWidget(_2_2, idx_row++, 2, 1, 3);
+
+    auto hide_show_images = new ShortcutInput(config["pin"]["visiable"]["hotkey"].get<QKeySequence>());
+    connect(hide_show_images, &ShortcutInput::changed, [this](auto&& ks){
+        config.set(config["pin"]["visiable"]["hotkey"], ks);
+    });
+    layout->addWidget(new QLabel(tr("Hide/Show all images")), idx_row, 1, 1, 1);
+    layout->addWidget(hide_show_images, idx_row++, 2, 1, 3);
 
     auto _3_2 = new ShortcutInput(config["record"]["hotkey"].get<QKeySequence>());
     connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["record"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Video recording")), 3, 1, 1, 1);
-    layout->addWidget(_3_2, 3, 2, 1, 3);
+    layout->addWidget(new QLabel(tr("Video recording")), idx_row, 1, 1, 1);
+    layout->addWidget(_3_2, idx_row++, 2, 1, 3);
 
     auto _4_2 = new ShortcutInput(config["gif"]["hotkey"].get<QKeySequence>());
     connect(_4_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["gif"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Gif recording")), 4, 1, 1, 1);
-    layout->addWidget(_4_2, 4, 2, 1, 3);
+    layout->addWidget(new QLabel(tr("Gif recording")), idx_row, 1, 1, 1);
+    layout->addWidget(_4_2, idx_row++, 2, 1, 3);
 
-    layout->setRowStretch(5, 1);
+    layout->setRowStretch(idx_row, 1);
     tabwidget_->widget(index)->setLayout(layout);
 }
 

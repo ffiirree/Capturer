@@ -251,40 +251,36 @@ void Selector::updateSelected()
     }
 }
 
+void Selector::moveSelectedBox(int x, int y)
+{
+    if(status_ == CAPTURED) {
+        box_.move(x, y);
+        emit moved();
+    }
+}
+
 void Selector::registerShortcuts()
 {
     // move
-    auto move_up = new QShortcut(QKeySequence("W"), this);
-    connect(move_up, &QShortcut::activated, [=]() {
-        if(status_ == CAPTURED) {
-            box_.move(0, -1);
-            emit moved();
-        }
-    });
+    auto W = new QShortcut(QKeySequence("W"), this);
+    auto move_up = new QShortcut(Qt::Key_Up, this);
+    connect(W, &QShortcut::activated, [=](){ moveSelectedBox(0, -1); });
+    connect(move_up, &QShortcut::activated, [=](){ moveSelectedBox(0, -1); });
 
-    auto move_down = new QShortcut(QKeySequence("S"), this);
-    connect(move_down, &QShortcut::activated, [=]() {
-        if(status_ == CAPTURED) {
-            box_.move(0, 1);
-            emit moved();
-        }
-    });
+    auto S = new QShortcut(QKeySequence("S"), this);
+    auto move_down = new QShortcut(Qt::Key_Down, this);
+    connect(S, &QShortcut::activated, [=]() { moveSelectedBox(0, 1); });
+    connect(move_down, &QShortcut::activated, [=]() { moveSelectedBox(0, 1); });
 
-    auto move_left = new QShortcut(QKeySequence("A"), this);
-    connect(move_left, &QShortcut::activated, [=]() {
-        if(status_ == CAPTURED) {
-            box_.move(-1, 0);
-            emit moved();
-        }
-    });
+    auto A = new QShortcut(QKeySequence("A"), this);
+    auto move_left = new QShortcut(Qt::Key_Left, this);
+    connect(A, &QShortcut::activated, [=]() { moveSelectedBox(-1, 0); });
+    connect(move_left, &QShortcut::activated, [=]() { moveSelectedBox(-1, 0); });
 
-    auto move_right = new QShortcut(QKeySequence("D"), this);
-    connect(move_right, &QShortcut::activated, [=]() {
-        if(status_ == CAPTURED) {
-            box_.move(1, 0);
-            emit moved();
-        }
-    });
+    auto D = new QShortcut(QKeySequence("D"), this);
+    auto move_right = new QShortcut(Qt::Key_Right, this);
+    connect(D, &QShortcut::activated, [=]() { moveSelectedBox(1, 0); });
+    connect(move_right, &QShortcut::activated, [=]() { moveSelectedBox(1, 0); });
 
     // resize
     // increase

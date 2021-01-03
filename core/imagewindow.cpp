@@ -38,6 +38,27 @@ ImageWindow::ImageWindow(QWidget *parent)
 
     connect(&edit_menu_, &ImageEditMenu::undo, [](){});
     connect(&edit_menu_, &ImageEditMenu::redo, [](){});
+
+
+    auto W = new QShortcut(QKeySequence("W"), this);
+    auto move_up = new QShortcut(Qt::Key_Up, this);
+    connect(W, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+    connect(move_up, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+
+    auto S = new QShortcut(QKeySequence("S"), this);
+    auto move_down = new QShortcut(Qt::Key_Down, this);
+    connect(S, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+    connect(move_down, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+
+    auto A = new QShortcut(QKeySequence("A"), this);
+    auto move_left = new QShortcut(Qt::Key_Left, this);
+    connect(A, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+    connect(move_left, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+
+    auto D = new QShortcut(QKeySequence("D"), this);
+    auto move_right = new QShortcut(Qt::Key_Right, this);
+    connect(D, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
+    connect(move_right, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
 }
 
 void ImageWindow::fix()
