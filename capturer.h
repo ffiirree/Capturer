@@ -23,7 +23,7 @@ class LimitSizeVector : public std::vector<T> {
 public:
     void push(const T& value)
     {
-        push_back(value);
+        this->push_back(value);
 
         if(this->size() > MAX_SIZE) {
             this->erase(this->begin());

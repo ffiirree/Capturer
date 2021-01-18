@@ -20,11 +20,17 @@ int main(int argc, char *argv[])
               << CAPTURER_VERSION_MAJOR << "." << CAPTURER_VERSION_MINOR << "." << CAPTURER_VERSION_PATCH
               << " (Qt " << qVersion() << ")";
 
-    LOG(INFO) << "Operating System: " << QOperatingSystemVersion::current().name() << " "
+    LOG(INFO) << "Operating System: "
+#ifdef Q_OS_LINUX
+              << "Linux" <<  " ("
+#else
+              <<  QOperatingSystemVersion::current().name() << " "
               <<  QOperatingSystemVersion::current().majorVersion() << "."
               <<  QOperatingSystemVersion::current().minorVersion() << "."
               <<  QOperatingSystemVersion::current().microVersion() << " ("
+#endif
               << QSysInfo::currentCpuArchitecture() << ")";
+
 
     LOG(INFO) << "Application Dir: " << QCoreApplication::applicationDirPath();
 
