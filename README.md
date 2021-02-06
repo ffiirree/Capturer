@@ -1,7 +1,7 @@
 # Capturer
 
 `Capturer`是使用`Qt`开发的一款**截图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
-> `录屏`和`录制GIF`依赖于`FFmpeg`
+> `录屏`和`录制GIF`依赖于`FFmpeg`，请[安装FFmpeg](#安装FFmpeg).
 
 ## Download
 
@@ -48,19 +48,39 @@ https://github.com/ffiirree/Capturer/releases
 
 ## 源码使用
 
-### 源代码下载
 
 ```bash
-git clone https://github.com/ffiirree/Capturer.git
-git submodule init
-git submodule update
+git clone https://github.com/ffiirree/Capturer.git --recursive
+```
+
+> 本项目开发使用的`Qt`版本为`Qt 5.12.10`
+
+### Windows 10 & Visual Studio 2019
+
+使用`Visual Studio 2019`直接打开，或者直接使用命令编译
+
+```bash
+cd Capturer
+mdkir build
+cd build
+cmake -A x64 ..
+cmake --build . --config Release
+```
+
+### Linux (Ubuntu)
+
+```bash
+cd Capturer
+mkdir build && cd build
+cmake ..
+make -j8
 ```
 
 ### 安装FFmpeg
 
 #### Windows
 
-从[官网](https://ffmpeg.zeranoe.com/builds/)下载编译好的二进制文件。
+从[官网](https://ffmpeg.zeranoe.com/builds/)下载编译好的二进制文件，放到安装或者添加环境变量中。
 
 #### Ubuntu
 
