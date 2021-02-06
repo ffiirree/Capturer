@@ -106,5 +106,4 @@ sudo apt install ffmpeg
 
 - [ ] 录制摄像头
 - [ ] 录制扬声器
-- [ ] 通过调用ffmpeg程序录屏改为调用ffmpeg的API
 - [ ] 添加水印
