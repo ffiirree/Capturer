@@ -1,5 +1,8 @@
 # Capturer
 
+![image](/capturer.png)
+
+
 `Capturer`是使用`Qt`开发的一款**截图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
 > `录屏`和`录制GIF`依赖于`FFmpeg`，请[安装FFmpeg](#安装FFmpeg).
 
@@ -64,7 +67,7 @@ cd Capturer
 mdkir build
 cd build
 cmake -A x64 .. -DCMAKE_INSTALL_PREFIX=D:\\"Program Files (x86)"\\Capturer
-cmake --build . --config Release
+cmake --build . --config Release --target install
 ```
 
 ### Linux (Ubuntu 20.04)
@@ -91,10 +94,6 @@ make package
 ``` bash
 sudo apt install ffmpeg
 ```
-
-## 效果
-
-![image](/capturer.png)
 
 ## Todo
 
