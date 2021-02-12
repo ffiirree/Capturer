@@ -95,7 +95,7 @@ void SettingWindow::setupGeneralWidget()
         _1_2->setCurrentIndex(1);
     }
     connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this](int i){
-        config.set(config["languaue"], i ? "zh_CN" : "en_US");
+        config.set(config["language"], i ? "zh_CN" : "en_US");
     });
     layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
     layout->addWidget(_1_2, 1, 1, 1, 2);
@@ -333,9 +333,7 @@ void SettingWindow::setupAboutWidget()
     parent_layout->addLayout(layout);
 
     layout->addWidget(new QLabel(tr("Version")), 0, 0, 1, 1);
-    auto version = new QLineEdit(QString::number(CAPTURER_VERSION_MAJOR) + "." +
-                                 QString::number(CAPTURER_VERSION_MINOR) + "." +
-                                 QString::number(CAPTURER_VERSION_PATCH));
+    auto version = new QLineEdit(CAPTURER_VERSION);
     version->setFocusPolicy(Qt::NoFocus);
     version->setAlignment(Qt::AlignCenter);
     layout->addWidget(version, 0, 1, 1, 2);

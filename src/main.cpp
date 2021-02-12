@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     qSetMessagePattern("%{time yyyy-MM-dd hh:mm:ss.zzz} (%{type}) %{file}:%{line}] %{message}");
 
     LOG(INFO) << QCoreApplication::applicationName() << " "
-              << CAPTURER_VERSION_MAJOR << "." << CAPTURER_VERSION_MINOR << "." << CAPTURER_VERSION_PATCH
+              << CAPTURER_VERSION
               << " (Qt " << qVersion() << ")";
 
     LOG(INFO) << "Operating System: "
@@ -43,7 +43,11 @@ int main(int argc, char *argv[])
     LOG(INFO) << "LANGUAGE: " << language;
 
     QTranslator translator;
-    translator.load("languages/capturer_" + language);
+#ifdef __linux__
+    translator.load("/etc/capturer/translations/capturer_" + language);
+#else
+    translator.load("translations/capturer_" + language);
+#endif
     qApp->installTranslator(&translator);
 
     Capturer window;

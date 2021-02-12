@@ -63,17 +63,21 @@ git clone https://github.com/ffiirree/Capturer.git --recursive
 cd Capturer
 mdkir build
 cd build
-cmake -A x64 ..
+cmake -A x64 .. -DCMAKE_INSTALL_PREFIX=D:\\"Program Files (x86)"\\Capturer
 cmake --build . --config Release
 ```
 
-### Linux (Ubuntu)
+### Linux (Ubuntu 20.04)
 
 ```bash
+sudo apt install build-essential ffmpeg gcc g++ cmake qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 cd Capturer
 mkdir build && cd build
 cmake ..
 make -j8
+
+# package 'xx.deb'
+make package
 ```
 
 ### 安装FFmpeg
@@ -93,8 +97,6 @@ sudo apt install ffmpeg
 ![image](/capturer.png)
 
 ## Todo
-
-- [ ] 多语言
 
 ### 截图
 
