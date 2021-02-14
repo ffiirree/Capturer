@@ -244,7 +244,7 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
     menu->addSeparator();
 
-    auto edit = new QAction("Edit");
+    auto edit = new QAction(tr("Edit"));
     menu->addAction(edit);
     connect(edit, &QAction::triggered, [this](){
         if(thumbnail_) return;
@@ -266,7 +266,7 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
     menu->addSeparator();
 
-    auto effect = new QAction((effect_enabled_ ? "Hide " : "Show ") + tr("Shadow"));
+    auto effect = new QAction((effect_enabled_ ? tr("Hide ") : tr("Show ")) + tr("Shadow"));
     menu->addAction(effect);
     connect(effect, &QAction::triggered, this, &ImageWindow::effectEnabled);
 

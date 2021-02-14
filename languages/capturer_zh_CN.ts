@@ -103,6 +103,11 @@
         <translation>粘贴图片</translation>
     </message>
     <message>
+        <location filename="../src/core/imagewindow.cpp" line="247"/>
+        <source>Edit</source>
+        <translation>编辑</translation>
+    </message>
+    <message>
         <location filename="../src/core/imagewindow.cpp" line="259"/>
         <source>Open image...</source>
         <translation>打开图片</translation>
@@ -116,6 +121,16 @@
         <location filename="../src/core/imagewindow.cpp" line="269"/>
         <source>Shadow</source>
         <translation>阴影</translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="269"/>
+        <source>Hide </source>
+        <translation>隐藏</translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="269"/>
+        <source>Show </source>
+        <translation>显示</translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="273"/>
@@ -180,6 +195,13 @@
         <translation>截图</translation>
     </message>
     <message>
+        <location filename="../src/setting/settingdialog.cpp" line="120"/>
+        <location filename="../src/setting/settingdialog.cpp" line="164"/>
+        <location filename="../src/setting/settingdialog.cpp" line="223"/>
+        <source>Apperance:</source>
+        <translation>界面:</translation>
+    </message>
+    <message>
         <location filename="../src/setting/settingdialog.cpp" line="129"/>
         <location filename="../src/setting/settingdialog.cpp" line="173"/>
         <location filename="../src/setting/settingdialog.cpp" line="232"/>
@@ -211,6 +233,12 @@
         <location filename="../src/setting/settingdialog.cpp" line="159"/>
         <source>Screen recording</source>
         <translation>录屏</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="199"/>
+        <location filename="../src/setting/settingdialog.cpp" line="258"/>
+        <source>Params:</source>
+        <translation>参数:</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="208"/>

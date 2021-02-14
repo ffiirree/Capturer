@@ -117,7 +117,7 @@ void SettingWindow::setupSnipWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel("Apperance:");
+    auto _0 = new QLabel(tr("Apperance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -161,7 +161,7 @@ void SettingWindow::setupRecordWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel("Apperance:");
+    auto _0 = new QLabel(tr("Apperance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -196,7 +196,7 @@ void SettingWindow::setupRecordWidget()
 
     layout->addWidget(new QLabel(), 5, 1, 1, 1);
 
-    auto _5 = new QLabel("Params:");
+    auto _5 = new QLabel(tr("Params:"));
     _5->setObjectName("sub-title");
     layout->addWidget(_5, 6, 1, 1, 1);
 
@@ -220,7 +220,7 @@ void SettingWindow::setupGIFWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel("Apperance:");
+    auto _0 = new QLabel(tr("Apperance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -255,7 +255,7 @@ void SettingWindow::setupGIFWidget()
 
     layout->addWidget(new QLabel(), 5, 1, 1, 1);
 
-    auto _5 = new QLabel("Params:");
+    auto _5 = new QLabel(tr("Params:"));
     _5->setObjectName("sub-title");
     layout->addWidget(_5, 6, 1, 1, 1);
 

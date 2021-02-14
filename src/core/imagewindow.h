@@ -76,7 +76,7 @@ private:
     QPoint original_pos_ = {0, 0};
     QSize size_{0, 0};
     QPoint center_{0, 0};
-    QMenu * menu_;
+    QMenu * menu_ = nullptr;
 
     bool ctrl_ = false;
 
