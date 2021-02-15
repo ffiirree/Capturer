@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.10)
 
 project(Capturer VERSION 1.2.3 LANGUAGES C CXX)
 
@@ -36,7 +36,12 @@ file(GLOB_RECURSE SOURCES src/*.cpp)
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
 qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
 
-add_executable(${PROJECT_NAME} ${SOURCES} src/capturer.qrc ${QM_FILES})
+add_executable(${PROJECT_NAME} 
+        ${SOURCES} 
+        src/capturer.qrc 
+        ${QM_FILES}  
+        $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
+)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
@@ -82,7 +87,7 @@ endif()
 set(CPACK_GENERATOR "DEB")
 
 # Set a Package Version
-set(CPACK_PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "ffmpeg")
