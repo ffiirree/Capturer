@@ -457,6 +457,7 @@ void ScreenShoter::setCursorByHoverPos(Resizer::PointPosition pos, const QCursor
     }
 }
 
+// TODO: use shortcuts
 void ScreenShoter::keyPressEvent(QKeyEvent *event)
 {
     if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ >= CAPTURED) {
@@ -676,13 +677,13 @@ void ScreenShoter::pin()
 void ScreenShoter::registerShortcuts()
 {
     connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, [this](){
-        if(status_ == CAPTURED) {
+        if(status_ == CAPTURED || status_ == LOCKED) {
             save();
         }
     });
 
     connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this](){
-        if(status_ == CAPTURED) {
+        if(status_ == CAPTURED || status_ == LOCKED) {
             pin();
         }
     });
@@ -725,6 +726,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
+    // TODO: UNDO/REDO
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){
         if(status_ >= CAPTURED && focus_cmd_) {
             commands_.remove(focus_cmd_);
