@@ -197,7 +197,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         }
 
         // Not borders and anchors => Create
-        else {
+        else if(edit_status_ != EditStatus::NONE) {
             auto graph = Graph(edit_status_ & GRAPH_MASK);
             auto pen = menu_->pen(graph);
             auto fill = menu_->fill(graph);
@@ -289,12 +289,15 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton && status_ == LOCKED) {
+    if(event->button() == Qt::LeftButton
+        && status_ == LOCKED
+        && edit_status_ != EditStatus::NONE) {
+
         if(!focus_cmd_) LOG(ERROR) << "Focused cmd is nullptr!";
 
         if((!focus_cmd_->previous() && focus_cmd_->isValid())           // created
                 || (focus_cmd_->previous() && focus_cmd_->adjusted())   // moved/resized..
-                || ( (edit_status_ & GRAPH_MASK) == Graph::TEXT)) {     // check text is valid when it loses focus
+                || ((edit_status_ & GRAPH_MASK) == Graph::TEXT)) {      // check text is valid when it loses focus
             commands_.push(focus_cmd_);
             redo_stack_.clear();
         }
