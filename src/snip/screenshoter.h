@@ -13,6 +13,14 @@
 #include "circlecursor.h"
 #include "config.h"
 
+#define HIDE_AND_COPY_CMD(CMD)                           \
+        do {                                             \
+            auto pre_cmd = CMD;                          \
+            pre_cmd->visible(false);                     \
+            CMD = make_shared<PaintCommand>(*pre_cmd);   \
+            CMD->previous(pre_cmd);                      \
+        } while(0)
+
 class ScreenShoter : public Selector
 {
     Q_OBJECT
@@ -66,7 +74,6 @@ protected:
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
-    void keyPressEvent(QKeyEvent *) override;
     void paintEvent(QPaintEvent *) override;
     void wheelEvent(QWheelEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
@@ -78,7 +85,7 @@ private:
     void registerShortcuts();
 
     void updateHoverPos(const QPoint&);
-    void setCursorByHoverPos(Resizer::PointPosition, const QCursor & default_cursor = Qt::CrossCursor);
+    void setCursorByHoverPos(Resizer::PointPosition, const QCursor & = Qt::CrossCursor);
 
     void moveMagnifier();
 

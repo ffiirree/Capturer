@@ -6,11 +6,7 @@
 `Capturer`是使用`Qt`开发的一款**截图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
 > `录屏`和`录制GIF`依赖于`FFmpeg`，请[安装FFmpeg](#安装FFmpeg).
 
-## Download
-
-https://github.com/ffiirree/Capturer/releases
-
-## 默认快捷键
+## 快捷键
 
 ### 选择框通用快捷键
 
@@ -34,9 +30,11 @@ Keys | Actions
 `Ctrl + Shift + Z`      | REDO
 `Page Up`               | 上一个截图
 `Page Down`             | 下一个截图
-`Ctrl + C`              | 可以取色(放大镜存在时)
+`Tab`                   | 切换颜色格式
+`Ctrl + C`              | 放大镜存在时，取色
 `Delete`                | 删除选中的图形
 `Enter`                 | 截图并保存到粘贴板
+`LButton` double click  | 截图并保存到粘贴板
 
 ### 贴图
 

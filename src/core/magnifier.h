@@ -8,7 +8,7 @@
 class Magnifier : public QWidget
 {
 public:
-    enum ColorFormat {
+    enum class ColorFormat {
         HEX, DEC
     };
 public:
@@ -20,9 +20,17 @@ public:
     QColor getColor() const { return center_color_; }
     QString getColorStringValue()
     {
-        return color_format_ == HEX
+        return color_format_ == ColorFormat::HEX
                 ? center_color_.name(QColor::HexRgb)
                 : QString("%1, %2, %3").arg(center_color_.red()).arg(center_color_.green()).arg(center_color_.blue());
+    }
+
+    void colorFormat(ColorFormat format) { color_format_ = format; }
+    ColorFormat colorFormat() const { return color_format_; }
+    void toggleColorFormat() 
+    { 
+        color_format_ = (color_format_ == ColorFormat::HEX) ? ColorFormat::DEC : ColorFormat::HEX; 
+        update(); 
     }
 
 protected:
@@ -37,7 +45,7 @@ private:
     QSize psize_{ 0, 0 };
     QColor center_color_;
 
-    ColorFormat color_format_ = HEX;
+    ColorFormat color_format_ = ColorFormat::HEX;
 };
 
 #endif // MAGNIFIER_H

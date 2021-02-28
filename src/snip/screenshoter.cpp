@@ -157,14 +157,6 @@ void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
     }
 }
 
-#define COPY_AND_MODIFY_CMD(CMD)                         \
-        do {                                             \
-            auto pre_cmd = CMD;                          \
-            pre_cmd->visible(false);                     \
-            CMD = make_shared<PaintCommand>(*pre_cmd);   \
-            CMD->previous(pre_cmd);                      \
-        } while(0)
-
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     if(event->button() != Qt::LeftButton)
@@ -177,7 +169,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         if((hover_position_ & Resizer::BORDER) && hover_cmd_) {
             move_begin_ = mouse_pos;
 
-            COPY_AND_MODIFY_CMD(hover_cmd_);
+            HIDE_AND_COPY_CMD(hover_cmd_);
 
             edit_status_ |= EditStatus::GRAPH_MOVING;
         }
@@ -185,13 +177,13 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         else if((hover_position_ & Resizer::ANCHOR) && hover_cmd_) {
             resize_begin_ = mouse_pos;
 
-            COPY_AND_MODIFY_CMD(hover_cmd_);
+            HIDE_AND_COPY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_RESIZING;
         }
         // rotate
         else if((hover_position_ == Resizer::ROTATE_ANCHOR) && hover_cmd_) {
-            COPY_AND_MODIFY_CMD(hover_cmd_);
+            HIDE_AND_COPY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_ROTATING;
         }
@@ -241,7 +233,6 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     Selector::mousePressEvent(event);
 }
-#undef COPY_AND_MODIFY_CMD
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
@@ -390,7 +381,6 @@ void ScreenShoter::updateHoverPos(const QPoint& pos)
             polygon.push_back(x2y2_anchor.bottomRight());
             polygon.push_back(x2y2_anchor.topLeft());
 
-
             if(x1y1_anchor.contains(pos)) {
                 hover_position_ = Resizer::X1Y1_ANCHOR;
                 hover_cmd_ = command;
@@ -455,21 +445,6 @@ void ScreenShoter::setCursorByHoverPos(Resizer::PointPosition pos, const QCursor
 
     default: setCursor(default_cursor); break;
     }
-}
-
-// TODO: use shortcuts
-void ScreenShoter::keyPressEvent(QKeyEvent *event)
-{
-    if((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && status_ >= CAPTURED) {
-        copy();
-        exit();
-    }
-
-    if(event->key() == Qt::Key_Escape) {
-        exit();
-    }
-
-    Selector::keyPressEvent(event);
 }
 
 void ScreenShoter::moveMenu()
@@ -561,7 +536,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     }
 
     //
-    if(focus_cmd_ != nullptr) {
+    if(focus_cmd_ != nullptr && focus_cmd_->visible()) {
         painter_.save();
         switch (focus_cmd_->graph()) {
         case Graph::RECTANGLE:
@@ -688,6 +663,17 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
+    connect(new QShortcut(Qt::Key_Return, this), &QShortcut::activated, [this]() { copy(); exit(); });
+    connect(new QShortcut(Qt::Key_Enter, this), &QShortcut::activated, [this]() { copy(); exit(); });
+
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() { exit(); });
+
+    connect(new QShortcut(Qt::Key_Tab, this), &QShortcut::activated, [this]() {
+        if (magnifier_->isVisible()) {
+            magnifier_->toggleColorFormat();
+        }
+    });
+
     connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, this, &ScreenShoter::undo);
     connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, this, &ScreenShoter::redo);
 
@@ -726,10 +712,11 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    // TODO: UNDO/REDO
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){
         if(status_ >= CAPTURED && focus_cmd_) {
-            commands_.remove(focus_cmd_);
+            HIDE_AND_COPY_CMD(focus_cmd_);
+            commands_.push(focus_cmd_);
+            redo_stack_.clear();
             focusOn(nullptr);
         }
     });
