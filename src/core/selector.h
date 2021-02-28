@@ -10,7 +10,7 @@
 #include "displayinfo.h"
 
 #define LOCKED()            do{ status_ = LOCKED; emit locked(); } while(0)
-#define CAPTURED()          do{ status_ = CAPTURED; emit captured(); } while(0)
+#define CAPTURED()          do{ status_ = CAPTURED; emit captured(); update(); } while(0)
 
 class Selector : public QWidget
 {
