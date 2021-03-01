@@ -26,16 +26,16 @@ class ScreenShoter : public Selector
     Q_OBJECT
 public:
     enum EditStatus: std::uint32_t {
-        NONE            = 0x0000'0000,
-        READY           = 0x0001'0000,
-        GRAPH_CREATING  = 0x0010'0000,
-        GRAPH_MOVING    = 0x0020'0000,
-        GRAPH_RESIZING  = 0x0040'0000,
-        GRAPH_ROTATING  = 0x0080'0000,
+        NONE            = 0x00000000,
+        READY           = 0x00010000,
+        GRAPH_CREATING  = 0x00100000,
+        GRAPH_MOVING    = 0x00200000,
+        GRAPH_RESIZING  = 0x00400000,
+        GRAPH_ROTATING  = 0x00800000,
 
-        READY_MASK      = 0x000f'0000,
-        OPERATION_MASK  = 0xfff0'0000,
-        GRAPH_MASK      = 0x0000'ffff
+        READY_MASK      = 0x000f0000,
+        OPERATION_MASK  = 0xfff00000,
+        GRAPH_MASK      = 0x0000ffff
     };
 
 public:

@@ -53,3 +53,5 @@ release
 TODO.md
 
 .idea
+
+!src/ico_win32.rc
