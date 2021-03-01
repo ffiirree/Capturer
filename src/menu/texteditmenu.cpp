@@ -16,9 +16,16 @@ FontMenu::FontMenu(QWidget *parent)
     QFontDatabase font_db;
     foreach (const QString &family, font_db.families()) {
         font_family_->addItem(family);
-        if(family == "宋体"){
+
+#if WIN32
+        if (family == "微软雅黑") {
             font_family_->setCurrentText(family);
         }
+#else
+        if (family == "宋体") {
+            font_family_->setCurrentText(family);
+        }
+#endif
     }
     addWidget(font_family_);
 

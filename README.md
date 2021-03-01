@@ -26,15 +26,22 @@ Keys | Actions
 `F1`                    | 开始截图
 `P`                     | 截图并贴图
 `Ctrl + S`              | 截图并保存到文件
-`Ctrl + Z`              | UNDO
-`Ctrl + Shift + Z`      | REDO
-`Page Up`               | 上一个截图
-`Page Down`             | 下一个截图
-`Tab`                   | 切换颜色格式
+`Page Up`               | 上一个截图记录
+`Page Down`             | 下一个截图记录
 `Ctrl + C`              | 放大镜存在时，取色
-`Delete`                | 删除选中的图形
+`Tab`                   | 放大镜存在时，切换取色颜色格式
 `Enter`                 | 截图并保存到粘贴板
 `LButton` double click  | 截图并保存到粘贴板
+
+### 编辑
+
+Keys | Actions
+:-:|---
+`Ctrl + Z`              | UNDO
+`Ctrl + Shift + Z`      | REDO
+`Delete`                | 删除选中的图形
+`Shift`                 | 椭圆->圆<br>矩形->正方形<br>直线->水平/垂直
+`滚轮`                  | 控制马赛克/橡皮擦直径; 放置于菜单上时，控制图形边框宽度
 
 ### 贴图
 
@@ -119,12 +126,12 @@ sudo apt install ffmpeg
 
 - [ ] 显示截图历史列表
 - [ ] 保存和加载截图历史
-- [ ] 鼠标穿透
 - [ ] 截图分组
 
 ### 贴图
 
 - [ ] 90度旋转贴图
+- [ ] 自动对齐
 - [ ] Ctrl 多贴图选中
 - [ ] 多贴图移动
 - [ ] 多贴图透明度操作

@@ -152,6 +152,7 @@ void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
         menu_->style(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill());
     }
 
+    // menu
     if(!previous_focus_cmd || (focus_cmd_ && previous_focus_cmd->graph() != focus_cmd_->graph())) {
         emit focusOnGraph(focus_cmd_->graph());  // must after focus_cmd_ = cmd
     }
@@ -166,7 +167,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     if(status_ == LOCKED) {
         // Border => move
-        if((hover_position_ & Resizer::BORDER) && hover_cmd_) {
+        if((hover_position_ & Resizer::BORDER) && hover_cmd_ && hover_cmd_->visible()) {
             move_begin_ = mouse_pos;
 
             HIDE_AND_COPY_CMD(hover_cmd_);
@@ -174,7 +175,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             edit_status_ |= EditStatus::GRAPH_MOVING;
         }
         // Anchor => resize
-        else if((hover_position_ & Resizer::ANCHOR) && hover_cmd_) {
+        else if((hover_position_ & Resizer::ANCHOR) && hover_cmd_ && hover_cmd_->visible()) {
             resize_begin_ = mouse_pos;
 
             HIDE_AND_COPY_CMD(hover_cmd_);
@@ -182,7 +183,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             edit_status_ |= GRAPH_RESIZING;
         }
         // rotate
-        else if((hover_position_ == Resizer::ROTATE_ANCHOR) && hover_cmd_) {
+        else if((hover_position_ == Resizer::ROTATE_ANCHOR) && hover_cmd_ && hover_cmd_->visible()) {
             HIDE_AND_COPY_CMD(hover_cmd_);
 
             edit_status_ |= GRAPH_ROTATING;
@@ -292,7 +293,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
             commands_.push(focus_cmd_);
             redo_stack_.clear();
         }
-        else {
+        else {                                                          // Invalid, no modified. Back to the previous
             if(focus_cmd_->previous()) {
                 focus_cmd_->previous()->visible(true);
             }
@@ -304,6 +305,70 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
     }
 
     Selector::mouseReleaseEvent(event);
+}
+
+void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Shift 
+        && focus_cmd_
+        && ((edit_status_ & OPERATION_MASK) == 0)) {
+
+        switch (focus_cmd_->graph())
+        {
+        case Graph::CIRCLE:
+        case Graph::RECTANGLE:
+        {
+            auto resizer = focus_cmd_->resizer();
+            int width = std::sqrt(resizer.width() * resizer.height());
+            auto rect = QRect(QPoint{ 0, 0 }, QPoint{ width, width });
+            rect.moveCenter(resizer.rect().center());
+
+            focus_cmd_->visible(false);
+            hover_cmd_ = make_shared<PaintCommand>(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill(), rect.topLeft());
+            hover_cmd_->push_point(rect.bottomRight());
+            hover_cmd_->previous(focus_cmd_);
+            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
+            
+            focusOn(hover_cmd_);
+            commands_.push(hover_cmd_);
+            redo_stack_.clear();
+            
+            break;
+        }
+        case Graph::LINE:
+        case Graph::ARROW:
+        {
+            auto resizer = focus_cmd_->resizer();
+            auto p1 = resizer.point1();
+            auto p2 = resizer.point2();
+
+            auto theta = std::atan((double)std::abs(p1.x() - p2.x()) / std::abs(p1.y() - p2.y())) * 180.0 / 3.1415926;
+
+            if (theta > 80) {
+                p2.setY(p1.y());
+            }
+            else if (theta < 20) {
+                p2.setX(p1.x());
+            }
+
+            focus_cmd_->visible(false);
+            hover_cmd_ = make_shared<PaintCommand>(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill(), p1);
+            hover_cmd_->push_point(p2);
+            hover_cmd_->previous(focus_cmd_);
+            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
+
+            focusOn(hover_cmd_);
+            commands_.push(hover_cmd_);
+            redo_stack_.clear();
+
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    Selector::keyReleaseEvent(event);
 }
 
 void ScreenShoter::wheelEvent(QWheelEvent * event)
@@ -487,6 +552,8 @@ QImage ScreenShoter::mosaic(const QImage& _image)
 
 void ScreenShoter::updateCanvas()
 {
+    if (!modified_) return;
+
     painter_.begin(&canvas_);
 
     switch (modified_) {

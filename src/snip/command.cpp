@@ -69,7 +69,6 @@ bool PaintCommand::push_point(const QPoint& pos)
     case Graph::RECTANGLE:
     case Graph::ELLIPSE:
     case Graph::LINE:
-        resizer_.point2() = pos;
         resizer_.x2(pos.x()); resizer_.y2(pos.y()); emit modified(PaintType::DRAW_MODIFYING);
         return true;
 
