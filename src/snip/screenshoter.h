@@ -71,9 +71,11 @@ private slots:
     void moveMenu();
 
 protected:
+    bool eventFilter(QObject *, QEvent *);
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
+    void keyPressEvent(QKeyEvent*) override;
     void keyReleaseEvent(QKeyEvent*) override;
     void paintEvent(QPaintEvent *) override;
     void wheelEvent(QWheelEvent *) override;

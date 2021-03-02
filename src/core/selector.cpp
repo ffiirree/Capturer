@@ -142,6 +142,8 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
 
         update();
         emit moved();
+
+        setCursor(Qt::SizeAllCursor);
         break;
 
     case RESIZING:

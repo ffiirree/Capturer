@@ -1,4 +1,5 @@
 #include "custombutton.h"
+#include <QKeyEvent>
 
 CustomButton::CustomButton(QWidget *parent)
     : QAbstractButton (parent)
@@ -41,3 +42,12 @@ void CustomButton::paintEvent(QPaintEvent *)
     painter_.end();
 }
 
+void CustomButton::keyPressEvent(QKeyEvent* event)
+{
+    event->ignore();
+}
+
+void CustomButton::keyReleaseEvent(QKeyEvent* event)
+{
+    event->ignore();
+}

@@ -40,42 +40,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="32"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="37"/>
         <source>Rectangle</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="41"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="46"/>
         <source>Ellipse</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="50"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="55"/>
         <source>Arrow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="59"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="64"/>
         <source>Line</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="68"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="73"/>
         <source>Pencil</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="77"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="82"/>
         <source>Text</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="86"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="91"/>
         <source>Mosaic</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="95"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="100"/>
         <source>Eraser</source>
         <translation></translation>
     </message>

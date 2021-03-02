@@ -18,6 +18,11 @@
                                                 else {                                                  \
                                                     MENU->hide();                                       \
                                                 }                                                       \
+                                            });                                                         \
+                                            connect(this, &EditMenu::moved, [this]() {                  \
+                                                if(MENU->isVisible())                                   \
+                                                    MENU->move(pos().x(), pos().y() +                   \
+                                                        (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));\
                                             })
 
 ImageEditMenu::ImageEditMenu(QWidget* parent)

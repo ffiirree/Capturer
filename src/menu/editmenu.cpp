@@ -39,3 +39,9 @@ void EditMenu::addWidget(QWidget * widget)
 {
     layout()->addWidget(widget);
 }
+
+void EditMenu::moveEvent(QMoveEvent* event)
+{
+    Q_UNUSED(event);
+    emit moved();
+}

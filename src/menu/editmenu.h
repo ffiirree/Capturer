@@ -22,8 +22,11 @@ public:
 signals:
     void changed();
     void styleChanged();
+    void moved();
 
 protected:
+    void moveEvent(QMoveEvent*) override;
+
     void addButton(CustomButton *);
     void addSeparator();
     void addWidget(QWidget *);

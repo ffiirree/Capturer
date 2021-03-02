@@ -21,6 +21,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     magnifier_ = new Magnifier(this);
     canvas_ = QPixmap(size());
 
+    menu_->installEventFilter(this);
+
     connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
     connect(menu_, &ImageEditMenu::ok, this, &ScreenShoter::copy);
     connect(menu_, &ImageEditMenu::fix,  this, &ScreenShoter::pin);
@@ -158,6 +160,21 @@ void ScreenShoter::focusOn(shared_ptr<PaintCommand> cmd)
     }
 }
 
+bool ScreenShoter::eventFilter(QObject * obj, QEvent * event)
+{
+    if (obj == menu_) {
+        switch (event->type())
+        {
+        case QEvent::KeyPress:      keyPressEvent(static_cast<QKeyEvent*>(event));  return true;
+        case QEvent::KeyRelease:    keyPressEvent(static_cast<QKeyEvent*>(event));  return true;
+        default:                                                                    return Selector::eventFilter(obj, event);
+        }
+    }
+    else {
+        return Selector::eventFilter(obj, event);
+    }
+}
+
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     if(event->button() != Qt::LeftButton)
@@ -237,10 +254,10 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
-    auto mouse_pos = event->pos();
+    if (status_ == LOCKED) {
+        if (event->buttons() & Qt::LeftButton) {
+            auto mouse_pos = event->pos();
 
-    if(event->buttons() & Qt::LeftButton) {
-        if(status_ == LOCKED) {
             switch (edit_status_ & OPERATION_MASK) {
             case GRAPH_CREATING:
                 hover_cmd_->push_point(mouse_pos);
@@ -259,20 +276,16 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
             default:  break;
             }
         }
-        else if(status_ == MOVING) {
-            redo_stack_.clear();
-            commands_.clear();
-        }
-    }
 
-    // setCursor
-    if(edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
-        circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
-        setCursor(QCursor(circle_cursor_.cursor()));
-    }
-    else if(event->buttons() == Qt::NoButton && status_ == LOCKED) {
-        updateHoverPos(event->pos());
-        setCursorByHoverPos(hover_position_);
+        // setCursor
+        if (edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
+            circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
+            setCursor(QCursor(circle_cursor_.cursor()));
+        }
+        else if (event->buttons() == Qt::NoButton && status_ == LOCKED) {
+            updateHoverPos(event->pos());
+            setCursorByHoverPos(hover_position_);
+        }
     }
 
     moveMagnifier();
@@ -306,9 +319,24 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 
     Selector::mouseReleaseEvent(event);
 }
+void ScreenShoter::keyPressEvent(QKeyEvent* event)
+{
+    if (status_ == LOCKED
+        && event->key() == Qt::Key_Space && !event->isAutoRepeat()
+        && (edit_status_ & OPERATION_MASK) == 0) {
+        status_ = CAPTURED;
+    }
+
+    Selector::keyPressEvent(event);
+}
 
 void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 {
+    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()
+        && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size() || redo_stack_.size())) {
+        status_ = LOCKED;
+    }
+
     if (event->key() == Qt::Key_Shift 
         && focus_cmd_
         && ((edit_status_ & OPERATION_MASK) == 0)) {
