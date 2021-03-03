@@ -1,25 +1,23 @@
 #ifndef SCREEN_SHOTER_H
 #define SCREEN_SHOTER_H
 
-#include <selector.h>
-#include <QTextEdit>
 #include <QPixmap>
 #include <QSystemTrayIcon>
+#include "selector.h"
 #include "imageeditmenu.h"
 #include "magnifier.h"
-#include "textedit.h"
 #include "command.h"
 #include "resizer.h"
 #include "circlecursor.h"
 #include "config.h"
 
 #define HIDE_AND_COPY_CMD(CMD)                           \
-        do {                                             \
+        st(                                              \
             auto pre_cmd = CMD;                          \
             pre_cmd->visible(false);                     \
             CMD = make_shared<PaintCommand>(*pre_cmd);   \
             CMD->previous(pre_cmd);                      \
-        } while(0)
+        )
 
 class ScreenShoter : public Selector
 {
@@ -64,7 +62,6 @@ public slots:
         Selector::updateTheme(Config::instance()["snip"]["selector"]);
     }
 
-public slots:
     void modified(PaintType type) { modified_ = (type > modified_) ? type : modified_; update(); }
 
 private slots:
@@ -97,7 +94,6 @@ private:
     void focusOn(shared_ptr<PaintCommand> cmd);
 
     QPixmap captured_screen_;
-    QImage mosaic_background_;
 
     Resizer::PointPosition hover_position_ = Resizer::OUTSIDE;
 
@@ -106,14 +102,11 @@ private:
 
     std::uint32_t edit_status_ = EditStatus::NONE;
 
-    TextEdit * text_edit_ = nullptr;
-
     ImageEditMenu * menu_ = nullptr;
     Magnifier * magnifier_ = nullptr;
 
     QPoint move_begin_{0, 0};
     QPoint resize_begin_{0, 0};
-    std::vector<QPoint> curves_;
 
     CommandStack commands_;
     CommandStack redo_stack_;

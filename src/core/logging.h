@@ -1,26 +1,64 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include <QDebug>
+#include <glog/logging.h>
+#include <QSize>
+#include <QRect>
+#include <QStringList>
+#include <QDir>
 
-// Log
-#ifndef LOG
-#ifdef ERROR
-#undef ERROR
-#endif
-    #define ERROR       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).critical().nospace().noquote()
-    #define INFO        QMessageLogger(__FILE__, __LINE__, __FUNCTION__).info().nospace().noquote()
-    #define DEBUG       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).debug().nospace().noquote()
-    #define WARNING     QMessageLogger(__FILE__, __LINE__, __FUNCTION__).warning().nospace().noquote()
-    #define FATAL       QMessageLogger(__FILE__, __LINE__, __FUNCTION__).fatal().nospace().noquote()
+#define GLOG_DIR    "logs"
 
-    #define LOG(X)      X
-#endif
 
-inline QDebug operator<<(QDebug out, const std::string& str)
+class Logger {
+public:
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    static Logger& init(char** argv) {
+        static Logger logger(argv);
+        return logger;
+    }
+
+    ~Logger() {
+        google::ShutdownGoogleLogging();
+    }
+
+private:
+    Logger(char** argv) {
+        if (!QDir(GLOG_DIR).exists()) QDir().mkdir(GLOG_DIR);
+
+        FLAGS_log_dir = GLOG_DIR;
+        google::InitGoogleLogging(argv[0]);
+        FLAGS_max_log_size = 1024;              // MB
+        FLAGS_logbufsecs = 0;
+        FLAGS_colorlogtostderr = true;
+
+        google::EnableLogCleaner(3);
+    }
+};
+
+
+inline std::ostream& operator<<(std::ostream& out, const QString& string) 
 {
-    out << QString::fromStdString(str);
+    return out << string.toStdString();
+}
+
+inline std::ostream& operator<<(std::ostream& out, const QStringList& list) 
+{
+    foreach (QString str, list) {
+        out << str.toStdString();
+    }
     return out;
 }
 
+inline std::ostream& operator<<(std::ostream& out, const QSize& size) 
+{
+    return out << "<" << size.width() << " x " << size.height() << ">";
+}
+
+inline std::ostream& operator<<(std::ostream& out, const QRect& rect)
+{
+    return out << "<<" << rect.left() << ", " << rect.top() << ">, <"<< rect.width() << " x " << rect.height() << ">>";
+}
 #endif // LOGGING_H

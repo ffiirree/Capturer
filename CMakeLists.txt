@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Capturer VERSION 1.2.3 LANGUAGES C CXX)
+project(capturer VERSION 1.2.3 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +10,13 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
 
+# 3rdparty: QHotkey glog gflags
+set(QHOTKEY_INSTALL OFF CACHE BOOL "Disable QHotkey install rule" FORCE)
+add_subdirectory(3rdparty/QHotkey)
+add_subdirectory(3rdparty/gflags EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
+
+# Qt5
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -22,9 +29,6 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
 endif()
-
-set(QHOTKEY_INSTALL OFF CACHE BOOL "Disable QHotkey install rule" FORCE)
-add_subdirectory(3rdparty/QHotkey)
 
 ########################################################################################################################
 # Create the executable
@@ -45,7 +49,7 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        QHotkey::QHotkey Qt5::Widgets Qt5::Gui
+        QHotkey::QHotkey Qt5::Widgets Qt5::Gui gflags::gflags glog::glog
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>

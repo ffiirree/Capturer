@@ -135,7 +135,7 @@ void Capturer::clipboardChanged()
 
     // only image
     if(mimedata->hasHtml() && mimedata->hasImage()) {
-        LOG(INFO) << "IAMGE";
+        LOG(INFO) << "IMAGE";
 
         auto image_rect = mimedata->imageData().value<QPixmap>().rect();
         image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());

@@ -1,8 +1,6 @@
 #include "screenshoter.h"
 #include <cmath>
 #include <QApplication>
-#include <QGuiApplication>
-#include <QScreen>
 #include <QDesktopWidget>
 #include <QFileDialog>
 #include <QClipboard>
@@ -11,7 +9,6 @@
 #include <QShortcut>
 #include <QDateTime>
 #include <QMimeData>
-#include "circlecursor.h"
 #include "logging.h"
 
 ScreenShoter::ScreenShoter(QWidget *parent)
@@ -122,7 +119,6 @@ void ScreenShoter::exit()
 
     menu_->reset();
     menu_->hide();
-    text_edit_ = nullptr;
     focus_cmd_ = nullptr;
 
     // prevent the window flinker
@@ -323,7 +319,7 @@ void ScreenShoter::keyPressEvent(QKeyEvent* event)
 {
     if (status_ == LOCKED
         && event->key() == Qt::Key_Space && !event->isAutoRepeat()
-        && (edit_status_ & OPERATION_MASK) == 0) {
+        && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size())) {
         status_ = CAPTURED;
     }
 
@@ -333,7 +329,7 @@ void ScreenShoter::keyPressEvent(QKeyEvent* event)
 void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Space && !event->isAutoRepeat()
-        && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size() || redo_stack_.size())) {
+        && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size())) {
         status_ = LOCKED;
     }
 

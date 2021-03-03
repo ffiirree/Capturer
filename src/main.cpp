@@ -10,15 +10,12 @@
 
 int main(int argc, char *argv[])
 {
+    Logger::init(argv);
+
     QApplication a(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
-    // log pattern
-    qSetMessagePattern("%{time yyyy-MM-dd hh:mm:ss.zzz} (%{type}) %{file}:%{line}] %{message}");
-
-    LOG(INFO) << QCoreApplication::applicationName() << " "
-              << CAPTURER_VERSION
-              << " (Qt " << qVersion() << ")";
+    LOG(INFO) << "Capturer " << CAPTURER_VERSION << " (Qt " << qVersion() << ")";
 
     LOG(INFO) << "Operating System: "
 #ifdef __linux__
