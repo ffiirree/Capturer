@@ -2,6 +2,7 @@
 #include <QOperatingSystemVersion>
 #include <QFile>
 #include <QTranslator>
+#include <gflags/gflags.h>
 #include "version.h"
 #include "utils.h"
 #include "displayinfo.h"
@@ -11,6 +12,9 @@
 int main(int argc, char *argv[])
 {
     Logger::init(argv);
+
+    gflags::SetVersionString(CAPTURER_VERSION);
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     QApplication a(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);

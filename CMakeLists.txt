@@ -10,9 +10,12 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
 
+########################################################################################################################
+# dependences
+########################################################################################################################
+
 # 3rdparty: QHotkey glog gflags
-set(QHOTKEY_INSTALL OFF CACHE BOOL "Disable QHotkey install rule" FORCE)
-add_subdirectory(3rdparty/QHotkey)
+add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/gflags EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
 
@@ -40,10 +43,10 @@ file(GLOB_RECURSE SOURCES src/*.cpp)
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
 qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
 
-add_executable(${PROJECT_NAME} 
-        ${SOURCES} 
-        src/capturer.qrc 
-        ${QM_FILES}  
+add_executable(${PROJECT_NAME}
+        ${SOURCES}
+        src/capturer.qrc
+        ${QM_FILES}
         $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
