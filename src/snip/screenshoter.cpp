@@ -801,6 +801,21 @@ void ScreenShoter::registerShortcuts()
         if(status_ < CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
+        else {
+            copied_cmd_ = focus_cmd_;
+        }
+    });
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, [=]() {
+        if (copied_cmd_) {
+            hover_cmd_ = make_shared<PaintCommand>(*copied_cmd_);
+            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
+            hover_cmd_->move({ 16, 16 });
+
+            focusOn(hover_cmd_);
+            commands_.push(hover_cmd_);
+            redo_stack_.clear();
+        }
     });
 
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){

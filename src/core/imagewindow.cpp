@@ -312,7 +312,7 @@ void ImageWindow::dropEvent(QDropEvent *event)
 void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     auto mimedata = event->mimeData();
-    if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
+    if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
         event->acceptProposedAction();
 }
 

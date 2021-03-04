@@ -44,6 +44,9 @@ public:
     explicit ColorDialogButton(const QColor&, QWidget *parent = nullptr);
     ~ColorDialogButton() override;
 
+protected:
+    void wheelEvent(QWheelEvent*) override;
+
 private:
     QColorDialog *color_dialog_;
 };

@@ -1,4 +1,5 @@
 #include "colorpanel.h"
+#include <QWheelEvent>
 
 ColorButton::ColorButton(QWidget *parent)
     : ColorButton(Qt::blue, parent)
@@ -65,6 +66,13 @@ ColorDialogButton::ColorDialogButton(const QColor& color, QWidget *parent)
         }
     });
 }
+
+void ColorDialogButton::wheelEvent(QWheelEvent* event)
+{
+    color_.setAlpha(color_.alpha() + event->delta() / 60);
+    color(color_);
+}
+
 ColorDialogButton::~ColorDialogButton()
 {
     delete color_dialog_;

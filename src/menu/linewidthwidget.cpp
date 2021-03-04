@@ -6,6 +6,8 @@
 
 void WidthButton::wheelEvent(QWheelEvent *event)
 {
+    if (!isChecked()) return;
+
     width_ +=  event->delta() / 120;
     checkValue();
 

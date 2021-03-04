@@ -39,6 +39,7 @@ Keys | Actions
 :-:|---
 `Ctrl + Z`              | UNDO
 `Ctrl + Shift + Z`      | REDO
+`Ctrl + C`/`Ctrl + V`   | Copy & Paste
 `Delete`                | 删除选中的图形
 `Shift`                 | 椭圆->圆<br>矩形->正方形<br>直线->水平/垂直
 `Space`                 | 重新修改截图区域
@@ -76,7 +77,6 @@ Keys | Actions
 `Ctrl + Alt + G`    | 第二次，结束 <br> GIF保存在操作系统默认的`图片`文件夹
 
 ## 源码使用
-
 
 ```bash
 git clone https://github.com/ffiirree/Capturer.git --recursive
@@ -125,6 +125,7 @@ sudo apt install ffmpeg
 
 ### 截图
 
+- [ ] redo/undo合并，使用两个索引
 - [ ] 显示截图历史列表
 - [ ] 保存和加载截图历史
 - [ ] 截图分组
@@ -144,8 +145,6 @@ sudo apt install ffmpeg
 - [ ] 文本通过拖动文本框调整大小
 - [ ] 文本框旋转
 - [ ] 滤镜功能
-- [ ] 复制粘贴元素
-- [ ] 鼠标中键控制颜色透明度
 - [ ] 提供推荐颜色组，更好看
 - [ ] 记忆历史使用的颜色，支持自定义固定颜色
 

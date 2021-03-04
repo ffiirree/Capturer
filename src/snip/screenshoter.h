@@ -99,6 +99,7 @@ private:
 
     shared_ptr<PaintCommand> hover_cmd_ = nullptr;    // hover
     shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
+    shared_ptr<PaintCommand> copied_cmd_ = nullptr;   // copied
 
     std::uint32_t edit_status_ = EditStatus::NONE;
 
