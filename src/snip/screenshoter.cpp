@@ -38,7 +38,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             break;
 
         default:
-            edit_status_ = (edit_status_ & 0xffff'0000) | graph;
+            edit_status_ = (edit_status_ & 0xffff0000) | graph;
             LOCKED();
             focusOn((focus_cmd_ && focus_cmd_->graph() == graph) ? focus_cmd_ : nullptr);
             break;

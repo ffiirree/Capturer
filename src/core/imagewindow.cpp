@@ -14,6 +14,14 @@
 #include "utils.h"
 #include "logging.h"
 
+#define APPLAY_PIXMAP(PIXMAP)       st(                                         \
+                                        paint_pixmap_ = PIXMAP;                 \
+                                        QRect rect({0 ,0}, window_size());      \
+                                        rect.moveCenter(geometry().center());   \
+                                        setGeometry(rect);                      \
+                                        update(QRect{ { shadow_r_, shadow_r_ }, paint_pixmap_.size() }); \
+                                    )
+
 ImageWindow::ImageWindow(QWidget *parent)
     : QWidget(parent)
 {
@@ -38,42 +46,17 @@ ImageWindow::ImageWindow(QWidget *parent)
 
     connect(&edit_menu_, &ImageEditMenu::undo, [](){});
     connect(&edit_menu_, &ImageEditMenu::redo, [](){});
-
-
-    auto W = new QShortcut(QKeySequence("W"), this);
-    auto move_up = new QShortcut(Qt::Key_Up, this);
-    connect(W, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
-    connect(move_up, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
-
-    auto S = new QShortcut(QKeySequence("S"), this);
-    auto move_down = new QShortcut(Qt::Key_Down, this);
-    connect(S, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
-    connect(move_down, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
-
-    auto A = new QShortcut(QKeySequence("A"), this);
-    auto move_left = new QShortcut(Qt::Key_Left, this);
-    connect(A, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
-    connect(move_left, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
-
-    auto D = new QShortcut(QKeySequence("D"), this);
-    auto move_right = new QShortcut(Qt::Key_Right, this);
-    connect(D, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
-    connect(move_right, &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
 }
 
 void ImageWindow::fix()
 {
     if(status_ == 1) return;
-
     status_ = 1;
 
-    size_ = pixmap_.size();
+    resize(window_size());
 
-    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2 });
-
-    update();
     QWidget::show();
-    move(original_pos_ - QPoint{shadow_r_, shadow_r_});
+    move(original_pos_ - QPoint{ shadow_r_, shadow_r_ });
 }
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
@@ -81,18 +64,21 @@ void ImageWindow::mousePressEvent(QMouseEvent *event)
     if(editing_) {
 
     } else {
-        // thumbnail_
-        if(event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
-            thumbnail_ = !thumbnail_;
-            QRect rect({0, 0}, (thumbnail_ ? QSize{125, 125} : size_ * scale_) + QSize{shadow_r_ * 2, shadow_r_ * 2});
-            rect.moveCenter(geometry().center());
-            setGeometry(rect);
-
-            update();
-        }
-
         setCursor(Qt::SizeAllCursor);
-        begin_ = event->globalPos();
+        window_move_begin_pos_ = event->globalPos();
+    }
+}
+
+void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    // thumbnail_
+    thumbnail_ = !thumbnail_;
+    if (thumbnail_) {
+        auto center = original_pixmap_.rect().center();
+        APPLAY_PIXMAP(original_pixmap_.copy(center.x() - 62, center.y() - 62, 125, 125));
+    }
+    else {
+        APPLAY_PIXMAP(original_pixmap_.scaled(original_pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
 }
 
@@ -101,8 +87,8 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
     if(editing_) {
 
     } else {
-        move(event->globalPos() - begin_ + pos());
-        begin_ = event->globalPos();
+        move(event->globalPos() - window_move_begin_pos_ + pos());
+        window_move_begin_pos_ = event->globalPos();
     }
 }
 
@@ -132,38 +118,25 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
         scale_ += delta;
         scale_ = scale_ < 0.01 ? 0.01 : scale_;
 
-        QRect rect({0, 0}, (size_) * scale_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
-        rect.moveCenter(geometry().center());
-
-        setGeometry(rect);
+        APPLAY_PIXMAP(original_pixmap_.scaled(original_pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
-
-    update();
 }
 
-void ImageWindow::paintEvent(QPaintEvent *)
+void ImageWindow::paintEvent(QPaintEvent *event)
 {
-    auto pixmap = pixmap_.scaled(size_ * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    if(thumbnail_) {
-        auto center = pixmap.rect().center();
-        pixmap = pixmap.copy(center.x() - 62, center.y() - 62, 125, 125);
-    }
-
-    painter_.begin(this);
-    painter_.drawPixmap(shadow_r_, shadow_r_, pixmap);
-    painter_.end();
+    QPainter painter(this);
+    painter.drawPixmap(shadow_r_, shadow_r_, paint_pixmap_);
 }
 
 void ImageWindow::copy()
 {
-    QApplication::clipboard()->setPixmap(pixmap_);
+    QApplication::clipboard()->setPixmap(image());
 }
 
 void ImageWindow::paste()
 {
-    pixmap_ = QApplication::clipboard()->pixmap();
-    size_ = pixmap_.size();
-    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2});
+    image(QApplication::clipboard()->pixmap());
+    resize(window_size());
 }
 
 void ImageWindow::open()
@@ -173,9 +146,8 @@ void ImageWindow::open()
                                                  QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
                                                  "Image Files(*.png *.jpg *.jpeg *.bmp)");
     if(!filename.isEmpty()) {
-        pixmap_ = QPixmap(filename);
-        size_ = pixmap_.size();
-        resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2});
+        image(QPixmap(filename));
+        resize(window_size());
     }
 }
 
@@ -190,12 +162,12 @@ void ImageWindow::saveAs()
                                                  "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
     if(!filename.isEmpty()) {
-        pixmap_.save(filename);
+        original_pixmap_.save(filename);
     }
 #elif __linux__
     auto filename = default_filepath + QDir::separator() + default_filename;
 
-    pixmap_.save(filename);
+    original_pixmap_.save(filename);
 #endif
 }
 
@@ -210,11 +182,7 @@ void ImageWindow::recover()
     setWindowOpacity(opacity_);
 
     scale_ = 1.0;
-    QRect rect({0, 0}, size_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
-    rect.moveCenter(geometry().center());
-    setGeometry(rect);
-
-    update();
+    APPLAY_PIXMAP(original_pixmap_.copy());
 }
 
 void ImageWindow::effectEnabled()
@@ -222,12 +190,21 @@ void ImageWindow::effectEnabled()
     effect_enabled_ = !effect_enabled_;
     shadow_r_ = effect_enabled_ ? DEFAULT_SHADOW_R_ : 0;
 
-    QRect rect({0, 0}, (size_) * scale_ + QSize{shadow_r_ * 2, shadow_r_ * 2});
-    rect.moveCenter(geometry().center());
-
-    setGeometry(rect);
+    APPLAY_PIXMAP(paint_pixmap_);
 
     effect_->setEnabled(effect_enabled_);
+}
+
+void ImageWindow::rotate(bool anticlockwise)
+{
+    QMatrix matrix;
+    matrix.rotate((anticlockwise ? -1 : 1) * 90);
+    APPLAY_PIXMAP(paint_pixmap_.transformed(matrix, Qt::FastTransformation));
+}
+
+void ImageWindow::mirror(bool h, bool v)
+{
+    APPLAY_PIXMAP(QPixmap::fromImage(paint_pixmap_.toImage().mirrored(h, v)));
 }
 
 void ImageWindow::contextMenuEvent(QContextMenuEvent *)
@@ -265,6 +242,10 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
     connect(save, &QAction::triggered, this, &ImageWindow::saveAs);
 
     menu->addSeparator();
+    
+    auto rotate = new QAction(tr("Rotate 90"));
+    menu->addAction(rotate);
+    connect(rotate, &QAction::triggered, this, &ImageWindow::rotate);
 
     auto effect = new QAction((effect_enabled_ ? tr("Hide ") : tr("Show ")) + tr("Shadow"));
     menu->addAction(effect);
@@ -301,10 +282,9 @@ void ImageWindow::dropEvent(QDropEvent *event)
     LOG(INFO) << path;
 
     scale_ = 1.0;
-    pixmap_.load(path);
-    size_ = pixmap_.size();
-    resize(size_ + QSize{ shadow_r_ * 2, shadow_r_ * 2 });
-    repaint();
+    original_pixmap_.load(path);
+    paint_pixmap_ = original_pixmap_.copy();
+    resize(window_size());
 
     event->acceptProposedAction();
 }
@@ -343,9 +323,32 @@ void ImageWindow::keyReleaseEvent(QKeyEvent *event)
 
 void ImageWindow::registerShortcuts()
 {
+    // copy & paste
     connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, this, &ImageWindow::copy);
     connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, this, &ImageWindow::paste);
 
+    // save & open
     connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, this, &ImageWindow::saveAs);
     connect(new QShortcut(Qt::CTRL + Qt::Key_O, this), &QShortcut::activated, this, &ImageWindow::open);
+
+    // rotate
+    connect(new QShortcut(Qt::Key_R, this), &QShortcut::activated, [this]() { rotate(); });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_R, this), &QShortcut::activated, [this]() { rotate(true); });
+
+    // flip
+    connect(new QShortcut(Qt::Key_V, this), &QShortcut::activated, [this]() { mirror(false, true); });
+    connect(new QShortcut(Qt::Key_H, this), &QShortcut::activated, [this]() { mirror(true, false); });
+
+    // move
+    connect(new QShortcut(Qt::Key_W, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Up, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+
+    connect(new QShortcut(Qt::Key_S, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Down, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+
+    connect(new QShortcut(Qt::Key_A, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Left, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+
+    connect(new QShortcut(Qt::Key_D, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
 }

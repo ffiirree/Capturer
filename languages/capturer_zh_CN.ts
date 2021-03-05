@@ -83,72 +83,77 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="172"/>
+        <location filename="../src/core/imagewindow.cpp" line="145"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="188"/>
+        <location filename="../src/core/imagewindow.cpp" line="160"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="237"/>
+        <location filename="../src/core/imagewindow.cpp" line="214"/>
         <source>Copy image</source>
         <translation>复制图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="241"/>
+        <location filename="../src/core/imagewindow.cpp" line="218"/>
         <source>Paste image</source>
         <translation>粘贴图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="247"/>
+        <location filename="../src/core/imagewindow.cpp" line="224"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="259"/>
+        <location filename="../src/core/imagewindow.cpp" line="236"/>
         <source>Open image...</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="263"/>
+        <location filename="../src/core/imagewindow.cpp" line="240"/>
         <source>Save as...</source>
         <translation>另存为...</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="269"/>
+        <location filename="../src/core/imagewindow.cpp" line="246"/>
+        <source>Rotate 90</source>
+        <translation>旋转90°</translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="250"/>
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="269"/>
+        <location filename="../src/core/imagewindow.cpp" line="250"/>
         <source>Hide </source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="269"/>
+        <location filename="../src/core/imagewindow.cpp" line="250"/>
         <source>Show </source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="273"/>
+        <location filename="../src/core/imagewindow.cpp" line="254"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="276"/>
+        <location filename="../src/core/imagewindow.cpp" line="257"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="279"/>
+        <location filename="../src/core/imagewindow.cpp" line="260"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="285"/>
+        <location filename="../src/core/imagewindow.cpp" line="266"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
@@ -159,6 +164,14 @@
         <location filename="../src/video/screenrecorder.cpp" line="81"/>
         <source>Path: </source>
         <translation>路径：</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenShoter</name>
+    <message>
+        <location filename="../src/snip/screenshoter.cpp" line="705"/>
+        <source>Save Image</source>
+        <translation>保存图片</translation>
     </message>
 </context>
 <context>
