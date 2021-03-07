@@ -683,6 +683,7 @@ QPixmap ScreenShoter::snipped()
     auto&& image = snippedImage();
     mimedata->setData("application/qpoint", QByteArray().append(reinterpret_cast<char*>(&position), sizeof (QPoint)));
     mimedata->setImageData(QVariant(image));
+    // Ownership of the data is transferred to the clipboard: https://doc.qt.io/qt-5/qclipboard.html#setMimeData
     QApplication::clipboard()->setMimeData(mimedata);
 
     history_.push_back({captured_screen_, selected(), commands_});

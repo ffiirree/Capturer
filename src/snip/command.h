@@ -1,10 +1,7 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include <QObject>
 #include <QPen>
-#include <vector>
-#include <memory>
 #include "utils.h"
 #include "resizer.h"
 #include "textedit.h"

@@ -32,7 +32,7 @@
 <context>
     <name>GifCapturer</name>
     <message>
-        <location filename="../src/gif/gifcapturer.cpp" line="82"/>
+        <location filename="../src/gif/gifcapturer.cpp" line="80"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -83,77 +83,82 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="145"/>
+        <location filename="../src/core/imagewindow.cpp" line="221"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="160"/>
+        <location filename="../src/core/imagewindow.cpp" line="236"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="214"/>
+        <location filename="../src/core/imagewindow.cpp" line="269"/>
         <source>Copy image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="218"/>
+        <location filename="../src/core/imagewindow.cpp" line="270"/>
         <source>Paste image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="224"/>
-        <source>Edit</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="236"/>
+        <location filename="../src/core/imagewindow.cpp" line="286"/>
         <source>Open image...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="240"/>
+        <location filename="../src/core/imagewindow.cpp" line="287"/>
         <source>Save as...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="246"/>
+        <location filename="../src/core/imagewindow.cpp" line="291"/>
         <source>Rotate 90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="250"/>
+        <location filename="../src/core/imagewindow.cpp" line="292"/>
+        <source>Flip H</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="293"/>
+        <source>Flip V</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="294"/>
         <source>Shadow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="250"/>
+        <location filename="../src/core/imagewindow.cpp" line="294"/>
         <source>Hide </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="250"/>
+        <location filename="../src/core/imagewindow.cpp" line="294"/>
         <source>Show </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="254"/>
+        <location filename="../src/core/imagewindow.cpp" line="295"/>
         <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="257"/>
+        <location filename="../src/core/imagewindow.cpp" line="296"/>
         <source>Opacity : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="260"/>
+        <location filename="../src/core/imagewindow.cpp" line="297"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="266"/>
+        <location filename="../src/core/imagewindow.cpp" line="301"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -169,7 +174,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="705"/>
+        <location filename="../src/snip/screenshoter.cpp" line="706"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

@@ -53,6 +53,10 @@ Keys | Actions
 `Shift + F3`    | 显示/隐藏所有贴出的贴图
 `Wheel`         | 缩放贴图
 `Ctrl + Wheel`  | 更改贴图透明度
+`R`             | 顺时针旋转90
+`Ctrl + R`      | 逆时针旋转90
+`V`             | 垂直翻转
+`H`             | 水平翻转
 `LButton` Double Click   | 缩略图模式，贴图显示中心区域125x125的内容
 Drag & Drop     | 拖拽图片到贴图上，则打开并显示拖拽图片
 `ESC`           | 关闭贴图窗口

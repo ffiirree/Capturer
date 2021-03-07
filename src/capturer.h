@@ -58,7 +58,7 @@ private:
     ScreenRecorder * recorder_ = nullptr;
     GifCapturer * gifcptr_ = nullptr;
 
-    LimitSizeVector<std::shared_ptr<ImageWindow>> clipboard_history_;
+    LimitSizeVector<ImageWindow *> clipboard_history_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
     QMenu * sys_tray_icon_menu_ = nullptr;

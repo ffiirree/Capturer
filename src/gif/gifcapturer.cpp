@@ -1,8 +1,6 @@
 #include "gifcapturer.h"
 #include <QFileDialog>
 #include <QKeyEvent>
-#include <QDebug>
-#include <QDateTime>
 #include <QStandardPaths>
 #include "detectwidgets.h"
 
