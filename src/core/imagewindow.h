@@ -12,7 +12,7 @@ class ImageWindow : public QWidget
 
 public:
     enum class Modified {
-        ROTATED, ANTI_ROTATED, FLIPPED_V, FLIPPED_H, SCALED, THUMBNAIL, RECOVERED, SHADOW, ALL,
+        ROTATED, ANTI_ROTATED, FLIPPED_V, FLIPPED_H, SCALED, THUMBNAIL, RECOVERED, SHADOW, GRAY, BACKGROUND, ALL
     };
 
     enum class WindowStatus {
@@ -79,6 +79,7 @@ private:
     bool thumbnail_ = false;
     qreal scale_ = 1.0;
     qreal opacity_ = 1.0;
+    Qt::GlobalColor bg_ = Qt::transparent;
 
     bool ctrl_ = false;
 

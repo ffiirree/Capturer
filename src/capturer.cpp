@@ -88,34 +88,18 @@ void Capturer::updateConfig()
 void Capturer::setupSystemTrayIcon()
 {
     // SystemTrayIcon
-    sys_tray_icon_menu_ = new QMenu(this);
-    sys_tray_icon_menu_->setObjectName("sys_tray_menu");
+    auto menu = new QMenu(this);
+    menu->setObjectName("sys_tray_menu");
 
-    auto screen_shot = new QAction(QIcon(":/icon/res/screenshot"), tr("Snip"), this);
-    connect(screen_shot, &QAction::triggered, sniper_, &ScreenShoter::start);
-    sys_tray_icon_menu_->addAction(screen_shot);
+    menu->addAction(QIcon(":/icon/res/screenshot"), tr("Snip"), sniper_, &ScreenShoter::start);
+    menu->addAction(QIcon(":/icon/res/sr"),         tr("Screen Record"), recorder_, &ScreenRecorder::record);
+    menu->addAction(QIcon(":/icon/res/gif"),        tr("GIF Record"), gifcptr_, &GifCapturer::record);
+    menu->addSeparator();
+    menu->addAction(QIcon(":/icon/res/setting"),    tr("Settings"), setting_dialog_, &SettingWindow::show);
+    menu->addSeparator();
+    menu->addAction(QIcon(":/icon/res/exit"),       tr("Quit"), qApp, &QCoreApplication::exit);
 
-    auto record_screen = new QAction(QIcon(":/icon/res/sr"),tr("Screen Record"), this);
-    connect(record_screen, &QAction::triggered, recorder_, &ScreenRecorder::record);
-    sys_tray_icon_menu_->addAction(record_screen);
-
-    auto gif = new QAction(QIcon(":/icon/res/gif"), tr("GIF Record"), this);
-    connect(gif, &QAction::triggered, gifcptr_, &GifCapturer::record);
-    sys_tray_icon_menu_->addAction(gif);
-
-    sys_tray_icon_menu_->addSeparator();
-
-    auto setting = new QAction(QIcon(":/icon/res/setting"), tr("Settings"), this);
-    connect(setting, &QAction::triggered, setting_dialog_, &SettingWindow::show);
-    sys_tray_icon_menu_->addAction(setting);
-
-    sys_tray_icon_menu_->addSeparator();
-
-    auto exit_action = new QAction(QIcon(":/icon/res/exit"), tr("Quit"), this);
-    connect(exit_action, &QAction::triggered, qApp, &QCoreApplication::exit);
-    sys_tray_icon_menu_->addAction(exit_action);
-
-    sys_tray_icon_->setContextMenu(sys_tray_icon_menu_);
+    sys_tray_icon_->setContextMenu(menu);
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));
     setWindowIcon(QIcon(":/icon/res/icon.png"));
     sys_tray_icon_->show();
@@ -139,7 +123,7 @@ void Capturer::clipboardChanged()
 
         auto image_rect = mimedata->imageData().value<QPixmap>().rect();
         image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
-        clipboard_history_.push(new ImageWindow(mimedata->imageData().value<QPixmap>(), image_rect.topLeft()));
+        clipboard_history_.push(new ImageWindow(mimedata->imageData().value<QPixmap>(), image_rect.topLeft(), this));
     }
     else if(mimedata->hasHtml()) {
         LOG(INFO) << "HTML";
@@ -166,7 +150,8 @@ void Capturer::clipboardChanged()
         clipboard_history_.push(new ImageWindow(mimedata->imageData().value<QPixmap>(), pos, this));
     }
 
-    else if(mimedata->hasUrls() && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP;ico;ICO").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
+    else if(mimedata->hasUrls() 
+        && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
         LOG(INFO) << "IMAGE URL";
 
         QPixmap pixmap;

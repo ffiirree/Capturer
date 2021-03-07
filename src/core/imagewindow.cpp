@@ -40,10 +40,11 @@ ImageWindow::ImageWindow(QWidget *parent)
 void ImageWindow::image(const QPixmap& image)
 { 
     original_pixmap_ = image;
-    pixmap_ = image.copy();
-    canvas_ = image.copy();
+    canvas_ = pixmap_ = image.copy();
 
     scale_ = 1.0;
+
+    if (image.hasAlpha()) bg_ = Qt::gray;
 }
 
 void ImageWindow::show(bool visable)
@@ -112,6 +113,10 @@ void ImageWindow::update(Modified type)
         pixmap_ = QPixmap::fromImage(pixmap_.toImage().mirrored(true, false));
         break;
 
+    case Modified::GRAY:
+        pixmap_ = QPixmap::fromImage(pixmap_.toImage().convertToFormat(QImage::Format::Format_Grayscale8));
+        break;
+
     case Modified::RECOVERED:
         effect_->setEnabled(true);
 
@@ -126,7 +131,7 @@ void ImageWindow::update(Modified type)
     default: break;
     }
 
-    canvas_ = pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    canvas_ = scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_.size()));
     setGeometry(getShadowGeometry(canvas_.size()));
 }
@@ -200,6 +205,12 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
 void ImageWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
+
+    // background for alpha
+    if (bg_ != Qt::transparent && canvas_.hasAlpha()) {
+        painter.fillRect(shadow_r_, shadow_r_, canvas_.width(), canvas_.height(), bg_);
+    }
+
     if (thumbnail_) {
         auto center = canvas_.rect().center();
         painter.drawPixmap(QRect{ shadow_r_, shadow_r_, 125, 125 }, canvas_, { center.x() - 62, center.y() - 62, 125, 125 });
@@ -262,7 +273,7 @@ void ImageWindow::effectEnabled()
     effect_->setEnabled(!effect_->isEnabled());
 }
 
-void ImageWindow::contextMenuEvent(QContextMenuEvent *)
+void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
 {
     auto menu = new QMenu(this);
 
@@ -288,9 +299,20 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
     menu->addSeparator();
     
-    menu->addAction(tr("Rotate 90") + "\tR / Ctrl + R", [this]() { update(Modified::ROTATED); });
+    menu->addAction(tr("Grayscale") + "\tG", [this]() { update(Modified::GRAY); });
+    menu->addAction(tr("Rotate 90") + "\tR", [this]() { update(Modified::ROTATED); });
+    menu->addAction(tr("Rotate -90") + "\tCtrl + R", [this]() { update(Modified::ROTATED); });
     menu->addAction(tr("Flip H") + "\tH", [this]() { update(Modified::FLIPPED_H); });
     menu->addAction(tr("Flip V") + "\tV", [this]() { update(Modified::FLIPPED_V); });
+
+    menu->addSeparator();
+
+    auto sub_menu = new QMenu(tr("Background"), this);
+    sub_menu->addAction(tr("White"), [this]() { bg_ = Qt::white; update(Modified::BACKGROUND); });
+    sub_menu->addAction(tr("Gray"), [this]() { bg_ = Qt::gray; update(Modified::BACKGROUND); });
+    sub_menu->addAction(tr("Black"), [this]() { bg_ = Qt::black; update(Modified::BACKGROUND); });
+    sub_menu->addAction(tr("Transparent"), [this]() { bg_ = Qt::transparent; update(Modified::BACKGROUND); });
+    menu->addMenu(sub_menu);
     menu->addAction((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"), this, &ImageWindow::effectEnabled);
     menu->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
     menu->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
@@ -300,7 +322,7 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent *)
 
     menu->addAction(tr("Close") + "\tEsc", this, &ImageWindow::invisable);
 
-    menu->exec(QCursor::pos());
+    menu->exec(event->globalPos());
 }
 
 void ImageWindow::moveEvent(QMoveEvent *event)
@@ -324,7 +346,7 @@ void ImageWindow::dropEvent(QDropEvent *event)
 void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     auto mimedata = event->mimeData();
-    if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
+    if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
         event->acceptProposedAction();
 }
 
@@ -361,6 +383,9 @@ void ImageWindow::registerShortcuts()
     // save & open
     connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, this, &ImageWindow::saveAs);
     connect(new QShortcut(Qt::CTRL + Qt::Key_O, this), &QShortcut::activated, this, &ImageWindow::open);
+
+    // gray
+    connect(new QShortcut(Qt::Key_G, this), &QShortcut::activated, [this]() { update(Modified::GRAY); });
 
     // rotate
     connect(new QShortcut(Qt::Key_R, this), &QShortcut::activated, [this]() { update(Modified::ROTATED); });

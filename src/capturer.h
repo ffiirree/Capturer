@@ -61,7 +61,6 @@ private:
     LimitSizeVector<ImageWindow *> clipboard_history_;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
-    QMenu * sys_tray_icon_menu_ = nullptr;
 
     SettingWindow * setting_dialog_ = nullptr;
 
