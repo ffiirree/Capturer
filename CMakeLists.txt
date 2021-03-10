@@ -29,6 +29,9 @@ find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
 if(WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE ON)
+    
+    # Windows API
+    add_definitions(-DUNICODE)
 elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
 endif()

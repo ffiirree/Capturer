@@ -41,13 +41,14 @@ void DetectWidgets::reset()
 
 QRect DetectWidgets::window()
 {
+    QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();
-    QRect result = {{0, 0}, DisplayInfo::instance().maxSize()};
+    QRect result = fullscreen;
 
     for(const auto& window: windows_) {
         if(window.second.contains(cpos)
                 && (result.width() * result.height() > window.second.width() * window.second.height())) {
-            result = window.second;
+            result = fullscreen.intersected(window.second);
         }
     }
 

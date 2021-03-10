@@ -18,12 +18,12 @@ QRect getRect(HWND hWnd)
     return QRect(QPoint(rect.left, rect.top),  QPoint(rect.right - 1, rect.bottom - 1));
 }
 
-// QString getName(HWND hWnd)
-// {
-//     wchar_t buffer[255];
-//     GetWindowText(hWnd, buffer, 255);
-//     return QString::fromWCharArray(buffer);
-// }
+ QString getName(HWND hWnd)
+ {
+     WCHAR buffer[255];
+     GetWindowText(hWnd, buffer, 255);
+     return QString::fromWCharArray(buffer);
+ }
 
 void DetectWidgets::reset()
 {
@@ -35,8 +35,7 @@ void DetectWidgets::reset()
         auto rect = getRect(hwnd);
 
         if(IsWindowVisible(hwnd) && rect.isValid()) {
-            // auto name = getName(hwnd);
-            windows_.push_back({"WINDOW", rect});
+            windows_.push_back({ getName(hwnd), rect });
         }
 
         hwnd = GetNextWindow(hwnd, GW_HWNDNEXT);        // Z-index: up to down
@@ -45,12 +44,14 @@ void DetectWidgets::reset()
 
 QRect DetectWidgets::window()
 {
+    QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();
+
     for(const auto& window : windows_) {
         if(window.second.contains(cpos)) {
-            return window.second;
+            return fullscreen.intersected(window.second);
         }
     }
-    return {{0, 0}, DisplayInfo::instance().maxSize()};
+    return fullscreen;
 }
 #endif
