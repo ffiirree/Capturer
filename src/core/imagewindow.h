@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QGraphicsDropShadowEffect>
 #include "imageeditmenu.h"
+#include "canvas.h"
 
 class ImageWindow : public QWidget
 {
@@ -45,7 +46,6 @@ public slots:
 private:
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent*) override;
 
     void wheelEvent(QWheelEvent *) override;
@@ -75,7 +75,6 @@ private:
     QPixmap canvas_;
     QPoint original_pos_ = {0, 0};
 
-    bool editing_ = false;
     bool thumbnail_ = false;
     qreal scale_ = 1.0;
     qreal opacity_ = 1.0;
@@ -83,8 +82,9 @@ private:
 
     bool ctrl_ = false;
 
-    ImageEditMenu edit_menu_;
+    Canvas * c_;
     const static int DEFAULT_SHADOW_R_{ 10 };
+    const static int THUMBNAIL_WIDTH_{ 125 };
     int shadow_r_ = DEFAULT_SHADOW_R_;
 
     QGraphicsDropShadowEffect *effect_;

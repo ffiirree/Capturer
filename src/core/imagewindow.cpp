@@ -28,13 +28,10 @@ ImageWindow::ImageWindow(QWidget *parent)
 
     registerShortcuts();
 
-    connect(&edit_menu_, &ImageEditMenu::save, this, &ImageWindow::saveAs);
-    connect(&edit_menu_, &ImageEditMenu::ok, [](){});
-    connect(&edit_menu_, &ImageEditMenu::fix, [](){});
-    connect(&edit_menu_, &ImageEditMenu::exit, [this](){ edit_menu_.hide(); editing_ = false; });
-
-    connect(&edit_menu_, &ImageEditMenu::undo, [](){});
-    connect(&edit_menu_, &ImageEditMenu::redo, [](){});
+    c_ = new Canvas(this);
+    c_->device(this);
+    connect(c_, &Canvas::close, [this]() { setMouseTracking(false); pixmap_ = canvas_.copy(); removeEventFilter(c_); });
+    connect(c_, &Canvas::update, [this]() { QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_.size())); });
 }
 
 void ImageWindow::image(const QPixmap& image)
@@ -79,8 +76,6 @@ void ImageWindow::hide()
 {
     if (status_ == WindowStatus::SHOWED) {
         status_ = WindowStatus::HIDED;
-        edit_menu_.reset();
-        edit_menu_.hide(); 
         QWidget::hide(); 
     }
 }
@@ -88,8 +83,6 @@ void ImageWindow::hide()
 void ImageWindow::invisable()
 {
     status_ = WindowStatus::INVISABLE;
-    edit_menu_.reset();
-    edit_menu_.hide();
     QWidget::hide();
 }
 
@@ -147,12 +140,8 @@ QRect ImageWindow::getShadowGeometry(QSize _size)
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
 {
-    if(editing_) {
-
-    } else {
-        setCursor(Qt::SizeAllCursor);
-        window_move_begin_pos_ = event->globalPos();
-    }
+    setCursor(Qt::SizeAllCursor);
+    window_move_begin_pos_ = event->globalPos();
 }
 
 void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
@@ -164,27 +153,12 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
-    if(editing_) {
-
-    } else {
-        move(event->globalPos() - window_move_begin_pos_ + pos());
-        window_move_begin_pos_ = event->globalPos();
-    }
-}
-
-void ImageWindow::mouseReleaseEvent(QMouseEvent *event)
-{
-    if(editing_) {
-
-    } else {
-
-    }
+    move(event->globalPos() - window_move_begin_pos_ + pos());
+    window_move_begin_pos_ = event->globalPos();
 }
 
 void ImageWindow::wheelEvent(QWheelEvent *event)
 {
-    if(editing_) return;
-
     auto delta = (event->delta()/12000.0);         // +/-1%
 
     if(ctrl_) {
@@ -205,15 +179,15 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
 void ImageWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-
     // background for alpha
     if (bg_ != Qt::transparent && canvas_.hasAlpha()) {
-        painter.fillRect(shadow_r_, shadow_r_, canvas_.width(), canvas_.height(), bg_);
+        painter.fillRect(shadow_r_, shadow_r_, width() - 2 * shadow_r_, height() - 2 * shadow_r_, bg_);
     }
 
     if (thumbnail_) {
         auto center = canvas_.rect().center();
-        painter.drawPixmap(QRect{ shadow_r_, shadow_r_, 125, 125 }, canvas_, { center.x() - 62, center.y() - 62, 125, 125 });
+        painter.drawPixmap(QRect{ shadow_r_, shadow_r_, 125, 125 }, canvas_,
+            { center.x() - THUMBNAIL_WIDTH_ / 2, center.y() - THUMBNAIL_WIDTH_ / 2, THUMBNAIL_WIDTH_, THUMBNAIL_WIDTH_ });
     }
     else {
         painter.drawPixmap(shadow_r_, shadow_r_, canvas_);
@@ -282,15 +256,18 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
 
     menu->addSeparator();
 
-    //auto edit = new QAction(tr("Edit"));
-    //menu->addAction(edit);
-    //connect(edit, &QAction::triggered, [this](){
-    //    if(thumbnail_) return;
+    menu->addAction(tr("Edit"), [this]() {
+        if (thumbnail_) return;
 
-    //    editing_ = true;
-    //    edit_menu_.show();
-    //    moveMenu();
-    //});
+        shadow_r_ = 0;
+        update(Modified::SHADOW);
+        effect_->setEnabled(false);
+        c_->canvas(&canvas_);
+        c_->start();
+        setMouseTracking(true);
+        moveMenu();
+        installEventFilter(c_);
+    });
 
     menu->addSeparator();
 
@@ -325,12 +302,6 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
     menu->exec(event->globalPos());
 }
 
-void ImageWindow::moveEvent(QMoveEvent *event)
-{
-    Q_UNUSED(event);
-    moveMenu();
-}
-
 void ImageWindow::dropEvent(QDropEvent *event)
 {
     auto path = event->mimeData()->urls()[0].toLocalFile();
@@ -350,11 +321,16 @@ void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
         event->acceptProposedAction();
 }
 
+void ImageWindow::moveEvent(QMoveEvent*)
+{
+    moveMenu();
+}
+
 void ImageWindow::moveMenu()
 {
-    auto rect = geometry().adjusted(shadow_r_, shadow_r_, -shadow_r_ - edit_menu_.width(), -shadow_r_ + 5);
-    edit_menu_.move(rect.bottomRight());
-    edit_menu_.setSubMenuShowBelow();
+    auto rect = geometry().adjusted(shadow_r_, shadow_r_, -shadow_r_ - c_->menu_->width(), -shadow_r_ + 5);
+    c_->menu_->move(rect.bottomRight());
+    c_->menu_->setSubMenuShowBelow();
 }
 
 void ImageWindow::keyPressEvent(QKeyEvent *event)

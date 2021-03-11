@@ -122,7 +122,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     addSeparator();
 
     auto fix_btn = new IconButton(QPixmap(":/icon/res/pin"), icon_size, { ICON_W, ICON_W });
-    connect(fix_btn, &IconButton::clicked, this, &ImageEditMenu::fix);
+    connect(fix_btn, &IconButton::clicked, [this]() { fix(); hide(); });
     connect(fix_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
     addButton(fix_btn);
 
@@ -134,7 +134,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     addSeparator();
 
     auto close_btn = new IconButton(QPixmap(":/icon/res/wrong"), icon_size, { ICON_W, ICON_W });
-    connect(close_btn, &IconButton::clicked, this, &ImageEditMenu::exit);
+    connect(close_btn, &IconButton::clicked, [this]() { exit(); hide(); });
     connect(close_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
     close_btn->setIconColor(QColor("#ee0000"));
     close_btn->setIconHoverColor(QColor("#ee0000"));
@@ -142,7 +142,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent)
     addWidget(close_btn);
 
     auto ok_btn = new IconButton(QPixmap(":/icon/res/right"), icon_size, { ICON_W, ICON_W });
-    connect(ok_btn, &IconButton::clicked, this, &ImageEditMenu::ok);
+    connect(ok_btn, &IconButton::clicked, [this]() { ok(); hide(); });
     connect(ok_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
     ok_btn->setIconColor(QColor("#07b913"));
     ok_btn->setIconHoverColor(QColor("#07b913"));

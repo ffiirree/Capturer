@@ -83,121 +83,122 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="232"/>
+        <location filename="../src/core/imagewindow.cpp" line="214"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="247"/>
+        <location filename="../src/core/imagewindow.cpp" line="229"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="280"/>
+        <location filename="../src/core/imagewindow.cpp" line="262"/>
         <source>Copy image</source>
         <translation>复制图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="281"/>
+        <location filename="../src/core/imagewindow.cpp" line="263"/>
         <source>Paste image</source>
         <translation>粘贴图片</translation>
     </message>
     <message>
+        <location filename="../src/core/imagewindow.cpp" line="267"/>
         <source>Edit</source>
-        <translation type="vanished">编辑</translation>
+        <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="297"/>
+        <location filename="../src/core/imagewindow.cpp" line="282"/>
         <source>Open image...</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="298"/>
+        <location filename="../src/core/imagewindow.cpp" line="283"/>
         <source>Save as...</source>
         <translation>另存为...</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="312"/>
+        <location filename="../src/core/imagewindow.cpp" line="297"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="303"/>
+        <location filename="../src/core/imagewindow.cpp" line="288"/>
         <source>Rotate 90</source>
         <translation>顺时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="302"/>
+        <location filename="../src/core/imagewindow.cpp" line="287"/>
         <source>Grayscale</source>
         <translation>灰阶</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="304"/>
+        <location filename="../src/core/imagewindow.cpp" line="289"/>
         <source>Rotate -90</source>
         <translation>逆时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="305"/>
+        <location filename="../src/core/imagewindow.cpp" line="290"/>
         <source>Flip H</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="306"/>
+        <location filename="../src/core/imagewindow.cpp" line="291"/>
         <source>Flip V</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="310"/>
+        <location filename="../src/core/imagewindow.cpp" line="295"/>
         <source>Background</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="311"/>
+        <location filename="../src/core/imagewindow.cpp" line="296"/>
         <source>White</source>
         <translation>白色</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="313"/>
+        <location filename="../src/core/imagewindow.cpp" line="298"/>
         <source>Black</source>
         <translation>黑色</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="314"/>
+        <location filename="../src/core/imagewindow.cpp" line="299"/>
         <source>Transparent</source>
         <translation>透明</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="316"/>
+        <location filename="../src/core/imagewindow.cpp" line="301"/>
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="316"/>
+        <location filename="../src/core/imagewindow.cpp" line="301"/>
         <source>Hide </source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="316"/>
+        <location filename="../src/core/imagewindow.cpp" line="301"/>
         <source>Show </source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="317"/>
+        <location filename="../src/core/imagewindow.cpp" line="302"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="318"/>
+        <location filename="../src/core/imagewindow.cpp" line="303"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="319"/>
+        <location filename="../src/core/imagewindow.cpp" line="304"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="323"/>
+        <location filename="../src/core/imagewindow.cpp" line="308"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
@@ -213,7 +214,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="706"/>
+        <location filename="../src/snip/screenshoter.cpp" line="700"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>

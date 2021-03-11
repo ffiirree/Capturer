@@ -582,19 +582,13 @@ void ScreenShoter::updateCanvas()
 
     switch (modified_) {
     case PaintType::DRAW_FINISHED:
-        if(focus_cmd_ == nullptr) {
-            LOG(ERROR) << "nullptr";
-            return;
-        }
+        CHECK(focus_cmd_);
 
         focus_cmd_->repaint(&painter_);
         break;
 
     case PaintType::DRAW_MODIFIED:
-        if(focus_cmd_ == nullptr) {
-            LOG(ERROR) << "nullptr";
-            return;
-        }
+        CHECK(focus_cmd_);
 
         focus_cmd_->draw_modified(&painter_);
         break;
