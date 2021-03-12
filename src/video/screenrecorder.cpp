@@ -22,7 +22,7 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
 
 void ScreenRecorder::record()
 {
-    status_ == INITIAL ? start() : exit();
+    status_ == SelectorStatus::INITIAL ? start() : exit();
 }
 
 void ScreenRecorder::start()
@@ -35,7 +35,7 @@ void ScreenRecorder::setup()
 {
     menu_->start();
 
-    status_ = LOCKED;
+    status_ = SelectorStatus::LOCKED;
     hide();
 
     auto native_movies_path = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);

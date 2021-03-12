@@ -16,14 +16,14 @@ GifCapturer::GifCapturer(QWidget * parent)
 
 void GifCapturer::record()
 {
-    status_ == INITIAL ? start() : exit();
+    status_ == SelectorStatus::INITIAL ? start() : exit();
 }
 
 void GifCapturer::setup()
 {
     record_menu_->start();
 
-    status_ = LOCKED;
+    status_ = SelectorStatus::LOCKED;
     hide();
 
     auto native_pictures_path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);

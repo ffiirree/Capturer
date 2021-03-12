@@ -29,8 +29,8 @@ Selector::Selector(QWidget * parent)
 
 void Selector::start()
 {
-    if(status_ == INITIAL) {
-        status_ = NORMAL;
+    if(status_ == SelectorStatus::INITIAL) {
+        status_ = SelectorStatus::NORMAL;
         setMouseTracking(true);
 
         if(use_detect_) {
@@ -46,7 +46,7 @@ void Selector::start()
 
 void Selector::exit()
 {
-    status_ = INITIAL;
+    status_ = SelectorStatus::INITIAL;
     info_->hide();
 
     setMouseTracking(false);
@@ -58,33 +58,33 @@ void Selector::mousePressEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
 
-    if(event->button() == Qt::LeftButton && status_ != LOCKED) {
+    if(event->button() == Qt::LeftButton && status_ != SelectorStatus::LOCKED) {
         cursor_pos_ = box_.absolutePos(pos);
 
         switch (status_) {
-        case NORMAL:
+        case SelectorStatus::NORMAL:
             box_.reset(pos, pos);
             info_->show();
 
-            status_ = SELECTING;
+            status_ = SelectorStatus::SELECTING;
             break;
 
-        case CAPTURED:
+        case SelectorStatus::CAPTURED:
             if(cursor_pos_ == Resizer::INSIDE) {
                 mbegin_ = mend_ = pos;
 
-                status_ = MOVING;
+                status_ = SelectorStatus::MOVING;
             }
             else if(cursor_pos_ & Resizer::ADJUST_AREA){
                 rbegin_ = rend_ = pos;
 
-                status_ = RESIZING;
+                status_ = SelectorStatus::RESIZING;
             }
             break;
 
-        case SELECTING:
-        case MOVING:
-        case RESIZING:
+        case SelectorStatus::SELECTING:
+        case SelectorStatus::MOVING:
+        case SelectorStatus::RESIZING:
         default: LOG(ERROR) << "error status"; break;
         }
     }
@@ -95,7 +95,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     auto mouse_pos = event->pos();
 
     switch (status_) {
-    case NORMAL:
+    case SelectorStatus::NORMAL:
 		if (use_detect_) {
 			box_.reset(DetectWidgets::window());
             update();
@@ -103,15 +103,15 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
 		setCursor(Qt::CrossCursor);
 		break;
 
-    case SELECTING:
+    case SelectorStatus::SELECTING:
         box_.x2(mouse_pos.x());
         box_.y2(mouse_pos.y());
 
-        status_ = SELECTING;
+        status_ = SelectorStatus::SELECTING;
         update();
         break;
 
-    case CAPTURED:
+    case SelectorStatus::CAPTURED:
         switch (box_.relativePos(mouse_pos)) {
         case Resizer::INSIDE:  setCursor(Qt::SizeAllCursor); break;
         case Resizer::OUTSIDE: setCursor(Qt::ForbiddenCursor); break;
@@ -134,7 +134,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         }
         break;
 
-    case MOVING:
+    case SelectorStatus::MOVING:
         mend_ = mouse_pos;
         updateSelected();
         mbegin_ = mouse_pos;
@@ -145,7 +145,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         setCursor(Qt::SizeAllCursor);
         break;
 
-    case RESIZING:
+    case SelectorStatus::RESIZING:
         rend_ = mouse_pos;
         updateSelected();
         rbegin_ = mouse_pos;
@@ -154,7 +154,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         emit resized();
         break;
 
-    case LOCKED:
+    case SelectorStatus::LOCKED:
     default: break;
     }
 }
@@ -163,35 +163,21 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton) {
         switch (status_) {
-        case NORMAL:break;
-        case SELECTING:
+        case SelectorStatus::NORMAL:break;
+        case SelectorStatus::SELECTING:
             // detected window
             if(box_.width() == 1 && box_.height() == 1 && use_detect_) {
                 box_.reset(DetectWidgets::window());
             }
             CAPTURED();
             break;
-        case MOVING:
-        case RESIZING:  CAPTURED(); break;
-        case CAPTURED:
-        case LOCKED:
+        case SelectorStatus::MOVING:
+        case SelectorStatus::RESIZING:  CAPTURED(); break;
+        case SelectorStatus::CAPTURED:
+        case SelectorStatus::LOCKED:
         default: break;
         }
     }
-}
-
-void Selector::drawSelector(QPainter *painter, const Resizer& resizer)
-{
-    painter->setRenderHint(QPainter::Antialiasing, false);
-    painter->setBrush(Qt::NoBrush);
-
-    // box border
-    painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
-    painter->drawRect(resizer.rect());
-
-    // anchors
-    painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
-    painter->drawRects(resizer.anchors());
 }
 
 void Selector::paintEvent(QPaintEvent *)
@@ -209,7 +195,7 @@ void Selector::paintEvent(QPaintEvent *)
 
     painter_.restore();
 
-    if(use_detect_ || status_ > NORMAL) {
+    if(use_detect_ || status_ > SelectorStatus::NORMAL) {
         // info
         info_->size(selected().size());
         auto info_y = box_.top() - info_->geometry().height();
@@ -234,10 +220,10 @@ void Selector::paintEvent(QPaintEvent *)
 
 void Selector::updateSelected()
 {
-    if(status_ == MOVING) {
+    if(status_ == SelectorStatus::MOVING) {
         box_.move(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
     }
-    else if(status_ == RESIZING) {
+    else if(status_ == SelectorStatus::RESIZING) {
         auto diff_x = rend_.x() - rbegin_.x();
         auto diff_y = rend_.y() - rbegin_.y();
 
@@ -259,7 +245,7 @@ void Selector::updateSelected()
 
 void Selector::moveSelectedBox(int x, int y)
 {
-    if(status_ == CAPTURED) {
+    if(status_ == SelectorStatus::CAPTURED) {
         box_.move(x, y);
         emit moved();
     }
@@ -283,28 +269,28 @@ void Selector::registerShortcuts()
     // resize
     // increase
     connect(new QShortcut(Qt::CTRL + Qt::Key_Up, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rtop() = std::max(box_.top() - 1, 0);
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_Down, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rbottom() = std::min(box_.bottom() + 1, height());
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_Left, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rleft() = std::max(box_.left() - 1, 0);
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_Right, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rright() = std::min(box_.right() + 1, width());
             emit resized();
         }
@@ -312,35 +298,35 @@ void Selector::registerShortcuts()
 
     // decrease
     connect(new QShortcut(Qt::SHIFT + Qt::Key_Up, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rtop() = std::min(box_.top() + 1, box_.bottom());
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::SHIFT + Qt::Key_Down, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rbottom() = std::max(box_.bottom() - 1, box_.top());
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::SHIFT + Qt::Key_Left, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rleft() = std::min(box_.left() + 1, box_.right());
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::SHIFT + Qt::Key_Right, this), &QShortcut::activated, [this]() {
-        if(status_ == CAPTURED) {
+        if(status_ == SelectorStatus::CAPTURED) {
             box_.rright() = std::max(box_.right() - 1, box_.left());
             emit resized();
         }
     });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_A, this), &QShortcut::activated, [this]() {
-        if(status_ <= CAPTURED) {
+        if(status_ <= SelectorStatus::CAPTURED) {
             box_.reset(rect());
             emit resized();
             CAPTURED();

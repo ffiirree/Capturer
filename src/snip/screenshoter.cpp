@@ -28,17 +28,15 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &ImageEditMenu::undo, this, &ScreenShoter::undo);
     connect(menu_, &ImageEditMenu::redo, this, &ScreenShoter::redo);
 
-    connect(menu_, &ImageEditMenu::paint, [this](Graph graph) {
+    connect(menu_, &ImageEditMenu::graphChanged, [this](Graph graph) {
         switch (graph) {
         case Graph::NONE:
             edit_status_ = EditStatus::NONE;
-            if(commands_.empty())
-                CAPTURED();
             focusOn(nullptr);
             break;
 
         default:
-            edit_status_ = (edit_status_ & 0xffff0000) | graph;
+            edit_status_ = (edit_status_ & (~GRAPH_MASK)) | graph;
             LOCKED();
             focusOn((focus_cmd_ && focus_cmd_->graph() == graph) ? focus_cmd_ : nullptr);
             break;
@@ -48,45 +46,35 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(this, &ScreenShoter::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
 
     // attrs changed
-    connect(menu_, &ImageEditMenu::changed, [this](Graph graph){
+    connect(menu_, &ImageEditMenu::styleChanged, [this](Graph graph) {
         if(focus_cmd_ && focus_cmd_->graph() == graph) {
             switch (graph) {
             case Graph::ERASER:
-            case Graph::MOSAIC: break;
+            case Graph::MOSAIC: 
+                circle_cursor_.setWidth(menu_->pen(graph).width());
+                setCursor(QCursor(circle_cursor_.cursor()));
+                break;
+
+            case TEXT:
+                focus_cmd_->font(menu_->font(Graph::TEXT));
             default:
                 focus_cmd_->pen(menu_->pen(graph));
                 focus_cmd_->setFill(menu_->fill(graph));
                 break;
             }
         }
-
-        // change the cursor
-        if(graph == Graph::ERASER || graph == Graph::MOSAIC) {
-            circle_cursor_.setWidth(menu_->pen(graph).width());
-            setCursor(QCursor(circle_cursor_.cursor()));
-        }
-
-        if(focus_cmd_ && focus_cmd_->graph() == graph && graph == Graph::TEXT) {
-            focus_cmd_->font(menu_->font(Graph::TEXT));
-        }
     });
 
     // repaint when stack changed
     connect(&commands_, &CommandStack::increased, [this]() { modified(PaintType::DRAW_FINISHED); });
     connect(&commands_, &CommandStack::decreased, [this]() { modified(PaintType::REPAINT_ALL); });
-    connect(&commands_, &CommandStack::emptied, [this](bool empty) {
-        if(empty) CAPTURED(); else LOCKED();
-    });
 
     // disable redo/undo
     connect(&commands_, &CommandStack::emptied, menu_, &ImageEditMenu::disableUndo);
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 
     // show menu
-    connect(this, &ScreenShoter::captured, [this](){ /*LOG(INFO) << "captured";*/ menu_->show(); moveMenu(); });
-
-    // reset menu
-    connect(&commands_, &CommandStack::emptied, [this](bool empty) { if(empty) menu_->reset(); });
+    connect(this, &ScreenShoter::captured, [this](){ menu_->show(); moveMenu(); });
 
     // move menu
     connect(this, &ScreenShoter::moved, this, &ScreenShoter::moveMenu);
@@ -98,7 +86,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
 void ScreenShoter::start()
 {
-    if(status_ != INITIAL) return;
+    if(status_ != SelectorStatus::INITIAL) return;
 
     auto virtual_geometry = QGuiApplication::primaryScreen()->virtualGeometry();
     captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId(),
@@ -162,7 +150,7 @@ bool ScreenShoter::eventFilter(QObject * obj, QEvent * event)
         switch (event->type())
         {
         case QEvent::KeyPress:      keyPressEvent(static_cast<QKeyEvent*>(event));  return true;
-        case QEvent::KeyRelease:    keyPressEvent(static_cast<QKeyEvent*>(event));  return true;
+        case QEvent::KeyRelease:    keyReleaseEvent(static_cast<QKeyEvent*>(event));return true;
         default:                                                                    return Selector::eventFilter(obj, event);
         }
     }
@@ -178,7 +166,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     auto mouse_pos = event->pos();
 
-    if(status_ == LOCKED) {
+    if(status_ == SelectorStatus::LOCKED) {
         // Border => move
         if((hover_position_ & Resizer::BORDER) && hover_cmd_ && hover_cmd_->visible()) {
             move_begin_ = mouse_pos;
@@ -238,7 +226,6 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         }
 
         if(hover_cmd_) {
-            hover_cmd_->visible(true);
             focusOn(hover_cmd_);
             modified(PaintType::DRAW_MODIFYING);
             connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
@@ -250,7 +237,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
-    if (status_ == LOCKED) {
+    if (status_ == SelectorStatus::LOCKED) {
         if (event->buttons() & Qt::LeftButton) {
             auto mouse_pos = event->pos();
 
@@ -278,7 +265,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
             circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
             setCursor(QCursor(circle_cursor_.cursor()));
         }
-        else if (event->buttons() == Qt::NoButton && status_ == LOCKED) {
+        else if (event->buttons() == Qt::NoButton && status_ == SelectorStatus::LOCKED) {
             updateHoverPos(event->pos());
             setCursorByHoverPos(hover_position_);
         }
@@ -291,7 +278,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton
-        && status_ == LOCKED
+        && status_ == SelectorStatus::LOCKED
         && edit_status_ != EditStatus::NONE) {
 
         if(!focus_cmd_) LOG(ERROR) << "Focused cmd is nullptr!";
@@ -317,10 +304,10 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 }
 void ScreenShoter::keyPressEvent(QKeyEvent* event)
 {
-    if (status_ == LOCKED
+    if (status_ == SelectorStatus::LOCKED
         && event->key() == Qt::Key_Space && !event->isAutoRepeat()
         && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size())) {
-        status_ = CAPTURED;
+        status_ = SelectorStatus::CAPTURED;
     }
 
     Selector::keyPressEvent(event);
@@ -328,11 +315,13 @@ void ScreenShoter::keyPressEvent(QKeyEvent* event)
 
 void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 {
+    // move selector while editing
     if (event->key() == Qt::Key_Space && !event->isAutoRepeat()
         && ((edit_status_ & GRAPH_MASK) != 0 || commands_.size())) {
-        status_ = LOCKED;
+        status_ = SelectorStatus::LOCKED;
     }
 
+    // regularize
     if (event->key() == Qt::Key_Shift 
         && focus_cmd_
         && ((edit_status_ & OPERATION_MASK) == 0)) {
@@ -341,54 +330,19 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
         {
         case Graph::CIRCLE:
         case Graph::RECTANGLE:
-        {
-            auto resizer = focus_cmd_->resizer();
-            int width = std::sqrt(resizer.width() * resizer.height());
-            auto rect = QRect(QPoint{ 0, 0 }, QPoint{ width, width });
-            rect.moveCenter(resizer.rect().center());
-
-            focus_cmd_->visible(false);
-            hover_cmd_ = make_shared<PaintCommand>(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill(), rect.topLeft());
-            hover_cmd_->push_point(rect.bottomRight());
-            hover_cmd_->previous(focus_cmd_);
-            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
-            
-            focusOn(hover_cmd_);
-            commands_.push(hover_cmd_);
-            redo_stack_.clear();
-            
-            break;
-        }
         case Graph::LINE:
         case Graph::ARROW:
-        {
-            auto resizer = focus_cmd_->resizer();
-            auto p1 = resizer.point1();
-            auto p2 = resizer.point2();
+            HIDE_AND_COPY_CMD(focus_cmd_);
+            focus_cmd_->regularize();
+            focusOn(focus_cmd_);
+            connect(focus_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
 
-            auto theta = std::atan((double)std::abs(p1.x() - p2.x()) / std::abs(p1.y() - p2.y())) * 180.0 / 3.1415926;
-
-            if (theta > 80) {
-                p2.setY(p1.y());
-            }
-            else if (theta < 20) {
-                p2.setX(p1.x());
-            }
-
-            focus_cmd_->visible(false);
-            hover_cmd_ = make_shared<PaintCommand>(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill(), p1);
-            hover_cmd_->push_point(p2);
-            hover_cmd_->previous(focus_cmd_);
-            connect(hover_cmd_.get(), &PaintCommand::modified, this, &ScreenShoter::modified);
-
-            focusOn(hover_cmd_);
-            commands_.push(hover_cmd_);
+            commands_.push(focus_cmd_);
             redo_stack_.clear();
-
+            
             break;
-        }
-        default:
-            break;
+        
+        default: break;
         }
     }
 
@@ -409,7 +363,7 @@ void ScreenShoter::wheelEvent(QWheelEvent * event)
 
 void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if(event->button() == Qt::LeftButton && status_ >= CAPTURED) {
+    if(event->button() == Qt::LeftButton && status_ >= SelectorStatus::CAPTURED) {
         snipped();
 
         exit();
@@ -421,10 +375,11 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 void ScreenShoter::updateHoverPos(const QPoint& pos)
 {
     hover_position_ = Resizer::DEFAULT;
-    hover_cmd_ = shared_ptr<PaintCommand>(nullptr);
+    hover_cmd_ = nullptr;
 
     for(auto& command: commands_.commands()) {
         if(!command->visible()) continue;
+
         switch (command->graph()) {
         case Graph::RECTANGLE:
         {
@@ -558,7 +513,7 @@ void ScreenShoter::moveMenu()
 
 void ScreenShoter::moveMagnifier()
 {
-    if(status_ < CAPTURED || status_ == RESIZING) {
+    if(status_ < SelectorStatus::CAPTURED || status_ == SelectorStatus::RESIZING) {
         magnifier_->pixmap(captured_screen_.copy(magnifier_->mrect()));
         magnifier_->show();
         magnifier_->move(QCursor::pos().x() + 10, QCursor::pos().y() + 10);
@@ -569,7 +524,7 @@ void ScreenShoter::moveMagnifier()
 
 QImage ScreenShoter::mosaic(const QImage& _image)
 {
-    return _image.copy()
+    return _image
             .scaled(_image.width() / 9, _image.height() / 9, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
             .scaled(_image.width(), _image.height());
 }
@@ -614,56 +569,13 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     painter_.begin(this);
     painter_.drawPixmap(0, 0, canvas_);
 
-    if(modified_ == PaintType::DRAW_MODIFYING || modified_ == PaintType::REPAINT_ALL) {
-        if(focus_cmd_) {
-            focus_cmd_->draw_modified(&painter_);
-        }
-    }
-
     //
     if(focus_cmd_ != nullptr && focus_cmd_->visible()) {
-        painter_.save();
-        switch (focus_cmd_->graph()) {
-        case Graph::RECTANGLE:
-        case Graph::ELLIPSE:
-            drawSelector(&painter_, focus_cmd_->resizer());
-            break;
-
-        case Graph::LINE:
-        case Graph::ARROW:
-            painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
-            painter_.setRenderHint(QPainter::Antialiasing, true);
-            painter_.drawLine(focus_cmd_->resizer().point1(), focus_cmd_->resizer().point2());
-
-            painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-            painter_.drawRect(focus_cmd_->resizer().X1Y1Anchor());
-            painter_.drawRect(focus_cmd_->resizer().X2Y2Anchor());
-            break;
-
-        case Graph::TEXT:
-        {
-            Resizer resizer(focus_cmd_->geometry().adjusted(-5, -5, 5, 5));
-
-            painter_.save();
-            painter_.setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
-            painter_.setRenderHint(QPainter::Antialiasing, true);
-            painter_.setBrush(Qt::white);
-            painter_.drawEllipse(resizer.rotateAnchor());
-            painter_.restore();
-
-            // box border
-            painter_.setPen(QPen(Qt::black, 1, Qt::DashLine));
-            painter_.drawRect(resizer.rect());
-
-            // anchors
-            painter_.setPen(QPen(Qt::black, 1, Qt::SolidLine));
-            painter_.drawRects(resizer.cornerAnchors());
-            break;
+        if (modified_ == PaintType::DRAW_MODIFYING || modified_ == PaintType::REPAINT_ALL) {
+            focus_cmd_->draw_modified(&painter_);
         }
 
-        default: break;
-        }
-        painter_.restore();
+        focus_cmd_->drawAnchors(&painter_);
     }
     painter_.end();
 
@@ -738,13 +650,13 @@ void ScreenShoter::pin()
 void ScreenShoter::registerShortcuts()
 {
     connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, [this](){
-        if(status_ == CAPTURED || status_ == LOCKED) {
+        if(status_ == SelectorStatus::CAPTURED || status_ == SelectorStatus::LOCKED) {
             save();
         }
     });
 
     connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this](){
-        if(status_ == CAPTURED || status_ == LOCKED) {
+        if(status_ == SelectorStatus::CAPTURED || status_ == SelectorStatus::LOCKED) {
             pin();
         }
     });
@@ -793,7 +705,7 @@ void ScreenShoter::registerShortcuts()
     });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [=](){
-        if(status_ < CAPTURED) {
+        if(status_ < SelectorStatus::CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
         else {
@@ -814,7 +726,7 @@ void ScreenShoter::registerShortcuts()
     });
 
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, [=](){
-        if(status_ >= CAPTURED && focus_cmd_) {
+        if(status_ >= SelectorStatus::CAPTURED && focus_cmd_) {
             HIDE_AND_COPY_CMD(focus_cmd_);
             commands_.push(focus_cmd_);
             redo_stack_.clear();

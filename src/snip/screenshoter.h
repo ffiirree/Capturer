@@ -17,13 +17,14 @@
             pre_cmd->visible(false);                     \
             CMD = make_shared<PaintCommand>(*pre_cmd);   \
             CMD->previous(pre_cmd);                      \
+            CMD->visible(true);                          \
         )
 
 class ScreenShoter : public Selector
 {
     Q_OBJECT
 public:
-    enum EditStatus: std::uint32_t {
+    enum EditStatus: uint32_t {
         NONE            = 0x00000000,
         READY           = 0x00010000,
         GRAPH_CREATING  = 0x00100000,
@@ -101,7 +102,7 @@ private:
     shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
     shared_ptr<PaintCommand> copied_cmd_ = nullptr;   // copied
 
-    std::uint32_t edit_status_ = EditStatus::NONE;
+    uint32_t edit_status_ = EditStatus::NONE;
 
     ImageEditMenu * menu_ = nullptr;
     Magnifier * magnifier_ = nullptr;
@@ -121,7 +122,7 @@ private:
         CommandStack commands_;
     };
 
-    std::vector<History> history_;
+    vector<History> history_;
     size_t history_idx_ = 0;
 };
 

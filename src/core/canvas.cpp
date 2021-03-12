@@ -17,7 +17,7 @@ Canvas::Canvas(QWidget *parent)
     connect(menu_, &ImageEditMenu::redo, this, &Canvas::redo);
 
 
-    connect(menu_, &ImageEditMenu::paint, [this](Graph graph) {
+    connect(menu_, &ImageEditMenu::graphChanged, [this](Graph graph) {
         switch (graph) {
         case Graph::NONE:
             edit_status_ = EditStatus::NONE;
@@ -37,7 +37,7 @@ Canvas::Canvas(QWidget *parent)
     //connect(this, &ScreenShoter::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
 
     // attrs changed
-    connect(menu_, &ImageEditMenu::changed, [this](Graph graph) {
+    connect(menu_, &ImageEditMenu::styleChanged, [this](Graph graph) {
         if (focus_cmd_ && focus_cmd_->graph() == graph) {
             switch (graph) {
             case Graph::ERASER:

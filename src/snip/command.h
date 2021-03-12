@@ -72,8 +72,11 @@ public:
     inline void widget(TextEdit * widget) { widget_ = widget; }
     inline TextEdit * widget() const { return widget_; }
 
+    void drawAnchors(QPainter*);
     void draw_modified(QPainter *);
     void repaint(QPainter *);
+
+    void regularize();
 
     QRect rect() { return resizer_.rect(); }
     QSize size() { return rect().size(); }

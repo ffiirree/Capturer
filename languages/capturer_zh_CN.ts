@@ -6,27 +6,27 @@
     <message>
         <location filename="../src/capturer.cpp" line="94"/>
         <source>Snip</source>
-        <translation>截图</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/capturer.cpp" line="95"/>
         <source>Screen Record</source>
-        <translation>录屏</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/capturer.cpp" line="96"/>
         <source>GIF Record</source>
-        <translation>录GIF</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/capturer.cpp" line="98"/>
         <source>Settings</source>
-        <translation>设置</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/capturer.cpp" line="100"/>
         <source>Quit</source>
-        <translation>退出</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -34,7 +34,7 @@
     <message>
         <location filename="../src/gif/gifcapturer.cpp" line="80"/>
         <source>Path: </source>
-        <translation>路径：</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -42,165 +42,165 @@
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="37"/>
         <source>Rectangle</source>
-        <translation>矩形</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="46"/>
         <source>Ellipse</source>
-        <translation>椭圆</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="55"/>
         <source>Arrow</source>
-        <translation>箭头</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="64"/>
         <source>Line</source>
-        <translation>直线</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="73"/>
         <source>Pencil</source>
-        <translation>画笔</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="82"/>
         <source>Text</source>
-        <translation>文本</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="91"/>
         <source>Mosaic</source>
-        <translation>马赛克</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="100"/>
         <source>Eraser</source>
-        <translation>橡皮擦</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="214"/>
+        <location filename="../src/core/imagewindow.cpp" line="206"/>
         <source>Open Image</source>
-        <translation>打开图片</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="229"/>
+        <location filename="../src/core/imagewindow.cpp" line="221"/>
         <source>Save Image</source>
-        <translation>保存图片</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="262"/>
+        <location filename="../src/core/imagewindow.cpp" line="254"/>
         <source>Copy image</source>
-        <translation>复制图片</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="263"/>
+        <location filename="../src/core/imagewindow.cpp" line="255"/>
         <source>Paste image</source>
-        <translation>粘贴图片</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="267"/>
+        <location filename="../src/core/imagewindow.cpp" line="259"/>
         <source>Edit</source>
-        <translation>编辑</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="274"/>
+        <source>Open image...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="275"/>
+        <source>Save as...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="279"/>
+        <source>Grayscale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="280"/>
+        <source>Rotate 90</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="281"/>
+        <source>Rotate -90</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="282"/>
-        <source>Open image...</source>
-        <translation>打开图片</translation>
+        <source>Flip H</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="283"/>
-        <source>Save as...</source>
-        <translation>另存为...</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="297"/>
-        <source>Gray</source>
-        <translation>灰色</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="288"/>
-        <source>Rotate 90</source>
-        <translation>顺时针旋转90°</translation>
+        <source>Flip V</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="287"/>
-        <source>Grayscale</source>
-        <translation>灰阶</translation>
+        <source>Background</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="288"/>
+        <source>White</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="289"/>
-        <source>Rotate -90</source>
-        <translation>逆时针旋转90°</translation>
+        <source>Gray</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="290"/>
-        <source>Flip H</source>
-        <translation>水平翻转</translation>
+        <source>Black</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="291"/>
-        <source>Flip V</source>
-        <translation>垂直翻转</translation>
+        <source>Transparent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="293"/>
+        <source>Hide </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="293"/>
+        <source>Show </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="293"/>
+        <source>Shadow</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/core/imagewindow.cpp" line="294"/>
+        <source>Zoom : </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="295"/>
-        <source>Background</source>
-        <translation>背景色</translation>
+        <source>Opacity : </source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/core/imagewindow.cpp" line="296"/>
-        <source>White</source>
-        <translation>白色</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="298"/>
-        <source>Black</source>
-        <translation>黑色</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="299"/>
-        <source>Transparent</source>
-        <translation>透明</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="301"/>
-        <source>Shadow</source>
-        <translation>阴影</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="301"/>
-        <source>Hide </source>
-        <translation>隐藏</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="301"/>
-        <source>Show </source>
-        <translation>显示</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="302"/>
-        <source>Zoom : </source>
-        <translation>缩放 ：</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="303"/>
-        <source>Opacity : </source>
-        <translation>透明度 ：</translation>
-    </message>
-    <message>
-        <location filename="../src/core/imagewindow.cpp" line="304"/>
         <source>Recover</source>
-        <translation>复原</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="308"/>
+        <location filename="../src/core/imagewindow.cpp" line="300"/>
         <source>Close</source>
-        <translation>关闭</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -208,15 +208,15 @@
     <message>
         <location filename="../src/video/screenrecorder.cpp" line="81"/>
         <source>Path: </source>
-        <translation>路径：</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="700"/>
+        <location filename="../src/snip/screenshoter.cpp" line="612"/>
         <source>Save Image</source>
-        <translation>保存图片</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -224,126 +224,126 @@
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="50"/>
         <source>Settings</source>
-        <translation>设置</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="72"/>
         <source>General</source>
-        <translation>通用</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="78"/>
         <source>Run on startup</source>
-        <translation>开机启动</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="100"/>
         <source>Language</source>
-        <translation>语言</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="106"/>
         <source>Settings file</source>
-        <translation>设置文件</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="115"/>
         <location filename="../src/setting/settingdialog.cpp" line="288"/>
         <source>Screenshot</source>
-        <translation>截图</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="120"/>
         <location filename="../src/setting/settingdialog.cpp" line="164"/>
         <location filename="../src/setting/settingdialog.cpp" line="223"/>
         <source>Apperance:</source>
-        <translation>界面:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="129"/>
         <location filename="../src/setting/settingdialog.cpp" line="173"/>
         <location filename="../src/setting/settingdialog.cpp" line="232"/>
         <source>Border width</source>
-        <translation>边框宽度</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="134"/>
         <location filename="../src/setting/settingdialog.cpp" line="178"/>
         <location filename="../src/setting/settingdialog.cpp" line="238"/>
         <source>Border color</source>
-        <translation>边框颜色</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="145"/>
         <location filename="../src/setting/settingdialog.cpp" line="189"/>
         <location filename="../src/setting/settingdialog.cpp" line="249"/>
         <source>Line type</source>
-        <translation>线段类型</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="150"/>
         <location filename="../src/setting/settingdialog.cpp" line="194"/>
         <location filename="../src/setting/settingdialog.cpp" line="254"/>
         <source>Mask color</source>
-        <translation>遮罩颜色</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="159"/>
         <source>Screen recording</source>
-        <translation>录屏</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="199"/>
         <location filename="../src/setting/settingdialog.cpp" line="258"/>
         <source>Params:</source>
-        <translation>参数:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="208"/>
         <location filename="../src/setting/settingdialog.cpp" line="267"/>
         <source>Framerate</source>
-        <translation>帧率</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="218"/>
         <location filename="../src/setting/settingdialog.cpp" line="316"/>
         <source>Gif recording</source>
-        <translation>录GIF</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="277"/>
         <source>Shortcuts</source>
-        <translation>快捷键</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="295"/>
         <source>Paste</source>
-        <translation>粘贴</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="302"/>
         <source>Hide/Show all images</source>
-        <translation>隐藏/显示全部贴图</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="309"/>
         <source>Video recording</source>
-        <translation>录制视频</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="325"/>
         <source>About</source>
-        <translation>关于</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="335"/>
         <source>Version</source>
-        <translation>版本</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="344"/>
         <source>Copyright © 2018 - 2021 ffiirree All rights reserved</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

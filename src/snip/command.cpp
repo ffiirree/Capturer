@@ -222,6 +222,63 @@ void PaintCommand::draw(QPainter *painter, bool modified)
     painter->restore();
 }
 
+void PaintCommand::drawAnchors(QPainter* painter)
+{
+    painter->save();
+
+    switch (graph()) {
+    case Graph::RECTANGLE:
+    case Graph::ELLIPSE:
+        painter->setRenderHint(QPainter::Antialiasing, false);
+        painter->setBrush(Qt::NoBrush);
+
+        // box border
+        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
+        painter->drawRect(resizer().rect());
+
+        // anchors
+        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        painter->drawRects(resizer().anchors());
+
+        break;
+
+    case Graph::LINE:
+    case Graph::ARROW:
+        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->drawLine(resizer().point1(), resizer().point2());
+
+        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        painter->drawRect(resizer().X1Y1Anchor());
+        painter->drawRect(resizer().X2Y2Anchor());
+        break;
+
+    case Graph::TEXT:
+    {
+        Resizer resizer(geometry().adjusted(-5, -5, 5, 5));
+
+        painter->save();
+        painter->setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setBrush(Qt::white);
+        painter->drawEllipse(resizer.rotateAnchor());
+        painter->restore();
+
+        // box border
+        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
+        painter->drawRect(resizer.rect());
+
+        // anchors
+        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        painter->drawRects(resizer.cornerAnchors());
+        break;
+    }
+
+    default: break;
+    }
+
+    painter->restore();
+}
 
 void PaintCommand::draw_modified(QPainter *painter)
 {
@@ -231,4 +288,48 @@ void PaintCommand::draw_modified(QPainter *painter)
 void PaintCommand::repaint(QPainter *painter)
 {
     draw(painter, false);
+}
+
+void PaintCommand::regularize()
+{
+    switch (graph())
+    {
+    case Graph::CIRCLE:
+    case Graph::RECTANGLE:
+    {
+        int width = std::sqrt(resizer_.width() * resizer_.height());
+        QRect rect{ QPoint{ 0, 0 }, QPoint{ width, width } };
+        rect.moveCenter(resizer_.rect().center());
+
+        resizer_.rx1() = rect.topLeft().x();
+        resizer_.ry1() = rect.topLeft().y();
+        resizer_.rx2() = rect.bottomRight().x();
+        resizer_.ry2() = rect.bottomRight().y();
+
+        break;
+    }
+    case Graph::LINE:
+    case Graph::ARROW:
+    {
+        auto p1 = resizer_.point1();
+        auto p2 = resizer_.point2();
+
+        auto theta = std::atan((double)std::abs(p1.x() - p2.x()) / std::abs(p1.y() - p2.y())) * 180.0 / 3.1415926;
+
+        if (theta > 80) {
+            p2.setY(p1.y());
+        }
+        else if (theta < 20) {
+            p2.setX(p1.x());
+        }
+
+        resizer_.rx1() = p1.x();
+        resizer_.ry1() = p1.y();
+        resizer_.rx2() = p2.x();
+        resizer_.ry2() = p2.y();
+
+        break;
+    }
+    default: break;
+    }
 }

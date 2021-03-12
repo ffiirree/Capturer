@@ -9,15 +9,15 @@
 #include "resizer.h"
 #include "displayinfo.h"
 
-#define LOCKED()            do{ status_ = LOCKED; emit locked(); } while(0)
-#define CAPTURED()          do{ status_ = CAPTURED; emit captured(); update(); } while(0)
+#define LOCKED()            do{ status_ = SelectorStatus::LOCKED; emit locked(); } while(0)
+#define CAPTURED()          do{ status_ = SelectorStatus::CAPTURED; emit captured(); update(); } while(0)
 
 class Selector : public QWidget
 {
     Q_OBJECT
 
 public:
-    enum Status {
+    enum class SelectorStatus {
         INITIAL,
         NORMAL,
         SELECTING,
@@ -41,8 +41,6 @@ public slots:
 
     virtual void exit();
 
-    static void drawSelector(QPainter *, const Resizer&);
-
     void updateTheme(json& setting);
 
 signals:
@@ -63,7 +61,7 @@ protected:
     void updateSelected();
 
     QPainter painter_;
-    Status status_ = INITIAL;
+    SelectorStatus status_ = SelectorStatus::INITIAL;
     Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
 
     // move

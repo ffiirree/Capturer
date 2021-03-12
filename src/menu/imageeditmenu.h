@@ -37,12 +37,11 @@ signals:
     void ok();
     void exit();
 
-    void paint(Graph);          // start painting
+    void graphChanged(Graph);          // start painting
+    void styleChanged(Graph);          // the style changed
 
     void undo();
     void redo();
-
-    void changed(Graph);        // the style changed
 
 public slots:
     void disableUndo(bool val) { undo_btn_->setDisabled(val); }
