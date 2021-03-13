@@ -26,12 +26,22 @@ ImageWindow::ImageWindow(QWidget *parent)
     effect_->setColor(QColor("#409eff"));
     setGraphicsEffect(effect_);
 
-    registerShortcuts();
-
     canvas_ = new Canvas(this);
+    installEventFilter(canvas_);
     menu_ = canvas_->menu_;
-    connect(canvas_, &Canvas::close, [this]() { setMouseTracking(false); pixmap_ = canvas_->canvas().copy(); editing_ = false; QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size())); });
-    connect(canvas_, &Canvas::changed, [this]() { QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size())); });
+    connect(menu_, &ImageEditMenu::save, this, &ImageWindow::saveAs);
+    connect(canvas_, &Canvas::closed, [this]() { 
+        setMouseTracking(false); 
+        QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size()));
+        pixmap_ = canvas_->canvas().copy();
+        canvas_->disable();
+        editing_ = false;
+    });
+    connect(canvas_, &Canvas::changed, [this]() { 
+        QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size())); 
+    });
+
+    registerShortcuts();
 }
 
 void ImageWindow::image(const QPixmap& image)
@@ -77,6 +87,11 @@ void ImageWindow::hide()
 {
     if (status_ == WindowStatus::SHOWED) {
         status_ = WindowStatus::HIDED;
+        setMouseTracking(false);
+        editing_ = false;
+        canvas_->disable();
+        menu_->reset();
+        menu_->hide();
         QWidget::hide(); 
     }
 }
@@ -84,11 +99,18 @@ void ImageWindow::hide()
 void ImageWindow::invisable()
 {
     status_ = WindowStatus::INVISABLE;
+    setMouseTracking(false);
+    editing_ = false;
+    canvas_->disable();
+    menu_->reset();
+    menu_->hide();
     QWidget::hide();
 }
 
 void ImageWindow::update(Modified type)
 {
+    if (editing_) return;
+
     switch (type)
     {
     case Modified::ROTATED:
@@ -141,19 +163,16 @@ QRect ImageWindow::getShadowGeometry(QSize _size)
 
 void ImageWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (editing_) {
-        canvas_->mousePressEvent(event);
-    }
-    else {
-        setCursor(Qt::SizeAllCursor);
-        window_move_begin_pos_ = event->globalPos();
-    }
+    if (editing_) return;
+
+
+    setCursor(Qt::SizeAllCursor);
+    window_move_begin_pos_ = event->globalPos();
 }
 
 void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 {
     if (editing_) {
-        canvas_->mouseMoveEvent(event);
         setCursor(canvas_->getCursorShape());
     }
     else {
@@ -164,7 +183,7 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 
 void ImageWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (editing_) canvas_->mouseReleaseEvent(event);
+    
 }
 
 void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
@@ -176,33 +195,28 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ImageWindow::wheelEvent(QWheelEvent *event)
 {
-    if (editing_) {
-        canvas_->wheelEvent(event);
+    if (editing_) return;
+
+    auto delta = (event->delta() / 12000.0);         // +/-1%
+
+    if (ctrl_) {
+        opacity_ += delta;
+        if (opacity_ < 0.01) opacity_ = 0.01;
+        if (opacity_ > 1.00) opacity_ = 1.00;
+
+        setWindowOpacity(opacity_);
     }
-    else {
-        auto delta = (event->delta() / 12000.0);         // +/-1%
+    else if (!thumbnail_) {
+        scale_ += delta;
+        scale_ = scale_ < 0.01 ? 0.01 : scale_;
 
-        if (ctrl_) {
-            opacity_ += delta;
-            if (opacity_ < 0.01) opacity_ = 0.01;
-            if (opacity_ > 1.00) opacity_ = 1.00;
-
-            setWindowOpacity(opacity_);
-        }
-        else if (!thumbnail_) {
-            scale_ += delta;
-            scale_ = scale_ < 0.01 ? 0.01 : scale_;
-
-            update(Modified::SCALED);
-        }
+        update(Modified::SCALED);
     }
+
 }
 
 void ImageWindow::paintEvent(QPaintEvent *event)
 {
-    if(editing_)
-        canvas_->updateCanvas();
-
     QPainter painter(this);
     // background for alpha
     if (bg_ != Qt::transparent && canvas_->canvas().hasAlpha()) {
@@ -216,19 +230,24 @@ void ImageWindow::paintEvent(QPaintEvent *event)
     }
     else {
         painter.drawPixmap(shadow_r_, shadow_r_, canvas_->canvas());
-        if(editing_)
-            canvas_->drawModifying(&painter);
+
+        canvas_->drawModifying(&painter);
+        canvas_->modified(PaintType::UNMODIFIED);
     }
 }
 
 void ImageWindow::paste()
 {
+    if (editing_) return;
+
     image(QApplication::clipboard()->pixmap());
     resize(getShadowSize(canvas_->canvas().size()));
 }
 
 void ImageWindow::open()
 {
+    if (editing_) return;
+
     auto filename = QFileDialog::getOpenFileName(this,
                                                  tr("Open Image"),
                                                  QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
@@ -241,6 +260,8 @@ void ImageWindow::open()
 
 void ImageWindow::saveAs()
 {
+    if (editing_) return;
+
     QString default_filepath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
 #ifdef _WIN32
@@ -268,6 +289,8 @@ void ImageWindow::recover()
 
 void ImageWindow::effectEnabled()
 {
+    if (editing_) return;
+
     shadow_r_ = !effect_->isEnabled() ? DEFAULT_SHADOW_R_ : 0;
     
     update(Modified::SHADOW);
@@ -276,6 +299,8 @@ void ImageWindow::effectEnabled()
 
 void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
 {
+    if (editing_) return;
+
     auto menu = new QMenu(this);
 
     menu->addAction(tr("Copy image") + "\tCtrl + C", [this]() { QApplication::clipboard()->setPixmap(image()); });
@@ -287,8 +312,10 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
         if (thumbnail_) return;
 
         editing_ = true;
+        canvas_->enable();
         setMouseTracking(true);
         canvas_->offset({ -shadow_r_, -shadow_r_ });
+        canvas_->canvas(pixmap_);
         menu_->show();
         moveMenu();
     });
@@ -328,6 +355,8 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
 
 void ImageWindow::dropEvent(QDropEvent *event)
 {
+    if (editing_) return;
+
     auto path = event->mimeData()->urls()[0].toLocalFile();
     LOG(INFO) << "Drop to ImageWindow : "<< path;
 
@@ -340,6 +369,8 @@ void ImageWindow::dropEvent(QDropEvent *event)
 
 void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
 {
+    if (editing_) return;
+
     auto mimedata = event->mimeData();
     if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
         event->acceptProposedAction();
@@ -374,11 +405,26 @@ void ImageWindow::keyReleaseEvent(QKeyEvent *event)
 void ImageWindow::registerShortcuts()
 {
     // close 
-    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, this, &ImageWindow::invisable);
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() {
+        if (editing_) {
+            setMouseTracking(false);
+            editing_ = false;
+            canvas_->disable();
+            menu_->reset();
+            menu_->hide();
+        }
+        else {
+            invisable();
+        }
+    });
 
     // copy & paste
-    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [this]() { QApplication::clipboard()->setPixmap(image()); });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, this, &ImageWindow::paste);
+    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [this]() { 
+        editing_? canvas_->copy() : QApplication::clipboard()->setPixmap(image()); 
+    });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, [this] {
+        editing_ ? canvas_->paste() : paste();
+    });
 
     // save & open
     connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, this, &ImageWindow::saveAs);
@@ -396,15 +442,19 @@ void ImageWindow::registerShortcuts()
     connect(new QShortcut(Qt::Key_H, this), &QShortcut::activated, [this]() { update(Modified::FLIPPED_H); });
 
     // move
-    connect(new QShortcut(Qt::Key_W, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
-    connect(new QShortcut(Qt::Key_Up, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_W, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(0, -1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Up, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(0, -1, 0, 0)); });
 
-    connect(new QShortcut(Qt::Key_S, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
-    connect(new QShortcut(Qt::Key_Down, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_S, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(0, 1, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Down, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(0, 1, 0, 0)); });
 
-    connect(new QShortcut(Qt::Key_A, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
-    connect(new QShortcut(Qt::Key_Left, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_A, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Left, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(-1, 0, 0, 0)); });
 
-    connect(new QShortcut(Qt::Key_D, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
-    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [=]() { setGeometry(geometry().adjusted(1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_D, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(1, 0, 0, 0)); });
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(1, 0, 0, 0)); });
+
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
+    connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, canvas_, &Canvas::remove);
 }

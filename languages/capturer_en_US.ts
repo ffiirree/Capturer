@@ -83,122 +83,122 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="233"/>
+        <location filename="../src/core/imagewindow.cpp" line="252"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="248"/>
+        <location filename="../src/core/imagewindow.cpp" line="269"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="281"/>
+        <location filename="../src/core/imagewindow.cpp" line="306"/>
         <source>Copy image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="282"/>
+        <location filename="../src/core/imagewindow.cpp" line="307"/>
         <source>Paste image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="298"/>
+        <location filename="../src/core/imagewindow.cpp" line="325"/>
         <source>Open image...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="299"/>
+        <location filename="../src/core/imagewindow.cpp" line="326"/>
         <source>Save as...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="313"/>
+        <location filename="../src/core/imagewindow.cpp" line="340"/>
         <source>Gray</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="304"/>
+        <location filename="../src/core/imagewindow.cpp" line="331"/>
         <source>Rotate 90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="286"/>
+        <location filename="../src/core/imagewindow.cpp" line="311"/>
         <source>Edit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="303"/>
+        <location filename="../src/core/imagewindow.cpp" line="330"/>
         <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="305"/>
+        <location filename="../src/core/imagewindow.cpp" line="332"/>
         <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="306"/>
+        <location filename="../src/core/imagewindow.cpp" line="333"/>
         <source>Flip H</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="307"/>
+        <location filename="../src/core/imagewindow.cpp" line="334"/>
         <source>Flip V</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="311"/>
+        <location filename="../src/core/imagewindow.cpp" line="338"/>
         <source>Background</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="312"/>
+        <location filename="../src/core/imagewindow.cpp" line="339"/>
         <source>White</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="314"/>
+        <location filename="../src/core/imagewindow.cpp" line="341"/>
         <source>Black</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="315"/>
+        <location filename="../src/core/imagewindow.cpp" line="342"/>
         <source>Transparent</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="317"/>
+        <location filename="../src/core/imagewindow.cpp" line="344"/>
         <source>Shadow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="317"/>
+        <location filename="../src/core/imagewindow.cpp" line="344"/>
         <source>Hide </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="317"/>
+        <location filename="../src/core/imagewindow.cpp" line="344"/>
         <source>Show </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="318"/>
+        <location filename="../src/core/imagewindow.cpp" line="345"/>
         <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="319"/>
+        <location filename="../src/core/imagewindow.cpp" line="346"/>
         <source>Opacity : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="320"/>
+        <location filename="../src/core/imagewindow.cpp" line="347"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/core/imagewindow.cpp" line="324"/>
+        <location filename="../src/core/imagewindow.cpp" line="351"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -214,7 +214,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="233"/>
+        <location filename="../src/snip/screenshoter.cpp" line="209"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

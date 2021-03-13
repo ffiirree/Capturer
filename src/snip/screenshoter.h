@@ -44,13 +44,10 @@ private slots:
 
 protected:
     bool eventFilter(QObject *, QEvent *) override;
-    void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
     void keyPressEvent(QKeyEvent*) override;
     void keyReleaseEvent(QKeyEvent*) override;
     void paintEvent(QPaintEvent *) override;
-    void wheelEvent(QWheelEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:

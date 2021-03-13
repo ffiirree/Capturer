@@ -21,13 +21,28 @@ public:
 
     inline Graph graph() const  { return graph_; }
 
-    inline void pen(const QPen& pen) { pen_ = pen; emit modified(PaintType::REPAINT_ALL); }
+    inline void pen(const QPen& pen) 
+    {
+        if (graph_ == Graph::ERASER || graph_ == Graph::MOSAIC) return;
+        pen_ = pen; emit modified(PaintType::REPAINT_ALL); 
+    }
     inline QPen pen() const { return pen_; }
 
-    inline void font(const QFont& font) { font_ = font; widget_->setFont(font); emit modified(PaintType::REPAINT_ALL); }
+    inline void font(const QFont& font) {
+        if (graph_ != Graph::TEXT) return;
+
+        font_ = font;
+        widget_->setFont(font);
+        emit modified(PaintType::REPAINT_ALL); 
+    }
     inline QFont font() const { return font_; }
 
-    inline void setFill(bool fill) { is_fill_ = fill; emit modified(PaintType::REPAINT_ALL); }
+    inline void setFill(bool fill) { 
+        if (graph_ == Graph::RECTANGLE || graph_ == Graph::ELLIPSE) {
+            is_fill_ = fill; 
+            emit modified(PaintType::REPAINT_ALL);
+        }
+    }
     inline bool isFill() const { return is_fill_; }
 
     inline const QVector<QPoint> points() const { return points_; }

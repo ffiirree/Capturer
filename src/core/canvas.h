@@ -14,6 +14,7 @@
             pre_cmd->visible(false);                     \
             CMD = make_shared<PaintCommand>(*pre_cmd);   \
             CMD->previous(pre_cmd);                      \
+            CMD->visible(true);                          \
         )
 
 class Canvas : public QObject
@@ -35,9 +36,7 @@ public:
     };
 public:
     Canvas(QWidget*parent = nullptr);
-
     ImageEditMenu* menu_ = nullptr;
-    shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
 
     QCursor getCursorShape();
     void mousePressEvent(QMouseEvent*);
@@ -57,35 +56,40 @@ public:
     bool editing();
 
     void clear();
+    void reset();
 signals:
     void focusOnGraph(Graph);
-    void close();
+    void closed();
     void changed();
 
 public slots:
+    void enable() { enabled_ = true; }
+    void disable() { enabled_ = false; }
+
     void changeGraph(Graph);
     void canvas(const QPixmap& canvas);
     void copy();
     void paste();
     void remove();
 
-
-
-    //void exit();
-
-    //void save();
-    //void copy();
-    //void pin();
-    //QPixmap snipped();
-
     void undo();
     void redo();
 
+    void modified(PaintType type) {
+        if (type == PaintType::UNMODIFIED) {
+            modified_ = PaintType::UNMODIFIED;
+        }
+        else if(type > modified_){
+            modified_ = type;
+        }
+
+        changed();
+    }
 
 private:
-    
+    bool eventFilter(QObject* object, QEvent* event);
     void focusOn(shared_ptr<PaintCommand>);
-    void modified(PaintType type) { modified_ = (type > modified_) ? type : modified_; changed(); }
+
 
     void updateHoverPos(const QPoint&);
     QImage mosaic(const QImage& );
@@ -98,7 +102,7 @@ private:
     CommandStack redo_stack_;
 
     shared_ptr<PaintCommand> hover_cmd_ = nullptr;    // hover
-    
+    shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
     shared_ptr<PaintCommand> copied_cmd_ = nullptr;   // copied
 
     PaintType modified_ = PaintType::UNMODIFIED;
@@ -109,6 +113,8 @@ private:
     uint32_t edit_status_ = EditStatus::NONE;
 
     QPoint offset_{ 0, 0 };
+
+    bool enabled_ = false;
 };
 
 #endif // CANVAS_H

@@ -399,8 +399,7 @@ Resizer::PointPosition PaintCommand::hover(const QPoint& pos)
         }
         return hover_pos;
     }
-    default:
-        break;
+    default: return Resizer::DEFAULT;
     }
 }
 

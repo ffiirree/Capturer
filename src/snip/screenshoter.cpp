@@ -19,11 +19,14 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     magnifier_ = new Magnifier(this);
 
     connect(canvas_, &Canvas::changed, [this]() { update(); });
+    connect(this, &ScreenShoter::locked, canvas_, &Canvas::enable);
+    connect(this, &ScreenShoter::captured, canvas_, &Canvas::disable);
 
     menu_->installEventFilter(this);
+    installEventFilter(canvas_);
 
     connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
-    connect(menu_, &ImageEditMenu::ok, this, &ScreenShoter::copy);
+    connect(menu_, &ImageEditMenu::ok,  this, &ScreenShoter::copy);
     connect(menu_, &ImageEditMenu::fix,  this, &ScreenShoter::pin);
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
@@ -61,8 +64,10 @@ void ScreenShoter::start()
 void ScreenShoter::exit()
 {
     // prevent the window flinker
-    canvas_->clear();
     box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() });
+    canvas_->reset();
+    canvas_->disable();
+    repaint();
 
     menu_->reset();
     menu_->hide();
@@ -85,22 +90,9 @@ bool ScreenShoter::eventFilter(QObject * obj, QEvent * event)
     }
 }
 
-void ScreenShoter::mousePressEvent(QMouseEvent *event)
-{
-    if(event->button() != Qt::LeftButton)
-        return;
-
-    if(status_ == SelectorStatus::LOCKED) {
-        canvas_->mousePressEvent(event);
-    }
-
-    Selector::mousePressEvent(event);
-}
-
 void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
 {
     if (status_ == SelectorStatus::LOCKED) {
-        canvas_->mouseMoveEvent(event);
         setCursor(canvas_->getCursorShape());
     }
 
@@ -108,21 +100,13 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent* event)
     Selector::mouseMoveEvent(event);
 }
 
-void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
-{
-    if (status_ == SelectorStatus::LOCKED) {
-        canvas_->mouseReleaseEvent(event);
-    }
-
-    Selector::mouseReleaseEvent(event);
-}
 void ScreenShoter::keyPressEvent(QKeyEvent* event)
 {
     // hotkey 'Space': move the selector while editing.
     if (status_ == SelectorStatus::LOCKED
         && event->key() == Qt::Key_Space && !event->isAutoRepeat()
         && canvas_->editing()) {
-        status_ = SelectorStatus::CAPTURED;
+        CAPTURED();
     }
 
     Selector::keyPressEvent(event);
@@ -133,16 +117,10 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
     // stop moving the selector while editing
     if (event->key() == Qt::Key_Space && !event->isAutoRepeat()
         && canvas_->editing()) {
-        status_ = SelectorStatus::LOCKED;
+        LOCKED();
     }
 
-    canvas_->keyReleaseEvent(event);
     Selector::keyReleaseEvent(event);
-}
-
-void ScreenShoter::wheelEvent(QWheelEvent * event)
-{
-    canvas_->wheelEvent(event);
 }
 
 void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
@@ -189,15 +167,13 @@ void ScreenShoter::moveMagnifier()
 
 void ScreenShoter::paintEvent(QPaintEvent *event)
 {
-    // 1. canvas
-    canvas_->updateCanvas();
-
     // 2. window
     painter_.begin(this);
     painter_.drawPixmap(0, 0, canvas_->canvas());
 
     // 3. modifying
     canvas_->drawModifying(&painter_);
+    canvas_->modified(PaintType::UNMODIFIED);
     painter_.end();
 
     Selector::paintEvent(event);

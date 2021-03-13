@@ -8,34 +8,20 @@ Canvas::Canvas(QWidget *parent)
     : QObject(parent)
 {
     menu_ = new ImageEditMenu(parent);
-    //connect(menu_, &ImageEditMenu::save, this, &Canvas::save);
-    //connect(menu_, &ImageEditMenu::ok, this, &Canvas::copy);
-    //connect(menu_, &ImageEditMenu::fix, this, &Canvas::pin);
-    connect(menu_, &ImageEditMenu::exit, [this]() { clear(); emit close(); });
+    connect(menu_, &ImageEditMenu::ok, [this]() { clear(); emit closed(); });
+    connect(menu_, &ImageEditMenu::exit, [this]() { clear(); emit closed(); });
 
     connect(menu_, &ImageEditMenu::undo, this, &Canvas::undo);
     connect(menu_, &ImageEditMenu::redo, this, &Canvas::redo);
     connect(menu_, &ImageEditMenu::graphChanged, this, &Canvas::changeGraph);
     connect(this, &Canvas::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
-    //connect(this, &ScreenShoter::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
 
     // attrs changed
     connect(menu_, &ImageEditMenu::styleChanged, [this](Graph graph) {
         if (focus_cmd_ && focus_cmd_->graph() == graph) {
-            switch (graph) {
-            case Graph::ERASER:
-            case Graph::MOSAIC:
-                //circle_cursor_.setWidth(menu_->pen(graph).width());
-                //setCursor(QCursor(circle_cursor_.cursor()));
-                break;
-
-            case Graph::TEXT:
-                focus_cmd_->font(menu_->font(Graph::TEXT));
-            default:
-                focus_cmd_->pen(menu_->pen(graph));
-                focus_cmd_->setFill(menu_->fill(graph));
-                break;
-            }
+            focus_cmd_->font(menu_->font(graph));
+            focus_cmd_->pen(menu_->pen(graph));
+            focus_cmd_->setFill(menu_->fill(graph));
         }
     });
 
@@ -45,9 +31,48 @@ Canvas::Canvas(QWidget *parent)
     // disable redo/undo
     connect(&commands_, &CommandStack::emptied, menu_, &ImageEditMenu::disableUndo);
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
+}
 
-    // reset menu
-    connect(&commands_, &CommandStack::emptied, [this](bool empty) { if (empty) menu_->reset(); });
+bool Canvas::eventFilter(QObject* object, QEvent* event)
+{
+    if (!enabled_) return false;
+
+    switch (event->type())
+    {
+    case QEvent::MouseButtonPress:
+        mousePressEvent(static_cast<QMouseEvent*>(event));
+        return false;
+
+    case QEvent::MouseButtonRelease:
+        mouseReleaseEvent(static_cast<QMouseEvent*>(event));
+        return false;
+
+    case QEvent::HoverMove:
+    case QEvent::MouseMove:
+        mouseMoveEvent(static_cast<QMouseEvent*>(event));
+        return false;
+
+    case QEvent::KeyRelease:
+        keyReleaseEvent(static_cast<QKeyEvent*>(event));
+        return false;
+
+    case QEvent::KeyPress:
+        keyPressEvent(static_cast<QKeyEvent*>(event));
+        return false;
+
+    case QEvent::Wheel:
+        wheelEvent(static_cast<QWheelEvent*>(event));
+        return false;
+
+    case QEvent::Paint:
+        updateCanvas();
+        return false;
+
+    default:
+        break;
+    }
+
+    return false;
 }
 
 void Canvas::changeGraph(Graph graph)
@@ -102,7 +127,6 @@ void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
         emit focusOnGraph(focus_cmd_->graph());  // must after focus_cmd_ = cmd
     }
 }
-
 
 void Canvas::mousePressEvent(QMouseEvent* event)
 {
@@ -182,7 +206,8 @@ void Canvas::mouseMoveEvent(QMouseEvent* event)
         }
     }
 
-    if (event->buttons() == Qt::NoButton) {
+    if (event->buttons() == Qt::NoButton
+        && !(edit_status_ & Graph::ERASER) && !(edit_status_ & Graph::MOSAIC)) {
         updateHoverPos(event->pos());
     }
 }
@@ -274,7 +299,7 @@ void Canvas::updateHoverPos(const QPoint& pos)
 
 void Canvas::updateCanvas()
 {
-    if (!modified_) return;
+    if (!enabled_ || modified_ == PaintType::UNMODIFIED) return;
 
     QPainter painter;
     
@@ -307,15 +332,13 @@ void Canvas::updateCanvas()
 
 void Canvas::drawModifying(QPainter * painter)
 {
-    if (focus_cmd_ != nullptr && focus_cmd_->visible()) {
+    if (enabled_ && focus_cmd_ != nullptr && focus_cmd_->visible()) {
         if (modified_ == PaintType::DRAW_MODIFYING || modified_ == PaintType::REPAINT_ALL) {
             focus_cmd_->draw_modified(painter);
         }
 
         focus_cmd_->drawAnchors(painter);
     }
-
-    modified_ = PaintType::UNMODIFIED;
 }
 
 QImage Canvas::mosaic(const QImage& _image)
@@ -325,9 +348,56 @@ QImage Canvas::mosaic(const QImage& _image)
         .scaled(_image.width(), _image.height());
 }
 
+void Canvas::clear()
+{
+    disable();
+    modified_ = PaintType::UNMODIFIED;
+    focusOn(nullptr);
+    commands_.clear();
+    redo_stack_.clear();
+}
+
+void Canvas::reset()
+{
+    clear();
+    canvas_.fill(Qt::transparent);
+    modified_ = PaintType::REPAINT_ALL;
+}
+
+void Canvas::copy()
+{
+    if(enabled_)
+        copied_cmd_ = focus_cmd_;
+}
+
+void Canvas::paste()
+{
+    if (enabled_ && copied_cmd_) {
+        hover_cmd_ = make_shared<PaintCommand>(*copied_cmd_);
+        connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified);
+        hover_cmd_->move({ 16, 16 });
+
+        focusOn(hover_cmd_);
+        commands_.push(hover_cmd_);
+        redo_stack_.clear();
+    }
+}
+
+void Canvas::remove()
+{
+    if (enabled_ && focus_cmd_) {
+        HIDE_AND_COPY_CMD(focus_cmd_);
+        commands_.push(focus_cmd_);
+        redo_stack_.clear();
+        focusOn(nullptr);
+    }
+}
+
 ///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
 void Canvas::undo()
 {
+    if (!enabled_) return;
+
     while (!commands_.empty()) {
         auto ptr = commands_.back();
 
@@ -348,7 +418,7 @@ void Canvas::undo()
 
 void Canvas::redo()
 {
-    if (redo_stack_.empty()) return;
+    if (!enabled_ || redo_stack_.empty()) return;
 
     auto ptr = redo_stack_.back();
     commands_.push(ptr);
@@ -357,42 +427,4 @@ void Canvas::redo()
     focusOn(commands_.back());
 
     if (ptr->previous() != nullptr) ptr->previous()->visible(false);
-}
-
-
-void Canvas::clear()
-{
-    commands_.clear();
-    redo_stack_.clear();
-    canvas_.fill(Qt::transparent);
-    modified_ = PaintType::UNMODIFIED;
-    emit changed();
-}
-
-void Canvas::copy()
-{
-    copied_cmd_ = focus_cmd_;
-}
-
-void Canvas::paste()
-{
-    if (copied_cmd_) {
-        hover_cmd_ = make_shared<PaintCommand>(*copied_cmd_);
-        connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified);
-        hover_cmd_->move({ 16, 16 });
-
-        focusOn(hover_cmd_);
-        commands_.push(hover_cmd_);
-        redo_stack_.clear();
-    }
-}
-
-void Canvas::remove()
-{
-    if (focus_cmd_) {
-        HIDE_AND_COPY_CMD(focus_cmd_);
-        commands_.push(focus_cmd_);
-        redo_stack_.clear();
-        focusOn(nullptr);
-    }
 }
