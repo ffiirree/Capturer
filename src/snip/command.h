@@ -11,26 +11,13 @@ class PaintCommand : public QObject
 {
     Q_OBJECT
 public:
-    explicit PaintCommand(Graph type) : PaintCommand(type, QPen(), false, QPoint{}) { }
-    PaintCommand(Graph type, const QPen& pen)
-        : PaintCommand(type, pen, false, QPoint{})
-    { }
+    explicit PaintCommand(Graph type) : PaintCommand(type, QPen(), QFont(), false, QPoint{}) { }
+    PaintCommand(Graph type, const QPen& pen) : PaintCommand(type, pen, QFont(), false, QPoint{}) { }
 
-    PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point, QWidget *parent = nullptr);
+    PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&);
 
-    PaintCommand(const PaintCommand& cmd) {
-        *this = cmd;
-    }
-
-    PaintCommand& operator=(const PaintCommand& cmd);
-
-    ~PaintCommand() override
-    {
-        if(widget_) {
-            delete widget_;
-            widget_ = nullptr;
-        }
-    }
+    PaintCommand(const PaintCommand& cmd) { *this = cmd; }
+    PaintCommand& operator=(const PaintCommand&);
 
     inline Graph graph() const  { return graph_; }
 
@@ -69,14 +56,18 @@ public:
 
     bool isValid();
 
-    inline void widget(TextEdit * widget) { widget_ = widget; }
-    inline TextEdit * widget() const { return widget_; }
+    inline void widget(shared_ptr<TextEdit> widget) { widget_ = widget; }
+    inline shared_ptr<TextEdit> widget() const { return widget_; }
 
     void drawAnchors(QPainter*);
     void draw_modified(QPainter *);
     void repaint(QPainter *);
 
     void regularize();
+    bool regularized();
+
+    Resizer::PointPosition hover(const QPoint&);
+    static QCursor getCursorShapeByHoverPos(Resizer::PointPosition, const QCursor & = Qt::CrossCursor);
 
     QRect rect() { return resizer_.rect(); }
     QSize size() { return rect().size(); }
@@ -109,7 +100,7 @@ private:
     bool is_fill_ = false;
     QVector<QPoint> points_;
     QVector<QPoint> points_buff_;
-    TextEdit * widget_ = nullptr;
+    shared_ptr<TextEdit> widget_ = nullptr;
 
     Resizer resizer_;
 

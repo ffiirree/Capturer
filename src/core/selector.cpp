@@ -213,9 +213,6 @@ void Selector::paintEvent(QPaintEvent *)
     }
 
     painter_.end();
-
-    // clear the modified flag
-    modified_ = PaintType::UNMODIFIED;
 }
 
 void Selector::updateSelected()

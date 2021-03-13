@@ -1,27 +1,27 @@
 #include "command.h"
 #include <cmath>
 
-PaintCommand::PaintCommand(Graph type, const QPen& pen, bool is_fill, const QPoint& start_point, QWidget * parent)
-    : graph_(type), pen_(pen), is_fill_(is_fill)
+PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool is_fill, const QPoint& start_point)
+    : graph_(type), pen_(pen), font_(font), is_fill_(is_fill)
 {
     switch (graph_) {
     // 1. movable and resizable without a widget
-    case RECTANGLE:
-    case ELLIPSE:
-    case LINE:
-    case ARROW: resizer_ = Resizer(start_point, start_point); break;
+    case Graph::RECTANGLE:
+    case Graph::ELLIPSE:
+    case Graph::LINE:
+    case Graph::ARROW: resizer_ = Resizer(start_point, start_point); break;
 
     // 2. nomovable and noresizable
-    case MOSAIC:
-    case ERASER:
-    case CURVES: push_point(start_point); break;
+    case Graph::MOSAIC:
+    case Graph::ERASER:
+    case Graph::CURVES: push_point(start_point); break;
 
     // 3. movable with a widget
-    case TEXT:
+    case Graph::TEXT:
         resizer_ = Resizer(start_point, start_point);
 
-        widget_ = new TextEdit(parent);
-        connect(widget_, &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
+        widget_ = make_shared<TextEdit>();
+        connect(widget_.get(), &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
 
         widget_->setTextColor(pen.color());
         widget_->setFocus();
@@ -44,8 +44,8 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& cmd)
     this->resizer_ = cmd.resizer_;
 
     if(cmd.widget_ != nullptr) {
-        widget_ = new TextEdit(static_cast<QWidget *>(cmd.parent()));
-        connect(widget_, &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
+        widget_ = make_shared<TextEdit>();
+        connect(widget_.get(), &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
 
         widget_->setFont(this->font_);
         widget_->setTextColor(this->pen_.color());
@@ -65,7 +65,7 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& cmd)
 
 bool PaintCommand::push_point(const QPoint& pos)
 {
-    switch (graph()) {
+    switch (graph_) {
     case Graph::RECTANGLE:
     case Graph::ELLIPSE:
     case Graph::LINE:
@@ -116,15 +116,15 @@ void PaintCommand::move(const QPoint& diff)
 bool PaintCommand::isValid()
 {
     switch (graph_) {
-    case RECTANGLE:
-    case ELLIPSE:
-    case LINE:      return size() != QSize(1, 1);
-    case CURVES:
-    case MOSAIC:
-    case ERASER:    return true;
-    case ARROW:     return size() != QSize(1, 1);
-    case TEXT:      return !widget_->toPlainText().isEmpty();
-    case BROKEN_LINE: return true;
+    case Graph::RECTANGLE:
+    case Graph::ELLIPSE:
+    case Graph::LINE:      return size() != QSize(1, 1);
+    case Graph::CURVES:
+    case Graph::MOSAIC:
+    case Graph::ERASER:    return true;
+    case Graph::ARROW:     return size() != QSize(1, 1);
+    case Graph::TEXT:      return !widget_->toPlainText().isEmpty();
+    case Graph::BROKEN_LINE: return true;
     default: return true;
     }
 }
@@ -290,6 +290,18 @@ void PaintCommand::repaint(QPainter *painter)
     draw(painter, false);
 }
 
+bool PaintCommand::regularized()
+{
+    switch (graph_)
+    {
+    case Graph::RECTANGLE:
+    case Graph::ELLIPSE:   return resizer_.width() == resizer_.height();
+    case Graph::LINE:
+    case Graph::ARROW:     return (resizer_.x1() == resizer_.x2()) || (resizer_.y1() == resizer_.y2());
+    default:        return true;
+    }
+}
+
 void PaintCommand::regularize()
 {
     switch (graph())
@@ -303,8 +315,8 @@ void PaintCommand::regularize()
 
         resizer_.rx1() = rect.topLeft().x();
         resizer_.ry1() = rect.topLeft().y();
-        resizer_.rx2() = rect.bottomRight().x();
-        resizer_.ry2() = rect.bottomRight().y();
+
+        push_point(rect.bottomRight());
 
         break;
     }
@@ -325,11 +337,92 @@ void PaintCommand::regularize()
 
         resizer_.rx1() = p1.x();
         resizer_.ry1() = p1.y();
-        resizer_.rx2() = p2.x();
-        resizer_.ry2() = p2.y();
+
+        push_point(p2);
 
         break;
     }
     default: break;
+    }
+}
+
+Resizer::PointPosition PaintCommand::hover(const QPoint& pos)
+{
+    switch (graph_)
+    {
+    case RECTANGLE: return resizer().absolutePos(pos);
+    case CIRCLE:
+    {
+        QRegion r1(rect().adjusted(-2, -2, 2, 2), QRegion::Ellipse);
+        QRegion r2(rect().adjusted(2, 2, -2, -2), QRegion::Ellipse);
+
+        auto hover_pos = resizer_.absolutePos(pos);
+        if (!(hover_pos & Resizer::ADJUST_AREA) && r1.contains(pos) && !r2.contains(pos)) {
+            return Resizer::BORDER;
+        }
+
+        return hover_pos;
+    }
+    case LINE:
+    case ARROW:
+    {
+        auto x1y1_anchor = resizer().X1Y1Anchor();
+        auto x2y2_anchor = resizer().X2Y2Anchor();
+        QPolygon polygon;
+        polygon.push_back(x1y1_anchor.topLeft());
+        polygon.push_back(x1y1_anchor.bottomRight());
+        polygon.push_back(x2y2_anchor.bottomRight());
+        polygon.push_back(x2y2_anchor.topLeft());
+
+        if (x1y1_anchor.contains(pos)) {
+            return Resizer::X1Y1_ANCHOR;
+        }
+        else if (x2y2_anchor.contains(pos)) {
+            return Resizer::X2Y2_ANCHOR;
+        }
+        else if (polygon.containsPoint(pos, Qt::OddEvenFill)) {
+            return Resizer::BORDER;
+        }
+    }
+    case TEXT:
+    {
+        Resizer resizer(geometry().adjusted(-5, -5, 5, 5));
+        resizer.enableRotate(true);
+        auto hover_pos = resizer.absolutePos(pos);
+        switch (hover_pos) {
+        case Resizer::INSIDE:
+        case Resizer::X1_ANCHOR:
+        case Resizer::Y2_ANCHOR:
+        case Resizer::Y1_ANCHOR:
+        case Resizer::X2_ANCHOR: hover_pos = Resizer::BORDER; break;
+        default: break;
+        }
+        return hover_pos;
+    }
+    default:
+        break;
+    }
+}
+
+QCursor PaintCommand::getCursorShapeByHoverPos(Resizer::PointPosition pos, const QCursor& default_cursor)
+{
+    switch (pos) {
+    case Resizer::X1_ANCHOR:
+    case Resizer::X2_ANCHOR:    return Qt::SizeHorCursor;
+    case Resizer::Y1_ANCHOR:
+    case Resizer::Y2_ANCHOR:    return Qt::SizeVerCursor;
+    case Resizer::X1Y1_ANCHOR:
+    case Resizer::X2Y2_ANCHOR:  return Qt::SizeFDiagCursor;
+    case Resizer::X1Y2_ANCHOR:
+    case Resizer::X2Y1_ANCHOR:  return Qt::SizeBDiagCursor;
+
+    case Resizer::BORDER:
+    case Resizer::X1_BORDER:
+    case Resizer::X2_BORDER:
+    case Resizer::Y1_BORDER:
+    case Resizer::Y2_BORDER:    return Qt::SizeAllCursor;
+    case Resizer::ROTATE_ANCHOR: return (QPixmap(":/icon/res/rotate").scaled(22, 22, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+
+    default: return default_cursor;
     }
 }

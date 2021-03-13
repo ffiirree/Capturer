@@ -48,10 +48,9 @@ GraphMenu::GraphMenu(QWidget * parent)
     pen_ = QPen(color_panel->color(), width_btn->value(), Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
 
     connect(this, &EditMenu::styleChanged, [=]() {
-        fill_btn->setChecked(fill_);
-        color_panel->setColor(pen().color());
+        if(!fill_) width_btn->setValue(pen().width());
 
-        if(!fill_)
-            width_btn->setValue(pen().width());
+        fill_ ? fill_btn->setChecked(true) : width_btn->setChecked(true);
+        color_panel->setColor(pen().color());
     });
 }

@@ -69,7 +69,6 @@ protected:
     // resize
     QPoint rbegin_{0, 0}, rend_{0, 0};
 
-    PaintType modified_ = PaintType::UNMODIFIED;
     Resizer box_;
     bool prevent_transparent_ = false;
 

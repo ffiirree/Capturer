@@ -21,7 +21,7 @@ class Canvas : public QObject
     Q_OBJECT
 
 public:
-    enum EditStatus : std::uint32_t {
+    enum EditStatus : uint32_t {
         NONE            = 0x00000000,
         READY           = 0x00010000,
         GRAPH_CREATING  = 0x00100000,
@@ -37,16 +37,40 @@ public:
     Canvas(QWidget*parent = nullptr);
 
     ImageEditMenu* menu_ = nullptr;
+    shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
 
+    QCursor getCursorShape();
+    void mousePressEvent(QMouseEvent*);
+    void mouseMoveEvent(QMouseEvent*);
+    void mouseReleaseEvent(QMouseEvent*);
+    void keyPressEvent(QKeyEvent*);
+    void keyReleaseEvent(QKeyEvent*);
+    void wheelEvent(QWheelEvent*);
 
+    void updateCanvas();
+    void drawModifying(QPainter*);
+
+    QPixmap canvas() { return canvas_; }
+
+    void offset(const QPoint& offset) { offset_ = offset; }
+
+    bool editing();
+
+    void clear();
 signals:
+    void focusOnGraph(Graph);
     void close();
-    void update();
+    void changed();
 
 public slots:
-    void device(QWidget* device) { device_ = device; }
-    void canvas(QPixmap* canvas) { canvas_ = canvas; captured_screen_ = (*canvas).copy(); }
-    void start();
+    void changeGraph(Graph);
+    void canvas(const QPixmap& canvas);
+    void copy();
+    void paste();
+    void remove();
+
+
+
     //void exit();
 
     //void save();
@@ -57,23 +81,14 @@ public slots:
     void undo();
     void redo();
 
-protected:
-    bool eventFilter(QObject*, QEvent*) override;
 
 private:
-    void updateCanvas();
+    
     void focusOn(shared_ptr<PaintCommand>);
-    void modified(PaintType type) { modified_ = (type > modified_) ? type : modified_; update(); }
-
-    void mousePressEvent(QMouseEvent*);
-    void mouseMoveEvent(QMouseEvent*);
-    void mouseReleaseEvent(QMouseEvent*);
-    void paintEvent(QPaintEvent *);
+    void modified(PaintType type) { modified_ = (type > modified_) ? type : modified_; changed(); }
 
     void updateHoverPos(const QPoint&);
-    void setCursorByHoverPos(Resizer::PointPosition, const QCursor & = Qt::CrossCursor);
     QImage mosaic(const QImage& );
-    void drawSelector(QPainter*, const Resizer&);
 
     Resizer::PointPosition hover_position_ = Resizer::OUTSIDE;
     QPoint move_begin_{ 0, 0 };
@@ -83,16 +98,17 @@ private:
     CommandStack redo_stack_;
 
     shared_ptr<PaintCommand> hover_cmd_ = nullptr;    // hover
-    shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
+    
     shared_ptr<PaintCommand> copied_cmd_ = nullptr;   // copied
 
     PaintType modified_ = PaintType::UNMODIFIED;
 
     CircleCursor circle_cursor_{ 20 };
-    QWidget* device_;
-    QPixmap *canvas_ = nullptr;
-    QPixmap captured_screen_;
+    QPixmap canvas_;
+    QPixmap backup_;
     uint32_t edit_status_ = EditStatus::NONE;
+
+    QPoint offset_{ 0, 0 };
 };
 
 #endif // CANVAS_H
