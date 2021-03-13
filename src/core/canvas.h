@@ -57,6 +57,19 @@ public:
 
     void clear();
     void reset();
+
+    void commands(CommandStack cmds)
+    {
+        commands_ = cmds;
+        redo_stack_.clear();
+        
+        if (!commands_.empty()) {
+            focusOn(commands_.back());
+        }
+        modified(PaintType::REPAINT_ALL);
+    }
+
+    CommandStack commands() { return commands_; }
 signals:
     void focusOnGraph(Graph);
     void closed();
@@ -76,14 +89,10 @@ public slots:
     void redo();
 
     void modified(PaintType type) {
-        if (type == PaintType::UNMODIFIED) {
-            modified_ = PaintType::UNMODIFIED;
-        }
-        else if(type > modified_){
-            modified_ = type;
-        }
+        modified_ = ((type > modified_) || (type == PaintType::UNMODIFIED)) ? type : modified_;
 
-        changed();
+        if(modified_)
+            changed();
     }
 
 private:

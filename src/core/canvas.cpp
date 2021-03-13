@@ -8,8 +8,9 @@ Canvas::Canvas(QWidget *parent)
     : QObject(parent)
 {
     menu_ = new ImageEditMenu(parent);
-    connect(menu_, &ImageEditMenu::ok, [this]() { clear(); emit closed(); });
-    connect(menu_, &ImageEditMenu::exit, [this]() { clear(); emit closed(); });
+    connect(menu_, &ImageEditMenu::fix, [this]() { focusOn(nullptr); emit closed(); });
+    connect(menu_, &ImageEditMenu::ok, [this]() { focusOn(nullptr); emit closed(); });
+    connect(menu_, &ImageEditMenu::exit, [this]() { focusOn(nullptr); canvas_ = backup_.copy(); emit closed(); });
 
     connect(menu_, &ImageEditMenu::undo, this, &Canvas::undo);
     connect(menu_, &ImageEditMenu::redo, this, &Canvas::redo);
@@ -175,7 +176,6 @@ void Canvas::mousePressEvent(QMouseEvent* event)
     }
 
     if (hover_cmd_) {
-        hover_cmd_->visible(true);
         focusOn(hover_cmd_);
         modified(PaintType::DRAW_MODIFYING);
         connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified);
@@ -228,7 +228,6 @@ void Canvas::mouseReleaseEvent(QMouseEvent* event)
         && edit_status_ != EditStatus::NONE) {
 
         CHECK(focus_cmd_);
-
 
         if ((!focus_cmd_->previous() && focus_cmd_->isValid())      // created
             || (focus_cmd_->previous() && focus_cmd_->adjusted())   // moved/resized..

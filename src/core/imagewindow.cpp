@@ -34,6 +34,7 @@ ImageWindow::ImageWindow(QWidget *parent)
         setMouseTracking(false); 
         QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size()));
         pixmap_ = canvas_->canvas().copy();
+        scale_ = 1.0;
         canvas_->disable();
         editing_ = false;
     });
@@ -312,10 +313,11 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
         if (thumbnail_) return;
 
         editing_ = true;
+        canvas_->reset();
         canvas_->enable();
         setMouseTracking(true);
         canvas_->offset({ -shadow_r_, -shadow_r_ });
-        canvas_->canvas(pixmap_);
+        canvas_->canvas(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         menu_->show();
         moveMenu();
     });
