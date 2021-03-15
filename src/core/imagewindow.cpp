@@ -26,9 +26,10 @@ ImageWindow::ImageWindow(QWidget *parent)
     effect_->setColor(QColor("#409eff"));
     setGraphicsEffect(effect_);
 
-    canvas_ = new Canvas(this);
+    menu_ = new ImageEditMenu(this, ImageEditMenu::ALL & ~ImageEditMenu::SAVE_GROUP);
+    canvas_ = new Canvas(menu_, this);
     installEventFilter(canvas_);
-    menu_ = canvas_->menu_;
+    
     connect(menu_, &ImageEditMenu::save, this, &ImageWindow::saveAs);
     connect(canvas_, &Canvas::closed, [this]() { 
         setMouseTracking(false); 
@@ -385,9 +386,9 @@ void ImageWindow::moveEvent(QMoveEvent*)
 
 void ImageWindow::moveMenu()
 {
-    auto rect = geometry().adjusted(shadow_r_, shadow_r_, -shadow_r_ - canvas_->menu_->width(), -shadow_r_ + 5);
-    canvas_->menu_->move(rect.bottomRight());
-    canvas_->menu_->setSubMenuShowBelow();
+    auto rect = geometry().adjusted(shadow_r_, shadow_r_, -shadow_r_ - menu_->width(), -shadow_r_ + 5);
+    menu_->move(rect.bottomRight());
+    menu_->setSubMenuShowBelow();
 }
 
 void ImageWindow::keyPressEvent(QKeyEvent *event)

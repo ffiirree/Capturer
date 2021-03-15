@@ -14,8 +14,9 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
 {
-    canvas_ = new Canvas(this);
-    menu_ = canvas_->menu_;
+    menu_ = new ImageEditMenu(this);
+    canvas_ = new Canvas(menu_, this);
+
     magnifier_ = new Magnifier(this);
 
     connect(canvas_, &Canvas::changed, [this]() { update(); });

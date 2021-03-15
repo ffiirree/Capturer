@@ -2,14 +2,25 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QGraphicsItem>
+#include <QMimeData>
+#include <QApplication>
+#include <QClipboard>
 #include "logging.h"
 
-Canvas::Canvas(QWidget *parent)
+Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
     : QObject(parent)
 {
-    menu_ = new ImageEditMenu(parent);
+    CHECK(menu);
+
+    menu_ = menu;
     connect(menu_, &ImageEditMenu::fix, [this]() { focusOn(nullptr); emit closed(); });
-    connect(menu_, &ImageEditMenu::ok, [this]() { focusOn(nullptr); emit closed(); });
+    connect(menu_, &ImageEditMenu::ok, [this]() {
+        // copy to clipboard
+        QApplication::clipboard()->setPixmap(canvas_);
+
+        focusOn(nullptr);
+        emit closed(); 
+    });
     connect(menu_, &ImageEditMenu::exit, [this]() { focusOn(nullptr); canvas_ = backup_.copy(); emit closed(); });
 
     connect(menu_, &ImageEditMenu::undo, this, &Canvas::undo);

@@ -35,8 +35,9 @@ public:
         GRAPH_MASK      = 0x0000ffff
     };
 public:
-    Canvas(QWidget*parent = nullptr);
-    ImageEditMenu* menu_ = nullptr;
+    Canvas(ImageEditMenu * menu, QWidget*parent = nullptr);
+
+    ImageEditMenu* menu()  const { return menu_; }
 
     QCursor getCursorShape();
     void mousePressEvent(QMouseEvent*);
@@ -99,9 +100,10 @@ private:
     bool eventFilter(QObject* object, QEvent* event);
     void focusOn(shared_ptr<PaintCommand>);
 
-
     void updateHoverPos(const QPoint&);
     QImage mosaic(const QImage& );
+
+    ImageEditMenu* menu_ = nullptr;
 
     Resizer::PointPosition hover_position_ = Resizer::OUTSIDE;
     QPoint move_begin_{ 0, 0 };
