@@ -7,10 +7,7 @@
 #include "logging.h"
 #include "imagewindow.h"
 
-#define SET_HOTKEY(X, Y)    st(                                 \
-                                if(!X->setShortcut(Y, true))          \
-                                    showMessage("Capturer", tr("Failed to register shortcut <%1>").arg(Y.toString()), QSystemTrayIcon::Critical); \
-                            )
+#define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true)) error += tr("Failed to register hotkey:<%1>\n").arg(Y.toString());)
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
@@ -71,11 +68,15 @@ Capturer::Capturer(QWidget *parent)
 void Capturer::updateConfig()
 {
     auto &config = Config::instance();
+
+    QString error = "";
     SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(pin_sc_, config["pin"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(show_pin_sc_, config["pin"]["visiable"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
+    if(!error.isEmpty())
+        showMessage("Capturer", error, QSystemTrayIcon::Critical);
 
     recorder_->setFramerate(config["record"]["framerate"].get<int>());
     gifcptr_->setFramerate(config["gif"]["framerate"].get<int>());

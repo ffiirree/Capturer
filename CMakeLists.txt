@@ -67,6 +67,7 @@ target_include_directories(${PROJECT_NAME}
         src/core
         src/widgets
         src/menu
+        src/pinned
         src/snip
         src/video
         src/gif

@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 #include <Windows.h>
 #include <QCursor>
 #include <QGuiApplication>
@@ -7,7 +7,7 @@
 #include "dwmapi.h"
 #include "displayinfo.h"
 
-std::vector<std::pair<QString, QRect>> DetectWidgets::windows_;
+std::vector<std::pair<QString, QRect>> WidgetsDetector::windows_;
 
 QRect getRect(HWND hWnd)
 {
@@ -25,7 +25,7 @@ QRect getRect(HWND hWnd)
      return QString::fromWCharArray(buffer);
  }
 
-void DetectWidgets::reset()
+void WidgetsDetector::reset()
 {
     windows_.clear();
 
@@ -42,7 +42,7 @@ void DetectWidgets::reset()
     }
 }
 
-QRect DetectWidgets::window()
+QRect WidgetsDetector::window()
 {
     QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();

@@ -1,10 +1,10 @@
-#ifndef DETECT_WIDGETS_H
-#define DETECT_WIDGETS_H
+#ifndef WIDGETS_DETECTOR_H
+#define WIDGETS_DETECTOR_H
 
 #include <QRect>
 #include <vector>
 
-class DetectWidgets
+class WidgetsDetector
 {
 public:
     static QRect window();
@@ -14,4 +14,4 @@ private:
     static std::vector<std::pair<QString, QRect>> windows_;
 };
 
-#endif // DETECT_WIDGETS_H
+#endif // WIDGETS_DETECTOR_H

@@ -1,5 +1,5 @@
 #ifdef __linux__
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 #include <QCursor>
 #include <QGuiApplication>
 #include <QScreen>
@@ -10,9 +10,9 @@
 #include <X11/Xatom.h>
 #include "displayinfo.h"
 
-std::vector<std::pair<QString, QRect>> DetectWidgets::windows_;
+std::vector<std::pair<QString, QRect>> WidgetsDetector::windows_;
 
-void DetectWidgets::reset()
+void WidgetsDetector::reset()
 {
     windows_.clear();
 
@@ -39,7 +39,7 @@ void DetectWidgets::reset()
     XFree(child_windows);
 }
 
-QRect DetectWidgets::window()
+QRect WidgetsDetector::window()
 {
     QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();

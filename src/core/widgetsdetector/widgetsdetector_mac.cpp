@@ -1,10 +1,10 @@
 #ifdef __APPLE__
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 #include <QCursor>
 #include <QGuiApplication>
 #include <QScreen>
 
-QRect DetectWidgets::window()
+QRect WidgetsDetector::window()
 {
     QRect resoult = QGuiApplication::primaryScreen()->geometry();
     auto cpos = QCursor::pos();

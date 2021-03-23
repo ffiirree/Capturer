@@ -7,7 +7,7 @@
 #include <QDesktopWidget>
 #include "utils.h"
 #include "logging.h"
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 
 Selector::Selector(QWidget * parent)
     : QWidget(parent)
@@ -34,8 +34,8 @@ void Selector::start()
         setMouseTracking(true);
 
         if(use_detect_) {
-            DetectWidgets::reset();
-            box_.reset(DetectWidgets::window());
+            WidgetsDetector::reset();
+            box_.reset(WidgetsDetector::window());
             info_->show();
         }
 
@@ -97,7 +97,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     switch (status_) {
     case SelectorStatus::NORMAL:
 		if (use_detect_) {
-			box_.reset(DetectWidgets::window());
+			box_.reset(WidgetsDetector::window());
             update();
 		}
 		setCursor(Qt::CrossCursor);
@@ -167,7 +167,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
         case SelectorStatus::SELECTING:
             // detected window
             if(box_.width() == 1 && box_.height() == 1 && use_detect_) {
-                box_.reset(DetectWidgets::window());
+                box_.reset(WidgetsDetector::window());
             }
             CAPTURED();
             break;

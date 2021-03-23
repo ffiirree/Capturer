@@ -2,7 +2,7 @@
 #include <QFileDialog>
 #include <QKeyEvent>
 #include <QStandardPaths>
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 
 GifCapturer::GifCapturer(QWidget * parent)
     : Selector(parent)

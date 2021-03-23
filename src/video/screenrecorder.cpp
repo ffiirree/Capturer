@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QStandardPaths>
-#include "detectwidgets.h"
+#include "widgetsdetector.h"
 #include "devices.h"
 #include "logging.h"
 
