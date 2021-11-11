@@ -15,7 +15,7 @@ endif()
 ########################################################################################################################
 
 # 3rdparty: QHotkey glog gflags
-set(BUILD_SHARED_LIBS OFF)
+SET(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
 add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/gflags EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
