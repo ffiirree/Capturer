@@ -3,6 +3,7 @@
 
 #include <QPixmap>
 #include <QSystemTrayIcon>
+#include <QStandardPaths>
 #include "selector.h"
 #include "imageeditmenu.h"
 #include "magnifier.h"
@@ -76,6 +77,8 @@ private:
 
     vector<History> history_;
     size_t history_idx_ = 0;
+
+    QString save_path_ = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 };
 
 #endif // SCREEN_SHOTER_H
