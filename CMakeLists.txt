@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(capturer VERSION 1.3.1 LANGUAGES C CXX)
+project(capturer VERSION 1.3.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,6 +15,7 @@ endif()
 ########################################################################################################################
 
 # 3rdparty: QHotkey glog gflags
+set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/gflags EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
@@ -31,7 +32,7 @@ if(WIN32)
     set(CMAKE_WIN32_EXECUTABLE ON)
     
     # Windows API
-    add_definitions(-DUNICODE)
+    add_definitions(-DUNICODE -DNOMINMAX)
 elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
 endif()

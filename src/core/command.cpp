@@ -24,6 +24,8 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
         connect(widget_.get(), &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
 
         widget_->setTextColor(pen.color());
+        // default color
+        widget_->setStyleSheet(QString("QTextEdit{color:%1}").arg(pen.color().name()));
         widget_->setFocus();
         widget_->move(start_point);
         widget_->show();
