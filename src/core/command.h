@@ -60,6 +60,10 @@ public:
             if(f) {
                 widget_->show();
                 widget_->setFocus();
+
+                auto text_cursor = widget_->textCursor();
+                text_cursor.movePosition(QTextCursor::End);
+                widget_->setTextCursor(text_cursor);
             }
             else {
                 widget_->hide();

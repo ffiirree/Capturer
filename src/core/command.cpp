@@ -257,7 +257,7 @@ void PaintCommand::drawAnchors(QPainter* painter)
 
     case Graph::TEXT:
     {
-        Resizer resizer(geometry().adjusted(-5, -5, 5, 5));
+        Resizer resizer(geometry().adjusted(-2, -2, 2, 2));
 
         painter->save();
         painter->setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
@@ -388,7 +388,7 @@ Resizer::PointPosition PaintCommand::hover(const QPoint& pos)
     }
     case TEXT:
     {
-        Resizer resizer(geometry().adjusted(-5, -5, 5, 5));
+        Resizer resizer(geometry().adjusted(-2, -2, 2, 2));
         resizer.enableRotate(true);
         auto hover_pos = resizer.absolutePos(pos);
         switch (hover_pos) {

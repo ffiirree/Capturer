@@ -9,9 +9,10 @@ TextEdit::TextEdit(QWidget * parent)
     setFrameShape(QFrame::NoFrame);
     setAttribute(Qt::WA_TranslucentBackground);
     ensureCursorVisible();
-    viewport()->setAutoFillBackground(false);
+    QPalette p = palette();
+    p.setBrush(QPalette::Base, QColor(0, 0, 0, 1));
+    setPalette(p);
 
-    setTextColor(QColor(0, 0, 0, 0));
     document()->setDocumentMargin(2);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

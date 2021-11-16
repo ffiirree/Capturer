@@ -214,7 +214,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="208"/>
+        <location filename="../src/snip/screenshoter.cpp" line="214"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

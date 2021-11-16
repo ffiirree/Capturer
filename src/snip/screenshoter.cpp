@@ -159,8 +159,13 @@ void ScreenShoter::moveMagnifier()
     if(status_ < SelectorStatus::CAPTURED || status_ == SelectorStatus::RESIZING) {
         magnifier_->pixmap(captured_screen_.copy(magnifier_->mrect()));
         magnifier_->show();
-        magnifier_->move(QCursor::pos().x() + 10, QCursor::pos().y() + 10);
-    } else {
+
+        auto cx = QCursor::pos().x(), cy = QCursor::pos().y();
+
+        int mx = rect().right() - cx > magnifier_->width() ? cx + 10 : cx - magnifier_->width() - 10;
+        int my = rect().bottom() - cy > magnifier_->height() ? cy + 10 : cy - magnifier_->height() - 10;
+        magnifier_->move(mx, my);
+    } else if (magnifier_->isVisible()) {
         magnifier_->hide();
     }
 }
