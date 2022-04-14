@@ -33,14 +33,14 @@ ImageWindow::ImageWindow(QWidget *parent)
     connect(menu_, &ImageEditMenu::save, this, &ImageWindow::saveAs);
     connect(canvas_, &Canvas::closed, [this]() { 
         setMouseTracking(false); 
-        QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size()));
-        pixmap_ = canvas_->canvas().copy();
+        QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size()));
+        pixmap_ = canvas_->pixmap().copy();
         scale_ = 1.0;
         canvas_->disable();
         editing_ = false;
     });
     connect(canvas_, &Canvas::changed, [this]() { 
-        QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size())); 
+        QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size())); 
     });
 
     registerShortcuts();
@@ -50,7 +50,7 @@ void ImageWindow::image(const QPixmap& image)
 { 
     original_pixmap_ = image;
     pixmap_ = original_pixmap_.copy();
-    canvas_->canvas(pixmap_);
+    canvas_->pixmap(pixmap_);
 
     scale_ = 1.0;
 
@@ -63,7 +63,7 @@ void ImageWindow::show(bool visable)
     {
     case WindowStatus::CREATED:
         status_ = WindowStatus::SHOWED;
-        resize(getShadowSize(canvas_->canvas().size()));
+        resize(getShadowSize(canvas_->pixmap().size()));
         move(original_pos_ - QPoint{ shadow_r_, shadow_r_ });
         QWidget::show();
         break;
@@ -116,11 +116,11 @@ void ImageWindow::update(Modified type)
     switch (type)
     {
     case Modified::ROTATED:
-        pixmap_ = pixmap_.transformed(QMatrix().rotate(1 * 90.0), Qt::FastTransformation);
+        pixmap_ = pixmap_.transformed(QTransform().rotate(1 * 90.0), Qt::SmoothTransformation);
         break;
 
     case Modified::ANTI_ROTATED:
-        pixmap_ = pixmap_.transformed(QMatrix().rotate(-1 * 90.0), Qt::FastTransformation);
+        pixmap_ = pixmap_.transformed(QTransform().rotate(-1 * 90.0), Qt::SmoothTransformation);
         break;
 
     case Modified::FLIPPED_V:
@@ -149,9 +149,8 @@ void ImageWindow::update(Modified type)
     default: break;
     }
 
-    canvas_->canvas(scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->canvas().size()));
-    setGeometry(getShadowGeometry(canvas_->canvas().size()));
+    canvas_->pixmap(scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    setGeometry(getShadowGeometry(canvas_->pixmap().size()));
 }
 
 QRect ImageWindow::getShadowGeometry(QSize _size)
@@ -199,39 +198,36 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
 {
     if (editing_) return;
 
-    auto delta = (event->delta() / 12000.0);         // +/-1%
-
     if (ctrl_) {
-        opacity_ += delta;
+        opacity_ += (event->delta() / 12000.0);
         if (opacity_ < 0.01) opacity_ = 0.01;
         if (opacity_ > 1.00) opacity_ = 1.00;
 
         setWindowOpacity(opacity_);
     }
     else if (!thumbnail_) {
-        scale_ += delta;
-        scale_ = scale_ < 0.01 ? 0.01 : scale_;
+        scale_ = event->delta() > 0 ? scale_ * 1.05 : scale_ / 1.05;
+        scale_ = std::max(std::min(100.0 / std::min(pixmap_.size().width(), pixmap_.size().height()), 1.0), scale_);
 
         update(Modified::SCALED);
     }
-
 }
 
 void ImageWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
     // background for alpha
-    if (bg_ != Qt::transparent && canvas_->canvas().hasAlpha()) {
+    if (bg_ != Qt::transparent && canvas_->pixmap().hasAlpha()) {
         painter.fillRect(shadow_r_, shadow_r_, width() - 2 * shadow_r_, height() - 2 * shadow_r_, bg_);
     }
 
     if (thumbnail_) {
-        auto center = canvas_->canvas().rect().center();
-        painter.drawPixmap(QRect{ shadow_r_, shadow_r_, 125, 125 }, canvas_->canvas(),
+        auto center = canvas_->pixmap().rect().center();
+        painter.drawPixmap(QRect{ shadow_r_, shadow_r_, 125, 125 }, canvas_->pixmap(),
             { center.x() - THUMBNAIL_WIDTH_ / 2, center.y() - THUMBNAIL_WIDTH_ / 2, THUMBNAIL_WIDTH_, THUMBNAIL_WIDTH_ });
     }
     else {
-        painter.drawPixmap(shadow_r_, shadow_r_, canvas_->canvas());
+        painter.drawPixmap(shadow_r_, shadow_r_, canvas_->pixmap());
 
         canvas_->drawModifying(&painter);
         canvas_->modified(PaintType::UNMODIFIED);
@@ -243,7 +239,7 @@ void ImageWindow::paste()
     if (editing_) return;
 
     image(QApplication::clipboard()->pixmap());
-    resize(getShadowSize(canvas_->canvas().size()));
+    resize(getShadowSize(canvas_->pixmap().size()));
 }
 
 void ImageWindow::open()
@@ -273,12 +269,12 @@ void ImageWindow::saveAs()
                                                  "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
     if(!filename.isEmpty()) {
-        canvas_->canvas().save(filename);
+        canvas_->pixmap().save(filename);
     }
 #elif __linux__
     auto filename = default_filepath + QDir::separator() + default_filename;
 
-    canvas_->canvas().save(filename);
+    canvas_->pixmap().save(filename);
 #endif
 }
 
@@ -318,7 +314,7 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
         canvas_->enable();
         setMouseTracking(true);
         canvas_->offset({ -shadow_r_, -shadow_r_ });
-        canvas_->canvas(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        canvas_->pixmap(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         menu_->show();
         moveMenu();
     });
@@ -365,7 +361,7 @@ void ImageWindow::dropEvent(QDropEvent *event)
 
     scale_ = 1.0;
     image(QPixmap(path));
-    resize(getShadowSize(canvas_->canvas().size()));
+    resize(getShadowSize(canvas_->pixmap().size()));
 
     event->acceptProposedAction();
 }

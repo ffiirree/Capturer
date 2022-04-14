@@ -102,7 +102,7 @@ void Canvas::changeGraph(Graph graph)
     }
 }
 
-void Canvas::canvas(const QPixmap& canvas)
+void Canvas::pixmap(const QPixmap& canvas)
 { 
     canvas_ = canvas.copy(); 
     backup_ = canvas.copy();

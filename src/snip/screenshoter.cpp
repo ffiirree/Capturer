@@ -58,7 +58,7 @@ void ScreenShoter::start()
                                                                     virtual_geometry.top(),
                                                                     virtual_geometry.width(),
                                                                     virtual_geometry.height());
-    canvas_->canvas(captured_screen_);
+    canvas_->pixmap(captured_screen_);
     moveMagnifier();
 
     Selector::start();
@@ -177,7 +177,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 {
     // 2. window
     painter_.begin(this);
-    painter_.drawPixmap(0, 0, canvas_->canvas());
+    painter_.drawPixmap(0, 0, canvas_->pixmap());
 
     // 3. modifying
     canvas_->drawModifying(&painter_);
@@ -205,7 +205,7 @@ QPixmap ScreenShoter::snipped()
 
 QPixmap ScreenShoter::snippedImage()
 {
-    return canvas_->canvas().copy(selected());
+    return canvas_->pixmap().copy(selected());
 }
 
 void ScreenShoter::save()

@@ -50,7 +50,7 @@ public:
     void updateCanvas();
     void drawModifying(QPainter*);
 
-    QPixmap canvas() { return canvas_; }
+    QPixmap pixmap() { return canvas_; }
 
     void offset(const QPoint& offset) { offset_ = offset; }
 
@@ -81,7 +81,7 @@ public slots:
     void disable() { enabled_ = false; }
 
     void changeGraph(Graph);
-    void canvas(const QPixmap& canvas);
+    void pixmap(const QPixmap& canvas);
     void copy();
     void paste();
     void remove();
