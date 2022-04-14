@@ -127,15 +127,13 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
         addSeparator();
 
         auto fix_btn = new IconButton(QPixmap(":/icon/res/pin"), icon_size, { ICON_W, ICON_W });
-        connect(fix_btn, &IconButton::clicked, [this]() { fix(); hide(); });
-        connect(fix_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
+        connect(fix_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); fix(); hide(); });
         addButton(fix_btn);
 
         auto save_btn = new IconButton(QPixmap(":/icon/res/save"), icon_size, { ICON_W, ICON_W });
         connect(save_btn, &IconButton::clicked, this, &ImageEditMenu::save);
         connect(save_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
         addButton(save_btn);
-
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -143,16 +141,14 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
         addSeparator();
 
         auto close_btn = new IconButton(QPixmap(":/icon/res/wrong"), icon_size, { ICON_W, ICON_W });
-        connect(close_btn, &IconButton::clicked, [this]() { exit(); hide(); });
-        connect(close_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
+        connect(close_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); exit(); hide(); });
         close_btn->setIconColor(QColor("#ee0000"));
         close_btn->setIconHoverColor(QColor("#ee0000"));
         close_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
         addWidget(close_btn);
 
         auto ok_btn = new IconButton(QPixmap(":/icon/res/right"), icon_size, { ICON_W, ICON_W });
-        connect(ok_btn, &IconButton::clicked, [this]() { ok(); hide(); });
-        connect(ok_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
+        connect(ok_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); ok(); hide(); });
         ok_btn->setIconColor(QColor("#07b913"));
         ok_btn->setIconHoverColor(QColor("#07b913"));
         ok_btn->setBackgroundHoverColor(QColor("#d0d0d5"));

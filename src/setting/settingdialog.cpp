@@ -303,7 +303,7 @@ void SettingWindow::setupHotkeyWidget()
     layout->addWidget(hide_show_images, idx_row++, 2, 1, 3);
 
     auto _3_2 = new ShortcutInput(config["record"]["hotkey"].get<QKeySequence>());
-    connect(_1_2, &ShortcutInput::changed, [this](auto&& ks){
+    connect(_3_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["record"]["hotkey"], ks);
     });
     layout->addWidget(new QLabel(tr("Video recording")), idx_row, 1, 1, 1);

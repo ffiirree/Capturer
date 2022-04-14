@@ -111,8 +111,8 @@ void Canvas::canvas(const QPixmap& canvas)
 
 bool Canvas::editing()
 {
-    return (edit_status_ & GRAPH_MASK) != 0 || commands_.size();
-}
+    return (edit_status_ & GRAPH_MASK) != 0 || commands_.size() || redo_stack_.size();
+} 
 
 void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
 {
@@ -122,7 +122,7 @@ void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
     if (previous_focus_cmd) {
         previous_focus_cmd->setFocus(false);
         if (!previous_focus_cmd->isValid()) {
-            commands_.remove(previous_focus_cmd);
+            commands_.remove(previous_focus_cmd); 
         }
     }
 

@@ -31,7 +31,10 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
     connect(menu_, &ImageEditMenu::graphChanged, [this](Graph graph) {
-        if (graph != Graph::NONE) LOCKED();
+        if (graph != Graph::NONE)
+            LOCKED();
+        else if (!canvas_->editing())
+            CAPTURED();
     });
 
     // show menu

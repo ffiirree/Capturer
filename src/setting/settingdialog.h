@@ -27,7 +27,6 @@ private slots:
 
 private:
     void setupGeneralWidget();
-    void setupAppearanceWidget();
     void setupSnipWidget();
     void setupRecordWidget();
     void setupGIFWidget();
