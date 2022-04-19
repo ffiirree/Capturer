@@ -9,6 +9,7 @@
 #include <QShortcut>
 #include <QMoveEvent>
 #include <QMimeData>
+#include <QThread>
 #include "utils.h"
 #include "logging.h"
 
@@ -150,12 +151,17 @@ void ImageWindow::update(Modified type)
     }
 
     canvas_->pixmap(scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    auto geometry = getShadowGeometry(canvas_->pixmap().size());
 
-    // resize and repaint first
-    auto geo = getShadowGeometry(canvas_->pixmap().size());
-    resize(geo.size());
-    repaint();
-    move(geo.topLeft());
+    if (type == Modified::SCALED) {
+        // resize and repaint first
+        resize(geometry.size());
+        repaint();
+        move(geometry.topLeft());
+    }
+    else {
+        setGeometry(geometry);
+    }
 }
 
 QRect ImageWindow::getShadowGeometry(QSize _size)
@@ -232,7 +238,7 @@ void ImageWindow::paintEvent(QPaintEvent *event)
             { center.x() - THUMBNAIL_WIDTH_ / 2, center.y() - THUMBNAIL_WIDTH_ / 2, THUMBNAIL_WIDTH_, THUMBNAIL_WIDTH_ });
     }
     else {
-        painter.drawPixmap(rect().adjusted(shadow_r_, shadow_r_, -shadow_r_, -shadow_r_), canvas_->pixmap());
+        painter.drawPixmap(shadow_r_, shadow_r_, canvas_->pixmap());
 
         canvas_->drawModifying(&painter);
         canvas_->modified(PaintType::UNMODIFIED);
