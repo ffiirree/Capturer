@@ -150,7 +150,12 @@ void ImageWindow::update(Modified type)
     }
 
     canvas_->pixmap(scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    setGeometry(getShadowGeometry(canvas_->pixmap().size()));
+
+    // resize and repaint first
+    auto geo = getShadowGeometry(canvas_->pixmap().size());
+    resize(geo.size());
+    repaint();
+    move(geo.topLeft());
 }
 
 QRect ImageWindow::getShadowGeometry(QSize _size)
@@ -207,7 +212,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
     }
     else if (!thumbnail_) {
         scale_ = event->delta() > 0 ? scale_ * 1.05 : scale_ / 1.05;
-        scale_ = std::max(std::min(100.0 / std::min(pixmap_.size().width(), pixmap_.size().height()), 1.0), scale_);
+        scale_ = std::max(std::min(125.0 / std::min(pixmap_.size().width(), pixmap_.size().height()), 1.0), scale_);
 
         update(Modified::SCALED);
     }
@@ -227,7 +232,7 @@ void ImageWindow::paintEvent(QPaintEvent *event)
             { center.x() - THUMBNAIL_WIDTH_ / 2, center.y() - THUMBNAIL_WIDTH_ / 2, THUMBNAIL_WIDTH_, THUMBNAIL_WIDTH_ });
     }
     else {
-        painter.drawPixmap(shadow_r_, shadow_r_, canvas_->pixmap());
+        painter.drawPixmap(rect().adjusted(shadow_r_, shadow_r_, -shadow_r_, -shadow_r_), canvas_->pixmap());
 
         canvas_->drawModifying(&painter);
         canvas_->modified(PaintType::UNMODIFIED);

@@ -7,12 +7,13 @@ QMenu#sys_tray_menu {
 QMenu#sys_tray_menu::item {
     background-color:#ffffff;
     border-left: 15px solid #ffffff;
-    height: 45px;
-    width: 150px;
+    height: 35px;
+    width: 120px;
 
-    padding-left: 35px;
+    padding-left: 15px;
 
     font-size: 10pt;
+    font-family: "Microsoft YaHei";
     color: #333333;
 }
 
