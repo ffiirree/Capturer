@@ -8,11 +8,10 @@ QMenu#sys_tray_menu::item {
     background-color:#ffffff;
     border-left: 15px solid #ffffff;
     height: 35px;
-    width: 120px;
 
     padding-left: 15px;
 
-    font-size: 10pt;
+    font-size: 14px;
     font-family: "Microsoft YaHei";
     color: #333333;
 }

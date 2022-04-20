@@ -91,7 +91,7 @@ git clone https://github.com/ffiirree/Capturer.git --recursive
 
 ### Windows 10 & Visual Studio 2019
 
-使用`Visual Studio 2019`直接打开，或者直接使用命令编译
+使用`Visual Studio 2019`打开(CMake工程) 或 直接使用命令编译
 
 ```bash
 cd Capturer
@@ -132,19 +132,12 @@ sudo apt install ffmpeg
 
 - [ ] 显示截图历史列表
 - [ ] 保存和加载截图历史
-- [ ] 截图分组
-
-### 贴图
-
-- [ ] 窗口自动对齐
+- [ ] 长截图
 
 ### 编辑
 
 - [ ] 文本通过拖动文本框调整大小
 - [ ] 文本框旋转
-- [ ] 滤镜功能
-- [ ] 提供推荐颜色组
-- [ ] 记忆历史使用的颜色，支持自定义固定颜色
 
 ### 录屏
 
