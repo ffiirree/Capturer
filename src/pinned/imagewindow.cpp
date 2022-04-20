@@ -151,8 +151,9 @@ void ImageWindow::update(Modified type)
     }
 
     canvas_->pixmap(scale_ == 1.0 ? pixmap_ : pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    auto geometry = getShadowGeometry(canvas_->pixmap().size());
 
+    auto geometry = getShadowGeometry(canvas_->pixmap().size());
+#ifdef _WIN32
     if (type == Modified::SCALED) {
         // resize and repaint first
         resize(geometry.size());
@@ -162,6 +163,9 @@ void ImageWindow::update(Modified type)
     else {
         setGeometry(geometry);
     }
+#elif __linux__
+    setGeometry(geometry);
+#endif
 }
 
 QRect ImageWindow::getShadowGeometry(QSize _size)

@@ -15,15 +15,15 @@ Keys | Actions
 `Ctrl + A`              | 全屏
 `W / A / S / D`         | 逐像素移动窗口
 `↑ ← ↓ →`               | 逐像素移动窗口
-`Ctrl + W / A / S / D`  | 逐像素扩大窗口
-`Ctrl + ↑ ← ↓ →`        | 逐像素缩小窗口
+`Ctrl + ↑ ← ↓ →`        | 逐像素扩大窗口
+`Shift + ↑ ← ↓ →`       | 逐像素缩小窗口
 `ESC`                   | 退出
 
 ### 截图
 
 Keys | Actions
 :-:|---
-`F1`                    | 开始截图
+`F1(默认，可修改)`       | 开始截图
 `P`                     | 截图并贴图
 `Ctrl + S`              | 截图并保存到文件
 `Page Up`               | 上一个截图记录
@@ -42,8 +42,8 @@ Keys | Actions
 `Ctrl + C`/`Ctrl + V`   | Copy & Paste
 `Delete`                | 删除选中的图形
 `Shift`                 | 椭圆->圆<br>矩形->正方形<br>直线->水平/垂直
-`Space`                 | 重新修改截图区域
-`Wheel`                 | 控制马赛克/橡皮擦直径; 放置于菜单上时，控制图形边框宽度
+`Space`                 | 重新调整截图区域
+`Wheel`                 | 控制马赛克/橡皮擦直径 <br>放置于菜单上时，控制图形线条宽度
 
 ### 贴图
 
@@ -52,7 +52,7 @@ Keys | Actions
 `F3`            | 将粘贴板中的内容作为图片贴出<br>(文本内容也会渲染为图片)，如果粘贴板中的路径(路径为文本)为图片，则会贴出该图片
 `Shift + F3`    | 显示/隐藏所有贴出的贴图
 `Wheel`         | 缩放贴图
-`Ctrl + Wheel`  | 更改贴图透明度
+`Ctrl + Wheel`  | 调整贴图透明度
 `G`             | 灰阶显示
 `R`             | 顺时针旋转90
 `Ctrl + R`      | 逆时针旋转90
@@ -114,7 +114,7 @@ make -j8
 make package
 ```
 
-### 安装FFmpeg
+### Install FFmpeg
 
 #### Windows
 

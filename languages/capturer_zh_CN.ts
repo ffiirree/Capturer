@@ -83,122 +83,122 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="261"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="265"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="278"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="282"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="315"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="319"/>
         <source>Copy image</source>
         <translation>复制图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="316"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="320"/>
         <source>Paste image</source>
         <translation>粘贴图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="320"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="324"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="335"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="339"/>
         <source>Open image...</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="336"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="340"/>
         <source>Save as...</source>
         <translation>另存为...</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="350"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="354"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="341"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="345"/>
         <source>Rotate 90</source>
         <translation>顺时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="340"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="344"/>
         <source>Grayscale</source>
         <translation>灰阶</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="342"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="346"/>
         <source>Rotate -90</source>
         <translation>逆时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="343"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="347"/>
         <source>Flip H</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="344"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="348"/>
         <source>Flip V</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="348"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="352"/>
         <source>Background</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="349"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="353"/>
         <source>White</source>
         <translation>白色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="351"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="355"/>
         <source>Black</source>
         <translation>黑色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="352"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="356"/>
         <source>Transparent</source>
         <translation>透明</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="354"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="354"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Hide </source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="354"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Show </source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="355"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="359"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="356"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="360"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="357"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="361"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="361"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
@@ -342,7 +342,7 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="344"/>
-        <source>Copyright © 2018 - 2022 ffiirree All rights reserved</source>
+        <source>Copyright © 2018 - 2022 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
 </context>

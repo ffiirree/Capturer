@@ -1,24 +1,22 @@
 QMenu#sys_tray_menu {
-    background-color: #ffffff;
+    background-color: #fafafa;
     border: 1px solid #e5e5e6;
-    padding: 3px;
-}
+    padding: 5px 0 5px 0;
 
-QMenu#sys_tray_menu::item {
-    background-color:#ffffff;
-    border-left: 15px solid #ffffff;
-    height: 35px;
-
-    padding-left: 15px;
-
-    font-size: 14px;
     font-family: "Microsoft YaHei";
     color: #333333;
 }
 
+QMenu#sys_tray_menu::item {
+    border-left: 10px solid transparent;
+    border-right: 13px solid transparent;
+    height: 35px;
+
+    padding-left: 5px;
+}
+
 QMenu#sys_tray_menu::item:selected {
     background-color:#e5e5e6;
-    border-left: 15px solid #e5e5e6;
 }
 
 QMenu#sys_tray_menu::separator {
