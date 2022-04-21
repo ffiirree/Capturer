@@ -33,6 +33,7 @@ Config::Config()
     IF_NULL_SET(settings_["autorun"], true);
     IF_NULL_SET(settings_["language"], "zh_CN");
     IF_NULL_SET(settings_["detectwindow"], true);
+    IF_NULL_SET(settings_["theme"], "dark");
 
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   1);
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#409EFF");

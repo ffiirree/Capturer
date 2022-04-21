@@ -12,8 +12,6 @@
         <file>res/rectangle.png</file>
         <file>res/icon.png</file>
         <file>res/mosaic.png</file>
-        <file>res/microphone.png</file>
-        <file>res/microphone-mute.png</file>
         <file>res/red_circle.png</file>
         <file>res/stop.png</file>
         <file>res/wrong.png</file>
@@ -31,10 +29,24 @@
         <file>res/arrow_up.png</file>
         <file>res/spin_down.png</file>
         <file>res/spin_up.png</file>
+        <file>res/pause-dark.png</file>
+        <file>res/play-dark.png</file>
+        <file>res/microphone-dark.png</file>
+        <file>res/microphone-mute-dark.png</file>
+        <file>res/speaker-dark.png</file>
+        <file>res/speaker-mute-dark.png</file>
+        <file>res/microphone-light.png</file>
+        <file>res/microphone-mute-light.png</file>
+        <file>res/pause-light.png</file>
+        <file>res/play-light.png</file>
+        <file>res/speaker-light.png</file>
+        <file>res/speaker-mute-light.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu/menu.qss</file>
         <file>setting/settingswindow.qss</file>
         <file>capturer.qss</file>
+        <file>menu/menu-light.qss</file>
+        <file>menu/menu-dark.qss</file>
     </qresource>
 </RCC>

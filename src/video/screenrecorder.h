@@ -29,7 +29,7 @@ public slots:
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
 
-    void mute(bool v) { mute_ = v; }
+    void mute(int type, bool v) { mute_ = v; }
     void updateTheme()
     {
         Selector::updateTheme(Config::instance()["record"]["selector"]);

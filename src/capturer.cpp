@@ -14,7 +14,7 @@ Capturer::Capturer(QWidget *parent)
 {
     LOG(INFO) << "initializing.";
 
-    LOAD_QSS(this, ":/qss/capturer.qss");
+    LOAD_QSS(this, { ":/qss/capturer.qss" });
 
     sniper_ = new ScreenShoter(this);
     recorder_ = new ScreenRecorder(this);

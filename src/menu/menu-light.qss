@@ -1,0 +1,41 @@
+RecordMenu QCheckBox#MicrophoneButton::indicator:unchecked {
+    image: url(:/icon/res/microphone-dark.png);
+}
+
+RecordMenu QCheckBox#MicrophoneButton::indicator:checked {
+    image: url(:/icon/res/microphone-mute-dark.png);
+}
+
+
+RecordMenu QCheckBox#Speaker::indicator:unchecked {
+    image: url(:/icon/res/speaker-dark.png);
+}
+
+RecordMenu QCheckBox#Speaker::indicator:checked {
+    image: url(:/icon/res/speaker-mute-dark.png);
+}
+
+RecordMenu QCheckBox#PauseButton::indicator:unchecked {
+    image: url(:/icon/res/pause-dark.png);
+}
+
+RecordMenu QCheckBox#PauseButton::indicator:checked {
+    image: url(:/icon/res/play-dark.png);
+}
+
+QWidget#Window {
+    background-color: #f2f2f2;
+    border: 1px solid #dfdfdf;
+}
+
+RecordMenu QCheckBox::indicator::hover {
+    background-color: #dfdfdf;
+}
+
+RecordMenu QLabel {
+    color: #2c2c2c;
+}
+
+QPushButton#RecordStopButton::hover {
+    background-color: #dfdfdf;
+}

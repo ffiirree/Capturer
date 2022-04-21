@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     // displays
     DisplayInfo::instance();
 
-    LOAD_QSS(qApp, ":/qss/menu/menu.qss");
+    LOAD_QSS(qApp, {":/qss/menu/menu.qss", ":/qss/menu/menu-" + Config::instance()["theme"].get<QString>() + ".qss"});
 
     auto language = Config::instance()["language"].get<QString>();
     LOG(INFO) << "LANGUAGE: " << language;

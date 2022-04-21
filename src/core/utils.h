@@ -37,16 +37,24 @@ using std::make_shared;
 using std::vector;
 using std::pair;
 using std::make_pair;
+class QString;
+class QFile;
 
-#define LOAD_QSS(X, Y)			st(                                     \
-                                    QFile file(Y);                      \
-                                    file.open(QFile::ReadOnly);			\
-                                                                        \
-                                    if (file.isOpen()) {				\
-                                        auto style = file.readAll();	\
-                                        X->setStyleSheet(style);		\
-                                        file.close();					\
-                                    }                                   \
-                                )
+template<typename T>
+inline void LOAD_QSS(T* obj, vector<QString> files)
+{
+    QString style = "";
+    for (auto& qss : files) {
+
+        QFile file(qss);
+        file.open(QFile::ReadOnly);
+
+        if (file.isOpen()) {
+            style += file.readAll();
+            file.close();
+        }
+    }
+    obj->setStyleSheet(style);
+}
 
 #endif // UTILS_H

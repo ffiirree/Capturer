@@ -15,7 +15,7 @@
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)
 {
-    LOAD_QSS(this, ":/qss/setting/settingswindow.qss");
+    LOAD_QSS(this, { ":/qss/setting/settingswindow.qss" });
 
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -106,7 +106,26 @@ void SettingWindow::setupGeneralWidget()
     layout->addWidget(new QLabel(tr("Settings file")), 2, 0, 1, 1);
     layout->addWidget(_2_2, 2, 1, 1, 2);
 
-    layout->setRowStretch(3, 1);
+    //
+    auto _3_2 = new QComboBox();
+    _3_2->setView(new QListView());
+    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->addItem(tr("Dark"));
+    _3_2->addItem(tr("Light"));
+    auto theme = config["theme"].get<QString>();
+    if (theme == "dark") {
+        _3_2->setCurrentIndex(0);
+    }
+    else {
+        _3_2->setCurrentIndex(1);
+    }
+    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this](int i) {
+        config.set(config["theme"], i ? "light" : "dark");
+    });
+    layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
+    layout->addWidget(_3_2, 3, 1, 1, 2);
+
+    layout->setRowStretch(4, 1);
     tabwidget_->widget(index)->setLayout(layout);
 }
 

@@ -3,45 +3,43 @@ QWidget#EditMenu {
 }
 
 /*///////////////////////////////////////////////////////////////*/
-RecordMenu {
-    background-color: black;
+QWidget#Window {
+    border-radius: 5px;
 }
 
-QPushButton#RecordStopButton {
-    background-color: black;
-    border-width: 0px;
+/* CheckBox */
+RecordMenu QCheckbox {
+    height: 40px;
+    width: 40px;
 }
 
-QPushButton#RecordStopButton::hovered {
-    border-width: 0px;
-}
-
-QPushButton#RecordStopButton::pressed {
-    border-width: 0px;
-}
-
-QCheckBox#MicrophoneButton{
+RecordMenu QCheckBox::indicator {
+    height: 20px;
+    width: 20px;
     padding: 10px;
 }
-QCheckBox#MicrophoneButton::indicator {
-    width: 22px;
-    height: 22px;
+
+RecordMenu QCheckBox::indicator::hover {
+    border-radius: 5px;
 }
-QCheckBox#MicrophoneButton::indicator:unchecked {
-    image: url(:/icon/res/microphone-mute.png);
+
+RecordMenu QLabel {
+    background-color: transparent;
+    font-family: "Microsoft YaHei";
+    font-size: 14px;
 }
-QCheckBox#MicrophoneButton::indicator:unchecked:hover {
-    image: url(:/icon/res/microphone-mute.png);
+
+/*RecordStopButton*/
+QPushButton#RecordStopButton {
+    height: 40px;
+    width: 40px;
+    background-color: transparent;
+    border: none;
+
+    qproperty-icon: url(:/icon/res/stop.png);
+    qproperty-iconSize: 20px;
 }
-QCheckBox#MicrophoneButton::indicator:unchecked:pressed {
-    image: url(:/icon/res/microphone-mute.png);
-}
-QCheckBox#MicrophoneButton::indicator:checked {
-    image: url(:/icon/res/microphone.png);
-}
-QCheckBox#MicrophoneButton::indicator:checked:hover {
-    image: url(:/icon/res/microphone.png);
-}
-QCheckBox#MicrophoneButton::indicator:checked:pressed {
-    image: url(:/icon/res/microphone.png);
+
+QPushButton#RecordStopButton::hover {
+    border-radius: 5px;
 }

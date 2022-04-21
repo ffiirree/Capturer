@@ -11,7 +11,7 @@ GifCapturer::GifCapturer(QWidget * parent)
     record_menu_ = new RecordMenu();
     prevent_transparent_ = true;
 
-    connect(record_menu_, &RecordMenu::STOP, this, &GifCapturer::exit);
+    connect(record_menu_, &RecordMenu::stopped, this, &GifCapturer::exit);
 }
 
 void GifCapturer::record()
@@ -76,7 +76,7 @@ void GifCapturer::exit()
 
     process_->start("ffmpeg", args);
 
-    record_menu_->stop();
+    record_menu_->close();
     emit SHOW_MESSAGE("Capturer<GIF>", tr("Path: ") + filename_);
 
     Selector::exit();

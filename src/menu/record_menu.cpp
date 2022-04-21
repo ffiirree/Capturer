@@ -3,83 +3,110 @@
 #include <QScreen>
 #include <QFont>
 #include <QPalette>
+#include <QMouseEvent>
+#include <QHBoxLayout>
 
 RecordMenu::RecordMenu(QWidget* parent)
-    : QFrame (parent)
+    : QWidget(parent)
 {
-    auto last_screen = QGuiApplication::screens().back();
-    auto right = last_screen->geometry().right();
-    setGeometry(right - 185, 175, 175, MENU_HEIGHT);
-
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
 
-    layout_ = new QHBoxLayout();
+    window_ = new QWidget(this);
+    window_->setObjectName("Window");
+
+    auto *layout_ = new QHBoxLayout();
     layout_->setSpacing(0);
     layout_->setMargin(0);
-    setLayout(layout_);
 
-    flag_label_ = new QLabel();
-    flag_label_->setPixmap(QPixmap::fromImage(QImage(":/icon/res/red_circle.png").scaled(15, 15, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
-    flag_label_->setAlignment(Qt::AlignCenter);
-    flag_label_->setFixedSize(MENU_HEIGHT, MENU_HEIGHT);
-    layout_->addWidget(flag_label_);
+    //mic_ = new QCheckBox();
+    //mic_->setObjectName("MicrophoneButton");
+    //connect(mic_, &QPushButton::clicked, [this](bool checked) {emit muted(1, checked); });
+    //layout_->addWidget(mic_);
 
-    time_label_ = new QLabel("00:00:00");
-    time_label_->setFixedSize(85, MENU_HEIGHT);
-    QFont font;
-    font.setPointSize(10);
-    font.setFamily("Consolas");
-    time_label_->setFont(font);
+    //speaker_ = new QCheckBox();
+    //speaker_->setObjectName("Speaker");
+    //connect(speaker_, &QPushButton::clicked, [this](bool checked) { emit muted(2, checked); });
+    //layout_->addWidget(speaker_);
 
-    QPalette p;
-    p.setColor(QPalette::WindowText, Qt::white);
-    time_label_->setPalette(p);
+    time_label_ = new QLabel("--:--:--");
+    time_label_->setFixedSize(85, 40);
     time_label_->setAlignment(Qt::AlignCenter);
     layout_->addWidget(time_label_);
 
+    //pause_ = new QCheckBox();
+    //pause_->setObjectName("PauseButton");
+    //connect(pause_, &QPushButton::clicked, [this](bool checked) { checked ? pause() : resume(); });
+    //layout_->addWidget(pause_);
+
     close_btn_ = new QPushButton();
     close_btn_->setObjectName("RecordStopButton");
-    close_btn_->setIcon(QIcon(":/icon/res/stop.png"));
-    close_btn_->setIconSize(QSize(24, 24));
-    close_btn_->setFixedSize(MENU_HEIGHT, MENU_HEIGHT);
-    connect(close_btn_, &QPushButton::clicked, [this](){
-        emit STOP();
-        close();
-    });
+    connect(close_btn_, &QPushButton::clicked, [this]() { emit stopped(); close(); });
     layout_->addWidget(close_btn_);
+
+    window_->setLayout(layout_);
+
+    auto *backgroud_layout = new QHBoxLayout();
+    backgroud_layout->setSpacing(0);
+    backgroud_layout->setMargin(0);
+    backgroud_layout->addWidget(window_);
+    setLayout(backgroud_layout);
 
     // Timer
     timer_ = new QTimer(this);
-    timer_->setInterval(1000);
-
-    time_ = new QTime(0, 0, 0);
-
     connect(timer_, &QTimer::timeout, this, &RecordMenu::update);
-}
 
-RecordMenu::~RecordMenu()
-{
-    delete time_;
+    move(QGuiApplication::screens().back()->geometry().right() - 125, 100);
 }
 
 void RecordMenu::update()
 {
-    *time_ = time_->addSecs(1);
-    time_label_->setText(time_->toString("hh:mm:ss"));
+    time_label_->setText(QTime(0, 0, 0).addMSecs(counter_ + time_.elapsed()).toString("hh:mm:ss"));
 }
 
 void RecordMenu::start()
 {
     time_label_->setText("00:00:00");
-    *time_ = QTime(0, 0, 0);
-    timer_->start();
+    time_.restart();
+    timer_->start(100);
+    counter_ = 0;
 
-    this->show();
+    emit started();
+
+    show();
 }
 
-void RecordMenu::stop()
+void RecordMenu::pause() 
 {
-    close();
-
     timer_->stop();
+    counter_ += time_.elapsed();
+
+    emit paused();
+}
+
+void RecordMenu::resume()
+{
+    time_.restart();
+    timer_->start();
+    
+    emit resumed();
+}
+
+void RecordMenu::mousePressEvent(QMouseEvent* event)
+{
+    begin_pos_ = event->globalPos();
+    moving_ = true;
+}
+
+void RecordMenu::mouseMoveEvent(QMouseEvent* event)
+{
+    if (moving_) {
+         move(event->globalPos() - begin_pos_ + pos());
+        begin_pos_ = event->globalPos();
+   }
+}
+
+void RecordMenu::mouseReleaseEvent(QMouseEvent* event)
+{
+    moving_ = false;
 }

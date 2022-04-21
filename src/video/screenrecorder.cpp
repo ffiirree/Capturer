@@ -16,8 +16,8 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     menu_ = new RecordMenu();
     prevent_transparent_ = true;
 
-    connect(menu_, &RecordMenu::STOP, this, &ScreenRecorder::exit);
-//    connect(menu_, &RecordMenu::mute, this, &ScreenRecorder::mute);
+    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
+    connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
 }
 
 void ScreenRecorder::record()
@@ -77,7 +77,7 @@ void ScreenRecorder::setup()
 void ScreenRecorder::exit()
 {
     process_->write("q\n\r");
-    menu_->stop();
+    menu_->close();
     emit SHOW_MESSAGE("Capturer<VIDEO>", tr("Path: ") + filename_);
     Selector::exit();
 }
