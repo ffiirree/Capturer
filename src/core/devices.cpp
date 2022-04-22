@@ -1,7 +1,6 @@
 #include "devices.h"
 #include <QCameraInfo>
 #include <QAudioDeviceInfo>
-#include "logging.h"
 
 QList<QString> Devices::cameras()
 {

@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <QFile>
 
 #ifndef st
 #define st(X) do{X}while(0)
@@ -37,8 +38,6 @@ using std::make_shared;
 using std::vector;
 using std::pair;
 using std::make_pair;
-class QString;
-class QFile;
 
 template<typename T>
 inline void LOAD_QSS(T* obj, vector<QString> files)

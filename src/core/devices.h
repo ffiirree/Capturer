@@ -1,7 +1,6 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#include "utils.h"
 #include <QString>
 
 class Devices {

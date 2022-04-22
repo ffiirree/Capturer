@@ -104,7 +104,7 @@ cmake --build . --config Release --target install
 ### Linux (Ubuntu 20.04)
 
 ```bash
-sudo apt install build-essential ffmpeg gcc g++ cmake qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
+sudo apt install build-essential ffmpeg gcc g++ cmake qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev
 cd Capturer
 mkdir build && cd build
 cmake ..
