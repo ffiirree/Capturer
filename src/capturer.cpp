@@ -14,8 +14,6 @@ Capturer::Capturer(QWidget *parent)
 {
     LOG(INFO) << "initializing.";
 
-    LOAD_QSS(this, { ":/qss/capturer.qss" });
-
     sniper_ = new ScreenShoter(this);
     recorder_ = new ScreenRecorder(this);
     gifcptr_ = new GifCapturer(this);
@@ -90,15 +88,19 @@ void Capturer::setupSystemTrayIcon()
 {
     // SystemTrayIcon
     auto menu = new QMenu(this);
-    menu->setObjectName("sys_tray_menu");
+    menu->setWindowFlag(Qt::FramelessWindowHint);
+    menu->setWindowFlag(Qt::NoDropShadowWindowHint);
+    menu->setAttribute(Qt::WA_TranslucentBackground);
 
-    menu->addAction(QIcon(":/icon/res/screenshot"), tr("Screenshot"), sniper_, &ScreenShoter::start);
-    menu->addAction(QIcon(":/icon/res/sr"),         tr("Record Video"), recorder_, &ScreenRecorder::record);
-    menu->addAction(QIcon(":/icon/res/gif"),        tr("Record GIF"), gifcptr_, &GifCapturer::record);
+    QString theme = Config::instance()["theme"].get<QString>() == "dark" ? "light" : "dark";
+
+    menu->addAction(QIcon(":/icon/res/screenshot-" + theme), tr("Screenshot"), sniper_, &ScreenShoter::start);
+    menu->addAction(QIcon(":/icon/res/capture-" + theme),         tr("Record Video"), recorder_, &ScreenRecorder::record);
+    menu->addAction(QIcon(":/icon/res/gif-" + theme),        tr("Record GIF"), gifcptr_, &GifCapturer::record);
     menu->addSeparator();
-    menu->addAction(QIcon(":/icon/res/setting"),    tr("Settings"), setting_dialog_, &SettingWindow::show);
+    menu->addAction(QIcon(":/icon/res/setting-" + theme),    tr("Settings"), setting_dialog_, &SettingWindow::show);
     menu->addSeparator();
-    menu->addAction(QIcon(":/icon/res/exit"),       tr("Quit"), qApp, &QCoreApplication::exit);
+    menu->addAction(QIcon(":/icon/res/exit-" + theme),       tr("Quit"), qApp, &QCoreApplication::exit);
 
     sys_tray_icon_->setContextMenu(menu);
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));

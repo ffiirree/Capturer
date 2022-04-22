@@ -13,7 +13,7 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
 {
     process_ = new QProcess(this);
-    menu_ = new RecordMenu();
+    menu_ = new RecordMenu(m_mute_, s_mute_);
     prevent_transparent_ = true;
 
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
@@ -27,7 +27,6 @@ void ScreenRecorder::record()
 
 void ScreenRecorder::start()
 {
-    Devices::refresh();
     Selector::start();
 }
 
@@ -54,10 +53,9 @@ void ScreenRecorder::setup()
          << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
          << filename_;
 #elif _WIN32
-    auto audio_devices = Devices::audioDevices();
-    if(!audio_devices.empty() && !mute_) {
+    if (!Devices::microphones().isEmpty() && !m_mute_) {
         args << "-f" << "dshow"
-             << "-i" << "audio=" + audio_devices.at(0).first;
+             << "-i" << "audio=" + Devices::microphones().at(0);
     }
     args << "-f"            << "gdigrab"
          << "-framerate"    << QString("%1").arg(framerate_)
@@ -69,7 +67,7 @@ void ScreenRecorder::setup()
          << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
          << filename_;
 
-    LOG(INFO) << args;
+    LOG(INFO) << args.join(" ");
 #endif
     process_->start("ffmpeg", args);
 }

@@ -4,28 +4,17 @@
 #include "utils.h"
 #include <QString>
 
-enum class DeviceType {
-    VIDEO_INPUT_DEVICE,
-    AUDIO_INPUT_DEVICE,
-};
-
 class Devices {
 public:
-    static void refresh();
+    static QList<QString> cameras();
 
-    static vector<pair<QString, QString>> videoDevices()
-    {
-        return video_devices_;
-    }
+    static QList<QString> microphones();
 
-    static vector<pair<QString, QString>> audioDevices()
-    {
-        return audio_devices_;
-    }
+    static QList<QString> speakers();
 
-private:
-    static vector<pair<QString, QString>> video_devices_;
-    static vector<pair<QString, QString>> audio_devices_;
+    static QString defaultMicrophone();
+
+    static QString defaultSpeaker();
 };
 
 #endif // DEVICES_H

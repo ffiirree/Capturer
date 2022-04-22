@@ -60,6 +60,7 @@ private:
 
     void registerShortcuts();
     void moveMenu();
+    void initContextMenu();
 
     void update(Modified type);
     QRect getShadowGeometry(QSize size);
@@ -91,6 +92,8 @@ private:
     QGraphicsDropShadowEffect *effect_;
 
     bool editing_ = false;
+
+    QMenu* context_menu_ = nullptr;
 };
 
 #endif // IMAGE_WINDOW_H

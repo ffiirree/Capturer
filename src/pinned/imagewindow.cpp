@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "logging.h"
 
-ImageWindow::ImageWindow(QWidget *parent)
+ImageWindow::ImageWindow(QWidget* parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Dialog);
@@ -30,25 +30,26 @@ ImageWindow::ImageWindow(QWidget *parent)
     menu_ = new ImageEditMenu(this, ImageEditMenu::ALL & ~ImageEditMenu::SAVE_GROUP);
     canvas_ = new Canvas(menu_, this);
     installEventFilter(canvas_);
-    
+
     connect(menu_, &ImageEditMenu::save, this, &ImageWindow::saveAs);
-    connect(canvas_, &Canvas::closed, [this]() { 
-        setMouseTracking(false); 
+    connect(canvas_, &Canvas::closed, [this]() {
+        setMouseTracking(false);
         QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size()));
         pixmap_ = canvas_->pixmap().copy();
         scale_ = 1.0;
         canvas_->disable();
         editing_ = false;
     });
-    connect(canvas_, &Canvas::changed, [this]() { 
-        QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size())); 
+    connect(canvas_, &Canvas::changed, [this]() {
+        QWidget::update(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size()));
     });
 
     registerShortcuts();
+    initContextMenu();
 }
 
 void ImageWindow::image(const QPixmap& image)
-{ 
+{
     original_pixmap_ = image;
     pixmap_ = original_pixmap_.copy();
     canvas_->pixmap(pixmap_);
@@ -95,7 +96,7 @@ void ImageWindow::hide()
         canvas_->disable();
         menu_->reset();
         menu_->hide();
-        QWidget::hide(); 
+        QWidget::hide();
     }
 }
 
@@ -177,7 +178,7 @@ QRect ImageWindow::getShadowGeometry(QSize _size)
     return rect;
 }
 
-void ImageWindow::mousePressEvent(QMouseEvent *event)
+void ImageWindow::mousePressEvent(QMouseEvent* event)
 {
     if (editing_) return;
 
@@ -199,7 +200,7 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 
 void ImageWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    
+
 }
 
 void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
@@ -209,7 +210,7 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
     update(Modified::THUMBNAIL);
 }
 
-void ImageWindow::wheelEvent(QWheelEvent *event)
+void ImageWindow::wheelEvent(QWheelEvent* event)
 {
     if (editing_) return;
 
@@ -228,7 +229,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
     }
 }
 
-void ImageWindow::paintEvent(QPaintEvent *event)
+void ImageWindow::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     // background for alpha
@@ -251,7 +252,7 @@ void ImageWindow::paintEvent(QPaintEvent *event)
 
 void ImageWindow::paste()
 {
-    if (editing_) return;
+    if (editing_ && QApplication::clipboard()->mimeData()->hasImage()) return;
 
     image(QApplication::clipboard()->pixmap());
     resize(getShadowSize(canvas_->pixmap().size()));
@@ -262,10 +263,10 @@ void ImageWindow::open()
     if (editing_) return;
 
     auto filename = QFileDialog::getOpenFileName(this,
-                                                 tr("Open Image"),
-                                                 QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
-                                                 "Image Files(*.png *.jpg *.jpeg *.bmp)");
-    if(!filename.isEmpty()) {
+        tr("Open Image"),
+        QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
+        "Image Files(*.png *.jpg *.jpeg *.bmp)");
+    if (!filename.isEmpty()) {
         image(QPixmap(filename));
         resize(getShadowSize(original_pixmap_.size()));
     }
@@ -279,11 +280,11 @@ void ImageWindow::saveAs()
     QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
 #ifdef _WIN32
     auto filename = QFileDialog::getSaveFileName(this,
-                                                 tr("Save Image"),
-                                                 default_filepath + QDir::separator() + default_filename,
-                                                 "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+        tr("Save Image"),
+        default_filepath + QDir::separator() + default_filename,
+        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
-    if(!filename.isEmpty()) {
+    if (!filename.isEmpty()) {
         canvas_->pixmap().save(filename);
     }
 #elif __linux__
@@ -295,7 +296,7 @@ void ImageWindow::saveAs()
 
 void ImageWindow::recover()
 {
-    if(thumbnail_) return;
+    if (thumbnail_) return;
 
     update(Modified::RECOVERED);
 }
@@ -305,23 +306,24 @@ void ImageWindow::effectEnabled()
     if (editing_) return;
 
     shadow_r_ = !effect_->isEnabled() ? DEFAULT_SHADOW_R_ : 0;
-    
+
     update(Modified::SHADOW);
     effect_->setEnabled(!effect_->isEnabled());
 }
 
-void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
+void ImageWindow::initContextMenu()
 {
-    if (editing_) return;
+    context_menu_ = new QMenu(this);
+    context_menu_->setWindowFlag(Qt::FramelessWindowHint);
+    context_menu_->setWindowFlag(Qt::NoDropShadowWindowHint);
+    context_menu_->setAttribute(Qt::WA_TranslucentBackground);
 
-    auto menu = new QMenu(this);
+    addAction(context_menu_->addAction(tr("Copy image"), [this]() { editing_ ? canvas_->copy() : QApplication::clipboard()->setPixmap(image()); }, QKeySequence(Qt::CTRL + Qt::Key_C)));
+    addAction(context_menu_->addAction(tr("Paste image"), [this](){ editing_ ? canvas_->paste() : paste(); }, QKeySequence(Qt::CTRL + Qt::Key_V)));
 
-    menu->addAction(tr("Copy image") + "\tCtrl + C", [this]() { QApplication::clipboard()->setPixmap(image()); });
-    menu->addAction(tr("Paste image") + "\tCtrl + V", this, &ImageWindow::paste);
+    context_menu_->addSeparator();
 
-    menu->addSeparator();
-
-    menu->addAction(tr("Edit"), [this]() {
+    context_menu_->addAction(tr("Edit"), [this]() {
         if (thumbnail_) return;
 
         editing_ = true;
@@ -332,47 +334,51 @@ void ImageWindow::contextMenuEvent(QContextMenuEvent * event)
         canvas_->pixmap(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         menu_->show();
         moveMenu();
-    });
+        });
 
-    menu->addSeparator();
+    context_menu_->addSeparator();
 
-    menu->addAction(tr("Open image...") + "\tCtrl + O", this, &ImageWindow::open);
-    menu->addAction(tr("Save as...") + "\tCtrl + S", this, &ImageWindow::saveAs);
+    addAction(context_menu_->addAction(tr("Open image..."), this, &ImageWindow::open, QKeySequence(Qt::CTRL + Qt::Key_O)));
+    addAction(context_menu_->addAction(tr("Save as..."), this, &ImageWindow::saveAs, QKeySequence(Qt::CTRL + Qt::Key_S)));
 
-    menu->addSeparator();
-    
-    menu->addAction(tr("Grayscale") + "\tG", [this]() { update(Modified::GRAY); });
-    menu->addAction(tr("Rotate 90") + "\tR", [this]() { update(Modified::ROTATED); });
-    menu->addAction(tr("Rotate -90") + "\tCtrl + R", [this]() { update(Modified::ROTATED); });
-    menu->addAction(tr("Flip H") + "\tH", [this]() { update(Modified::FLIPPED_H); });
-    menu->addAction(tr("Flip V") + "\tV", [this]() { update(Modified::FLIPPED_V); });
+    context_menu_->addSeparator();
 
-    menu->addSeparator();
+    addAction(context_menu_->addAction(tr("Grayscale"), [this]() { update(Modified::GRAY); }, QKeySequence(Qt::Key_G)));
+    addAction(context_menu_->addAction(tr("Rotate 90"), [this]() { update(Modified::ROTATED); }, QKeySequence(Qt::Key_R)));
+    addAction(context_menu_->addAction(tr("Rotate -90"), [this]() { update(Modified::ROTATED); }, QKeySequence(Qt::CTRL + Qt::Key_R)));
+    addAction(context_menu_->addAction(tr("Flip H"), [this]() { update(Modified::FLIPPED_H); }, QKeySequence(Qt::Key_H)));
+    addAction(context_menu_->addAction(tr("Flip V"), [this]() { update(Modified::FLIPPED_V); }, QKeySequence(Qt::Key_V)));
+
+    context_menu_->addSeparator();
 
     auto sub_menu = new QMenu(tr("Background"), this);
     sub_menu->addAction(tr("White"), [this]() { bg_ = Qt::white; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Gray"), [this]() { bg_ = Qt::gray; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Black"), [this]() { bg_ = Qt::black; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Transparent"), [this]() { bg_ = Qt::transparent; update(Modified::BACKGROUND); });
-    menu->addMenu(sub_menu);
-    menu->addAction((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"), this, &ImageWindow::effectEnabled);
-    menu->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
-    menu->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
-    menu->addAction(tr("Recover"), this, &ImageWindow::recover);
+    context_menu_->addMenu(sub_menu);
+    context_menu_->addAction((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"), this, &ImageWindow::effectEnabled);
+    context_menu_->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
+    context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
+    context_menu_->addAction(tr("Recover"), this, &ImageWindow::recover);
 
-    menu->addSeparator();
+    context_menu_->addSeparator();
 
-    menu->addAction(tr("Close") + "\tEsc", this, &ImageWindow::invisable);
-
-    menu->exec(event->globalPos());
+    context_menu_->addAction(tr("Close"), this, &ImageWindow::invisable, QKeySequence(Qt::Key_Escape));
 }
 
-void ImageWindow::dropEvent(QDropEvent *event)
+void ImageWindow::contextMenuEvent(QContextMenuEvent* event)
+{
+    if (editing_) return;
+    context_menu_->exec(event->globalPos());
+}
+
+void ImageWindow::dropEvent(QDropEvent* event)
 {
     if (editing_) return;
 
     auto path = event->mimeData()->urls()[0].toLocalFile();
-    LOG(INFO) << "Drop to ImageWindow : "<< path;
+    LOG(INFO) << "Drop to ImageWindow : " << path;
 
     scale_ = 1.0;
     image(QPixmap(path));
@@ -381,12 +387,12 @@ void ImageWindow::dropEvent(QDropEvent *event)
     event->acceptProposedAction();
 }
 
-void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
+void ImageWindow::dragEnterEvent(QDragEnterEvent* event)
 {
     if (editing_) return;
 
     auto mimedata = event->mimeData();
-    if(mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
+    if (mimedata->hasUrls() && QString("jpg;png;jpeg;JPG;PNG;JPEG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix()))
         event->acceptProposedAction();
 }
 
@@ -402,16 +408,16 @@ void ImageWindow::moveMenu()
     menu_->setSubMenuShowBelow();
 }
 
-void ImageWindow::keyPressEvent(QKeyEvent *event)
+void ImageWindow::keyPressEvent(QKeyEvent* event)
 {
-    if(event->key() == Qt::Key_Control) {
+    if (event->key() == Qt::Key_Control) {
         ctrl_ = true;
     }
 }
 
-void ImageWindow::keyReleaseEvent(QKeyEvent *event)
+void ImageWindow::keyReleaseEvent(QKeyEvent* event)
 {
-    if(event->key() == Qt::Key_Control) {
+    if (event->key() == Qt::Key_Control) {
         ctrl_ = false;
     }
 }
@@ -431,29 +437,6 @@ void ImageWindow::registerShortcuts()
             invisable();
         }
     });
-
-    // copy & paste
-    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [this]() { 
-        editing_? canvas_->copy() : QApplication::clipboard()->setPixmap(image()); 
-    });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, [this] {
-        editing_ ? canvas_->paste() : paste();
-    });
-
-    // save & open
-    connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, this, &ImageWindow::saveAs);
-    connect(new QShortcut(Qt::CTRL + Qt::Key_O, this), &QShortcut::activated, this, &ImageWindow::open);
-
-    // gray
-    connect(new QShortcut(Qt::Key_G, this), &QShortcut::activated, [this]() { update(Modified::GRAY); });
-
-    // rotate
-    connect(new QShortcut(Qt::Key_R, this), &QShortcut::activated, [this]() { update(Modified::ROTATED); });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_R, this), &QShortcut::activated, [this]() { update(Modified::ANTI_ROTATED); });
-
-    // flip
-    connect(new QShortcut(Qt::Key_V, this), &QShortcut::activated, [this]() { update(Modified::FLIPPED_V); });
-    connect(new QShortcut(Qt::Key_H, this), &QShortcut::activated, [this]() { update(Modified::FLIPPED_H); });
 
     // move
     connect(new QShortcut(Qt::Key_W, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(0, -1, 0, 0)); });

@@ -8,7 +8,7 @@ GifCapturer::GifCapturer(QWidget * parent)
     : Selector(parent)
 {
     process_ = new QProcess(this);
-    record_menu_ = new RecordMenu();
+    record_menu_ = new RecordMenu(0, 0, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
 
     connect(record_menu_, &RecordMenu::stopped, this, &GifCapturer::exit);

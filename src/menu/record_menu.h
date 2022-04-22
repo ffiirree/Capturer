@@ -13,7 +13,16 @@ class RecordMenu : public QWidget
     Q_OBJECT
 
 public:
-    explicit RecordMenu(QWidget* parent = nullptr);
+    enum :uint8_t {
+        RECORD_MENU_NONE = 0x00,
+        RECORD_MENU_M_MUTE = 0x01,
+        RECORD_MENU_S_MUTE = 0x02,
+        RECORD_MENU_PAUSE = 0x08,
+        RECORD_MENU_ALL = 0xff
+    };
+
+    explicit RecordMenu(bool, bool, uint8_t = RECORD_MENU_ALL, QWidget* parent = nullptr);
+
 
 signals:
     void started();
@@ -27,6 +36,7 @@ public slots:
     void pause();
     void resume();
     void update();
+    void mute(int, bool);
 
 private:
     void mousePressEvent(QMouseEvent*) override;

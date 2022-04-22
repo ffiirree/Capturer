@@ -25,7 +25,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Gui Multimedia LinguistTools REQUIRED)
 
 if(WIN32)
     # GUI/console
@@ -56,7 +56,7 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        QHotkey::QHotkey Qt5::Widgets Qt5::Gui gflags::gflags glog::glog
+        QHotkey::QHotkey Qt5::Widgets Qt5::Gui Qt5::Multimedia gflags::gflags glog::glog
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>

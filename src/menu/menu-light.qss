@@ -24,12 +24,12 @@ RecordMenu QCheckBox#PauseButton::indicator:checked {
 }
 
 QWidget#Window {
-    background-color: #f2f2f2;
+    background-color: #f9f9f9;
     border: 1px solid #dfdfdf;
 }
 
 RecordMenu QCheckBox::indicator::hover {
-    background-color: #dfdfdf;
+    background-color: #efefef;
 }
 
 RecordMenu QLabel {
@@ -37,5 +37,5 @@ RecordMenu QLabel {
 }
 
 QPushButton#RecordStopButton::hover {
-    background-color: #dfdfdf;
+    background-color: #efefef;
 }

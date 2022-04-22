@@ -9,6 +9,7 @@
 #include <QGraphicsDropShadowEffect>
 #include "colorpanel.h"
 #include "titlebar.h"
+#include "devices.h"
 #include "logging.h"
 #include "version.h"
 
@@ -102,6 +103,7 @@ void SettingWindow::setupGeneralWidget()
 
     //
     auto _2_2 = new QLineEdit(config.getFilePath());
+    _2_2->setContextMenuPolicy(Qt::NoContextMenu);
     _2_2->setFocusPolicy(Qt::NoFocus);
     layout->addWidget(new QLabel(tr("Settings file")), 2, 0, 1, 1);
     layout->addWidget(_2_2, 2, 1, 1, 2);
@@ -141,6 +143,7 @@ void SettingWindow::setupSnipWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
+    _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["snip"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["snip"]["selector"]["border"]["width"], w);
@@ -185,6 +188,7 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
+    _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["record"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["record"]["selector"]["border"]["width"], w);
@@ -220,6 +224,7 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(_5, 6, 1, 1, 1);
 
     auto _6_2 = new QSpinBox();
+    _6_2->setContextMenuPolicy(Qt::NoContextMenu);
     _6_2->setValue(config["record"]["framerate"].get<int>());
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["record"]["framerate"], w);
@@ -227,7 +232,34 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
     layout->addWidget(_6_2, 7, 2, 1, 2);
 
-    layout->setRowStretch(8, 1);
+    layout->addWidget(new QLabel(), 8, 1, 1, 1);
+
+    auto _7 = new QLabel(tr("Devices:"));
+    _7->setObjectName("sub-title");
+    layout->addWidget(_7, 9, 1, 1, 1);
+
+    auto _8_2 = new QComboBox();
+    _8_2->setView(new QListView());
+    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _8_2->addItems(Devices::microphones());
+    layout->addWidget(new QLabel(tr("Microphones")), 10, 1, 1, 1);
+    layout->addWidget(_8_2, 10, 2, 1, 2);
+
+    auto _9_2 = new QComboBox();
+    _9_2->setView(new QListView());
+    _9_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _9_2->addItems(Devices::speakers());
+    layout->addWidget(new QLabel(tr("Speakers")), 11, 1, 1, 1);
+    layout->addWidget(_9_2, 11, 2, 1, 2);
+
+    auto _10_2 = new QComboBox();
+    _10_2->setView(new QListView());
+    _10_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _10_2->addItems(Devices::cameras());
+    layout->addWidget(new QLabel(tr("Cameras")), 12, 1, 1, 1);
+    layout->addWidget(_10_2, 12, 2, 1, 2);
+
+    layout->setRowStretch(13, 1);
 
     tabwidget_->widget(index)->setLayout(layout);
 }
@@ -279,6 +311,7 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(_5, 6, 1, 1, 1);
 
     auto _7_2 = new QSpinBox();
+    _7_2->setContextMenuPolicy(Qt::NoContextMenu);
     _7_2->setValue(config["gif"]["framerate"].get<int>());
     connect(_7_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["gif"]["framerate"], w);

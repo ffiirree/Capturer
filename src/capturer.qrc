@@ -12,19 +12,13 @@
         <file>res/rectangle.png</file>
         <file>res/icon.png</file>
         <file>res/mosaic.png</file>
-        <file>res/red_circle.png</file>
         <file>res/stop.png</file>
         <file>res/wrong.png</file>
         <file>res/right.png</file>
-        <file>res/gif.png</file>
-        <file>res/screenshot.png</file>
-        <file>res/setting.png</file>
-        <file>res/exit.png</file>
         <file>res/arrow.png</file>
         <file>res/fill.png</file>
         <file>res/pin.png</file>
         <file>res/rotate.png</file>
-        <file>res/sr.png</file>
         <file>res/arrow_down.png</file>
         <file>res/arrow_up.png</file>
         <file>res/spin_down.png</file>
@@ -41,6 +35,16 @@
         <file>res/play-light.png</file>
         <file>res/speaker-light.png</file>
         <file>res/speaker-mute-light.png</file>
+        <file>res/setting-dark.png</file>
+        <file>res/setting-light.png</file>
+        <file>res/screenshot-light.png</file>
+        <file>res/capture-dark.png</file>
+        <file>res/capture-light.png</file>
+        <file>res/exit-dark.png</file>
+        <file>res/exit-light.png</file>
+        <file>res/gif-dark.png</file>
+        <file>res/gif-light.png</file>
+        <file>res/screenshot-dark.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu/menu.qss</file>
@@ -48,5 +52,7 @@
         <file>capturer.qss</file>
         <file>menu/menu-light.qss</file>
         <file>menu/menu-dark.qss</file>
+        <file>capturer-dark.qss</file>
+        <file>capturer-light.qss</file>
     </qresource>
 </RCC>

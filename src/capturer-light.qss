@@ -1,0 +1,14 @@
+/* context menu */
+QMenu {
+    background-color: #f9f9f9;
+    color: #2c2c2c;
+    border: 1px solid #dfdfdf;
+}
+
+QMenu::item::selected {
+    background-color: #efefef;
+}
+
+QMenu::separator {
+    background-color: #e5e5e6;
+}
