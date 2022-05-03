@@ -45,6 +45,10 @@
         <file>res/gif-dark.png</file>
         <file>res/gif-light.png</file>
         <file>res/screenshot-dark.png</file>
+        <file>res/camera-dark.png</file>
+        <file>res/camera-fill-dark.png</file>
+        <file>res/camera-light.png</file>
+        <file>res/camera-fill-light.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu/menu.qss</file>
@@ -54,5 +58,7 @@
         <file>menu/menu-dark.qss</file>
         <file>capturer-dark.qss</file>
         <file>capturer-light.qss</file>
+        <file>setting/settingswindow-dark.qss</file>
+        <file>setting/settingswindow-light.qss</file>
     </qresource>
 </RCC>

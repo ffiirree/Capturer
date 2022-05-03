@@ -8,7 +8,7 @@
 #include <QButtonGroup>
 #include "iconbutton.h"
 
-#define CONNECT_BTN_MENU(X, BTN, MENU)      connect(BTN, &IconButton::toggled, [=](bool checked) {      \
+#define CONNECT_BTN_MENU(X, BTN, MENU)      connect(BTN, &QPushButton::toggled, [=](bool checked) {      \
                                                 if(checked) {                                           \
                                                     emit graphChanged(X);                               \
                                                     MENU->show();                                       \
@@ -34,76 +34,92 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     const auto icon_size = QSize(HEIGHT, HEIGHT);
 
     if (groups & GRAPH_GROUP) {
-        auto rectangle_btn = new IconButton(QPixmap(":/icon/res/rectangle"), icon_size, { ICON_W, ICON_W }, true);
+        auto rectangle_btn = new QPushButton(this);
+        rectangle_btn->setCheckable(true);
         rectangle_btn->setToolTip(tr("Rectangle"));
+        rectangle_btn->setObjectName("rectangle_btn");
         rectangle_menu_ = new GraphMenu(this);
         connect(rectangle_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::RECTANGLE); });
         CONNECT_BTN_MENU(Graph::RECTANGLE, rectangle_btn, rectangle_menu_);
         group_->addButton(rectangle_btn);
-        addButton(rectangle_btn);
+        addWidget(rectangle_btn);
         buttons_[Graph::RECTANGLE] = rectangle_btn;
 
-        auto circle_btn = new IconButton(QPixmap(":/icon/res/circle"), icon_size, { ICON_W, ICON_W }, true);
+        auto circle_btn = new QPushButton(this);
+        circle_btn->setCheckable(true);
         circle_btn->setToolTip(tr("Ellipse"));
+        circle_btn->setObjectName("circle_btn");
         circle_menu_ = new GraphMenu(this);
         connect(circle_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::CIRCLE); });
         CONNECT_BTN_MENU(Graph::CIRCLE, circle_btn, circle_menu_);
         group_->addButton(circle_btn);
-        addButton(circle_btn);
+        addWidget(circle_btn);
         buttons_[Graph::CIRCLE] = circle_btn;
 
-        auto arrow_btn = new IconButton(QPixmap(":/icon/res/arrow"), icon_size, { ICON_W, ICON_W }, true);
+        auto arrow_btn = new QPushButton(this);
+        arrow_btn->setCheckable(true);
         arrow_btn->setToolTip(tr("Arrow"));
+        arrow_btn->setObjectName("arrow_btn");
         arrow_menu_ = new ArrowEditMenu(this);
         connect(arrow_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::ARROW); });
         CONNECT_BTN_MENU(Graph::ARROW, arrow_btn, arrow_menu_);
         group_->addButton(arrow_btn);
-        addButton(arrow_btn);
+        addWidget(arrow_btn);
         buttons_[Graph::ARROW] = arrow_btn;
 
-        auto line_btn = new IconButton(QPixmap(":/icon/res/line"), icon_size, { ICON_W, ICON_W }, true);
+        auto line_btn = new QPushButton(this);
+        line_btn->setCheckable(true);
         line_btn->setToolTip(tr("Line"));
+        line_btn->setObjectName("line_btn");
         line_menu_ = new LineEditMenu(this);
         connect(line_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::LINE); });
         CONNECT_BTN_MENU(Graph::LINE, line_btn, line_menu_);
         group_->addButton(line_btn);
-        addButton(line_btn);
+        addWidget(line_btn);
         buttons_[Graph::LINE] = line_btn;
 
-        auto pen_btn = new IconButton(QPixmap(":/icon/res/feather"), icon_size, { ICON_W, ICON_W }, true);
+        auto pen_btn = new QPushButton(this);
+        pen_btn->setCheckable(true);
         pen_btn->setToolTip(tr("Pencil"));
+        pen_btn->setObjectName("pen_btn");
         curves_menu_ = new LineEditMenu(this);
         connect(curves_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::CURVES); });
         CONNECT_BTN_MENU(Graph::CURVES, pen_btn, curves_menu_);
         group_->addButton(pen_btn);
-        addButton(pen_btn);
+        addWidget(pen_btn);
         buttons_[Graph::CURVES] = pen_btn;
 
-        auto text_btn = new IconButton(QPixmap(":/icon/res/text"), icon_size, { ICON_W, ICON_W }, true);
+        auto text_btn = new QPushButton(this);
+        text_btn->setCheckable(true);
         text_btn->setToolTip(tr("Text"));
+        text_btn->setObjectName("text_btn");
         text_menu_ = new FontMenu(this);
         connect(text_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::TEXT); });
         CONNECT_BTN_MENU(Graph::TEXT, text_btn, text_menu_);
         group_->addButton(text_btn);
-        addButton(text_btn);
+        addWidget(text_btn);
         buttons_[Graph::TEXT] = text_btn;
 
-        auto mosaic_btn = new IconButton(QPixmap(":/icon/res/mosaic"), icon_size, { ICON_W, ICON_W }, true);
+        auto mosaic_btn = new QPushButton(this);
+        mosaic_btn->setCheckable(true);
         mosaic_btn->setToolTip(tr("Mosaic"));
+        mosaic_btn->setObjectName("mosaic_btn");
         mosaic_menu_ = new EraseMenu(this);
         connect(mosaic_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::MOSAIC); });
         CONNECT_BTN_MENU(Graph::MOSAIC, mosaic_btn, mosaic_menu_);
         group_->addButton(mosaic_btn);
-        addButton(mosaic_btn);
+        addWidget(mosaic_btn);
         buttons_[Graph::MOSAIC] = mosaic_btn;
 
-        auto eraser_btn = new IconButton(QPixmap(":/icon/res/eraser"), icon_size, { ICON_W, ICON_W }, true);
+        auto eraser_btn = new QPushButton(this);
+        eraser_btn->setCheckable(true);
         eraser_btn->setToolTip(tr("Eraser"));
+        eraser_btn->setObjectName("eraser_btn");
         erase_menu_ = new EraseMenu(this);
         connect(erase_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::ERASER); });
         CONNECT_BTN_MENU(Graph::ERASER, eraser_btn, erase_menu_);
         group_->addButton(eraser_btn);
-        addButton(eraser_btn);
+        addWidget(eraser_btn);
         buttons_[Graph::ERASER] = eraser_btn;
     }
 
@@ -111,47 +127,47 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     if (groups & REDO_UNDO_GROUP) {
         addSeparator();
 
-        undo_btn_ = new IconButton(QPixmap(":/icon/res/undo"), icon_size, { ICON_W, ICON_W });
+        undo_btn_ = new QPushButton(this);
         undo_btn_->setDisabled(true);
+        undo_btn_->setObjectName("undo_btn");
         connect(undo_btn_, &IconButton::clicked, this, &ImageEditMenu::undo);
-        addButton(undo_btn_);
+        addWidget(undo_btn_);
 
-        redo_btn_ = new IconButton(QPixmap(":/icon/res/redo"), icon_size, { ICON_W, ICON_W });
+        redo_btn_ = new QPushButton(this);
         redo_btn_->setDisabled(true);
+        redo_btn_->setObjectName("redo_btn");
         connect(redo_btn_, &CustomButton::clicked, this, &ImageEditMenu::redo);
-        addButton(redo_btn_);
+        addWidget(redo_btn_);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & SAVE_GROUP) {
         addSeparator();
 
-        auto fix_btn = new IconButton(QPixmap(":/icon/res/pin"), icon_size, { ICON_W, ICON_W });
-        connect(fix_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); fix(); hide(); });
-        addButton(fix_btn);
+        auto fix_btn = new QPushButton(this);
+        fix_btn->setObjectName("fix_btn");
+        connect(fix_btn, &QPushButton::clicked, [this]() { group_->uncheckAll(); fix(); hide(); });
+        addWidget(fix_btn);
 
-        auto save_btn = new IconButton(QPixmap(":/icon/res/save"), icon_size, { ICON_W, ICON_W });
-        connect(save_btn, &IconButton::clicked, this, &ImageEditMenu::save);
-        connect(save_btn, &IconButton::clicked, [=]() { group_->uncheckAll(); });
-        addButton(save_btn);
+        auto save_btn = new QPushButton(this);
+        save_btn->setObjectName("save_btn");
+        connect(save_btn, &QPushButton::clicked, this, &ImageEditMenu::save);
+        connect(save_btn, &QPushButton::clicked, [=]() { group_->uncheckAll(); });
+        addWidget(save_btn);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & EXIT_GROUP) {
         addSeparator();
 
-        auto close_btn = new IconButton(QPixmap(":/icon/res/wrong"), icon_size, { ICON_W, ICON_W });
-        connect(close_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); exit(); hide(); });
-        close_btn->setIconColor(QColor("#ee0000"));
-        close_btn->setIconHoverColor(QColor("#ee0000"));
-        close_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
+        auto close_btn = new QPushButton(this);
+        close_btn->setObjectName("close_btn");
+        connect(close_btn, &QPushButton::clicked, [this]() { group_->uncheckAll(); exit(); hide(); });
         addWidget(close_btn);
 
-        auto ok_btn = new IconButton(QPixmap(":/icon/res/right"), icon_size, { ICON_W, ICON_W });
-        connect(ok_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); ok(); hide(); });
-        ok_btn->setIconColor(QColor("#07b913"));
-        ok_btn->setIconHoverColor(QColor("#07b913"));
-        ok_btn->setBackgroundHoverColor(QColor("#d0d0d5"));
+        auto ok_btn = new QPushButton(this);
+        ok_btn->setObjectName("ok_btn");
+        connect(ok_btn, &QPushButton::clicked, [this]() { group_->uncheckAll(); ok(); hide(); });
         addWidget(ok_btn);
     }
 }

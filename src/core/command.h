@@ -2,6 +2,7 @@
 #define COMMAND_H
 
 #include <QPen>
+#include <utility>
 #include "utils.h"
 #include "resizer.h"
 #include "textedit.h"
@@ -19,14 +20,14 @@ public:
     PaintCommand(const PaintCommand& cmd) { *this = cmd; }
     PaintCommand& operator=(const PaintCommand&);
 
-    inline Graph graph() const  { return graph_; }
+    [[nodiscard]] inline Graph graph() const  { return graph_; }
 
     inline void pen(const QPen& pen) 
     {
         if (graph_ == Graph::ERASER || graph_ == Graph::MOSAIC) return;
         pen_ = pen; emit modified(PaintType::REPAINT_ALL); 
     }
-    inline QPen pen() const { return pen_; }
+    [[nodiscard]] inline QPen pen() const { return pen_; }
 
     inline void font(const QFont& font) {
         if (graph_ != Graph::TEXT) return;
@@ -35,7 +36,7 @@ public:
         widget_->setFont(font);
         emit modified(PaintType::REPAINT_ALL); 
     }
-    inline QFont font() const { return font_; }
+    [[nodiscard]] inline QFont font() const { return font_; }
 
     inline void setFill(bool fill) { 
         if (graph_ == Graph::RECTANGLE || graph_ == Graph::ELLIPSE) {
@@ -43,9 +44,9 @@ public:
             emit modified(PaintType::REPAINT_ALL);
         }
     }
-    inline bool isFill() const { return is_fill_; }
+    [[nodiscard]] inline bool isFill() const { return is_fill_; }
 
-    inline const QVector<QPoint> points() const { return points_; }
+    [[nodiscard]] inline QVector<QPoint> points() const { return points_; }
     inline QVector<QPoint> points() { return points_; }
 
     inline QRect geometry() { if(widget_) return widget_->geometry(); return {}; }
@@ -75,8 +76,8 @@ public:
 
     bool isValid();
 
-    inline void widget(shared_ptr<TextEdit> widget) { widget_ = widget; }
-    inline shared_ptr<TextEdit> widget() const { return widget_; }
+    inline void widget(shared_ptr<TextEdit> widget) { widget_ = std::move(widget); }
+    [[nodiscard]] inline shared_ptr<TextEdit> widget() const { return widget_; }
 
     void drawAnchors(QPainter*);
     void draw_modified(QPainter *);
@@ -91,7 +92,7 @@ public:
     QRect rect() { return resizer_.rect(); }
     QSize size() { return rect().size(); }
 
-    Resizer resizer() const { return resizer_; }
+    [[nodiscard]] Resizer resizer() const { return resizer_; }
 
     void visible(bool v)
     {
@@ -100,12 +101,12 @@ public:
             visible_ = v;
         }
     }
-    bool visible() const { return visible_; }
+    [[nodiscard]] bool visible() const { return visible_; }
 
-    void previous(shared_ptr<PaintCommand> pre) { pre_ = pre; }
-    shared_ptr<PaintCommand> previous() const { return pre_; }
+    void previous(shared_ptr<PaintCommand> pre) { pre_ = std::move(pre); }
+    [[nodiscard]] shared_ptr<PaintCommand> previous() const { return pre_; }
 
-    bool adjusted() const { return adjusted_; }
+    [[nodiscard]] bool adjusted() const { return adjusted_; }
 signals:
     void modified(PaintType);
 
@@ -145,11 +146,11 @@ public:
     {
         stack_ = other.stack_;
         emit changed(stack_.size());
-        emit emptied(!stack_.size());
+        emit emptied(stack_.empty());
         return *this;
     }
 
-    inline void push(shared_ptr<PaintCommand> command)
+    inline void push(const shared_ptr<PaintCommand>& command)
     {
         if(stack_.empty())
             emit emptied(false);
@@ -185,13 +186,13 @@ public:
         emit decreased();
     }
 
-    inline size_t size() const { return stack_.size(); }
+    [[nodiscard]] inline size_t size() const { return stack_.size(); }
 
-    inline shared_ptr<PaintCommand> back() const { return stack_.back(); }
+    [[nodiscard]] inline shared_ptr<PaintCommand> back() const { return stack_.back(); }
 
-    inline vector<shared_ptr<PaintCommand>> commands() const { return stack_; }
+    [[nodiscard]] inline vector<shared_ptr<PaintCommand>> commands() const { return stack_; }
 
-    inline bool empty() const { return stack_.empty(); }
+    [[nodiscard]] inline bool empty() const { return stack_.empty(); }
 
 signals:
     void increased();

@@ -3,13 +3,11 @@
 #include <QPainter>
 #include <QApplication>
 #include <QClipboard>
-#include <QStandardPaths>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QShortcut>
 #include <QMoveEvent>
 #include <QMimeData>
-#include <QThread>
 #include "utils.h"
 #include "logging.h"
 
@@ -56,7 +54,11 @@ void ImageWindow::image(const QPixmap& image)
 
     scale_ = 1.0;
 
-    if (image.hasAlpha()) bg_ = Qt::gray;
+    if (image.hasAlpha()) {
+        bg_ = Qt::transparent;
+        effect_->setEnabled(!pixmap_.hasAlpha());
+        shadow_r_ = pixmap_.hasAlpha() ? 0 : DEFAULT_SHADOW_R_;
+    }
 }
 
 void ImageWindow::show(bool visable)
@@ -134,13 +136,28 @@ void ImageWindow::update(Modified type)
         break;
 
     case Modified::GRAY:
-        pixmap_ = QPixmap::fromImage(pixmap_.toImage().convertToFormat(QImage::Format::Format_Grayscale8));
+        if (pixmap_.hasAlpha()) {
+            auto img = pixmap_.toImage();
+            for (int y = 0; y < img.height(); ++y) {
+                QRgb* scanLine = (QRgb*)img.scanLine(y);
+                for (int x = 0; x < img.width(); ++x) {
+                    QRgb pixel = *scanLine;
+                    uint ci = uint(qGray(pixel));
+                    *scanLine = qRgba(ci, ci, ci, qAlpha(pixel));
+                    ++scanLine;
+                }
+            }
+            pixmap_ = QPixmap::fromImage(img);
+        }
+        else {
+            pixmap_ = QPixmap::fromImage(pixmap_.toImage().convertToFormat(QImage::Format::Format_Grayscale8));
+        }
         break;
 
     case Modified::RECOVERED:
-        effect_->setEnabled(true);
+        effect_->setEnabled(!pixmap_.hasAlpha());
+        shadow_r_ = pixmap_.hasAlpha() ? 0 : DEFAULT_SHADOW_R_;
 
-        shadow_r_ = DEFAULT_SHADOW_R_;
         scale_ = 1.0;
         opacity_ = 1.0;
         setWindowOpacity(opacity_);
@@ -276,22 +293,21 @@ void ImageWindow::saveAs()
 {
     if (editing_) return;
 
-    QString default_filepath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
-#ifdef _WIN32
-    auto filename = QFileDialog::getSaveFileName(this,
+
+    QString filename = QFileDialog::getSaveFileName(
+        this,
         tr("Save Image"),
-        default_filepath + QDir::separator() + default_filename,
-        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+        save_path_ + QDir::separator() + default_filename,
+        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)"
+    );
 
     if (!filename.isEmpty()) {
+        QFileInfo fileinfo(filename);
+        save_path_ = fileinfo.absoluteDir().path();
+
         canvas_->pixmap().save(filename);
     }
-#elif __linux__
-    auto filename = default_filepath + QDir::separator() + default_filename;
-
-    canvas_->pixmap().save(filename);
-#endif
 }
 
 void ImageWindow::recover()
@@ -334,7 +350,7 @@ void ImageWindow::initContextMenu()
         canvas_->pixmap(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         menu_->show();
         moveMenu();
-        });
+    });
 
     context_menu_->addSeparator();
 
@@ -352,14 +368,17 @@ void ImageWindow::initContextMenu()
     context_menu_->addSeparator();
 
     auto sub_menu = new QMenu(tr("Background"), this);
+    sub_menu->setWindowFlag(Qt::FramelessWindowHint);
+    sub_menu->setWindowFlag(Qt::NoDropShadowWindowHint);
+    sub_menu->setAttribute(Qt::WA_TranslucentBackground);
     sub_menu->addAction(tr("White"), [this]() { bg_ = Qt::white; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Gray"), [this]() { bg_ = Qt::gray; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Black"), [this]() { bg_ = Qt::black; update(Modified::BACKGROUND); });
     sub_menu->addAction(tr("Transparent"), [this]() { bg_ = Qt::transparent; update(Modified::BACKGROUND); });
     context_menu_->addMenu(sub_menu);
-    context_menu_->addAction((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"), this, &ImageWindow::effectEnabled);
-    context_menu_->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
-    context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
+    shadow_action_ = context_menu_->addAction((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"), this, &ImageWindow::effectEnabled);
+    zoom_action_ = context_menu_->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
+    opacity_action_ = context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
     context_menu_->addAction(tr("Recover"), this, &ImageWindow::recover);
 
     context_menu_->addSeparator();
@@ -370,6 +389,11 @@ void ImageWindow::initContextMenu()
 void ImageWindow::contextMenuEvent(QContextMenuEvent* event)
 {
     if (editing_) return;
+
+    shadow_action_->setText((effect_->isEnabled() ? tr("Hide ") : tr("Show ")) + tr("Shadow"));
+    zoom_action_->setText(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
+    opacity_action_->setText(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
+
     context_menu_->exec(event->globalPos());
 }
 

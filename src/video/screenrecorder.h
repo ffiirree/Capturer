@@ -6,6 +6,7 @@
 #include "selector.h"
 #include "record_menu.h"
 #include "config.h"
+#include "videoplayer.h"
 
 class ScreenRecorder : public Selector
 {
@@ -39,11 +40,13 @@ private:
 
     void keyPressEvent(QKeyEvent *event) override;
 
-    int framerate_ = 30;
+    int framerate_{ 30 };
 
-    QProcess *process_ = nullptr;
+    QProcess* process_{ nullptr };
 
     QString filename_;
+
+    VideoPlayer* player_{ nullptr };
 
     RecordMenu *menu_ = nullptr;
     bool m_mute_ = true;

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(capturer VERSION 1.3.5 LANGUAGES C CXX)
+project(capturer VERSION 1.3.6 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,13 +11,14 @@ if(MSVC)
 endif()
 
 ########################################################################################################################
-# dependences
+# dependencies
 ########################################################################################################################
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
 
-# 3rdparty: QHotkey glog gflags
+# 3rdparty: QHotkey glog
 SET(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
+set(WITH_GFLAGS OFF)
 add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
-add_subdirectory(3rdparty/gflags EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
 
 # Qt5
@@ -26,6 +27,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Widgets Gui Multimedia LinguistTools REQUIRED)
+find_package(FFmpeg REQUIRED)
 
 if(WIN32)
     # GUI/console
@@ -56,7 +58,7 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        QHotkey::QHotkey Qt5::Widgets Qt5::Gui Qt5::Multimedia gflags::gflags glog::glog
+        QHotkey::QHotkey Qt5::Widgets Qt5::Gui Qt5::Multimedia glog::glog ${FFMPEG_LIBRARIES}
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
@@ -73,6 +75,7 @@ target_include_directories(${PROJECT_NAME}
         src/video
         src/gif
         src/setting
+        ${FFMPEG_INCLUDE_DIRS}
         ${PROJECT_BINARY_DIR} # Generated header files
 )
 

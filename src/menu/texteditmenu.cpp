@@ -11,7 +11,9 @@ FontMenu::FontMenu(QWidget *parent)
     // font family
     font_family_ = new QComboBox();
     font_family_->setView(new QListView());
+    font_family_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
     font_family_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    font_family_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     font_family_->setFixedSize(125, HEIGHT - 6);
     QFontDatabase font_db;
     foreach (const QString &family, font_db.families()) {
@@ -32,7 +34,9 @@ FontMenu::FontMenu(QWidget *parent)
     // font style
     font_style_ = new QComboBox();
     font_style_->setView(new QListView());
+    font_style_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
     font_style_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    font_style_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     font_style_->setFixedSize(100, HEIGHT - 6);
     foreach (const QString &style, font_db.styles(font_db.families()[0])) {
         font_style_->addItem(style);
@@ -51,7 +55,9 @@ FontMenu::FontMenu(QWidget *parent)
     // font size
     font_size_ = new QComboBox();
     font_size_->setView(new QListView());
+    font_size_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
     font_size_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    font_size_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     font_size_->setFixedSize(80, HEIGHT - 6);
     foreach (const int &s, font_db.standardSizes()) {
         font_size_->addItem(QString::number(s));

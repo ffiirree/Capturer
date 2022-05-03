@@ -1,5 +1,87 @@
+/*///////////////////////////////////////////////////////////////*/
+QComboBox {
+    border: 1px solid #323232;
+    background-color: #232323;
+    color: #e6e6e6;
+}
 
-/* context menu */
+QComboBox:hover {
+    border: 1px solid #232323;
+}
+
+QComboBox:on {
+    border: 1px solid #409eff;
+}
+
+QComboBox QAbstractItemView {
+    outline: 0px;
+    border: 1px solid #e4e7ed;
+}
+
+QComboBox QListView {
+    background-color: #232323;
+    border: 1px solid #323232;
+}
+
+QComboBox QListView::item {
+    color: #e6e6e6;
+}
+
+QComboBox QListView::item:hover,
+QComboBox QListView::item:selected,
+QComboBox QListView::item:checked {
+    background-color: #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLineEdit {
+    background-color: #232323;
+    border: 1px solid #323232;
+    color: #50505f;
+}
+
+QLineEdit:hover {
+    border: 1px solid #323232;
+}
+
+QLineEdit:focus {
+    color: #409eff;
+    border: 1px solid #323232;
+}
+
+QLineEdit[readOnly="true"] {
+    color: gray
+}
+
+
+/*///////////////////////////////////////////////////////////////*/
+QSpinBox {
+    border: 1px solid #323232;
+    background-color: #232323;
+    color: #e6e6e6;
+}
+
+QSpinBox:hover {
+    border: 1px solid #323232;
+}
+
+QSpinBox:focus {
+    border: 1px solid #409eff;
+}
+
+QSpinBox::down-button,
+QSpinBox::up-button {
+    background-color: #323232;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::up-button:pressed,
+QSpinBox::down-button:hover,
+QSpinBox::down-button:pressed {
+    background-color: #393939;
+}
+
+/*///////////////////////////////////////////////////////////////*/
 QMenu {
     background-color: #232323;
     color: #e6e6e6;
@@ -12,4 +94,38 @@ QMenu::item::selected {
 
 QMenu::separator {
     background-color: #323232;
+}
+
+
+/*///////////////////////////////////////////////////////////////*/
+QColorDialog {
+    background-color: #232323;
+    color: #e6e6e6;
+}
+
+QColorDialog QPushButton {
+    background-color: #323232;
+    height: 25px;
+    border-radius: 5px;
+    padding: 0px 15px;
+}
+
+QColorDialog QPushButton:hover {
+    background-color: #393939;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLabel {
+    color: #e6e6e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QPushButton {
+    background-color: #232323;
+    border: 1px solid #323232;
+    color: #e6e6e6;
+}
+
+QPushButton:hover {
+    background-color: #323232
 }

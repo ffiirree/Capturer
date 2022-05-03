@@ -30,6 +30,7 @@ signals:
     void resumed();
     void muted(int, bool);
     void stopped();
+    void opened(bool);
 
 public slots:
     void start();
@@ -37,6 +38,7 @@ public slots:
     void resume();
     void update();
     void mute(int, bool);
+    void close_camera();
 
 private:
     void mousePressEvent(QMouseEvent*) override;
@@ -49,6 +51,7 @@ private:
     QPushButton* close_btn_ = nullptr;
     QCheckBox* mic_ = nullptr;
     QCheckBox* speaker_ = nullptr;
+    QCheckBox* camera_ = nullptr;
     QCheckBox* pause_ = nullptr;
     QLabel* time_label_ = nullptr;
     QTimer* timer_ = nullptr;

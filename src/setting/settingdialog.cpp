@@ -16,8 +16,6 @@
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)
 {
-    LOAD_QSS(this, { ":/qss/setting/settingswindow.qss" });
-
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
@@ -55,7 +53,7 @@ SettingWindow::SettingWindow(QWidget * parent)
     });
     layout->addWidget(titlebar);
 
-    tabwidget_ = new AppTabControl(45, 225);
+    tabwidget_ = new AppTabControl(40, 225);
     tabwidget_->setObjectName("firstmenu");
     tabwidget_->tabBar()->setObjectName("fristtab");
     layout->addWidget(tabwidget_);

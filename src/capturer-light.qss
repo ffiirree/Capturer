@@ -1,3 +1,38 @@
+/*///////////////////////////////////////////////////////////////*/
+QComboBox {
+    border: 1px solid #dfdfdf;
+    background-color: white;
+    color: #50505f;
+}
+
+QComboBox:hover {
+    border: 1px solid #dfdfdf;
+}
+
+QComboBox:on {
+    border: 1px solid #409eff;
+}
+
+QComboBox QAbstractItemView {
+    outline: 0px;
+    border: 1px solid #e4e7ed;
+}
+
+QComboBox QListView {
+    background-color: #f9f9f9;
+    border: 1px solid #dfdfdf;
+}
+
+QComboBox QListView::item {
+    color: #50505f;
+}
+
+QComboBox QListView::item:hover,
+QComboBox QListView::item:selected,
+QComboBox QListView::item:checked {
+    background-color: #dfdfdf;
+}
+
 /* context menu */
 QMenu {
     background-color: #f9f9f9;
@@ -11,4 +46,16 @@ QMenu::item::selected {
 
 QMenu::separator {
     background-color: #e5e5e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QPushButton {
+    background-color: #f9f9f9;
+    border: 1px solid #dfdfdf;
+    color: #50505f;
+}
+
+QPushButton:hover,
+QPushButton:checked {
+    background-color: #dfdfdf
 }

@@ -13,11 +13,17 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
 {
     process_ = new QProcess(this);
-    menu_ = new RecordMenu(m_mute_, s_mute_);
+    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
+
+    player_ = new VideoPlayer();
 
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
+    connect(menu_, &RecordMenu::opened, [this](bool opened) {
+        opened ? player_->play() : player_->close();
+    });
+    connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
 }
 
 void ScreenRecorder::record()

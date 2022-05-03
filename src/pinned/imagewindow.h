@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QMenu>
 #include <QGraphicsDropShadowEffect>
+#include <QStandardPaths>
 #include "imageeditmenu.h"
 #include "canvas.h"
 
@@ -94,6 +95,11 @@ private:
     bool editing_ = false;
 
     QMenu* context_menu_ = nullptr;
+    QAction* shadow_action_ = nullptr;
+    QAction* zoom_action_ = nullptr;
+    QAction* opacity_action_ = nullptr;
+
+    QString save_path_ = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 };
 
 #endif // IMAGE_WINDOW_H

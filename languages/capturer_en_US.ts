@@ -40,42 +40,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="38"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="39"/>
         <source>Rectangle</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="47"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="50"/>
         <source>Ellipse</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="56"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="61"/>
         <source>Arrow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="65"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="72"/>
         <source>Line</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="74"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="83"/>
         <source>Pencil</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="83"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="94"/>
         <source>Text</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="92"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="105"/>
         <source>Mosaic</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="101"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="116"/>
         <source>Eraser</source>
         <translation></translation>
     </message>
@@ -83,122 +83,127 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="266"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="283"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="283"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="300"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="321"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="337"/>
         <source>Copy image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="322"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="338"/>
         <source>Paste image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="341"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="357"/>
         <source>Open image...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="342"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Save as...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="356"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="375"/>
         <source>Gray</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="347"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
         <source>Rotate 90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="326"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="342"/>
         <source>Edit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="346"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="362"/>
         <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="348"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="364"/>
         <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="349"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
         <source>Flip H</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="350"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="366"/>
         <source>Flip V</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="354"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="370"/>
         <source>Background</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="355"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="374"/>
         <source>White</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="357"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="376"/>
         <source>Black</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="377"/>
         <source>Transparent</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="360"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
         <source>Shadow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="360"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
         <source>Hide </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="360"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
         <source>Show </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="361"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
         <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="362"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="381"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="395"/>
         <source>Opacity : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="382"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="367"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="386"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -206,7 +211,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/video/screenrecorder.cpp" line="79"/>
+        <location filename="../src/video/screenrecorder.cpp" line="85"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -214,7 +219,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="216"/>
+        <location filename="../src/snip/screenshoter.cpp" line="217"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
@@ -222,161 +227,161 @@
 <context>
     <name>SettingWindow</name>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="51"/>
+        <location filename="../src/setting/settingdialog.cpp" line="49"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="73"/>
+        <location filename="../src/setting/settingdialog.cpp" line="71"/>
         <source>General</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="79"/>
+        <location filename="../src/setting/settingdialog.cpp" line="77"/>
         <source>Run on startup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="101"/>
+        <location filename="../src/setting/settingdialog.cpp" line="99"/>
         <source>Language</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="108"/>
+        <location filename="../src/setting/settingdialog.cpp" line="106"/>
         <source>Settings file</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="115"/>
+        <location filename="../src/setting/settingdialog.cpp" line="113"/>
         <source>Dark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="116"/>
+        <location filename="../src/setting/settingdialog.cpp" line="114"/>
         <source>Light</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="127"/>
+        <location filename="../src/setting/settingdialog.cpp" line="125"/>
         <source>Theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="136"/>
-        <location filename="../src/setting/settingdialog.cpp" line="340"/>
+        <location filename="../src/setting/settingdialog.cpp" line="134"/>
+        <location filename="../src/setting/settingdialog.cpp" line="338"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="141"/>
-        <location filename="../src/setting/settingdialog.cpp" line="186"/>
-        <location filename="../src/setting/settingdialog.cpp" line="274"/>
+        <location filename="../src/setting/settingdialog.cpp" line="139"/>
+        <location filename="../src/setting/settingdialog.cpp" line="184"/>
+        <location filename="../src/setting/settingdialog.cpp" line="272"/>
         <source>Apperance:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="151"/>
-        <location filename="../src/setting/settingdialog.cpp" line="196"/>
-        <location filename="../src/setting/settingdialog.cpp" line="283"/>
+        <location filename="../src/setting/settingdialog.cpp" line="149"/>
+        <location filename="../src/setting/settingdialog.cpp" line="194"/>
+        <location filename="../src/setting/settingdialog.cpp" line="281"/>
         <source>Border width</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="156"/>
-        <location filename="../src/setting/settingdialog.cpp" line="201"/>
-        <location filename="../src/setting/settingdialog.cpp" line="289"/>
+        <location filename="../src/setting/settingdialog.cpp" line="154"/>
+        <location filename="../src/setting/settingdialog.cpp" line="199"/>
+        <location filename="../src/setting/settingdialog.cpp" line="287"/>
         <source>Border color</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="167"/>
-        <location filename="../src/setting/settingdialog.cpp" line="212"/>
-        <location filename="../src/setting/settingdialog.cpp" line="300"/>
+        <location filename="../src/setting/settingdialog.cpp" line="165"/>
+        <location filename="../src/setting/settingdialog.cpp" line="210"/>
+        <location filename="../src/setting/settingdialog.cpp" line="298"/>
         <source>Line type</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="172"/>
-        <location filename="../src/setting/settingdialog.cpp" line="217"/>
-        <location filename="../src/setting/settingdialog.cpp" line="305"/>
+        <location filename="../src/setting/settingdialog.cpp" line="170"/>
+        <location filename="../src/setting/settingdialog.cpp" line="215"/>
+        <location filename="../src/setting/settingdialog.cpp" line="303"/>
         <source>Mask color</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="181"/>
+        <location filename="../src/setting/settingdialog.cpp" line="179"/>
         <source>Screen recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="222"/>
-        <location filename="../src/setting/settingdialog.cpp" line="309"/>
+        <location filename="../src/setting/settingdialog.cpp" line="220"/>
+        <location filename="../src/setting/settingdialog.cpp" line="307"/>
         <source>Params:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="232"/>
-        <location filename="../src/setting/settingdialog.cpp" line="319"/>
+        <location filename="../src/setting/settingdialog.cpp" line="230"/>
+        <location filename="../src/setting/settingdialog.cpp" line="317"/>
         <source>Framerate</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="237"/>
+        <location filename="../src/setting/settingdialog.cpp" line="235"/>
         <source>Devices:</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="245"/>
+        <location filename="../src/setting/settingdialog.cpp" line="243"/>
         <source>Microphones</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="252"/>
+        <location filename="../src/setting/settingdialog.cpp" line="250"/>
         <source>Speakers</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="259"/>
+        <location filename="../src/setting/settingdialog.cpp" line="257"/>
         <source>Cameras</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="269"/>
-        <location filename="../src/setting/settingdialog.cpp" line="368"/>
+        <location filename="../src/setting/settingdialog.cpp" line="267"/>
+        <location filename="../src/setting/settingdialog.cpp" line="366"/>
         <source>Gif recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="329"/>
+        <location filename="../src/setting/settingdialog.cpp" line="327"/>
         <source>Shortcuts</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="347"/>
+        <location filename="../src/setting/settingdialog.cpp" line="345"/>
         <source>Paste</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="354"/>
+        <location filename="../src/setting/settingdialog.cpp" line="352"/>
         <source>Hide/Show all images</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="361"/>
+        <location filename="../src/setting/settingdialog.cpp" line="359"/>
         <source>Video recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="377"/>
+        <location filename="../src/setting/settingdialog.cpp" line="375"/>
         <source>About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="387"/>
+        <location filename="../src/setting/settingdialog.cpp" line="385"/>
         <source>Version</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="396"/>
+        <location filename="../src/setting/settingdialog.cpp" line="394"/>
         <source>Copyright © 2018 - 2022 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>

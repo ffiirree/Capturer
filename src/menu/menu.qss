@@ -43,3 +43,14 @@ QPushButton#RecordStopButton {
 QPushButton#RecordStopButton::hover {
     border-radius: 5px;
 }
+
+ImageEditMenu QPushButton {
+    width: 35px;
+    height: 35px;
+    border: none;
+    qproperty-iconSize: 25px;
+}
+
+ImageEditMenu QPushButton:checked {
+    background-color: #409eff;
+}

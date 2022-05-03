@@ -1,22 +1,9 @@
-
-
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
-    border: 1px solid #dcdfe6;
     border-radius: 3px;
-    background-color: white;
     height: 32px;
     padding: 0 10px;
     margin: 1px 0px;
-    color: #50505f;
-}
-
-QComboBox:hover {
-    border: 1px solid #909399;
-}
-
-QComboBox:on {
-    border: 1px solid #409eff;
 }
 
 QComboBox::drop-down {
@@ -168,11 +155,11 @@ QMenu::icon {
 QMenu::item {
     background-color: transparent;
     border-radius: 5px;
-    height: 25px;
+    height: 27px;
     padding-left: 15px;
     padding-right: 25px;
     font-family: "Microsoft YaHei";
-    font-size: 12px;
+    font-size: 13px;
 }
 
 QMenu::item::selected {

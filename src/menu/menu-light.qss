@@ -15,6 +15,14 @@ RecordMenu QCheckBox#Speaker::indicator:checked {
     image: url(:/icon/res/speaker-mute-dark.png);
 }
 
+RecordMenu QCheckBox#Camera::indicator:checked {
+    image: url(:/icon/res/camera-fill-dark.png);
+}
+
+RecordMenu QCheckBox#Camera::indicator:unchecked {
+    image: url(:/icon/res/camera-dark.png);
+}
+
 RecordMenu QCheckBox#PauseButton::indicator:unchecked {
     image: url(:/icon/res/pause-dark.png);
 }
@@ -38,4 +46,61 @@ RecordMenu QLabel {
 
 QPushButton#RecordStopButton::hover {
     background-color: #efefef;
+}
+
+/* Image Edit Menu */
+QPushButton#rectangle_btn {
+    qproperty-icon: url(:/icon/res/rectangle);
+}
+
+QPushButton#circle_btn {
+    qproperty-icon: url(:/icon/res/circle);
+}
+
+QPushButton#arrow_btn {
+    qproperty-icon: url(:/icon/res/arrow);
+}
+
+QPushButton#line_btn {
+    qproperty-icon: url(:/icon/res/line);
+}
+
+QPushButton#pen_btn {
+    qproperty-icon: url(:/icon/res/feather);
+}
+
+QPushButton#text_btn {
+    qproperty-icon: url(:/icon/res/text);
+}
+
+QPushButton#mosaic_btn {
+    qproperty-icon: url(:/icon/res/mosaic);
+}
+
+QPushButton#eraser_btn {
+    qproperty-icon: url(:/icon/res/eraser);
+}
+
+QPushButton#undo_btn {
+    qproperty-icon: url(:/icon/res/undo);
+}
+
+QPushButton#redo_btn {
+    qproperty-icon: url(:/icon/res/redo);
+}
+
+QPushButton#fix_btn {
+    qproperty-icon: url(:/icon/res/pin);
+}
+
+QPushButton#save_btn {
+    qproperty-icon: url(:/icon/res/save);
+}
+
+QPushButton#close_btn {
+    qproperty-icon: url(:/icon/res/wrong);
+}
+
+QPushButton#ok_btn {
+    qproperty-icon: url(:/icon/res/right);
 }

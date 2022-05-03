@@ -1,44 +1,43 @@
+#settings-mainwindow {
+    background-color: #232323;
+}
+
 #settings-mainwindow QWidget {
-    font-size: 14px;
-    font-family: "Microsoft Yahei";
+    color: #e6e6e6;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 TitleBar {
-    height: 50px;
+    background-color: #323232;
 }
 
 QLabel#logo {
+    background-color: #232323;
 }
 
 QLabel#title {
-    height: 50px;
-    padding-left； 15px;
-
-    font-size: 24px;
-    font-family: "华文新魏";
+    background-color: #232323;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
     border: none;
+    background: #323232;
 }
 
 QTabWidget#firstmenu::tab-bar {
 }
 
 QTabBar#fristtab::tab {
-    margin: 0;
-    padding: 0;
-    font-size: 16px;
-    font-family: "Microsoft Yahei";
+    color: #e6e6e6;
+    background-color: transparent;
+    margin: 2px 5px;
+    border-radius: 5px;
 }
 
 QTabBar#fristtab::tab:selected,
-QTabBar#fristtab::tab:selected:hover {
-}
-
 QTabBar#fristtab::tab:hover {
+    background: #323232;
 }
 
 /*///////////////////////////////////////////////////////////////*/

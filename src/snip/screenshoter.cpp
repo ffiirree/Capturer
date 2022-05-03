@@ -211,11 +211,13 @@ QPixmap ScreenShoter::snippedImage()
 void ScreenShoter::save()
 {
     QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
-#ifdef _WIN32
-    auto filename = QFileDialog::getSaveFileName(this,
-                                                 tr("Save Image"),
-                                                 save_path_ + QDir::separator() + default_filename,
-                                                 "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+ 
+    QString filename = QFileDialog::getSaveFileName(
+        this,
+        tr("Save Image"),
+        save_path_ + QDir::separator() + default_filename,
+        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)"
+    );
 
     if(!filename.isEmpty()) {
         QFileInfo fileinfo(filename);
@@ -227,16 +229,6 @@ void ScreenShoter::save()
 
         exit();
     }
-#elif __linux__
-    auto filename = save_path_ + QDir::separator() + default_filename;
-
-    snippedImage().save(filename);
-    emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
-
-    snipped();
-
-    exit();
-#endif
 }
 
 void ScreenShoter::copy()
