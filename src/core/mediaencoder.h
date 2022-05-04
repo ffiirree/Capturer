@@ -40,8 +40,10 @@ public:
 		close();
 	}
 
-	bool open(const std::string& filename, const std::string& codec_name, AVRational framerate = { 25, 1 }, const std::map<std::string, std::string>& options = {})
+	bool open(const std::string& filename, const std::string& codec_name, AVPixelFormat pix_fmt, AVRational framerate = { 25, 1 }, const std::map<std::string, std::string>& options = {})
 	{
+		pix_fmt_ = pix_fmt;
+
 		// MediaDecoder
 		if (!decoder_) {
 			LOG(ERROR) << "decoder is null";
@@ -80,16 +82,21 @@ public:
 			av_dict_set(&encoder_options, key.c_str(), value.c_str(), 0);
 		
 		}
-		av_dict_set(&encoder_options, "preset", "ultrafast", AV_DICT_DONT_OVERWRITE);
-		av_dict_set(&encoder_options, "tune", "zerolatency", AV_DICT_DONT_OVERWRITE);
-		av_dict_set(&encoder_options, "crf", "23", AV_DICT_DONT_OVERWRITE);
-		av_dict_set(&encoder_options, "threads", "auto", AV_DICT_DONT_OVERWRITE);
+		if (codec_name == "libx264" || codec_name == "x265") {
+			av_dict_set(&encoder_options, "preset", "ultrafast", AV_DICT_DONT_OVERWRITE);
+			av_dict_set(&encoder_options, "tune", "zerolatency", AV_DICT_DONT_OVERWRITE);
+			av_dict_set(&encoder_options, "crf", "23", AV_DICT_DONT_OVERWRITE);
+			av_dict_set(&encoder_options, "threads", "auto", AV_DICT_DONT_OVERWRITE);
+		}
 
 		encoder_ctx_->height = decoder_->height();
 		encoder_ctx_->width = decoder_->width();
 		encoder_ctx_->pix_fmt = pix_fmt_;
 		encoder_ctx_->sample_aspect_ratio = decoder_->sar();
 		
+		// TODO: Timebase: this is the fundamental unit of time (in seconds) in terms of which frame
+        // timestamps are represented. For fixed-fps content, timebase should be 1/framerate
+        // and timestamp increments should be identical to 1.
 		encoder_ctx_->time_base = decoder_->timebase();
 		fmt_ctx_->streams[video_stream_index_]->time_base = decoder_->timebase();
 		encoder_ctx_->framerate = framerate;
@@ -149,11 +156,13 @@ public:
 	void process()
 	{
 		LOG(INFO) << "[ENCODER] STARTED@" << QThread::currentThreadId();
+		LOG(INFO) << "[ENCODER] FRAMERATE = " << encoder_ctx_->framerate.num;
 
 		if (!opened() || !decoder_ || !decoder_->opened()) return;
 
 		emit started();
 
+		first_pts_ = AV_NOPTS_VALUE;
 		while (decoder_ && decoder_->running()) {
 			if (decoder_->paused()) {
 				QThread::msleep(40);
@@ -215,6 +224,8 @@ private:
 	void close()
 	{
 		opened(false);
+
+		first_pts_ = AV_NOPTS_VALUE;
 
 		if (av_write_trailer(fmt_ctx_) != 0) {
 			LOG(ERROR) << "av_write_trailer";

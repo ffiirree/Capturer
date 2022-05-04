@@ -1,7 +1,6 @@
 #ifndef SCREEN_RECORDER_H
 #define SCREEN_RECORDER_H
 
-#include <QProcess>
 #include <QSystemTrayIcon>
 #include "selector.h"
 #include "record_menu.h"
@@ -45,8 +44,6 @@ private:
     void keyPressEvent(QKeyEvent *event) override;
 
     int framerate_{ 30 };
-
-    QProcess* process_{ nullptr };
 
     QString filename_;
 

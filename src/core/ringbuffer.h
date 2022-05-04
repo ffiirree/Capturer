@@ -69,7 +69,7 @@ public:
 		return ((pushed_idx_ >= popped_idx_) ? (pushed_idx_) : (pushed_idx_ + N)) - popped_idx_;
 	}
 
-	T& operator[](size_t idx) { if (idx < N) return buffer_[idx]; }
+	T& operator[](size_t idx) { return buffer_[std::min<size_t>(std::max<size_t>(idx, 0), N - 1)]; }
 	
 private:
 	size_t pushed_idx_{ 0 };

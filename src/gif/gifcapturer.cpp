@@ -7,11 +7,30 @@
 GifCapturer::GifCapturer(QWidget * parent)
     : Selector(parent)
 {
-    process_ = new QProcess(this);
     record_menu_ = new RecordMenu(0, 0, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
 
     connect(record_menu_, &RecordMenu::stopped, this, &GifCapturer::exit);
+
+    player_ = new VideoPlayer(this);
+
+    decoder_ = new MediaDecoder();
+    encoder_ = new MediaEncoder(decoder_);
+
+    decoder_thread_ = new QThread(this);
+    encoder_thread_ = new QThread(this);
+
+    decoder_->moveToThread(decoder_thread_);
+    encoder_->moveToThread(encoder_thread_);
+
+    connect(decoder_thread_, &QThread::started, decoder_, &MediaDecoder::process);
+    connect(decoder_, &MediaDecoder::started, [this]() { encoder_thread_->start(); });
+    connect(encoder_thread_, &QThread::started, encoder_, &MediaEncoder::process);
+
+    connect(decoder_, &MediaDecoder::stopped, [this]() { decoder_thread_->quit(); });
+    connect(encoder_, &MediaEncoder::stopped, [this]() { encoder_thread_->quit(); });
+
+    connect(record_menu_, &RecordMenu::stopped, decoder_, &MediaDecoder::stop);
 }
 
 void GifCapturer::record()
@@ -31,50 +50,41 @@ void GifCapturer::setup()
 
     filename_ = native_pictures_path + QDir::separator() + "Capturer_gif_" + current_time_str_ + ".gif";
 
-    QStringList args;
     auto selected_area = selected();
-    auto temp_dir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    temp_video_path_ = temp_dir + QDir::separator() + "Capturer_gif_" + current_time_str_ + ".mp4";
-    temp_palette_path_ = temp_dir + QDir::separator() + "Capturer_palette_" + current_time_str_ + ".png";
-
 #ifdef __linux__
-    args << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
-         << "-framerate"    << QString("%1").arg(framerate_)
-         << "-f"            << "x11grab"
-         << "-i"            << QString(":0.0+%1x%2").arg(selected_area.x()).arg(selected_area.y())
-         << temp_video_path_;
+    decoder_->open(
+        QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
+        "x11grab",
+        AV_PIX_FMT_YUV420P,
+        {
+            {"framerate", std::to_string(framerate_)},
+            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+        }
+    );
 #elif _WIN32
-    args << "-f"            << "gdigrab"
-         << "-framerate"    << QString("%1").arg(framerate_)
-         << "-offset_x"     << QString("%1").arg(selected_area.x())
-         << "-offset_y"     << QString("%1").arg(selected_area.y())
-         << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
-         << "-i"            << "desktop"
-         << temp_video_path_;
+    decoder_->open(
+        "desktop",
+        "gdigrab",
+        AV_PIX_FMT_BGR8,
+        {
+            {"framerate", std::to_string(framerate_)},
+            {"offset_x", std::to_string(selected_area.x())},
+            {"offset_y", std::to_string(selected_area.y())},
+            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+        }
+    );
 #endif
-    process_->start("ffmpeg", args);
+    encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_BGR8, { framerate_, 1 });
+
+    if (decoder_->opened() && encoder_->opened())
+    {
+        decoder_thread_->start();
+    }
 }
 
 void GifCapturer::exit()
 {
-    process_->write("q\n\r");
-
-    process_->waitForFinished();
-    QStringList args;
-    args << "-y"
-         << "-i"    << temp_video_path_
-         << "-vf"   << QString("fps=%1,palettegen").arg(fps_)
-         << temp_palette_path_;
-    process_->start("ffmpeg", args);
-    process_->waitForFinished();
-
-    args.clear();
-    args << "-i" << temp_video_path_
-         << "-i" << temp_palette_path_
-         << "-filter_complex" << QString("fps=%1,paletteuse").arg(fps_)
-         << filename_;
-
-    process_->start("ffmpeg", args);
+    decoder_->stop();
 
     record_menu_->close();
     emit SHOW_MESSAGE("Capturer<GIF>", tr("Path: ") + filename_);

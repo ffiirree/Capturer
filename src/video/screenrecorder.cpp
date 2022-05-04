@@ -1,7 +1,6 @@
 #include "screenrecorder.h"
 #include <QPixmap>
 #include <QMouseEvent>
-#include <QProcess>
 #include <QPushButton>
 #include <QFileDialog>
 #include <QStandardPaths>
@@ -12,7 +11,6 @@
 ScreenRecorder::ScreenRecorder(QWidget *parent)
     : Selector(parent)
 {
-    process_ = new QProcess(this);
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
 
@@ -102,7 +100,7 @@ void ScreenRecorder::setup()
         }
     );
 #endif
-    encoder_->open(filename_.toStdString(), "libx264", { framerate_, 1 });
+    encoder_->open(filename_.toStdString(), "libx264", AV_PIX_FMT_YUV420P,{ framerate_, 1 });
 
     if (decoder_->opened() && encoder_->opened())
     {

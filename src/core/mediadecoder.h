@@ -283,6 +283,8 @@ private:
 		running(false);
 		opened(false);
 
+		first_pts_ = AV_NOPTS_VALUE;
+
 		av_packet_free(&packet_);
 		av_frame_free(&frame_);
 
