@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QTextStream>
 #include "utils.h"
+#include "devices.h"
 #include "logging.h"
 
 Config::Config()
@@ -58,6 +59,9 @@ Config::Config()
 
     IF_NULL_SET(settings_["record"]["framerate"],   30);
     IF_NULL_SET(settings_["gif"]["framerate"],      6);
+
+    if(Devices::cameras().size() > 0)
+        settings_["devices"]["cameras"] = Devices::cameras()[0];
 
     connect(this, &Config::changed, this, &Config::save);
 }

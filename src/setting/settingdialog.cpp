@@ -255,6 +255,9 @@ void SettingWindow::setupRecordWidget()
     _10_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
     _10_2->addItems(Devices::cameras());
     layout->addWidget(new QLabel(tr("Cameras")), 12, 1, 1, 1);
+    connect(_10_2, &QComboBox::currentTextChanged, [this](QString s) {
+        config.set(config["devices"]["cameras"], s);
+    });
     layout->addWidget(_10_2, 12, 2, 1, 2);
 
     layout->setRowStretch(13, 1);

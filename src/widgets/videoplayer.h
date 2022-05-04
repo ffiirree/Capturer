@@ -14,11 +14,13 @@ public:
 	explicit VideoPlayer(QWidget* parent = nullptr)
         : QWidget(nullptr)
 	{
+        setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | windowFlags());
+        setAttribute(Qt::WA_TranslucentBackground);
 	}
 
-    void play()
+    void play(std::string name, std::string fmt)
     {
-        if (!camera_.open("video=HD WebCam", "dshow", {})) {
+        if (!camera_.open(name, fmt, AV_PIX_FMT_RGB24, {})) {
             return;
         }
 
@@ -28,11 +30,7 @@ public:
 
         camera_.moveToThread(thread);
         connect(thread, &QThread::started, &camera_, &MediaDecoder::process);
-        connect(&camera_, &MediaDecoder::received, this, [=]() { 
-            LOG(INFO) << "new frame";
-
-            QWidget::update(); 
-        });
+        connect(&camera_, &MediaDecoder::received, [this]() { QWidget::update(); });
         thread->start();
         QWidget::show();
     }
@@ -50,8 +48,10 @@ protected:
     void paintEvent(QPaintEvent* event) override
     {
         QPainter painter(this);
-        auto frame = camera_.frame();
-        painter.drawImage(rect(), frame);
+
+        QImage image;
+        if(camera_.read(image) >= 0)
+            painter.drawImage(rect(), image);
     }
     void closeEvent(QCloseEvent* event) override
     {

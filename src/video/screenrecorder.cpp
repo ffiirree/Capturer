@@ -16,14 +16,39 @@ ScreenRecorder::ScreenRecorder(QWidget *parent)
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
 
-    player_ = new VideoPlayer();
+    player_ = new VideoPlayer(this);
 
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
     connect(menu_, &RecordMenu::opened, [this](bool opened) {
-        opened ? player_->play() : player_->close();
+        if (Config::instance()["devices"]["cameras"].is_null()) {
+            LOG(WARNING) << "not found ";
+            return;
+        }
+        QString camera_name = Config::instance()["devices"]["cameras"].get<QString>();
+        LOG(INFO) << "camera name : " << camera_name;
+        opened ? player_->play("video=" + camera_name.toStdString(), "dshow") : player_->close();
     });
+    connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
+
+    decoder_ = new MediaDecoder();
+    encoder_ = new MediaEncoder(decoder_);
+
+    decoder_thread_ = new QThread(this);
+    encoder_thread_ = new QThread(this);
+
+    decoder_->moveToThread(decoder_thread_);
+    encoder_->moveToThread(encoder_thread_);
+
+    connect(decoder_thread_, &QThread::started, decoder_, &MediaDecoder::process);
+    connect(decoder_, &MediaDecoder::started, [this]() { encoder_thread_->start(); });
+    connect(encoder_thread_, &QThread::started, encoder_, &MediaEncoder::process);
+    
+    connect(decoder_, &MediaDecoder::stopped, [this]() { decoder_thread_->quit(); });
+    connect(encoder_, &MediaEncoder::stopped, [this]() { encoder_thread_->quit(); });
+
+    connect(menu_, &RecordMenu::stopped, decoder_, &MediaDecoder::stop);
 }
 
 void ScreenRecorder::record()
@@ -38,6 +63,11 @@ void ScreenRecorder::start()
 
 void ScreenRecorder::setup()
 {
+    if (decoder_->running() || decoder_->opened() || encoder_->opened()) {
+        LOG(WARNING) << "RECARDING!! Exit first.";
+        return;
+    }
+
     menu_->start();
 
     status_ = SelectorStatus::LOCKED;
@@ -48,39 +78,41 @@ void ScreenRecorder::setup()
 
     filename_ = native_movies_path + QDir::separator() + "Capturer_video_" + current_date_time + ".mp4";
 
-    QStringList args;
     auto selected_area = selected();
 #ifdef __linux__
-    args << "-f"            << "x11grab"
-         << "-framerate"    << QString("%1").arg(framerate_)
-         << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
-         << "-i"            << QString(":0.0+%1,%2").arg(selected_area.x()).arg(selected_area.y())
-         << "-pix_fmt"      << "yuv420p"
-         << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
-         << filename_;
+    decoder_->open(
+        QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
+        "x11grab",
+        AV_PIX_FMT_YUV420P,
+        {
+            {"framerate", std::to_string(framerate_)},
+            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+        }
+    );
 #elif _WIN32
-    if (!Devices::microphones().isEmpty() && !m_mute_) {
-        args << "-f" << "dshow"
-             << "-i" << "audio=" + Devices::microphones().at(0);
-    }
-    args << "-f"            << "gdigrab"
-         << "-framerate"    << QString("%1").arg(framerate_)
-         << "-offset_x"     << QString("%1").arg(selected_area.x())
-         << "-offset_y"     << QString("%1").arg(selected_area.y())
-         << "-video_size"   << QString("%1x%2").arg(selected_area.width()).arg(selected_area.height())
-         << "-i"            << "desktop"
-         << "-pix_fmt"      << "yuv420p"
-         << "-vf"           << "scale=trunc(iw/2)*2:trunc(ih/2)*2"
-         << filename_;
-
-    LOG(INFO) << args.join(" ");
+    decoder_->open(
+        "desktop",
+        "gdigrab",
+        AV_PIX_FMT_YUV420P,
+        {
+            {"framerate", std::to_string(framerate_)},
+            {"offset_x", std::to_string(selected_area.x())},
+            {"offset_y", std::to_string(selected_area.y())},
+            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+        }
+    );
 #endif
-    process_->start("ffmpeg", args);
+    encoder_->open(filename_.toStdString(), "libx264", { framerate_, 1 });
+
+    if (decoder_->opened() && encoder_->opened())
+    {
+        decoder_thread_->start();
+    }
 }
 
 void ScreenRecorder::exit()
 {
-    process_->write("q\n\r");
+    decoder_->stop();
     menu_->close();
     emit SHOW_MESSAGE("Capturer<VIDEO>", tr("Path: ") + filename_);
     Selector::exit();

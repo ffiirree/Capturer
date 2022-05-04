@@ -32,12 +32,12 @@ private:
         google::InitGoogleLogging(argv[0]);
         FLAGS_max_log_size = 1024;              // MB
         FLAGS_logbufsecs = 0;
+        FLAGS_stderrthreshold = google::GLOG_INFO;
         FLAGS_colorlogtostderr = true;
 
         google::EnableLogCleaner(3);
     }
 };
-
 
 inline std::ostream& operator<<(std::ostream& out, const QString& string) 
 {

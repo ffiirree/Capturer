@@ -29,17 +29,22 @@ extern "C" {
 #include "utils.h"
 #include "logging.h"
 
+const int FRAME_BUFFER_SIZE = 15;
+
 class MediaDecoder : public QObject {
 	Q_OBJECT
 
 public:
+	explicit MediaDecoder() {}
 	~MediaDecoder()
 	{
 		close();
 	}
 
-	bool open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
+	bool open(const std::string& name, const std::string& format, AVPixelFormat pix_fmt, const std::map<std::string, std::string>& options)
 	{
+		pix_fmt_ = pix_fmt;
+
 		// format context
 		fmt_ctx_ = avformat_alloc_context();
 		if (!fmt_ctx_) {
@@ -49,7 +54,7 @@ public:
 		avdevice_register_all();
 
 		// input format
-		AVInputFormat * input_fmt = nullptr;
+		AVInputFormat* input_fmt = nullptr;
 		if (!format.empty()) {
 			input_fmt = av_find_input_format(format.c_str());
 			if (!input_fmt) {
@@ -127,7 +132,7 @@ public:
 
 		sws_ctx_ = sws_getContext(
 			decoder_ctx_->width, decoder_ctx_->height, decoder_ctx_->pix_fmt,
-			decoder_ctx_->width, decoder_ctx_->height, AV_PIX_FMT_RGB24,
+			decoder_ctx_->width, decoder_ctx_->height, pix_fmt_,
 			SWS_BICUBIC, nullptr, nullptr, nullptr
 		);
 		if (!sws_ctx_) {
@@ -135,20 +140,25 @@ public:
 			return false;
 		}
 
-		rgb_frame_ = av_frame_alloc();
-		if (!rgb_frame_) {
-			LOG(ERROR) << "av_frame_alloc";
-			return false;
-		}
-		if (av_image_alloc(rgb_frame_->data, rgb_frame_->linesize,
-			decoder_ctx_->width, decoder_ctx_->height,
-			AV_PIX_FMT_RGB24, 16) < 0) {
-			LOG(ERROR) << "av_image_alloc";
-			return false;
+		// buffer
+		for (size_t i = 0; i < FRAME_BUFFER_SIZE; i++) {
+			buffer_[i] = av_frame_alloc();
+			if (!buffer_[i]) {
+				LOG(ERROR) << "av_frame_alloc";
+				return false;
+			}
+
+			if (av_image_alloc(buffer_[i]->data, buffer_[i]->linesize, decoder_ctx_->width, decoder_ctx_->height, pix_fmt_, 16) < 0) {
+				LOG(ERROR) << "av_image_alloc";
+				return false;
+			}
+			buffer_[i]->width = decoder_ctx_->width;
+			buffer_[i]->height = decoder_ctx_->height;
+			buffer_[i]->format = pix_fmt_;
 		}
 
 		opened(true);
-		LOG(INFO) << name << "is opened";
+		LOG(INFO) << "[DECODER]: " << name << " is opened";
 		return true;
 	}
 
@@ -157,9 +167,12 @@ public:
 
 	void process()
 	{
+		LOG(INFO) << "[DECODER] STARTED@" << QThread::currentThreadId();
+
 		if (!opened()) return;
 
 		running(true);
+		emit started();
 
 		while (running()) {
 			if (paused()) {
@@ -185,27 +198,22 @@ public:
 				}
 
 				// decoded frame@{
-				// convert the format to rgb888
-				sws_scale(
-					sws_ctx_,
-					static_cast<const uint8_t* const*>(frame_->data), frame_->linesize,
-					0, frame_->height,
-					rgb_frame_->data, rgb_frame_->linesize
-				);
+				// convert the format to AV_PIX_FMT_RGB24
+				buffer_.push([this](AVFrame* buffer_frame) {
+					sws_scale(
+						sws_ctx_,
+						static_cast<const uint8_t* const*>(frame_->data), frame_->linesize,
+						0, frame_->height,
+						buffer_frame->data, buffer_frame->linesize
+					);
 
-				rgb_frame_->height = frame_->height;
-				rgb_frame_->width = frame_->width;
-				rgb_frame_->format = AV_PIX_FMT_RGB24;
-				first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
-				rgb_frame_->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, decoder_ctx_->time_base);
+					buffer_frame->height = frame_->height;
+					buffer_frame->width = frame_->width;
+					buffer_frame->format = pix_fmt_;
+					first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
+					buffer_frame->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, decoder_ctx_->time_base);
+				});
 
-
-				buffer_.push(QImage(
-					static_cast<const uchar*>(rgb_frame_->data[0]),
-					frame_->width, frame_->height,
-					QImage::Format_RGB888
-				).copy());
-				
 				emit received();
 				// @}
 
@@ -214,41 +222,82 @@ public:
 			av_packet_unref(packet_);
 		}
 
+		LOG(INFO) << "[DECODER] " << "decoded frames: " << decoder_ctx_->frame_number;
+
 		close();
+		emit stopped();
+		LOG(INFO) << "[DECODER] EXITED";
 	}
 
 	int width() { return decoder_ctx_ ? decoder_ctx_->width : 480; }
 	int height() { return decoder_ctx_ ? decoder_ctx_->height : 360; }
+	AVRational sar() { return decoder_ctx_ ? decoder_ctx_->sample_aspect_ratio : AVRational{ 0, 1 }; }
+	AVRational framerate() { return opened() ? av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_index_], nullptr) : AVRational{30, 1}; }
+	AVRational timebase() { return opened() ? fmt_ctx_->streams[video_stream_index_]->time_base : AVRational{1, AV_TIME_BASE}; }
+	bool opened() { std::lock_guard<std::mutex> lock(mtx_); return opened_; }
 
 signals:
+	void started();
 	void received();
+	void stopped();
 
 public slots:
 	void pause() { std::lock_guard<std::mutex> lock(mtx_); paused_ = true; }
 	void resume() { std::lock_guard<std::mutex> lock(mtx_); paused_ = false; }
 
-	void stop() { std::lock_guard<std::mutex> lock(mtx_); running_ = false; }
+	void stop() { std::lock_guard<std::mutex> lock(mtx_); LOG(INFO) << "[DEOCDER] STOPED"; running_ = false; }
 
-	QImage frame()
+	int read(AVFrame* frame)
 	{
-		return buffer_.pop();
+		int ret = -1;
+		if (!running()) return -2;
+		if (buffer_.unused()) return -3;
+
+		buffer_.pop([frame, &ret](AVFrame* popped) {
+			if (popped) {
+				frame->height = popped->height;
+				frame->width = popped->width;
+				frame->format = popped->format;
+				frame->pts = popped->pts;
+				ret = av_frame_copy(frame, popped);
+				if (ret < 0) {
+					char buffer[AV_ERROR_MAX_STRING_SIZE]{ 0 };
+					LOG(ERROR) << "av_frame_copy : " << av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, ret);
+					LOG(ERROR) << "frame info: w= " << popped->width << ", h=" << popped->height << ", f=" << popped->format;
+				}
+			}
+		});
+		return ret;
+	}
+
+	int read(QImage& image) {
+		buffer_.pop([&image](auto&& popped) {
+			image = QImage(static_cast<const uchar*>(popped->data[0]), popped->width, popped->height, QImage::Format_RGB888).copy();
+		});
+		return 0;
 	}
 
 private:
 	void close()
 	{
 		running(false);
+		opened(false);
 
 		av_packet_free(&packet_);
 		av_frame_free(&frame_);
-		av_frame_free(&rgb_frame_);
+
+		buffer_.clear();
+		for (size_t i = 0; i < FRAME_BUFFER_SIZE; i++) {
+			av_frame_free(&buffer_[i]);
+		}
 
 		avcodec_free_context(&decoder_ctx_);
 		avformat_close_input(&fmt_ctx_);
+
+		LOG(INFO) << "DECODER CLOSED";
 	}
 
-	void running(bool v) { std::lock_guard<std::mutex> lock(mtx_); running_ = true; }
-	bool opened() { std::lock_guard<std::mutex> lock(mtx_); return opened_; }
+	void running(bool v) { std::lock_guard<std::mutex> lock(mtx_); running_ = v; }
 	void opened(bool v) { std::lock_guard<std::mutex> lock(mtx_); opened_ = v; }
 
 	bool running_{ false };
@@ -261,6 +310,8 @@ private:
 	AVCodecContext* decoder_ctx_{ nullptr };
 	AVCodec* decoder_{ nullptr };
 
+	AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
+
 	AVPacket* packet_{ nullptr };
 	AVFrame* frame_{ nullptr };
 	AVFrame* rgb_frame_{ nullptr };
@@ -270,7 +321,7 @@ private:
 	int64_t first_pts_{ AV_NOPTS_VALUE };
 	std::mutex mtx_;
 
-	RingBuffer<QImage, 25> buffer_;
+	RingBuffer<AVFrame *, FRAME_BUFFER_SIZE> buffer_;
 };
 
 #endif // !CAPTURER_MEDIA_DECODER

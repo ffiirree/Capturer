@@ -9,7 +9,7 @@
 RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     : QWidget(parent)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
 
     window_ = new QWidget(this);
