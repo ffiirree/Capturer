@@ -35,6 +35,7 @@ enum PaintType : uint32_t {
     REPAINT_ALL     = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
 };
 
+using std::string;
 using std::shared_ptr;
 using std::make_shared;
 using std::vector;

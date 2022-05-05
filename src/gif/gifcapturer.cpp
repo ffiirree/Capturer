@@ -74,7 +74,7 @@ void GifCapturer::setup()
         }
     );
 #endif
-    encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_BGR8, { framerate_, 1 });
+    encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_BGR8, { framerate_, 1 }, true);
 
     if (decoder_->opened() && encoder_->opened())
     {

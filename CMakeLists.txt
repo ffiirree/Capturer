@@ -31,7 +31,7 @@ find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice swscale REQUIRED
 
 if(WIN32)
     # GUI/console
-    set(CMAKE_WIN32_EXECUTABLE ON)
+    #set(CMAKE_WIN32_EXECUTABLE ON)
     
     # Windows API
     add_definitions(-DUNICODE -DNOMINMAX)
