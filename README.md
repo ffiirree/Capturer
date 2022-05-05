@@ -81,17 +81,23 @@ Keys | Actions
 `Enter`             | 开始录制
 `Ctrl + Alt + G`    | 第二次，结束 <br> GIF保存在操作系统默认的`图片`文件夹
 
-## 源码使用
+## From Source
 
 ```bash
 git clone https://github.com/ffiirree/Capturer.git --recursive
 ```
 
-> 本项目开发使用的`Qt`版本为`Qt 5.12.10`
+> 本项目开发使用的`Qt`版本为`Qt 5.12.12`
 
-### Windows 10 & Visual Studio 2019
+### Windows
 
-使用`Visual Studio 2019`打开(CMake工程) 或 直接使用命令编译
+#### Install FFmpeg
+
+从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好库版本，添加到环境变量中。
+
+#### 编译
+
+使用`Visual Studio 2022`打开(CMake工程) 或 直接使用命令编译
 
 ```bash
 cd Capturer
@@ -104,7 +110,10 @@ cmake --build . --config Release --target install
 ### Linux (Ubuntu 20.04)
 
 ```bash
-sudo apt install build-essential ffmpeg gcc g++ cmake qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev
+sudo apt install build-essential gcc g++ cmake 
+sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev 
+sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev
+
 cd Capturer
 mkdir build && cd build
 cmake ..
@@ -114,25 +123,12 @@ make -j8
 make package
 ```
 
-### Install FFmpeg
-
-#### Windows
-
-从[官网](https://ffmpeg.zeranoe.com/builds/)下载编译好的二进制文件，放到安装或者添加环境变量中。
-
-#### Ubuntu
-
-``` bash
-sudo apt install ffmpeg
-```
-
 ## Todo
 
 ### 截图
 
-- [ ] 显示截图历史列表
-- [ ] 保存和加载截图历史
 - [ ] 长截图
+- [ ] Latex OCR
 
 ### 编辑
 
@@ -141,6 +137,5 @@ sudo apt install ffmpeg
 
 ### 录屏
 
-- [ ] 录制摄像头
-- [ ] 录制扬声器
+- [ ] Speakers and Microphones
 - [ ] 添加水印

@@ -2,27 +2,13 @@
 #define CAPTURER_MEDIA_ENCODER_H
 
 extern "C" {
-#include <libavformat\avformat.h>
-#include <libavcodec\avcodec.h>
-#include <libavdevice\avdevice.h>
-#include <libswscale\swscale.h>
-#include <libswresample\swresample.h>
-#include <libavutil\avassert.h>
-#include <libavutil\channel_layout.h>
-#include <libavutil\opt.h>
-#include <libavutil\mathematics.h>
-#include <libavutil\timestamp.h>
-#include <libavutil\error.h>
-#include <libavcodec\adts_parser.h>
-#include <libavutil\time.h>
-#include <libavfilter\avfilter.h>
-#include <libavfilter\buffersink.h>
-#include <libavfilter\buffersrc.h>
-#include <libavutil\imgutils.h>
-#include <libavutil\samplefmt.h>
-#include <libavutil\log.h>
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
+#include <libavutil/time.h>
+#include <libavutil/imgutils.h>
 }
-#include <QImage>
 #include <mutex>
 #include "ringbuffer.h"
 #include "utils.h"
@@ -80,7 +66,7 @@ public:
 		defer(av_dict_free(&encoder_options));
 		for (const auto& [key, value] : options) {
 			av_dict_set(&encoder_options, key.c_str(), value.c_str(), 0);
-		
+
 		}
 		if (codec_name == "libx264" || codec_name == "x265") {
 			av_dict_set(&encoder_options, "preset", "ultrafast", AV_DICT_DONT_OVERWRITE);
@@ -93,10 +79,10 @@ public:
 		encoder_ctx_->width = decoder_->width();
 		encoder_ctx_->pix_fmt = pix_fmt_;
 		encoder_ctx_->sample_aspect_ratio = decoder_->sar();
-		
+
 		// TODO: Timebase: this is the fundamental unit of time (in seconds) in terms of which frame
-        // timestamps are represented. For fixed-fps content, timebase should be 1/framerate
-        // and timestamp increments should be identical to 1.
+		// timestamps are represented. For fixed-fps content, timebase should be 1/framerate
+		// and timestamp increments should be identical to 1.
 		encoder_ctx_->time_base = decoder_->timebase();
 		fmt_ctx_->streams[video_stream_index_]->time_base = decoder_->timebase();
 		encoder_ctx_->framerate = framerate;
@@ -146,7 +132,7 @@ public:
 		}
 
 		opened(true);
-		
+
 		av_dump_format(fmt_ctx_, 0, filename.c_str(), 1);
 
 		LOG(INFO) << "[ENCODER] " << filename << " is opened";
@@ -177,8 +163,8 @@ public:
 			int64_t duration = av_q2d(av_div_q(av_inv_q(encoder_ctx_->framerate), encoder_ctx_->time_base));
 			first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 			decoded_frame_->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, encoder_ctx_->time_base);
-			int64_t delta = std::max(0ll, encoder_ctx_->frame_number * duration - (av_gettime_relative() - first_pts_));
-			int64_t next_pts = av_gettime_relative() + std::min(static_cast<int64_t>(duration * 1.1), delta);
+			int64_t delta = std::max<int64_t>(0, encoder_ctx_->frame_number * duration - (av_gettime_relative() - first_pts_));
+			int64_t next_pts = av_gettime_relative() + std::min<int64_t>(static_cast<int64_t>(duration * 1.1), delta);
 
 			int ret = avcodec_send_frame(encoder_ctx_, decoded_frame_);
 			while (ret >= 0) {
@@ -202,7 +188,7 @@ public:
 				}
 			}
 
-			QThread::msleep(std::max(0ll, (next_pts - av_gettime_relative()) / (AV_TIME_BASE / 1000)));
+			QThread::msleep(std::max<int64_t>(0, (next_pts - av_gettime_relative()) / (AV_TIME_BASE / 1000)));
 		}
 
 		LOG(INFO) << "[ENCODER]" << "encoded frames: " << encoder_ctx_->frame_number;
@@ -244,12 +230,12 @@ private:
 
 		LOG(INFO) << "[ENCODER] CLOSED";
 	}
-	
+
 	void opened(bool v) { std::lock_guard<std::mutex> lock(mtx_); opened_ = v; }
 
 	bool opened_{ false };
 
-	MediaDecoder *decoder_{ nullptr };
+	MediaDecoder* decoder_{ nullptr };
 	AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
 
 	AVFormatContext* fmt_ctx_{ nullptr };

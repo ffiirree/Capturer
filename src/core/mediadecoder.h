@@ -2,25 +2,12 @@
 #define CAPTURER_MEDIA_DECODER
 
 extern "C" {
-#include <libavformat\avformat.h>
-#include <libavcodec\avcodec.h>
-#include <libavdevice\avdevice.h>
-#include <libswscale\swscale.h>
-#include <libswresample\swresample.h>
-#include <libavutil\avassert.h>
-#include <libavutil\channel_layout.h>
-#include <libavutil\opt.h>
-#include <libavutil\mathematics.h>
-#include <libavutil\timestamp.h>
-#include <libavutil\error.h>
-#include <libavcodec\adts_parser.h>
-#include <libavutil\time.h>
-#include <libavfilter\avfilter.h>
-#include <libavfilter\buffersink.h>
-#include <libavfilter\buffersrc.h>
-#include <libavutil\imgutils.h>
-#include <libavutil\samplefmt.h>
-#include <libavutil\log.h>
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
+#include <libavutil/time.h>
+#include <libavutil/imgutils.h>
 }
 #include <QThread>
 #include <QImage>
@@ -212,7 +199,7 @@ public:
 					buffer_frame->format = pix_fmt_;
 					first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 					buffer_frame->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, decoder_ctx_->time_base);
-				});
+					});
 
 				emit received();
 				// @}
@@ -232,8 +219,8 @@ public:
 	int width() { return decoder_ctx_ ? decoder_ctx_->width : 480; }
 	int height() { return decoder_ctx_ ? decoder_ctx_->height : 360; }
 	AVRational sar() { return decoder_ctx_ ? decoder_ctx_->sample_aspect_ratio : AVRational{ 0, 1 }; }
-	AVRational framerate() { return opened() ? av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_index_], nullptr) : AVRational{30, 1}; }
-	AVRational timebase() { return opened() ? fmt_ctx_->streams[video_stream_index_]->time_base : AVRational{1, AV_TIME_BASE}; }
+	AVRational framerate() { return opened() ? av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_index_], nullptr) : AVRational{ 30, 1 }; }
+	AVRational timebase() { return opened() ? fmt_ctx_->streams[video_stream_index_]->time_base : AVRational{ 1, AV_TIME_BASE }; }
 	bool opened() { std::lock_guard<std::mutex> lock(mtx_); return opened_; }
 
 signals:
@@ -266,14 +253,14 @@ public slots:
 					LOG(ERROR) << "frame info: w= " << popped->width << ", h=" << popped->height << ", f=" << popped->format;
 				}
 			}
-		});
+			});
 		return ret;
 	}
 
 	int read(QImage& image) {
 		buffer_.pop([&image](auto&& popped) {
 			image = QImage(static_cast<const uchar*>(popped->data[0]), popped->width, popped->height, QImage::Format_RGB888).copy();
-		});
+			});
 		return 0;
 	}
 
@@ -323,7 +310,7 @@ private:
 	int64_t first_pts_{ AV_NOPTS_VALUE };
 	std::mutex mtx_;
 
-	RingBuffer<AVFrame *, FRAME_BUFFER_SIZE> buffer_;
+	RingBuffer<AVFrame*, FRAME_BUFFER_SIZE> buffer_;
 };
 
 #endif // !CAPTURER_MEDIA_DECODER
