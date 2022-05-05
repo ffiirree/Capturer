@@ -186,8 +186,10 @@ void MediaEncoder::close()
 
 	first_pts_ = AV_NOPTS_VALUE;
 
-	if (av_write_trailer(fmt_ctx_) != 0) {
-		LOG(ERROR) << "av_write_trailer";
+	int ret = av_write_trailer(fmt_ctx_);
+	if (ret != 0) {
+		char buffer[AV_ERROR_MAX_STRING_SIZE]{ 0 };
+		LOG(ERROR) << "av_write_trailer : " << av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, ret);
 	}
 
 	if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {

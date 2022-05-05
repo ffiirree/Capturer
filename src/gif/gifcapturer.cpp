@@ -65,7 +65,8 @@ void GifCapturer::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        AV_PIX_FMT_BGR8,
+        "",
+        AV_PIX_FMT_PAL8,
         {
             {"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
@@ -74,7 +75,8 @@ void GifCapturer::setup()
         }
     );
 #endif
-    encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_BGR8, { framerate_, 1 }, true);
+    // TODO: ffmpeg -i .\in.mp4 -filter_complex "[0:v] fps=15,scale=640:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" out.gif
+    encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_PAL8, { framerate_, 1 }, true, { });
 
     if (decoder_->opened() && encoder_->opened())
     {

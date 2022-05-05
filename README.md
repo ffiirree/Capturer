@@ -112,7 +112,7 @@ cmake --build . --config Release --target install
 ```bash
 sudo apt install build-essential gcc g++ cmake 
 sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev 
-sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev
+sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
 cd Capturer
 mkdir build && cd build

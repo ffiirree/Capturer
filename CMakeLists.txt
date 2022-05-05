@@ -27,7 +27,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Widgets Gui Multimedia LinguistTools REQUIRED)
-find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice swscale REQUIRED)
+find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRED)
 
 if(WIN32)
     # GUI/console
@@ -61,7 +61,7 @@ target_link_libraries(${PROJECT_NAME}
         QHotkey::QHotkey 
         Qt5::Widgets Qt5::Gui Qt5::Multimedia
         glog::glog
-        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::swscale
+        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>

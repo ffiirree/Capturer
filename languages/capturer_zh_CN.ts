@@ -32,7 +32,7 @@
 <context>
     <name>GifCapturer</name>
     <message>
-        <location filename="../src/gif/gifcapturer.cpp" line="90"/>
+        <location filename="../src/gif/gifcapturer.cpp" line="92"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>
@@ -211,7 +211,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/video/screenrecorder.cpp" line="115"/>
+        <location filename="../src/video/screenrecorder.cpp" line="116"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>

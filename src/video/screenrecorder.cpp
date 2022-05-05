@@ -91,6 +91,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
+        "",
         AV_PIX_FMT_YUV420P,
         {
             {"framerate", std::to_string(framerate_)},

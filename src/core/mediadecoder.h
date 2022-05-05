@@ -5,9 +5,11 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
-#include <libswscale/swscale.h>
 #include <libavutil/time.h>
 #include <libavutil/imgutils.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 }
 #include <QThread>
 #include <QImage>
@@ -31,7 +33,8 @@ public:
 		close();
 	}
 
-	bool open(const string& name, const string& format, AVPixelFormat pix_fmt, const map<string, string>& options);
+	bool open(const string& name, const string& format, const string& filters_descr, AVPixelFormat pix_fmt, const map<string, string>& options);
+	bool create_filters();
 
 	bool running() { std::lock_guard<std::mutex> lock(mtx_); return running_; }
 	bool paused() { std::lock_guard<std::mutex> lock(mtx_); return paused_; }
@@ -120,14 +123,17 @@ private:
 
 	AVPacket* packet_{ nullptr };
 	AVFrame* frame_{ nullptr };
-	AVFrame* rgb_frame_{ nullptr };
-
-	SwsContext* sws_ctx_{ nullptr };
+	AVFrame* filtered_frame_{ nullptr };
 
 	int64_t first_pts_{ AV_NOPTS_VALUE };
 	std::mutex mtx_;
 
 	RingBuffer<AVFrame*, FRAME_BUFFER_SIZE> buffer_;
+
+	string filters_descr_;
+	AVFilterGraph* filter_graph_{ nullptr };
+	AVFilterContext* buffersrc_ctx_{ nullptr };
+	AVFilterContext* buffersink_ctx_{ nullptr };
 };
 
 #endif // !CAPTURER_MEDIA_DECODER

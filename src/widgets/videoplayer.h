@@ -20,7 +20,7 @@ public:
 
     void play(std::string name, std::string fmt)
     {
-        if (!camera_.open(name, fmt, AV_PIX_FMT_RGB24, {})) {
+        if (!camera_.open(name, fmt, "", AV_PIX_FMT_RGB24, {})) {
             return;
         }
 
