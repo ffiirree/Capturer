@@ -81,6 +81,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
+        "",
         AV_PIX_FMT_YUV420P,
         {
             {"framerate", std::to_string(framerate_)},

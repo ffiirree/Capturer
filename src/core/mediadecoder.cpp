@@ -242,8 +242,6 @@ void MediaDecoder::process()
 				return;
 			}
 
-			
-
 			if (av_buffersrc_add_frame_flags(buffersrc_ctx_, frame_, AV_BUFFERSRC_FLAG_PUSH) < 0) {
 				LOG(ERROR) << "av_buffersrc_add_frame(buffersrc_ctx_, frame_)";
 				break;
@@ -258,8 +256,6 @@ void MediaDecoder::process()
 					LOG(ERROR) << "av_buffersink_get_frame_flags : " << av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, ret);
 					break;
 				}
-
-				LOG(INFO) << "decoded frame";
 
 				// decoded frame@{
 				// convert the format to AV_PIX_FMT_XXXX

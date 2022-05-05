@@ -55,6 +55,7 @@ void GifCapturer::setup()
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
+        "",
         AV_PIX_FMT_YUV420P,
         {
             {"framerate", std::to_string(framerate_)},
@@ -65,17 +66,16 @@ void GifCapturer::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        "",
+        "", //"[0:v]split[a][b];[a]palettegen=stats_mode=single[p];[b][p]paletteuse=new=1",
         AV_PIX_FMT_PAL8,
         {
-            {"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
             {"offset_y", std::to_string(selected_area.y())},
             {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
         }
     );
 #endif
-    // TODO: ffmpeg -i .\in.mp4 -filter_complex "[0:v] fps=15,scale=640:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" out.gif
+    // TODO: ffmpeg -i in.mp4 -filter_complex "[0:v] fps=15,scale=640:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" out.gif
     encoder_->open(filename_.toStdString(), "gif", AV_PIX_FMT_PAL8, { framerate_, 1 }, true, { });
 
     if (decoder_->opened() && encoder_->opened())
