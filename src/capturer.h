@@ -13,7 +13,6 @@
 #include "screenrecorder.h"
 #include "qhotkey.h"
 #include "screenshoter.h"
-#include "gifcapturer.h"
 #include "settingdialog.h"
 #include "json.hpp"
 
@@ -55,7 +54,7 @@ private:
 
     ScreenShoter * sniper_ = nullptr;
     ScreenRecorder * recorder_ = nullptr;
-    GifCapturer * gifcptr_ = nullptr;
+    ScreenRecorder* gifcptr_ = nullptr;
 
     LimitSizeVector<ImageWindow *> clipboard_history_;
 

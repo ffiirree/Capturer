@@ -31,7 +31,7 @@ find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRE
 
 if(WIN32)
     # GUI/console
-    #set(CMAKE_WIN32_EXECUTABLE ON)
+    set(CMAKE_WIN32_EXECUTABLE ON)
     
     # Windows API
     add_definitions(-DUNICODE -DNOMINMAX)
@@ -75,8 +75,7 @@ target_include_directories(${PROJECT_NAME}
         src/menu
         src/pinned
         src/snip
-        src/video
-        src/gif
+        src/record
         src/setting
         ${PROJECT_BINARY_DIR} # Generated header files
 )

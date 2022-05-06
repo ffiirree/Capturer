@@ -30,14 +30,6 @@
     </message>
 </context>
 <context>
-    <name>GifCapturer</name>
-    <message>
-        <location filename="../src/gif/gifcapturer.cpp" line="92"/>
-        <source>Path: </source>
-        <translation></translation>
-    </message>
-</context>
-<context>
     <name>ImageEditMenu</name>
     <message>
         <location filename="../src/menu/imageeditmenu.cpp" line="39"/>
@@ -211,7 +203,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/video/screenrecorder.cpp" line="117"/>
+        <location filename="../src/video/screenrecorder.cpp" line="121"/>
         <source>Path: </source>
         <translation></translation>
     </message>

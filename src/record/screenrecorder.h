@@ -14,7 +14,10 @@ class ScreenRecorder : public Selector
     Q_OBJECT
 
 public:
-    explicit ScreenRecorder(QWidget *parent = nullptr);
+    enum { VIDEO, GIF };
+
+public:
+    explicit ScreenRecorder(int type = VIDEO, QWidget *parent = nullptr);
     ~ScreenRecorder() override {
         delete menu_;
         delete decoder_thread_; decoder_thread_ = nullptr;
@@ -36,6 +39,7 @@ public slots:
     void mute(int type, bool v) { type ? m_mute_ = v : s_mute_ = v; }
     void updateTheme()
     {
+
         Selector::updateTheme(Config::instance()["record"]["selector"]);
     }
 private:
@@ -43,7 +47,10 @@ private:
 
     void keyPressEvent(QKeyEvent *event) override;
 
+    int type_{ VIDEO };
+
     int framerate_{ 30 };
+    AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
 
     QString filename_;
 

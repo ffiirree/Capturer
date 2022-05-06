@@ -8,9 +8,12 @@
 #include "devices.h"
 #include "logging.h"
 
-ScreenRecorder::ScreenRecorder(QWidget *parent)
+ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
+    type_ = type;
+    pix_fmt_ = (type_ == VIDEO) ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8;
+
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE);
     prevent_transparent_ = true;
 
@@ -71,18 +74,18 @@ void ScreenRecorder::setup()
     status_ = SelectorStatus::LOCKED;
     hide();
 
-    auto native_movies_path = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    auto native_movies_path = QStandardPaths::writableLocation(type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation);
     auto current_date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
 
-    filename_ = native_movies_path + QDir::separator() + "Capturer_video_" + current_date_time + ".mp4";
+    filename_ = native_movies_path + QDir::separator() + "Capturer_video_" + current_date_time + (type_ == VIDEO ? ".mp4" : ".gif");
 
     auto selected_area = selected();
 #ifdef __linux__
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
-        "",
-        AV_PIX_FMT_YUV420P,
+        type_ == VIDEO ? "" : "[0:v] split [a][b];[a] palettegen=stats_mode=single [p];[b][p] paletteuse=dither=none:new=1",
+        type_ == VIDEO ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8,
         {
             {"framerate", std::to_string(framerate_)},
             {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
@@ -92,17 +95,18 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        "",
-        AV_PIX_FMT_YUV420P,
+        type_ == VIDEO ? "" : "[0:v] split [a][b];[a] palettegen=stats_mode=single [p];[b][p] paletteuse=dither=none:new=1",
+        pix_fmt_,
         {
-            {"framerate", std::to_string(framerate_)},
+            //{"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
             {"offset_y", std::to_string(selected_area.y())},
             {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
         }
     );
 #endif
-    encoder_->open(filename_.toStdString(), "libx264", AV_PIX_FMT_YUV420P,{ framerate_, 1 });
+    // TODO: [GIF] ffmpeg -i <in> -filter_complex "[0:v] fps=15,scale=640:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=diff [p];[b][p] paletteuse=dither=floyd_steinberg" out.gif
+    encoder_->open(filename_.toStdString(), type_ == VIDEO ? "libx264" : "gif", pix_fmt_, { framerate_, 1 }, type_ != VIDEO);
 
     if (decoder_->opened() && encoder_->opened())
     {
@@ -114,7 +118,7 @@ void ScreenRecorder::exit()
 {
     decoder_->stop();
     menu_->close();
-    emit SHOW_MESSAGE("Capturer<VIDEO>", tr("Path: ") + filename_);
+    emit SHOW_MESSAGE(type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>", tr("Path: ") + filename_);
     Selector::exit();
 }
 
