@@ -1,10 +1,13 @@
 #include "mediadecoder.h"
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 bool MediaDecoder::open(const std::string& name, const std::string& format, const string& filters_descr, AVPixelFormat pix_fmt, const std::map<std::string, std::string>& options)
 {
 	pix_fmt_ = pix_fmt;
 	filters_descr_ = filters_descr;
+
+	LOG(INFO) << fmt::format("[DECODER] filters = {}, options = {}", filters_descr, options);
 
 	// format context
 	fmt_ctx_ = avformat_alloc_context();

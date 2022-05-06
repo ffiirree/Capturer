@@ -30,6 +30,7 @@ private:
     void setupSnipWidget();
     void setupRecordWidget();
     void setupGIFWidget();
+    void setupDevicesWidget();
     void setupHotkeyWidget();
     void setupAboutWidget();
 

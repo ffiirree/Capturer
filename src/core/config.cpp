@@ -46,19 +46,20 @@ Config::Config()
     IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
     IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
 
-    IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"], 1);
-    IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"], "#ffff00ff");
-    IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"], Qt::DashDotLine);
-    IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],   "#88000000");
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    1);
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"],    Qt::DashDotLine);
+    IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],      "#88000000");
+    IF_NULL_SET(settings_["gif"]["quality"],                        "medium");
 
-    IF_NULL_SET(settings_["snip"]["hotkey"],                "F1");
-    IF_NULL_SET(settings_["pin"]["hotkey"],                 "F3");
-    IF_NULL_SET(settings_["pin"]["visiable"]["hotkey"],     "Shift+F3");
-    IF_NULL_SET(settings_["record"]["hotkey"],              "Ctrl+Alt+V");
-    IF_NULL_SET(settings_["gif"]["hotkey"],                 "Ctrl+Alt+G");
+    IF_NULL_SET(settings_["snip"]["hotkey"],                        "F1");
+    IF_NULL_SET(settings_["pin"]["hotkey"],                         "F3");
+    IF_NULL_SET(settings_["pin"]["visiable"]["hotkey"],             "Shift+F3");
+    IF_NULL_SET(settings_["record"]["hotkey"],                      "Ctrl+Alt+V");
+    IF_NULL_SET(settings_["gif"]["hotkey"],                         "Ctrl+Alt+G");
 
-    IF_NULL_SET(settings_["record"]["framerate"],   30);
-    IF_NULL_SET(settings_["gif"]["framerate"],      6);
+    IF_NULL_SET(settings_["record"]["framerate"],                   30);
+    IF_NULL_SET(settings_["gif"]["framerate"],                      6);
 
     if(Devices::cameras().size() > 0)
         settings_["devices"]["cameras"] = Devices::cameras()[0];

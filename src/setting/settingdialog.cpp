@@ -59,10 +59,11 @@ SettingWindow::SettingWindow(QWidget * parent)
     layout->addWidget(tabwidget_);
 
     setupGeneralWidget();
+    setupHotkeyWidget();
     setupSnipWidget();
     setupRecordWidget();
     setupGIFWidget();
-    setupHotkeyWidget();
+    setupDevicesWidget();
     setupAboutWidget();
 }
 
@@ -230,37 +231,7 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
     layout->addWidget(_6_2, 7, 2, 1, 2);
 
-    layout->addWidget(new QLabel(), 8, 1, 1, 1);
-
-    auto _7 = new QLabel(tr("Devices:"));
-    _7->setObjectName("sub-title");
-    layout->addWidget(_7, 9, 1, 1, 1);
-
-    auto _8_2 = new QComboBox();
-    _8_2->setView(new QListView());
-    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-    _8_2->addItems(Devices::microphones());
-    layout->addWidget(new QLabel(tr("Microphones")), 10, 1, 1, 1);
-    layout->addWidget(_8_2, 10, 2, 1, 2);
-
-    auto _9_2 = new QComboBox();
-    _9_2->setView(new QListView());
-    _9_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-    _9_2->addItems(Devices::speakers());
-    layout->addWidget(new QLabel(tr("Speakers")), 11, 1, 1, 1);
-    layout->addWidget(_9_2, 11, 2, 1, 2);
-
-    auto _10_2 = new QComboBox();
-    _10_2->setView(new QListView());
-    _10_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-    _10_2->addItems(Devices::cameras());
-    layout->addWidget(new QLabel(tr("Cameras")), 12, 1, 1, 1);
-    connect(_10_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["cameras"], s);
-    });
-    layout->addWidget(_10_2, 12, 2, 1, 2);
-
-    layout->setRowStretch(13, 1);
+    layout->setRowStretch(8, 1);
 
     tabwidget_->widget(index)->setLayout(layout);
 }
@@ -320,10 +291,57 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
     layout->addWidget(_7_2, 7, 2, 1, 2);
 
-    layout->setRowStretch(8, 1);
+    auto _8_2 = new QComboBox();
+    auto quality = config["gif"]["quality"].get<QString>();
+    _8_2->setView(new QListView());
+    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
+    _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
+    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
+        config.set(config["gif"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
+    });
+    layout->addWidget(new QLabel(tr("Quality")), 8, 1, 1, 1);
+    layout->addWidget(_8_2, 8, 2, 1, 2);
+
+    layout->setRowStretch(9, 1);
     tabwidget_->widget(index)->setLayout(layout);
 }
 
+void SettingWindow::setupDevicesWidget()
+{
+    auto index = tabwidget_->addTab(new QWidget(), tr("Devices"));
+
+    auto layout = new QGridLayout();
+    layout->setContentsMargins(35, 10, 35, 15);
+
+    auto _1_2 = new QComboBox();
+    _1_2->setView(new QListView());
+    _1_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _1_2->addItems(Devices::microphones());
+    layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
+    layout->addWidget(_1_2, 1, 2, 1, 2);
+
+    auto _2_2 = new QComboBox();
+    _2_2->setView(new QListView());
+    _2_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _2_2->addItems(Devices::speakers());
+    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
+    layout->addWidget(_2_2, 2, 2, 1, 2);
+
+    auto _3_2 = new QComboBox();
+    _3_2->setView(new QListView());
+    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->addItems(Devices::cameras());
+    layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
+    connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
+        config.set(config["devices"]["cameras"], s);
+        });
+    layout->addWidget(_3_2, 3, 2, 1, 2);
+
+    layout->setRowStretch(5, 1);
+
+    tabwidget_->widget(index)->setLayout(layout);
+}
 
 void SettingWindow::setupHotkeyWidget()
 {

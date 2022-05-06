@@ -9,6 +9,7 @@
 #include "widgetsdetector.h"
 #include "devices.h"
 #include "logging.h"
+#include "config.h"
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
@@ -104,7 +105,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        type_ == VIDEO ? "" : gif_filters_["high"],
+        type_ == VIDEO ? "" : gif_filters_[Config::instance()["gif"]["quality"]],
         pix_fmt_,
         {
             //{"framerate", std::to_string(framerate_)},

@@ -203,7 +203,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="129"/>
+        <location filename="../src/record/screenrecorder.cpp" line="130"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -224,156 +224,176 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="71"/>
+        <location filename="../src/setting/settingdialog.cpp" line="72"/>
         <source>General</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="77"/>
+        <location filename="../src/setting/settingdialog.cpp" line="78"/>
         <source>Run on startup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="99"/>
+        <location filename="../src/setting/settingdialog.cpp" line="100"/>
         <source>Language</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="106"/>
+        <location filename="../src/setting/settingdialog.cpp" line="107"/>
         <source>Settings file</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="113"/>
+        <location filename="../src/setting/settingdialog.cpp" line="114"/>
         <source>Dark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="114"/>
+        <location filename="../src/setting/settingdialog.cpp" line="115"/>
         <source>Light</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="125"/>
+        <location filename="../src/setting/settingdialog.cpp" line="126"/>
         <source>Theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="134"/>
-        <location filename="../src/setting/settingdialog.cpp" line="341"/>
+        <location filename="../src/setting/settingdialog.cpp" line="135"/>
+        <location filename="../src/setting/settingdialog.cpp" line="359"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="139"/>
-        <location filename="../src/setting/settingdialog.cpp" line="184"/>
-        <location filename="../src/setting/settingdialog.cpp" line="275"/>
+        <location filename="../src/setting/settingdialog.cpp" line="140"/>
+        <location filename="../src/setting/settingdialog.cpp" line="185"/>
+        <location filename="../src/setting/settingdialog.cpp" line="246"/>
         <source>Apperance:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="149"/>
-        <location filename="../src/setting/settingdialog.cpp" line="194"/>
-        <location filename="../src/setting/settingdialog.cpp" line="284"/>
+        <location filename="../src/setting/settingdialog.cpp" line="150"/>
+        <location filename="../src/setting/settingdialog.cpp" line="195"/>
+        <location filename="../src/setting/settingdialog.cpp" line="255"/>
         <source>Border width</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="154"/>
-        <location filename="../src/setting/settingdialog.cpp" line="199"/>
-        <location filename="../src/setting/settingdialog.cpp" line="290"/>
+        <location filename="../src/setting/settingdialog.cpp" line="155"/>
+        <location filename="../src/setting/settingdialog.cpp" line="200"/>
+        <location filename="../src/setting/settingdialog.cpp" line="261"/>
         <source>Border color</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="165"/>
-        <location filename="../src/setting/settingdialog.cpp" line="210"/>
-        <location filename="../src/setting/settingdialog.cpp" line="301"/>
+        <location filename="../src/setting/settingdialog.cpp" line="166"/>
+        <location filename="../src/setting/settingdialog.cpp" line="211"/>
+        <location filename="../src/setting/settingdialog.cpp" line="272"/>
         <source>Line type</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="170"/>
-        <location filename="../src/setting/settingdialog.cpp" line="215"/>
-        <location filename="../src/setting/settingdialog.cpp" line="306"/>
+        <location filename="../src/setting/settingdialog.cpp" line="171"/>
+        <location filename="../src/setting/settingdialog.cpp" line="216"/>
+        <location filename="../src/setting/settingdialog.cpp" line="277"/>
         <source>Mask color</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="179"/>
+        <location filename="../src/setting/settingdialog.cpp" line="180"/>
         <source>Screen recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="220"/>
-        <location filename="../src/setting/settingdialog.cpp" line="310"/>
+        <location filename="../src/setting/settingdialog.cpp" line="221"/>
+        <location filename="../src/setting/settingdialog.cpp" line="281"/>
         <source>Params:</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="230"/>
-        <location filename="../src/setting/settingdialog.cpp" line="320"/>
+        <location filename="../src/setting/settingdialog.cpp" line="231"/>
+        <location filename="../src/setting/settingdialog.cpp" line="291"/>
         <source>Framerate</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="235"/>
-        <source>Devices:</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <source>High</source>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="243"/>
+        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <source>Medium</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <source>Low</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="303"/>
+        <source>Quality</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="321"/>
         <source>Microphones</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="250"/>
+        <location filename="../src/setting/settingdialog.cpp" line="328"/>
         <source>Speakers</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="257"/>
+        <location filename="../src/setting/settingdialog.cpp" line="335"/>
         <source>Cameras</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="270"/>
-        <location filename="../src/setting/settingdialog.cpp" line="369"/>
+        <location filename="../src/setting/settingdialog.cpp" line="241"/>
+        <location filename="../src/setting/settingdialog.cpp" line="387"/>
         <source>Gif recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="330"/>
+        <location filename="../src/setting/settingdialog.cpp" line="312"/>
+        <source>Devices</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="348"/>
         <source>Shortcuts</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="348"/>
+        <location filename="../src/setting/settingdialog.cpp" line="366"/>
         <source>Paste</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="355"/>
+        <location filename="../src/setting/settingdialog.cpp" line="373"/>
         <source>Hide/Show all images</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="362"/>
+        <location filename="../src/setting/settingdialog.cpp" line="380"/>
         <source>Video recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="378"/>
+        <location filename="../src/setting/settingdialog.cpp" line="396"/>
         <source>About</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="388"/>
+        <location filename="../src/setting/settingdialog.cpp" line="406"/>
         <source>Version</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="397"/>
+        <location filename="../src/setting/settingdialog.cpp" line="415"/>
         <source>Copyright © 2018 - 2022 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
