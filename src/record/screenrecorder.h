@@ -2,6 +2,7 @@
 #define SCREEN_RECORDER_H
 
 #include <QSystemTrayIcon>
+#include <QTimer>
 #include "selector.h"
 #include "record_menu.h"
 #include "config.h"
@@ -56,14 +57,22 @@ private:
 
     VideoPlayer* player_{ nullptr };
 
-    RecordMenu *menu_ = nullptr;
-    bool m_mute_ = true;
-    bool s_mute_ = true;
+    RecordMenu *menu_{ nullptr };
+    bool m_mute_{ true };
+    bool s_mute_{ true };
 
     MediaDecoder* decoder_{ nullptr };
     MediaEncoder* encoder_{ nullptr };
     QThread* decoder_thread_{ nullptr };
     QThread* encoder_thread_{ nullptr };
+
+    QTimer* timer_{ nullptr };
+
+    map<string, string> gif_filters_{
+        {"high",        "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1"},
+        {"medium",      "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none"},
+        {"low",         "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=64 [p];[b][p] paletteuse=new=1:dither=none"},
+    };
 };
 
 #endif // SCREEN_RECORDER_H

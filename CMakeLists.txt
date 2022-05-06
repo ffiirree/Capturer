@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 project(capturer VERSION 1.3.6 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -20,6 +20,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
 set(WITH_GFLAGS OFF CACHE BOOL "Use gflags")
 add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
 
 # Qt5
 set(CMAKE_AUTOMOC ON)
@@ -61,6 +62,7 @@ target_link_libraries(${PROJECT_NAME}
         QHotkey::QHotkey 
         Qt5::Widgets Qt5::Gui Qt5::Multimedia
         glog::glog
+        fmt::fmt
         FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>

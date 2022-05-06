@@ -5,8 +5,6 @@
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLabel>
-#include <QTimer>
-#include <QTime>
 
 class RecordMenu : public QWidget
 {
@@ -34,9 +32,7 @@ signals:
 
 public slots:
     void start();
-    void pause();
-    void resume();
-    void update();
+    void time(int64_t);
     void mute(int, bool);
     void close_camera();
 
@@ -54,9 +50,6 @@ private:
     QCheckBox* camera_ = nullptr;
     QCheckBox* pause_ = nullptr;
     QLabel* time_label_ = nullptr;
-    QTimer* timer_ = nullptr;
-    QTime time_{ 0,0,0 };
-    qint64 counter_ = 0;
 
     QPoint begin_pos_{ 0,0 };
     bool moving_ = false;

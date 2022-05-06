@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QShortcut>
 #include <QDesktopWidget>
+#include <fmt/core.h>
 #include "utils.h"
 #include "logging.h"
 #include "widgetsdetector.h"
@@ -200,7 +201,7 @@ void Selector::paintEvent(QPaintEvent *)
 
     if(use_detect_ || status_ > SelectorStatus::NORMAL) {
         // info
-        info_->setText(QString("%1 x %2").arg(selected().width()).arg(selected().height()));
+        info_->setText(QString::fromStdString(fmt::format("{} x {}", selected().width(), selected().height())));
         auto info_y = box_.top() - info_->geometry().height();
         info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y));
 

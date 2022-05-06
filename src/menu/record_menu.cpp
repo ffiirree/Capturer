@@ -1,10 +1,9 @@
 #include "record_menu.h"
 #include <QGuiApplication>
 #include <QScreen>
-#include <QFont>
-#include <QPalette>
 #include <QMouseEvent>
 #include <QHBoxLayout>
+#include <QTime>
 
 RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     : QWidget(parent)
@@ -23,7 +22,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
         mic_ = new QCheckBox();
         mic_->setChecked(mm);
         mic_->setObjectName("MicrophoneButton");
-        connect(mic_, &QPushButton::clicked, [this](bool checked) {emit muted(1, checked); });
+        connect(mic_, &QCheckBox::clicked, [this](bool checked) {emit muted(1, checked); });
         layout_->addWidget(mic_);
     }
 
@@ -31,14 +30,14 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
         speaker_ = new QCheckBox();
         speaker_->setChecked(sm);
         speaker_->setObjectName("Speaker");
-        connect(speaker_, &QPushButton::clicked, [this](bool checked) { emit muted(2, checked); });
+        connect(speaker_, &QCheckBox::clicked, [this](bool checked) { emit muted(2, checked); });
         layout_->addWidget(speaker_);
     }
 
     camera_ = new QCheckBox();
     camera_->setChecked(false);
     camera_->setObjectName("Camera");
-    connect(camera_, &QPushButton::clicked, [this](bool checked) { emit opened(checked); });
+    connect(camera_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
     layout_->addWidget(camera_);
 
     time_label_ = new QLabel("--:--:--");
@@ -50,7 +49,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     if (buttons & RECORD_MENU_PAUSE) {
         pause_ = new QCheckBox();
         pause_->setObjectName("PauseButton");
-        connect(pause_, &QPushButton::clicked, [this](bool checked) { checked ? pause() : resume(); });
+        connect(pause_, &QPushButton::clicked, [this](bool checked) { checked ? emit paused() : emit resumed(); });
         layout_->addWidget(pause_);
     }
 
@@ -66,44 +65,23 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     backgroud_layout->setMargin(0);
     backgroud_layout->addWidget(window_);
     setLayout(backgroud_layout);
-
-    // Timer
-    timer_ = new QTimer(this);
-    connect(timer_, &QTimer::timeout, this, &RecordMenu::update);
 }
 
-void RecordMenu::update()
+// in ms
+void RecordMenu::time(int64_t time)
 {
-    time_label_->setText(QTime(0, 0, 0).addMSecs(counter_ + time_.elapsed()).toString("hh:mm:ss"));
+    time_label_->setText(QTime(0, 0, 0).addMSecs(time).toString("hh:mm:ss"));
 }
 
 void RecordMenu::start()
 {
     time_label_->setText("00:00:00");
-    time_.restart();
-    timer_->start(100);
-    counter_ = 0;
+    if (pause_) pause_->setChecked(false);
 
     emit started();
 
     show();
     move(QGuiApplication::screens().back()->geometry().right() - rect().width() - 5, 100);
-}
-
-void RecordMenu::pause() 
-{
-    timer_->stop();
-    counter_ += time_.elapsed();
-
-    emit paused();
-}
-
-void RecordMenu::resume()
-{
-    time_.restart();
-    timer_->start();
-    
-    emit resumed();
 }
 
 void RecordMenu::mousePressEvent(QMouseEvent* event)

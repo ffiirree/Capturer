@@ -34,6 +34,12 @@ public:
 	int height() { return encoder_ctx_ ? encoder_ctx_->height : 0; }
 	bool opened() { std::lock_guard<std::mutex> lock(mtx_); return opened_; }
 
+	// ms
+	int64_t escaped_ms() { return av_rescale_q(escaped(), {1, AV_TIME_BASE}, {1, 1000}); }
+
+	// us
+	int64_t escaped() { return (first_pts_ == AV_NOPTS_VALUE) ? 0 : av_gettime_relative() - first_pts_ - offset_pts_; }
+
 signals:
 	void started();
 	void stopped();
@@ -62,5 +68,8 @@ private:
 
 	bool is_cfr_{ false };
 	string filename_{};
+
+	int64_t paused_pts_{ AV_NOPTS_VALUE };
+	int64_t offset_pts_{ 0 };
 };
 #endif // !CAPTURER_MEDIA_ENCODER_H

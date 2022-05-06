@@ -95,7 +95,7 @@ void Capturer::setupSystemTrayIcon()
     QString theme = Config::instance()["theme"].get<QString>() == "dark" ? "light" : "dark";
 
     menu->addAction(QIcon(":/icon/res/screenshot-" + theme), tr("Screenshot"), sniper_, &ScreenShoter::start);
-    menu->addAction(QIcon(":/icon/res/capture-" + theme),         tr("Record Video"), recorder_, &ScreenRecorder::record);
+    menu->addAction(QIcon(":/icon/res/capture-" + theme),    tr("Record Video"), recorder_, &ScreenRecorder::record);
     menu->addAction(QIcon(":/icon/res/gif-" + theme),        tr("Record GIF"), gifcptr_, &ScreenRecorder::record);
     menu->addSeparator();
     menu->addAction(QIcon(":/icon/res/setting-" + theme),    tr("Settings"), setting_dialog_, &SettingWindow::show);

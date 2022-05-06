@@ -1,4 +1,5 @@
 #include "mediadecoder.h"
+#include <fmt/core.h>
 
 bool MediaDecoder::open(const std::string& name, const std::string& format, const string& filters_descr, AVPixelFormat pix_fmt, const std::map<std::string, std::string>& options)
 {
@@ -211,7 +212,10 @@ bool MediaDecoder::create_filters()
 void MediaDecoder::process()
 {
 	LOG(INFO) << "[DECODER] STARTED@" << QThread::currentThreadId();
-	LOG(INFO) << "[DECODER] FRAMERATE = " << decoder_ctx_->framerate.num << ", CFR = " << (decoder_ctx_->framerate.num == decoder_ctx_->time_base.den) << ", TIMEBASE = " << decoder_ctx_->time_base.num << "/" << decoder_ctx_->time_base.den;
+	LOG(INFO) << fmt::format("[DECODER] FRAMERATE = {}, CFR = {}, STREAM_TIMEBASE = {}/{}",
+		decoder_ctx_->framerate.num, decoder_ctx_->framerate.num == decoder_ctx_->time_base.den, 
+		decoder_ctx_->time_base.num, decoder_ctx_->time_base.den
+	);
 
 
 	if (!opened()) return;
@@ -221,7 +225,7 @@ void MediaDecoder::process()
 
 	while (running()) {
 		if (paused()) {
-			QThread::msleep(40);
+			QThread::msleep(20);
 			continue;
 		}
 
@@ -257,6 +261,8 @@ void MediaDecoder::process()
 					break;
 				}
 
+				first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
+
 				// decoded frame@{
 				// convert the format to AV_PIX_FMT_XXXX
 				buffer_.push(
@@ -266,7 +272,6 @@ void MediaDecoder::process()
 						buffer_frame->format = filtered_frame_->format;
 						av_frame_copy(buffer_frame, filtered_frame_);
 
-						first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 						buffer_frame->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, decoder_ctx_->time_base);
 					}
 				);
@@ -293,6 +298,7 @@ void MediaDecoder::close()
 {
 	running(false);
 	opened(false);
+	resume();
 
 	first_pts_ = AV_NOPTS_VALUE;
 

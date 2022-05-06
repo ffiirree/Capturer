@@ -4,6 +4,8 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <QDateTime>
+#include <fmt/core.h>
 #include "widgetsdetector.h"
 #include "devices.h"
 #include "logging.h"
@@ -14,7 +16,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     type_ = type;
     pix_fmt_ = (type_ == VIDEO) ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8;
 
-    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE);
+    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE | RecordMenu::RECORD_MENU_PAUSE);
     prevent_transparent_ = true;
 
     player_ = new VideoPlayer(this);
@@ -50,6 +52,12 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     connect(encoder_, &MediaEncoder::stopped, [this]() { encoder_thread_->quit(); });
 
     connect(menu_, &RecordMenu::stopped, decoder_, &MediaDecoder::stop);
+    connect(menu_, &RecordMenu::paused, [this]() { decoder_->pause(); });
+    connect(menu_, &RecordMenu::resumed, [this]() { decoder_->resume(); });
+
+    // update time of the menu
+    timer_ = new QTimer(this);
+    connect(timer_, &QTimer::timeout, [this]() { menu_->time(encoder_->escaped_ms()); });
 }
 
 void ScreenRecorder::record()
@@ -70,6 +78,7 @@ void ScreenRecorder::setup()
     }
 
     menu_->start();
+    timer_->start(100);
 
     status_ = SelectorStatus::LOCKED;
     hide();
@@ -84,28 +93,27 @@ void ScreenRecorder::setup()
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
-        type_ == VIDEO ? "" : "[0:v] split [a][b];[a] palettegen=stats_mode=single [p];[b][p] paletteuse=dither=none:new=1",
+        type_ == VIDEO ? "" : gif_filters_["high"],
         pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
-            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
     );
 #elif _WIN32
     decoder_->open(
         "desktop",
         "gdigrab",
-        type_ == VIDEO ? "" : "[0:v] split [a][b];[a] palettegen=stats_mode=single [p];[b][p] paletteuse=dither=none:new=1",
+        type_ == VIDEO ? "" : gif_filters_["high"],
         pix_fmt_,
         {
             //{"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
             {"offset_y", std::to_string(selected_area.y())},
-            {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}
+            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
     );
 #endif
-    // TODO: [GIF] ffmpeg -i <in> -filter_complex "[0:v] fps=15,scale=640:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=diff [p];[b][p] paletteuse=dither=floyd_steinberg" out.gif
     encoder_->open(filename_.toStdString(), type_ == VIDEO ? "libx264" : "gif", pix_fmt_, { framerate_, 1 }, type_ != VIDEO);
 
     if (decoder_->opened() && encoder_->opened())

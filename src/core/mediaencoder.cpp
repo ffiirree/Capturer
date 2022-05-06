@@ -114,19 +114,32 @@ bool MediaEncoder::open(const string& filename, const string& codec_name, AVPixe
 void MediaEncoder::process()
 {
 	LOG(INFO) << "[ENCODER] STARTED@" << QThread::currentThreadId();
-	LOG(INFO) << "[ENCODER] FRAMERATE = " << encoder_ctx_->framerate.num << "/" << encoder_ctx_->framerate.den << ", CFR = " << is_cfr_ << ", TIMEBASE = " << encoder_ctx_->time_base.num << "/" << fmt_ctx_->streams[video_stream_index_]->time_base.den;
+	LOG(INFO) << "[ENCODER] FRAMERATE = " << encoder_ctx_->framerate.num << "/" << encoder_ctx_->framerate.den << ", CFR = " << is_cfr_ << ", STREAM_TIMEBASE = " << encoder_ctx_->time_base.num << "/" << fmt_ctx_->streams[video_stream_index_]->time_base.den;
 
 	if (!opened() || !decoder_ || !decoder_->opened()) return;
 
 	emit started();
 
 	first_pts_ = AV_NOPTS_VALUE;
+	paused_pts_ = AV_NOPTS_VALUE;
 	int64_t duration = av_q2d(av_div_q(av_inv_q(encoder_ctx_->framerate), { 1, AV_TIME_BASE })); // in AV_TIME_BASE unit
-	LOG(INFO) << "duration = " << duration;
+	LOG(INFO) << "[ENCODER] DURATION = " << duration;
 	while (decoder_ && decoder_->running()) {
+		if (first_pts_ == AV_NOPTS_VALUE) first_pts_ = av_gettime_relative();
+
 		if (decoder_->paused()) {
+			if(paused_pts_ != AV_NOPTS_VALUE) 
+				offset_pts_ += av_gettime_relative() - paused_pts_;
+
+			paused_pts_ = av_gettime_relative();
+
 			QThread::msleep(20);
 			continue;
+		}
+
+		if (paused_pts_ != AV_NOPTS_VALUE) {
+			offset_pts_ += av_gettime_relative() - paused_pts_;
+			paused_pts_ = AV_NOPTS_VALUE;
 		}
 
 		int ret = decoder_->read(decoded_frame_);
@@ -137,12 +150,10 @@ void MediaEncoder::process()
 			QThread::msleep(20);
 			continue;
 		}
-		
-		first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 
-		decoded_frame_->pts = is_cfr_ ? encoder_ctx_->frame_number : av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, encoder_ctx_->time_base); ;
+		decoded_frame_->pts = is_cfr_ ? encoder_ctx_->frame_number : av_rescale_q(escaped(), { 1, AV_TIME_BASE }, encoder_ctx_->time_base);
 
-		int64_t delta = std::max<int64_t>(0, encoder_ctx_->frame_number * duration - (av_gettime_relative() - first_pts_));
+		int64_t delta = std::max<int64_t>(0, encoder_ctx_->frame_number * duration - escaped());
 		int64_t next_pts = av_gettime_relative() + std::min<int64_t>(static_cast<int64_t>(duration * 1.1), is_cfr_ ? delta : (delta / 3)); 
 
 		ret = avcodec_send_frame(encoder_ctx_, decoded_frame_);
@@ -173,7 +184,7 @@ void MediaEncoder::process()
 		QThread::usleep(std::max<int64_t>(0, next_pts - av_gettime_relative()));
 	}
 
-	LOG(INFO) << "[ENCODER]" << " encoded frames: " << encoder_ctx_->frame_number << ", fps = " << encoder_ctx_->frame_number / (av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, { 1, 1 }));
+	LOG(INFO) << "[ENCODER]" << " encoded frames: " << encoder_ctx_->frame_number << ", fps = " << encoder_ctx_->frame_number / (av_rescale_q(escaped(), {1, AV_TIME_BASE}, {1, 1}));
 
 	close();
 	emit stopped();
@@ -185,6 +196,8 @@ void MediaEncoder::close()
 	opened(false);
 
 	first_pts_ = AV_NOPTS_VALUE;
+	paused_pts_ = AV_NOPTS_VALUE;
+	offset_pts_ = 0;
 
 	int ret = av_write_trailer(fmt_ctx_);
 	if (ret != 0) {
