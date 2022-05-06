@@ -51,6 +51,10 @@ ImageEditMenu QPushButton {
     qproperty-iconSize: 25px;
 }
 
-ImageEditMenu QPushButton:checked {
-    background-color: #409eff;
+QPushButton#close_btn {
+    qproperty-icon: url(:/icon/res/wrong);
+}
+
+QPushButton#ok_btn {
+    qproperty-icon: url(:/icon/res/right);
 }

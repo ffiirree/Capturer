@@ -12,7 +12,10 @@
 Selector::Selector(QWidget * parent)
     : QWidget(parent)
 {
-    info_ = new SizeInfoWidget(this);
+    info_ = new QLabel(this);
+    info_->setFixedSize(100, 24);
+    info_->setAlignment(Qt::AlignCenter);
+    info_->setObjectName("size_info");
 
     setAttribute(Qt::WA_TranslucentBackground);
 
@@ -197,7 +200,7 @@ void Selector::paintEvent(QPaintEvent *)
 
     if(use_detect_ || status_ > SelectorStatus::NORMAL) {
         // info
-        info_->size(selected().size());
+        info_->setText(QString("%1 x %2").arg(selected().width()).arg(selected().height()));
         auto info_y = box_.top() - info_->geometry().height();
         info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y));
 

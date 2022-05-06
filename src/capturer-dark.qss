@@ -115,11 +115,6 @@ QColorDialog QPushButton:hover {
 }
 
 /*///////////////////////////////////////////////////////////////*/
-QLabel {
-    color: #e6e6e6;
-}
-
-/*///////////////////////////////////////////////////////////////*/
 QPushButton {
     background-color: #232323;
     border: 1px solid #323232;
@@ -127,5 +122,11 @@ QPushButton {
 }
 
 QPushButton:hover {
-    background-color: #323232
+    background-color: #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+/* QFrame::VLine == 0x0005 */
+QFrame[frameShape="5"] {
+    color: #323232;
 }

@@ -85,7 +85,7 @@ void ScreenRecorder::setup()
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
         type_ == VIDEO ? "" : "[0:v] split [a][b];[a] palettegen=stats_mode=single [p];[b][p] paletteuse=dither=none:new=1",
-        type_ == VIDEO ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8,
+        pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
             {"video_size", QString("%1x%2").arg((selected_area.width() / 2) * 2).arg((selected_area.height() / 2) * 2).toStdString()}

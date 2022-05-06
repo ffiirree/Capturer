@@ -1,6 +1,4 @@
 #include "grapheditmenu.h"
-#include <QStyle>
-#include <QHBoxLayout>
 #include "colorpanel.h"
 #include "linewidthwidget.h"
 #include "separator.h"

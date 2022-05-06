@@ -36,8 +36,8 @@ TitleBar::TitleBar(QWidget *parent)
 
     // close button
     close_btn_ = new IconButton(QPixmap(":/icon/res/close"), { 50, 50 }, { 24, 24 });
-    close_btn_->setIconColor(QColor("#afafaf"));
-    close_btn_->setIconHoverColor(QColor("#409eff"));
+    close_btn_->normal(QColor("#afafaf"));
+    close_btn_->hover(QColor("#409eff"));
 	connect(close_btn_, &QPushButton::clicked, this, &TitleBar::close);
 
 	layout->addWidget(close_btn_);

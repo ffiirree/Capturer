@@ -169,3 +169,8 @@ QMenu::separator {
     height: 1px;
     margin: 3px;
 }
+
+QLabel#size_info {
+    background-color: rgba(0, 0, 0, 200);;
+    color: white;
+}

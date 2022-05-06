@@ -1,5 +1,4 @@
 #include "arroweditmenu.h"
-#include <QHBoxLayout>
 #include "colorpanel.h"
 
 ArrowEditMenu::ArrowEditMenu(QWidget * parent)

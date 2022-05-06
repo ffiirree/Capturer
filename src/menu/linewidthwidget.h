@@ -1,8 +1,6 @@
 #ifndef LINE_WIDTH_WIDGET_H
 #define LINE_WIDTH_WIDGET_H
 
-#include <QWidget>
-#include <QSpinBox>
 #include "custombutton.h"
 
 class WidthButton : public CustomButton

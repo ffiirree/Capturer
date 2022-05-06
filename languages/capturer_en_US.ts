@@ -32,42 +32,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="39"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="36"/>
         <source>Rectangle</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="50"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="46"/>
         <source>Ellipse</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="61"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="56"/>
         <source>Arrow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="72"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="66"/>
         <source>Line</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="83"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="76"/>
         <source>Pencil</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="94"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="86"/>
         <source>Text</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="105"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="96"/>
         <source>Mosaic</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="116"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="106"/>
         <source>Eraser</source>
         <translation></translation>
     </message>
@@ -203,7 +203,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/video/screenrecorder.cpp" line="121"/>
+        <location filename="../src/record/screenrecorder.cpp" line="121"/>
         <source>Path: </source>
         <translation></translation>
     </message>

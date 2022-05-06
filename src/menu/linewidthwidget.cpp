@@ -1,8 +1,6 @@
 #include "linewidthwidget.h"
 #include <QPainter>
-#include <QHBoxLayout>
 #include <QWheelEvent>
-#include <QDebug>
 
 void WidthButton::wheelEvent(QWheelEvent *event)
 {
@@ -20,8 +18,8 @@ void WidthButton::wheelEvent(QWheelEvent *event)
 
 void WidthButton::paint(QPainter * painter)
 {
-    painter->setPen(icon_color_);
-    painter->setBrush(icon_color_);
+    painter->setPen(iconColor());
+    painter->setBrush(iconColor());
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     auto c = rect().center();

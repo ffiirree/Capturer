@@ -3,9 +3,9 @@
 
 #include <QWidget>
 #include <QPainter>
+#include <QLabel>
 #include "json.h"
 #include "utils.h"
-#include "sizeinfo.h"
 #include "resizer.h"
 #include "displayinfo.h"
 
@@ -76,7 +76,7 @@ private:
     void registerShortcuts();
     void moveSelectedBox(int x, int y);
 
-    SizeInfoWidget * info_ = nullptr;
+    QLabel* info_ = nullptr;
 
     QPen pen_{Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin};
     QColor mask_color_{0, 0, 0, 100};

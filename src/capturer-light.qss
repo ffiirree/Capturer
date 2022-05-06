@@ -57,5 +57,11 @@ QPushButton {
 
 QPushButton:hover,
 QPushButton:checked {
-    background-color: #dfdfdf
+    background-color: #dfdfdf;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+/* QFrame::VLine == 0x0005 */
+QFrame[frameShape="5"] {
+    color: #dfdfdf;
 }

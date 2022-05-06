@@ -1,8 +1,6 @@
 #ifndef IMAGE_EDIT_MENU_H
 #define IMAGE_EDIT_MENU_H
 
-#include <map>
-#include <QPushButton>
 #include "utils.h"
 #include "grapheditmenu.h"
 #include "arroweditmenu.h"
@@ -59,8 +57,8 @@ public slots:
     void paintGraph(Graph graph) { buttons_[graph]->setChecked(true); }
 
 private:
-    QPushButton* undo_btn_ = nullptr;
-    QPushButton* redo_btn_ = nullptr;
+    IconButton* undo_btn_ = nullptr;
+    IconButton* redo_btn_ = nullptr;
 
     GraphMenu* rectangle_menu_ = nullptr;
     GraphMenu* circle_menu_ = nullptr;
@@ -72,7 +70,7 @@ private:
     EraseMenu* erase_menu_ = nullptr;
 
     ButtonGroup* group_ = nullptr;
-    std::map<Graph, QPushButton*> buttons_; // bind graph with buttons
+    std::map<Graph, IconButton*> buttons_; // bind graph with buttons
 
     bool sub_menu_show_pos_ = false;
 };

@@ -1,5 +1,4 @@
 #include "erasemenu.h"
-#include <QPushButton>
 #include "iconbutton.h"
 
 EraseMenu::EraseMenu(QWidget *parent)

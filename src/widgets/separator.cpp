@@ -4,7 +4,7 @@ Separator::Separator(QWidget *parent)
     : QFrame(parent)
 {
     setFixedHeight(20);
-    setFrameStyle(QFrame::Raised);
+    setFrameStyle(QFrame::Plain);
     setFrameShape(QFrame::VLine);
 }
 

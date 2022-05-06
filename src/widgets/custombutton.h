@@ -7,40 +7,34 @@
 class CustomButton : public QAbstractButton
 {
 public:
-    explicit CustomButton(QWidget *parent = nullptr);
-    explicit CustomButton(const QSize&, bool checkable = false, QWidget *parent = nullptr);
+    explicit CustomButton(QWidget* parent = nullptr);
+    explicit CustomButton(const QSize&, bool checkable = false, QWidget* parent = nullptr);
 
     virtual void paint(QPainter* painter) = 0;
 
-    inline void setIconColor(const QColor& color)           { icon_color_ = icon_normal_color_ = color; update(); }
-    inline void setIconHoverColor(const QColor& color)      { icon_hover_color_ = color; update(); }
-    inline void setIconCheckedColor(const QColor& color)    { icon_checked_color_ = color; update(); }
+    inline void normal(const QColor& icon, const QColor& bg = Qt::transparent) { icon_normal_color_ = icon, bg_normal_color_ = bg; update(); }
+    inline void hover(const QColor& icon, const QColor& bg = Qt::transparent) { icon_hover_color_ = icon, bg_hover_color_ = bg; update(); }
+    inline void checked(const QColor& icon, const QColor& bg = Qt::transparent) { icon_checked_color_ = icon, bg_checked_color_ = bg; update(); }
 
-    inline void setBackgroundColor(const QColor& color)         { bg_color_ = bg_normal_color_ = color; update(); }
-    inline void setBackgroundHoverColor(const QColor& color)    { bg_hover_color_ = color; update(); }
-    inline void setBackgroundCheckedColor(const QColor& color)  { bg_checked_color_ = color; update(); }
-
-protected:
-    void paintEvent(QPaintEvent *) override;
-    void enterEvent(QEvent *event) override;
-    void leaveEvent(QEvent *event) override;
-
-    void keyPressEvent(QKeyEvent*) override;
-    void keyReleaseEvent(QKeyEvent*) override;
+    inline QColor backgroundColor() const { return isChecked() ? bg_checked_color_ : ((hover_ && isEnabled()) ? bg_hover_color_ : bg_normal_color_); }
+    inline QColor iconColor() const { return isChecked() ? icon_checked_color_ : ((hover_ && isEnabled()) ? icon_hover_color_ : icon_normal_color_); }
 
 protected:
-    QPainter painter_;
+    void paintEvent(QPaintEvent*) override;
+    void enterEvent(QEvent* event) override;
+    void leaveEvent(QEvent* event) override;
+
+protected:
+    bool hover_ = false;
 
     // icon
-    QColor icon_color_ = { 0x38, 0x38, 0x38 };
-    QColor icon_normal_color_ = icon_color_;
-    QColor icon_hover_color_ = icon_color_;
-    QColor icon_checked_color_ = icon_color_;
+    QColor icon_normal_color_{ 0x38, 0x38, 0x38 };
+    QColor icon_hover_color_{ 0x38, 0x38, 0x38 };
+    QColor icon_checked_color_{ 0x38, 0x38, 0x38 };
 
     // background
-    QColor bg_color_ = Qt::transparent;
-    QColor bg_normal_color_ = bg_color_;
-    QColor bg_hover_color_ = bg_color_;
-    QColor bg_checked_color_ = bg_color_;
+    QColor bg_normal_color_{ Qt::transparent };
+    QColor bg_hover_color_{ Qt::transparent };
+    QColor bg_checked_color_{ Qt::transparent };
 };
 #endif // CUSTOM_BUTTON_H
