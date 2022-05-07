@@ -1,4 +1,5 @@
 #include "mediaencoder.h"
+#include <fmt/core.h>
 
 bool MediaEncoder::open(const string& filename, const string& codec_name, AVPixelFormat pix_fmt, AVRational framerate, bool is_cfr, const map<string, string>& options)
 {
@@ -184,7 +185,7 @@ void MediaEncoder::process()
 		QThread::usleep(std::max<int64_t>(0, next_pts - av_gettime_relative()));
 	}
 
-	LOG(INFO) << "[ENCODER]" << " encoded frames: " << encoder_ctx_->frame_number << ", fps = " << encoder_ctx_->frame_number / (av_rescale_q(escaped(), {1, AV_TIME_BASE}, {1, 1}));
+	LOG(INFO) << fmt::format("[ENCODER] encoded frames = {}, fps = {}", encoder_ctx_->frame_number, (encoder_ctx_->frame_number * AV_TIME_BASE) / escaped());
 
 	close();
 	emit stopped();

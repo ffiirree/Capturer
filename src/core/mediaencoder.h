@@ -38,7 +38,7 @@ public:
 	int64_t escaped_ms() { return av_rescale_q(escaped(), {1, AV_TIME_BASE}, {1, 1000}); }
 
 	// us
-	int64_t escaped() { return (first_pts_ == AV_NOPTS_VALUE) ? 0 : av_gettime_relative() - first_pts_ - offset_pts_; }
+	int64_t escaped() { return (first_pts_ == AV_NOPTS_VALUE) ? AV_NOPTS_VALUE : av_gettime_relative() - first_pts_ - offset_pts_; }
 
 signals:
 	void started();

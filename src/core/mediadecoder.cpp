@@ -144,11 +144,9 @@ bool MediaDecoder::create_filters()
 		return false;
 	}
 
-	char args[512];
 	AVStream* video_stream = fmt_ctx_->streams[video_stream_index_];
-	sprintf(
-		args,
-		"video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+	string args = fmt::format(
+		"video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}",
 		decoder_ctx_->width, decoder_ctx_->height, decoder_ctx_->pix_fmt,
 		video_stream->time_base.num, video_stream->time_base.den,
 		video_stream->sample_aspect_ratio.num, video_stream->sample_aspect_ratio.den
@@ -156,7 +154,7 @@ bool MediaDecoder::create_filters()
 
 	LOG(INFO) << "[DECODER] " << "buffersrc args : " << args;
 
-	if (avfilter_graph_create_filter(&buffersrc_ctx_, buffersrc, "in", args, nullptr, filter_graph_) < 0) {
+	if (avfilter_graph_create_filter(&buffersrc_ctx_, buffersrc, "in", args.c_str(), nullptr, filter_graph_) < 0) {
 		LOG(ERROR) << "avfilter_graph_create_filter";
 		return false;
 	}
@@ -290,7 +288,7 @@ void MediaDecoder::process()
 		av_packet_unref(packet_);
 	}
 
-	LOG(INFO) << "[DECODER] " << "decoded frames: " << decoder_ctx_->frame_number << ", fps = " << decoder_ctx_->frame_number / (av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, { 1, 1 }));
+	LOG(INFO) << fmt::format("[DECODER] decoded frames = {}, fps = {}", decoder_ctx_->frame_number, (decoder_ctx_->frame_number * AV_TIME_BASE) / (av_gettime_relative() - first_pts_));
 
 	close();
 	emit stopped();

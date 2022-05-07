@@ -14,7 +14,7 @@
 ImageWindow::ImageWindow(QWidget* parent)
     : QWidget(parent)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Dialog);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
 
     setAttribute(Qt::WA_TranslucentBackground);
     setAcceptDrops(true);
