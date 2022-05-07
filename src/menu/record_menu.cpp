@@ -18,7 +18,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     layout_->setSpacing(0);
     layout_->setMargin(0);
 
-    if (buttons & RECORD_MENU_M_MUTE) {
+    if (buttons & RecordMenu::MICROPHONE) {
         mic_ = new QCheckBox();
         mic_->setChecked(mm);
         mic_->setObjectName("MicrophoneButton");
@@ -26,7 +26,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
         layout_->addWidget(mic_);
     }
 
-    if (buttons & RECORD_MENU_S_MUTE) {
+    if (buttons & RecordMenu::SPEAKER) {
         speaker_ = new QCheckBox();
         speaker_->setChecked(sm);
         speaker_->setObjectName("Speaker");
@@ -34,11 +34,13 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
         layout_->addWidget(speaker_);
     }
 
-    camera_ = new QCheckBox();
-    camera_->setChecked(false);
-    camera_->setObjectName("Camera");
-    connect(camera_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
-    layout_->addWidget(camera_);
+    if (buttons & RecordMenu::CAMERA) {
+        camera_ = new QCheckBox();
+        camera_->setChecked(false);
+        camera_->setObjectName("Camera");
+        connect(camera_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
+        layout_->addWidget(camera_);
+    }
 
     time_label_ = new QLabel("--:--:--");
     time_label_->setFixedSize(85, 40);
@@ -46,7 +48,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     layout_->addWidget(time_label_);
     
 
-    if (buttons & RECORD_MENU_PAUSE) {
+    if (buttons & RecordMenu::PAUSE) {
         pause_ = new QCheckBox();
         pause_->setObjectName("PauseButton");
         connect(pause_, &QPushButton::clicked, [this](bool checked) { checked ? emit paused() : emit resumed(); });
@@ -115,5 +117,6 @@ void RecordMenu::mute(int type, bool muted)
 
 void RecordMenu::close_camera()
 {
-    camera_->setChecked(false);
+    if (camera_) 
+        camera_->setChecked(false);
 }

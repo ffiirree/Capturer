@@ -12,14 +12,15 @@ class RecordMenu : public QWidget
 
 public:
     enum :uint8_t {
-        RECORD_MENU_NONE = 0x00,
-        RECORD_MENU_M_MUTE = 0x01,
-        RECORD_MENU_S_MUTE = 0x02,
-        RECORD_MENU_PAUSE = 0x08,
-        RECORD_MENU_ALL = 0xff
+        NONE = 0x00,
+        MICROPHONE = 0x01,
+        SPEAKER = 0x02,
+        CAMERA = 0x04,
+        PAUSE = 0x08,
+        ALL = 0xff
     };
 
-    explicit RecordMenu(bool, bool, uint8_t = RECORD_MENU_ALL, QWidget* parent = nullptr);
+    explicit RecordMenu(bool, bool, uint8_t = ALL, QWidget* parent = nullptr);
 
 
 signals:

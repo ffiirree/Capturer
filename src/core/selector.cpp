@@ -202,8 +202,8 @@ void Selector::paintEvent(QPaintEvent *)
     if(use_detect_ || status_ > SelectorStatus::NORMAL) {
         // info
         info_->setText(QString::fromStdString(fmt::format("{} x {}", selected().width(), selected().height())));
-        auto info_y = box_.top() - info_->geometry().height();
-        info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y));
+        auto info_y = box_.top() - info_->geometry().height() - 1;
+        info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
 
         // draw border
         painter_.setPen(pen_);

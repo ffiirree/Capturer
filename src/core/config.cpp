@@ -13,7 +13,7 @@ Config::Config()
     if(!config_dir.exists()) {
         config_dir.mkpath(config_dir_path_);
     }
-    filepath_ = config_dir_path_ + QDir::separator() + "config.json";
+    filepath_ = config_dir_path_ + "/config.json";
     LOG(INFO) << "config file path: " << filepath_;
 
     QString text;

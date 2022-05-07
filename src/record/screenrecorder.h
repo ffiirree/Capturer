@@ -40,20 +40,19 @@ public slots:
     void mute(int type, bool v) { type ? m_mute_ = v : s_mute_ = v; }
     void updateTheme()
     {
-
-        Selector::updateTheme(Config::instance()["record"]["selector"]);
+        Selector::updateTheme(recording_type_ == VIDEO ? Config::instance()["record"]["selector"] : Config::instance()["gif"]["selector"]);
     }
 private:
     void setup();
 
     void keyPressEvent(QKeyEvent *event) override;
 
-    int type_{ VIDEO };
+    int recording_type_{ VIDEO };
 
     int framerate_{ 30 };
     AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
 
-    QString filename_;
+    string filename_;
 
     VideoPlayer* player_{ nullptr };
 

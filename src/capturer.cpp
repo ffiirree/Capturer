@@ -106,6 +106,8 @@ void Capturer::setupSystemTrayIcon()
     sys_tray_icon_->setIcon(QIcon(":/icon/res/icon.png"));
     setWindowIcon(QIcon(":/icon/res/icon.png"));
     sys_tray_icon_->show();
+
+    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) { if (r == QSystemTrayIcon::DoubleClick) sniper_->start(); });
 }
 
 

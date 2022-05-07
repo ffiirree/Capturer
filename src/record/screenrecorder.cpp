@@ -14,10 +14,10 @@
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
-    type_ = type;
-    pix_fmt_ = (type_ == VIDEO) ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8;
+    recording_type_ = type;
+    pix_fmt_ = (recording_type_ == VIDEO) ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8;
 
-    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::RECORD_MENU_NONE | RecordMenu::RECORD_MENU_PAUSE);
+    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE);
     prevent_transparent_ = true;
 
     player_ = new VideoPlayer(this);
@@ -25,8 +25,8 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
     connect(menu_, &RecordMenu::opened, [this](bool opened) {
-        if (Config::instance()["devices"]["cameras"].is_null()) {
-            LOG(WARNING) << "not found ";
+        if (Devices::cameras().size() == 0) {
+            LOG(WARNING) << "camera not found";
             return;
         }
         QString camera_name = Config::instance()["devices"]["cameras"].get<QString>();
@@ -68,33 +68,30 @@ void ScreenRecorder::record()
 
 void ScreenRecorder::start()
 {
-    Selector::start();
-}
-
-void ScreenRecorder::setup()
-{
     if (decoder_->running() || decoder_->opened() || encoder_->opened()) {
         LOG(WARNING) << "RECARDING!! Exit first.";
         return;
     }
 
-    menu_->start();
-    timer_->start(100);
+    Selector::start();
+}
 
+void ScreenRecorder::setup()
+{
     status_ = SelectorStatus::LOCKED;
     hide();
 
-    auto native_movies_path = QStandardPaths::writableLocation(type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation);
-    auto current_date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
+    auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
+    auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
 
-    filename_ = native_movies_path + QDir::separator() + "Capturer_video_" + current_date_time + (type_ == VIDEO ? ".mp4" : ".gif");
+    filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 
     auto selected_area = selected();
 #ifdef __linux__
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
-        type_ == VIDEO ? "" : gif_filters_["high"],
+        recording_type_ == VIDEO ? "" : gif_filters_["high"],
         pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
@@ -105,7 +102,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        type_ == VIDEO ? "" : gif_filters_[Config::instance()["gif"]["quality"]],
+        recording_type_ == VIDEO ? "" : gif_filters_[Config::instance()["gif"]["quality"]],
         pix_fmt_,
         {
             //{"framerate", std::to_string(framerate_)},
@@ -115,11 +112,23 @@ void ScreenRecorder::setup()
         }
     );
 #endif
-    encoder_->open(filename_.toStdString(), type_ == VIDEO ? "libx264" : "gif", pix_fmt_, { framerate_, 1 }, type_ != VIDEO);
 
+    // open the output file
+    encoder_->open(
+        filename_, 
+        recording_type_ == VIDEO ? "libx264" : "gif", 
+        pix_fmt_, 
+        { framerate_, 1 }, 
+        recording_type_ != VIDEO
+    );
+
+    // start recording
     if (decoder_->opened() && encoder_->opened())
     {
         decoder_thread_->start();
+
+        menu_->start();
+        timer_->start(50);
     }
 }
 
@@ -127,7 +136,13 @@ void ScreenRecorder::exit()
 {
     decoder_->stop();
     menu_->close();
-    emit SHOW_MESSAGE(type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>", tr("Path: ") + filename_);
+    encoder_thread_->wait();
+
+    if (timer_->isActive()) {
+        emit SHOW_MESSAGE(recording_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>", tr("Path: ") + QString::fromStdString(filename_));
+        timer_->stop();
+    }
+
     Selector::exit();
 }
 
