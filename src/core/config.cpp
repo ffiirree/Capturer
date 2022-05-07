@@ -45,6 +45,8 @@ Config::Config()
     IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
     IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
     IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
+    IF_NULL_SET(settings_["record"]["encoder"],                     "libx264");
+    IF_NULL_SET(settings_["record"]["quality"],                     "medium");
 
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    1);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");

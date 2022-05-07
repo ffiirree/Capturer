@@ -51,6 +51,10 @@ private:
 
     int framerate_{ 30 };
     AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
+    string codec_name_{ "libx264" };
+    string quality_{ "medium" };
+    string filters_{};
+    map<string, string> options_{};
 
     string filename_;
 
@@ -71,6 +75,12 @@ private:
         {"high",        "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1"},
         {"medium",      "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none"},
         {"low",         "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=64 [p];[b][p] paletteuse=new=1:dither=none"},
+    };
+
+    map<string, string> video_qualities_ = {
+        {"high",        "17"},
+        {"medium",      "23"},
+        {"low",         "29"},
     };
 };
 

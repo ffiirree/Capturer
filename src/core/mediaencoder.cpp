@@ -1,10 +1,13 @@
 #include "mediaencoder.h"
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 bool MediaEncoder::open(const string& filename, const string& codec_name, AVPixelFormat pix_fmt, AVRational framerate, bool is_cfr, const map<string, string>& options)
 {
 	pix_fmt_ = pix_fmt;
 	is_cfr_ = is_cfr;
+
+	LOG(INFO) << fmt::format("[ENCODER] encoder = {}, options = {}", codec_name, options);
 
 	// MediaDecoder
 	if (!decoder_) {
@@ -44,7 +47,7 @@ bool MediaEncoder::open(const string& filename, const string& codec_name, AVPixe
 		av_dict_set(&encoder_options, key.c_str(), value.c_str(), 0);
 
 	}
-	if (codec_name == "libx264" || codec_name == "x265") {
+	if (codec_name == "libx264" || codec_name == "libx265") {
 		av_dict_set(&encoder_options, "preset", "ultrafast", AV_DICT_DONT_OVERWRITE);
 		av_dict_set(&encoder_options, "tune", "zerolatency", AV_DICT_DONT_OVERWRITE);
 		av_dict_set(&encoder_options, "crf", "23", AV_DICT_DONT_OVERWRITE);
@@ -170,7 +173,6 @@ void MediaEncoder::process()
 			}
 
 			packet_->stream_index = video_stream_index_;
-			packet_->dts = packet_->pts;
 			packet_->duration = av_rescale_q(duration, { 1, AV_TIME_BASE }, encoder_ctx_->time_base);
 
 			av_packet_rescale_ts(packet_, encoder_ctx_->time_base, fmt_ctx_->streams[video_stream_index_]->time_base);

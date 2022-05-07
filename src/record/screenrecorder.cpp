@@ -15,7 +15,6 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
     recording_type_ = type;
-    pix_fmt_ = (recording_type_ == VIDEO) ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_PAL8;
 
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE);
     prevent_transparent_ = true;
@@ -73,6 +72,19 @@ void ScreenRecorder::start()
         return;
     }
 
+    if (recording_type_ == VIDEO) {
+        pix_fmt_ = AV_PIX_FMT_YUV420P;
+        codec_name_ = Config::instance()["record"]["encoder"];
+        filters_ = "";
+        options_ = { {"crf", video_qualities_[Config::instance()["record"]["quality"]]} };
+    }
+    else {
+        pix_fmt_ = AV_PIX_FMT_PAL8;
+        codec_name_ = "gif";
+        filters_ = gif_filters_[Config::instance()["gif"]["quality"]];
+        options_ = {};
+    }
+
     Selector::start();
 }
 
@@ -91,7 +103,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
-        recording_type_ == VIDEO ? "" : gif_filters_["high"],
+        filters_,
         pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
@@ -102,7 +114,7 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        recording_type_ == VIDEO ? "" : gif_filters_[Config::instance()["gif"]["quality"]],
+        filters_,
         pix_fmt_,
         {
             //{"framerate", std::to_string(framerate_)},
@@ -112,23 +124,24 @@ void ScreenRecorder::setup()
         }
     );
 #endif
-
-    // open the output file
-    encoder_->open(
-        filename_, 
-        recording_type_ == VIDEO ? "libx264" : "gif", 
-        pix_fmt_, 
-        { framerate_, 1 }, 
-        recording_type_ != VIDEO
-    );
-
     // start recording
-    if (decoder_->opened() && encoder_->opened())
-    {
-        decoder_thread_->start();
+    if (decoder_->opened()) {
+        // open the output file
+        encoder_->open(
+            filename_,
+            codec_name_,
+            pix_fmt_,
+            { framerate_, 1 },
+            recording_type_ != VIDEO,
+            options_
+        );
 
-        menu_->start();
-        timer_->start(50);
+        if (encoder_->opened()) {
+            decoder_thread_->start();
+
+            menu_->start();
+            timer_->start(50);
+        }
     }
 }
 

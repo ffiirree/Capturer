@@ -231,7 +231,30 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
     layout->addWidget(_6_2, 7, 2, 1, 2);
 
-    layout->setRowStretch(8, 1);
+    auto _7_2 = new QComboBox();
+    _7_2->setView(new QListView());
+    _7_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _7_2->addItems({ "libx264 [H.264 / AVC / MPEG-4 part 10]", "libx265 [H.265 / HEVC]" });
+    _7_2->setCurrentIndex(config["record"]["encoder"].get<QString>() != "libx265" ? 0 : 1);
+    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
+        config.set(config["record"]["encoder"], s == 0 ? "libx264" : "libx265");
+    });
+    layout->addWidget(new QLabel(tr("Encoder")), 8, 1, 1, 1);
+    layout->addWidget(_7_2, 8, 2, 1, 2);
+
+    auto _8_2 = new QComboBox();
+    auto quality = config["record"]["quality"].get<QString>();
+    _8_2->setView(new QListView());
+    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
+    _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
+    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
+        config.set(config["record"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
+        });
+    layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
+    layout->addWidget(_8_2, 9, 2, 1, 2);
+
+    layout->setRowStretch(10, 1);
 
     tabwidget_->widget(index)->setLayout(layout);
 }

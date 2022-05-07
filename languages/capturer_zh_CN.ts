@@ -210,7 +210,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="142"/>
+        <location filename="../src/record/screenrecorder.cpp" line="155"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>
@@ -267,42 +267,42 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="135"/>
-        <location filename="../src/setting/settingdialog.cpp" line="359"/>
+        <location filename="../src/setting/settingdialog.cpp" line="382"/>
         <source>Screenshot</source>
         <translation>截图</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="140"/>
         <location filename="../src/setting/settingdialog.cpp" line="185"/>
-        <location filename="../src/setting/settingdialog.cpp" line="246"/>
+        <location filename="../src/setting/settingdialog.cpp" line="269"/>
         <source>Apperance:</source>
         <translation>界面:</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="150"/>
         <location filename="../src/setting/settingdialog.cpp" line="195"/>
-        <location filename="../src/setting/settingdialog.cpp" line="255"/>
+        <location filename="../src/setting/settingdialog.cpp" line="278"/>
         <source>Border width</source>
         <translation>边框宽度</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="155"/>
         <location filename="../src/setting/settingdialog.cpp" line="200"/>
-        <location filename="../src/setting/settingdialog.cpp" line="261"/>
+        <location filename="../src/setting/settingdialog.cpp" line="284"/>
         <source>Border color</source>
         <translation>边框颜色</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="166"/>
         <location filename="../src/setting/settingdialog.cpp" line="211"/>
-        <location filename="../src/setting/settingdialog.cpp" line="272"/>
+        <location filename="../src/setting/settingdialog.cpp" line="295"/>
         <source>Line type</source>
         <translation>线段类型</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="171"/>
         <location filename="../src/setting/settingdialog.cpp" line="216"/>
-        <location filename="../src/setting/settingdialog.cpp" line="277"/>
+        <location filename="../src/setting/settingdialog.cpp" line="300"/>
         <source>Mask color</source>
         <translation>遮罩颜色</translation>
     </message>
@@ -313,13 +313,13 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="221"/>
-        <location filename="../src/setting/settingdialog.cpp" line="281"/>
+        <location filename="../src/setting/settingdialog.cpp" line="304"/>
         <source>Params:</source>
         <translation>参数:</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="231"/>
-        <location filename="../src/setting/settingdialog.cpp" line="291"/>
+        <location filename="../src/setting/settingdialog.cpp" line="314"/>
         <source>Framerate</source>
         <translation>帧率</translation>
     </message>
@@ -328,83 +328,92 @@
         <translation type="vanished">设备</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="321"/>
+        <location filename="../src/setting/settingdialog.cpp" line="344"/>
         <source>Microphones</source>
         <translation>麦克风</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="328"/>
+        <location filename="../src/setting/settingdialog.cpp" line="351"/>
         <source>Speakers</source>
         <translation>扬声器</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="335"/>
+        <location filename="../src/setting/settingdialog.cpp" line="358"/>
         <source>Cameras</source>
         <translation>摄像头</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="241"/>
-        <location filename="../src/setting/settingdialog.cpp" line="387"/>
+        <location filename="../src/setting/settingdialog.cpp" line="264"/>
+        <location filename="../src/setting/settingdialog.cpp" line="410"/>
         <source>Gif recording</source>
         <translation>录GIF</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <location filename="../src/setting/settingdialog.cpp" line="242"/>
+        <source>Encoder</source>
+        <translation>编码器</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="249"/>
+        <location filename="../src/setting/settingdialog.cpp" line="321"/>
         <source>High</source>
         <translation>高</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <location filename="../src/setting/settingdialog.cpp" line="249"/>
+        <location filename="../src/setting/settingdialog.cpp" line="321"/>
         <source>Medium</source>
         <translation>中</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="298"/>
+        <location filename="../src/setting/settingdialog.cpp" line="249"/>
+        <location filename="../src/setting/settingdialog.cpp" line="321"/>
         <source>Low</source>
         <translation>低</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="303"/>
+        <location filename="../src/setting/settingdialog.cpp" line="254"/>
+        <location filename="../src/setting/settingdialog.cpp" line="326"/>
         <source>Quality</source>
         <translation>质量</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="312"/>
+        <location filename="../src/setting/settingdialog.cpp" line="335"/>
         <source>Devices</source>
         <translation>设备</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="348"/>
+        <location filename="../src/setting/settingdialog.cpp" line="371"/>
         <source>Shortcuts</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="366"/>
+        <location filename="../src/setting/settingdialog.cpp" line="389"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="373"/>
+        <location filename="../src/setting/settingdialog.cpp" line="396"/>
         <source>Hide/Show all images</source>
         <translation>隐藏/显示全部贴图</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="380"/>
+        <location filename="../src/setting/settingdialog.cpp" line="403"/>
         <source>Video recording</source>
         <translation>录制视频</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="396"/>
+        <location filename="../src/setting/settingdialog.cpp" line="419"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="406"/>
+        <location filename="../src/setting/settingdialog.cpp" line="429"/>
         <source>Version</source>
         <translation>版本</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="415"/>
+        <location filename="../src/setting/settingdialog.cpp" line="438"/>
         <source>Copyright © 2018 - 2022 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
