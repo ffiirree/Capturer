@@ -187,34 +187,40 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 void Selector::paintEvent(QPaintEvent *)
 {
     painter_.begin(this);
-    painter_.save();
-
     auto srect = selected();
 
-    painter_.setBrush(mask_color_);
-    painter_.setClipping(true);
-    painter_.setClipRegion(QRegion(rect()).subtracted(QRegion(srect)));
-    painter_.drawRect(rect());
-    painter_.setClipping(false);
+    if (!mask_hidded_) {
+        painter_.save();
 
-    painter_.restore();
+        painter_.setBrush(mask_color_);
+        painter_.setClipping(true);
+        painter_.setClipRegion(QRegion(rect()).subtracted(QRegion(srect)));
+        painter_.drawRect(rect());
+        painter_.setClipping(false);
 
-    if(use_detect_ || status_ > SelectorStatus::NORMAL) {
-        // info
-        info_->setText(QString::fromStdString(fmt::format("{} x {}", selected().width(), selected().height())));
-        auto info_y = box_.top() - info_->geometry().height() - 1;
-        info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
+        painter_.restore();
 
-        // draw border
-        painter_.setPen(pen_);
-        if(prevent_transparent_)
-            painter_.setBrush(QColor(0, 0, 0, 1));
-        painter_.drawRect(srect);
+        if (use_detect_ || status_ > SelectorStatus::NORMAL) {
+            // info
+            info_->setText(QString::fromStdString(fmt::format("{} x {}", selected().width(), selected().height())));
+            auto info_y = box_.top() - info_->geometry().height() - 1;
+            info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
 
-        // draw anchors
-        painter_.setPen({ pen_.color(), pen_.widthF(), Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin });
-        painter_.setBrush(pen_.color());
-        painter_.drawRects(box_.anchors());
+            // draw border
+            painter_.setPen(pen_);
+            if (prevent_transparent_)
+                painter_.setBrush(QColor(0, 0, 0, 1));
+            painter_.drawRect(srect.adjusted(-pen_.width() % 2, -pen_.width() % 2, 0, 0));
+
+            // draw anchors
+            painter_.setPen({ pen_.color(), pen_.widthF(), Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin });
+            painter_.setBrush(pen_.color());
+            painter_.drawRects(box_.anchors());
+        }
+    }
+    else {
+        painter_.setPen(QPen(pen_.color(), 2));
+        painter_.drawRect(srect.adjusted(-1, -1, 1, 1));
     }
 
     painter_.end();

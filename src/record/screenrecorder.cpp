@@ -45,13 +45,17 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     encoder_->moveToThread(encoder_thread_);
 
     connect(decoder_thread_, &QThread::started, decoder_, &MediaDecoder::process);
-    connect(decoder_, &MediaDecoder::started, [this]() { encoder_thread_->start(); });
     connect(encoder_thread_, &QThread::started, encoder_, &MediaEncoder::process);
+    connect(encoder_thread_, &QThread::finished, menu_, &RecordMenu::close);
     
+    // start encoder after decoder is started
+    connect(decoder_, &MediaDecoder::started, [this]() { encoder_thread_->start(); });
     connect(decoder_, &MediaDecoder::stopped, [this]() { decoder_thread_->quit(); });
-    connect(encoder_, &MediaEncoder::stopped, [this]() { encoder_thread_->quit(); });
 
-    connect(menu_, &RecordMenu::stopped, decoder_, &MediaDecoder::stop);
+    // close decoder 
+    connect(encoder_, &MediaEncoder::stopped, [this]() { decoder_->stop(); encoder_thread_->quit(); });
+
+    connect(menu_, &RecordMenu::stopped, [this]() { decoder_->stop(); });
     connect(menu_, &RecordMenu::paused, [this]() { decoder_->pause(); });
     connect(menu_, &RecordMenu::resumed, [this]() { decoder_->resume(); });
 
@@ -91,7 +95,7 @@ void ScreenRecorder::start()
 void ScreenRecorder::setup()
 {
     status_ = SelectorStatus::LOCKED;
-    hide();
+    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? hideMask(true) : hide();
 
     auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
     auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
@@ -117,7 +121,7 @@ void ScreenRecorder::setup()
         filters_,
         pix_fmt_,
         {
-            //{"framerate", std::to_string(framerate_)},
+            {"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
             {"offset_y", std::to_string(selected_area.y())},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
@@ -149,6 +153,7 @@ void ScreenRecorder::exit()
 {
     decoder_->stop();
     menu_->close();
+    decoder_thread_->wait();
     encoder_thread_->wait();
 
     if (timer_->isActive()) {
@@ -156,6 +161,7 @@ void ScreenRecorder::exit()
         timer_->stop();
     }
 
+    hideMask(false);
     Selector::exit();
 }
 

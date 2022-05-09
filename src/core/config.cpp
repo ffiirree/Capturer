@@ -36,23 +36,25 @@ Config::Config()
     IF_NULL_SET(settings_["detectwindow"], true);
     IF_NULL_SET(settings_["theme"], "dark");
 
-    IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   1);
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   2);
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#409EFF");
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["style"],   Qt::DashDotLine);
     IF_NULL_SET(settings_["snip"]["selector"]["mask"]["color"],     "#88000000");
 
-    IF_NULL_SET(settings_["record"]["selector"]["border"]["width"], 1);
+    IF_NULL_SET(settings_["record"]["selector"]["border"]["width"], 2);
     IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
     IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
     IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
     IF_NULL_SET(settings_["record"]["encoder"],                     "libx264");
     IF_NULL_SET(settings_["record"]["quality"],                     "medium");
+    IF_NULL_SET(settings_["record"]["box"],                         false);
 
-    IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    1);
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    2);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"],    Qt::DashDotLine);
     IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],      "#88000000");
     IF_NULL_SET(settings_["gif"]["quality"],                        "medium");
+    IF_NULL_SET(settings_["gif"]["box"],                            false);
 
     IF_NULL_SET(settings_["snip"]["hotkey"],                        "F1");
     IF_NULL_SET(settings_["pin"]["hotkey"],                         "F3");

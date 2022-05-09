@@ -24,10 +24,8 @@ class MediaDecoder : public QObject {
 	Q_OBJECT
 
 public:
-	enum { BUFFER_UNUSED = 1, BUFFER_USED_EMPTY, BUFFER_FULL, UNRUNNING };
-
-public:
-	explicit MediaDecoder() {}
+	explicit MediaDecoder() { }
+	
 	~MediaDecoder()
 	{
 		close();
@@ -65,39 +63,53 @@ public slots:
 	int read(AVFrame* frame)
 	{
 		int ret = 0;
-		if (buffer_.full()) ret = MediaDecoder::BUFFER_FULL;
-		if (!running()) return UNRUNNING;
-		if (buffer_.unused()) return BUFFER_UNUSED;
-		if (buffer_.empty() && !buffer_.unused()) ret = BUFFER_USED_EMPTY;
+
+		if (!frame) {
+			frame = av_frame_alloc();
+			if (!frame) {
+				LOG(ERROR) << "av_frame_alloc.";
+				return AVERROR(ENOMEM);
+			}
+		}
+
+		if (!running()) return AVERROR_EOF;
+		if (buffer_.empty()) return AVERROR(EAGAIN);
 		
 		buffer_.pop(
 			[frame, &ret](AVFrame* popped) {
 				if (popped) {
-					frame->height = popped->height;
-					frame->width = popped->width;
 					frame->format = popped->format;
+					frame->width = popped->width;
+					frame->height = popped->height;
 					frame->pts = popped->pts;
-					ret = av_frame_copy(frame, popped);
-					if (ret < 0) {
-						char buffer[AV_ERROR_MAX_STRING_SIZE]{ 0 };
-						LOG(ERROR) << "av_frame_copy : " << av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, ret);
-						LOG(ERROR) << "error frame info: w= " << popped->width << ", h=" << popped->height << ", f=" << popped->format;
-					}
+
+					av_frame_unref(frame);
+					ret = av_frame_ref(frame, popped);
 				}
-			});
+				else {
+					LOG(ERROR) << "nullptr error";
+					ret = AVERROR(ENOMEM);
+				}
+			}
+		);
 		return ret;
 	}
 
 	int read(QImage& image) {
 		int ret = 0;
-		if (buffer_.full()) ret = MediaDecoder::BUFFER_FULL;
-		if (!running()) return UNRUNNING;
-		if (buffer_.unused()) return BUFFER_UNUSED;
-		if (buffer_.empty() && !buffer_.unused()) ret = BUFFER_USED_EMPTY;
+
+		if (!running()) return AVERROR_EOF;
+		if (buffer_.empty()) return AVERROR(EAGAIN);
 
 		buffer_.pop(
-			[&image](AVFrame* popped) {
-				image = QImage(static_cast<const uchar*>(popped->data[0]), popped->width, popped->height, QImage::Format_RGB888).copy();
+			[&image, &ret](AVFrame* popped) {
+				if (popped) {
+					image = QImage(static_cast<const uchar*>(popped->data[0]), popped->width, popped->height, QImage::Format_RGB888).copy();
+				}
+				else {
+					LOG(ERROR) << "nullptr error";
+					ret = AVERROR(ENOMEM);
+				}
 			}
 		);
 		return ret;
@@ -128,7 +140,10 @@ private:
 	int64_t first_pts_{ AV_NOPTS_VALUE };
 	std::mutex mtx_;
 
-	RingBuffer<AVFrame*, FRAME_BUFFER_SIZE> buffer_;
+	RingBuffer<AVFrame*, FRAME_BUFFER_SIZE> buffer_{ 
+		[]() { return av_frame_alloc(); },
+		[](AVFrame** frame) { av_frame_free(frame); }
+	};
 
 	string filters_descr_;
 	AVFilterGraph* filter_graph_{ nullptr };

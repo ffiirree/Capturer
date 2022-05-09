@@ -147,12 +147,15 @@ void MediaEncoder::process()
 		}
 
 		int ret = decoder_->read(decoded_frame_);
-		if (ret < 0 || 
-			ret == MediaDecoder::BUFFER_UNUSED || 
-			ret == MediaDecoder::UNRUNNING || 
-			(ret == MediaDecoder::BUFFER_USED_EMPTY && !is_cfr_)) {
-			QThread::msleep(20);
-			continue;
+		if (ret == AVERROR(EAGAIN)) {
+			if (!is_cfr_) {
+				QThread::msleep(20);
+				continue;
+			}
+		}
+		else if (ret < 0) {
+			LOG(ERROR) << "decoder_->read(decoded_frame_)";
+			break;
 		}
 
 		decoded_frame_->pts = is_cfr_ ? encoder_ctx_->frame_number : av_rescale_q(escaped(), { 1, AV_TIME_BASE }, encoder_ctx_->time_base);
@@ -184,14 +187,15 @@ void MediaEncoder::process()
 			}
 		}
 
-		QThread::usleep(std::max<int64_t>(0, next_pts - av_gettime_relative()));
+		// 0 ~ 1s
+		QThread::usleep(std::min<int64_t>(std::max<int64_t>(0, next_pts - av_gettime_relative()), AV_TIME_BASE));
 	}
 
 	LOG(INFO) << fmt::format("[ENCODER] encoded frames = {}, fps = {}", encoder_ctx_->frame_number, (encoder_ctx_->frame_number * AV_TIME_BASE) / escaped());
 
 	close();
 	emit stopped();
-	LOG(INFO) << "[ENCODER] EXITED ";
+	LOG(INFO) << "[ENCODER] process() EXITED ";
 }
 
 void MediaEncoder::close()

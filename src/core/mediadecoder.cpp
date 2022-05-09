@@ -106,23 +106,6 @@ bool MediaDecoder::open(const std::string& name, const std::string& format, cons
 		return false;
 	}
 
-	// buffer
-	for (size_t i = 0; i < FRAME_BUFFER_SIZE; i++) {
-		buffer_[i] = av_frame_alloc();
-		if (!buffer_[i]) {
-			LOG(ERROR) << "av_frame_alloc";
-			return false;
-		}
-
-		if (av_image_alloc(buffer_[i]->data, buffer_[i]->linesize, decoder_ctx_->width, decoder_ctx_->height, pix_fmt_, 16) < 0) {
-			LOG(ERROR) << "av_image_alloc";
-			return false;
-		}
-		buffer_[i]->width = decoder_ctx_->width;
-		buffer_[i]->height = decoder_ctx_->height;
-		buffer_[i]->format = pix_fmt_;
-	}
-
 	opened(true);
 	LOG(INFO) << "[DECODER]: " << name << " is opened";
 	return true;
@@ -212,14 +195,16 @@ bool MediaDecoder::create_filters()
 
 void MediaDecoder::process()
 {
+	if (!opened()) {
+		LOG(ERROR) << "[DECODER] not opened";
+		return;
+	}
+
 	LOG(INFO) << "[DECODER] STARTED@" << QThread::currentThreadId();
 	LOG(INFO) << fmt::format("[DECODER] FRAMERATE = {}, CFR = {}, STREAM_TIMEBASE = {}/{}",
-		decoder_ctx_->framerate.num, decoder_ctx_->framerate.num == decoder_ctx_->time_base.den, 
+		decoder_ctx_->framerate.num, decoder_ctx_->framerate.num == decoder_ctx_->time_base.den,
 		decoder_ctx_->time_base.num, decoder_ctx_->time_base.den
 	);
-
-
-	if (!opened()) return;
 
 	running(true);
 	emit started();
@@ -268,12 +253,15 @@ void MediaDecoder::process()
 				// convert the format to AV_PIX_FMT_XXXX
 				buffer_.push(
 					[this](AVFrame* buffer_frame) {
+						buffer_frame->format = filtered_frame_->format;
 						buffer_frame->height = filtered_frame_->height;
 						buffer_frame->width = filtered_frame_->width;
-						buffer_frame->format = filtered_frame_->format;
-						av_frame_copy(buffer_frame, filtered_frame_);
-
 						buffer_frame->pts = av_rescale_q(av_gettime_relative() - first_pts_, { 1, AV_TIME_BASE }, decoder_ctx_->time_base);
+
+						av_frame_unref(buffer_frame);	// MUST
+						if (av_frame_ref(buffer_frame, filtered_frame_) < 0) {
+							LOG(ERROR) << "av_frame_ref";
+						}
 					}
 				);
 
@@ -292,7 +280,7 @@ void MediaDecoder::process()
 
 	close();
 	emit stopped();
-	LOG(INFO) << "[DECODER] EXITED";
+	LOG(INFO) << "[DECODER] process() EXITED";
 }
 
 void MediaDecoder::close()
@@ -310,12 +298,9 @@ void MediaDecoder::close()
 	av_frame_free(&filtered_frame_);
 
 	buffer_.clear();
-	for (size_t i = 0; i < FRAME_BUFFER_SIZE; i++) {
-		av_frame_free(&buffer_[i]);
-	}
 
 	avcodec_free_context(&decoder_ctx_);
 	avformat_close_input(&fmt_ctx_);
 
-	LOG(INFO) << "DECODER CLOSED";
+	LOG(INFO) << "[DECODER] CLOSED";
 }

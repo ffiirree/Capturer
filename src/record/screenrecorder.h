@@ -78,9 +78,9 @@ private:
     };
 
     map<string, string> video_qualities_ = {
-        {"high",        "17"},
+        {"high",        "18"},
         {"medium",      "23"},
-        {"low",         "29"},
+        {"low",         "28"},
     };
 };
 

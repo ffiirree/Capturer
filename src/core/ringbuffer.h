@@ -8,6 +8,23 @@
 template<class T, int N>
 class RingBuffer {
 public:
+	RingBuffer(std::function<T()> allocate = []() { return T{}; }, std::function<void(T*)> deallocate = [](T*) {})
+	{
+		allocate_ = allocate;
+		deallocate_ = deallocate;
+
+		for (size_t i = 0; i < N; i++) {
+			buffer_[i] = allocate_();
+		}
+	}
+
+	~RingBuffer() 
+	{
+		for (size_t i = 0; i < N; i++) {
+			deallocate_(&buffer_[i]);
+		}
+	}
+
 	void push(std::function<void(T)> callback)
 	{
 		std::lock_guard<std::mutex> lock(mtx_);
@@ -31,7 +48,6 @@ public:
 		callback(buffer_[pushed_idx_]);
 
 		pushed_idx_ = (pushed_idx_ + 1) % N;
-		unused_ = false;
 	}
 
 	void pop(std::function<void(T)> callback = [](T) {})
@@ -54,7 +70,6 @@ public:
 		std::lock_guard<std::mutex> lock(mtx_);
 		popped_idx_ = 0;
 		pushed_idx_ = 0;
-		unused_ = true;
 		full_ = false;
 	}
 
@@ -62,12 +77,6 @@ public:
 	{ 
 		std::lock_guard<std::mutex> lock(mtx_); 
 		return EMPTY;
-	}
-
-	bool unused()
-	{
-		std::lock_guard<std::mutex> lock(mtx_);
-		return unused_;
 	}
 	
 	size_t size() 
@@ -86,15 +95,14 @@ public:
 		return full_;
 	}
 
-	T& operator[](size_t idx) { return buffer_[std::min<size_t>(std::max<size_t>(idx, 0), N - 1)]; }
-	
 private:
+	std::function<T()> allocate_{ []() { return T{}; } };
+	std::function<void(T*)> deallocate_{ [](T*) {} };
 	size_t pushed_idx_{ 0 };
 	size_t popped_idx_{ 0 };
 	bool full_{ false };
-	bool unused_{ true };
 
-	T buffer_[N];
+	T buffer_[N]{};
 	std::mutex mtx_;
 };
 #undef EMPTY

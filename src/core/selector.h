@@ -38,6 +38,7 @@ public slots:
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
+    void hideMask(bool v = true) { info_->hide(); mask_hidded_ = v; update(); };
 
     virtual void exit();
 
@@ -76,11 +77,12 @@ private:
     void registerShortcuts();
     void moveSelectedBox(int x, int y);
 
-    QLabel* info_ = nullptr;
+    QLabel* info_{ nullptr };
 
-    QPen pen_{Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin};
-    QColor mask_color_{0, 0, 0, 100};
-    bool use_detect_ = true;
+    QPen pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
+    QColor mask_color_{ 0, 0, 0, 100 };
+    bool use_detect_{ true };
+    bool mask_hidded_{ false };
 };
 
 #endif //! CAPTURER_SELECTOR_H
