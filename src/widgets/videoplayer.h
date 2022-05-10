@@ -16,33 +16,41 @@ public:
 	{
         setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | windowFlags());
         setAttribute(Qt::WA_TranslucentBackground);
+
+        thread_ = new QThread(this);
+        decoder_ = new MediaDecoder();
+
+        decoder_->moveToThread(thread_);
+
+        connect(thread_, &QThread::started, decoder_, &MediaDecoder::process);
+        connect(decoder_, &MediaDecoder::stopped, [this]() { thread_->quit(); });
+
+        connect(decoder_, &MediaDecoder::received, [this]() { QWidget::update(); });
 	}
 
-    void play(std::string name, std::string fmt)
+    ~VideoPlayer() { delete decoder_; }
+
+    bool play(std::string name, std::string fmt)
     {
-        if (!camera_.open(name, fmt, "", AV_PIX_FMT_RGB24, {})) {
-            return;
+        if (!decoder_->open(name, fmt, "", AV_PIX_FMT_RGB24, {})) {
+            return false;
         }
 
-        resize(camera_.width(), camera_.height());
+        if (decoder_->width() > 1440 || decoder_->height() > 810) {
+            resize(QSize(decoder_->width(), decoder_->height()).scaled(1440, 810, Qt::KeepAspectRatio));
+        }
+        else {
+            resize(decoder_->width(), decoder_->height());
+        }
 
-        QThread* thread = new QThread();
-
-        camera_.moveToThread(thread);
-        connect(thread, &QThread::started, &camera_, &MediaDecoder::process);
-        connect(&camera_, &MediaDecoder::received, [this]() { QWidget::update(); });
-        thread->start();
+        thread_->start();
         QWidget::show();
+
+        return true;
     }
 
 signals:
     void closed();
-
-public slots:
-    void close()
-    {
-        QWidget::close();
-    }
 
 protected:
     void paintEvent(QPaintEvent* event) override
@@ -50,16 +58,21 @@ protected:
         QPainter painter(this);
 
         QImage image;
-        if(camera_.read(image) >= 0)
+        if(decoder_->read(image) >= 0)
             painter.drawImage(rect(), image);
     }
+
     void closeEvent(QCloseEvent* event) override
     {
-        camera_.stop();
+        decoder_->stop();
+        thread_->quit();
+        thread_->wait();
+
         emit closed();
     }
 
-	MediaDecoder camera_;
+    MediaDecoder* decoder_{ nullptr };
+    QThread* thread_{ nullptr };
 };
 
 #endif // !CAPTURER_VIDEO_PLAYER_H

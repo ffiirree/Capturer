@@ -20,9 +20,8 @@ public:
 public:
     explicit ScreenRecorder(int type = VIDEO, QWidget *parent = nullptr);
     ~ScreenRecorder() override {
-        delete menu_;
-        delete decoder_thread_; decoder_thread_ = nullptr;
-        delete encoder_thread_; encoder_thread_ = nullptr;
+        delete decoder_; decoder_= nullptr;
+        delete encoder_; encoder_ = nullptr;
     }
 
     inline int framerate() const { return framerate_; }

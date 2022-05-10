@@ -16,7 +16,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
 {
     recording_type_ = type;
 
-    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE);
+    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE, this);
     prevent_transparent_ = true;
 
     player_ = new VideoPlayer(this);
