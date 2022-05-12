@@ -52,6 +52,9 @@ public:
     Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
         : Resizer(p1.x(), p1.y(), p2.x(), p2.y(), resize_border_width) { }
 
+    Resizer(const QPoint& p1, const QSize& s, int resize_border_width = 5)
+        : Resizer(p1.x(), p1.y(), p1.x() + s.width() - 1, p1.y() + s.height() - 1, resize_border_width) { }
+
     explicit Resizer(const QRect& rect, int resize_border_width = 5)
         : Resizer(rect.topLeft(), rect.bottomRight(), resize_border_width) { }
 
@@ -234,6 +237,11 @@ public:
                 || isX1Y1Anchor(p) || isX2Y1Anchor(p)||isX1Y2Anchor(p) || isX2Y2Anchor(p);
     }
 
+    bool isCornerAnchor(const QPoint& p) const
+    {
+        return isX1Y1Anchor(p) || isX2Y1Anchor(p) || isX1Y2Anchor(p) || isX2Y2Anchor(p);
+    }
+
     inline int left()   const { return x1_ < x2_ ? x1_ : x2_; }
     inline int right()  const { return x1_ > x2_ ? x1_ : x2_; }
     inline int top()    const { return y1_ < y2_ ? y1_ : y2_; }
@@ -246,6 +254,7 @@ public:
 
     inline int width()  const { return std::abs(x1_ - x2_) + 1; }   // like QRect class
     inline int height() const { return std::abs(y1_ - y2_) + 1; }
+    inline QSize size() const { return { width(), height() }; }
 
     inline QPoint topLeft()     const { return {left(), top()}; }
     inline QPoint bottomRight() const { return {right(), bottom()}; }

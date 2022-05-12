@@ -143,16 +143,16 @@ void ScreenShoter::moveMenu()
     auto right = area.right() - menu_->width() + 1;
     if(right < 0) right = 0;
 
-    if(area.bottom() + (menu_->height() * 2 + 5/*margin*/) < rect().height()) {
-        menu_->move(right, area.bottom() + 3);
+    if(area.bottom() + (menu_->height() * 2 + 8/*margin*/) < rect().height()) {
+        menu_->move(right, area.bottom() + 6);
         menu_->setSubMenuShowBelow();
     }
-    else if(area.top() - (menu_->height() * 2 + 5) > 0) {
-        menu_->move(right, area.top() - menu_->height() - 3);
+    else if(area.top() - (menu_->height() * 2 + 8) > 0) {
+        menu_->move(right, area.top() - menu_->height() - 6);
         menu_->setSubMenuShowAbove();
     }
     else {
-        menu_->move(right, area.bottom() - menu_->height() - 3);
+        menu_->move(right, area.bottom() - menu_->height() - 6);
         menu_->setSubMenuShowAbove();
     }
 }

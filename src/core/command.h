@@ -109,6 +109,7 @@ public:
     [[nodiscard]] bool adjusted() const { return adjusted_; }
 signals:
     void modified(PaintType);
+    void styleChanged();
 
 private:
     void updateArrowPoints(QPoint, QPoint);

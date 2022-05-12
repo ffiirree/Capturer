@@ -107,7 +107,6 @@ private:
 
     Resizer::PointPosition hover_position_ = Resizer::OUTSIDE;
     QPoint move_begin_{ 0, 0 };
-    QPoint resize_begin_{ 0, 0 };
 
     CommandStack commands_;
     CommandStack redo_stack_;

@@ -55,10 +55,11 @@ FontMenu::FontMenu(QWidget *parent)
     // font size
     font_size_ = new QComboBox();
     font_size_->setView(new QListView());
+    font_size_->setEditable(true);
     font_size_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
     font_size_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
     font_size_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    font_size_->setFixedSize(80, HEIGHT - 6);
+    font_size_->setFixedSize(90, HEIGHT - 6);
     foreach (const int &s, font_db.standardSizes()) {
         font_size_->addItem(QString::number(s));
         if(s == 16) {

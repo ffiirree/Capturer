@@ -80,8 +80,6 @@ void Selector::mousePressEvent(QMouseEvent *event)
                 status_ = SelectorStatus::MOVING;
             }
             else if(cursor_pos_ & Resizer::ADJUST_AREA){
-                rbegin_ = rend_ = pos;
-
                 status_ = SelectorStatus::RESIZING;
             }
             break;
@@ -140,7 +138,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
 
     case SelectorStatus::MOVING:
         mend_ = mouse_pos;
-        updateSelected();
+        box_.move(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
         mbegin_ = mouse_pos;
 
         update();
@@ -150,9 +148,19 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         break;
 
     case SelectorStatus::RESIZING:
-        rend_ = mouse_pos;
-        updateSelected();
-        rbegin_ = mouse_pos;
+        switch (cursor_pos_) {
+        case Resizer::Y1_BORDER: case Resizer::Y1_ANCHOR: box_.ry1() = mouse_pos.y(); break;
+        case Resizer::Y2_BORDER: case Resizer::Y2_ANCHOR: box_.ry2() = mouse_pos.y(); break;
+        case Resizer::X1_BORDER: case Resizer::X1_ANCHOR: box_.rx1() = mouse_pos.x(); break;
+        case Resizer::X2_BORDER: case Resizer::X2_ANCHOR: box_.rx2() = mouse_pos.x(); break;
+
+        case Resizer::X1Y1_ANCHOR: box_.rx1() = mouse_pos.x(); box_.ry1() = mouse_pos.y(); break;
+        case Resizer::X1Y2_ANCHOR: box_.rx1() = mouse_pos.x(); box_.ry2() = mouse_pos.y(); break;
+        case Resizer::X2Y1_ANCHOR: box_.rx2() = mouse_pos.x(); box_.ry1() = mouse_pos.y(); break;
+        case Resizer::X2Y2_ANCHOR: box_.rx2() = mouse_pos.x(); box_.ry2() = mouse_pos.y(); break;
+
+        default:break;
+        }
 
         update();
         emit resized();
@@ -224,31 +232,6 @@ void Selector::paintEvent(QPaintEvent *)
     }
 
     painter_.end();
-}
-
-void Selector::updateSelected()
-{
-    if(status_ == SelectorStatus::MOVING) {
-        box_.move(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
-    }
-    else if(status_ == SelectorStatus::RESIZING) {
-        auto diff_x = rend_.x() - rbegin_.x();
-        auto diff_y = rend_.y() - rbegin_.y();
-
-        switch (cursor_pos_) {
-        case Resizer::Y1_BORDER: case Resizer::Y1_ANCHOR: box_.ry1() += diff_y; break;
-        case Resizer::Y2_BORDER: case Resizer::Y2_ANCHOR: box_.ry2() += diff_y; break;
-        case Resizer::X1_BORDER: case Resizer::X1_ANCHOR: box_.rx1() += diff_x; break;
-        case Resizer::X2_BORDER: case Resizer::X2_ANCHOR: box_.rx2() += diff_x; break;
-
-        case Resizer::X1Y1_ANCHOR: box_.rx1() += diff_x; box_.ry1() += diff_y; break;
-        case Resizer::X1Y2_ANCHOR: box_.rx1() += diff_x; box_.ry2() += diff_y; break;
-        case Resizer::X2Y1_ANCHOR: box_.rx2() += diff_x; box_.ry1() += diff_y; break;
-        case Resizer::X2Y2_ANCHOR: box_.rx2() += diff_x; box_.ry2() += diff_y; break;
-
-        default:break;
-        }
-    }
 }
 
 void Selector::moveSelectedBox(int x, int y)

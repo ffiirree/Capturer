@@ -13,27 +13,22 @@ TextEdit::TextEdit(QWidget * parent)
     p.setBrush(QPalette::Base, QColor(0, 0, 0, 1));
     setPalette(p);
 
-    document()->setDocumentMargin(2);
+    document()->setDocumentMargin(0);
 
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     setLineWrapMode(QTextEdit::NoWrap);
+    setAlignment(Qt::AlignVCenter);
 
-    setFixedSize(document()->size().toSize());
-
-    auto resize_fuctor = [=](){
+    auto resize_fuctor = [this](){
         setFixedSize(document()->size().toSize());
+        emit resized();
     };
 
     connect(this, &TextEdit::textChanged, resize_fuctor);
-    connect(document(), &QTextDocument::modificationChanged, resize_fuctor);
-}
-
-void TextEdit::setFont(const QFont& font)
-{
-    QTextEdit::setFont(font);
-    emit QTextEdit::textChanged();
+    connect(this, &TextEdit::fontChanged, resize_fuctor);
+    connect(document(), &QTextDocument::contentsChanged, resize_fuctor );
 }
 
 void TextEdit::focusInEvent(QFocusEvent *e)

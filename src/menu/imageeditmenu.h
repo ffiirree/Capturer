@@ -35,6 +35,7 @@ public:
     void pen(Graph, QPen);
     void style(Graph, QPen, bool);
     QFont font(Graph);
+    void font(const QFont& font);
 
     void setSubMenuShowAbove() { sub_menu_show_pos_ = true; }
     void setSubMenuShowBelow() { sub_menu_show_pos_ = false; }

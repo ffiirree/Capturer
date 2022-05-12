@@ -157,8 +157,6 @@ void Canvas::mousePressEvent(QMouseEvent* event)
     }
     // Anchor => resize
     else if ((hover_position_ & Resizer::ANCHOR) && hover_cmd_ && hover_cmd_->visible()) {
-        resize_begin_ = mouse_pos;
-
         HIDE_AND_COPY_CMD(hover_cmd_);
 
         edit_status_ |= GRAPH_RESIZING;
@@ -168,6 +166,12 @@ void Canvas::mousePressEvent(QMouseEvent* event)
         HIDE_AND_COPY_CMD(hover_cmd_);
 
         edit_status_ |= GRAPH_ROTATING;
+    }
+    // text
+    else if ((hover_position_ == Resizer::INSIDE) && 
+        hover_cmd_  && hover_cmd_->visible() && 
+        hover_cmd_->graph() == TEXT) {
+        // nothing
     }
 
     // Not borders and anchors => Create
@@ -189,7 +193,8 @@ void Canvas::mousePressEvent(QMouseEvent* event)
     if (hover_cmd_) {
         focusOn(hover_cmd_);
         modified(PaintType::DRAW_MODIFYING);
-        connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified);
+        connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified, Qt::UniqueConnection);
+        connect(hover_cmd_.get(), &PaintCommand::styleChanged, this, [this]() {if (hover_cmd_->graph() == TEXT) menu_->font(hover_cmd_->font()); }, Qt::UniqueConnection);
     }
 }
 
@@ -209,8 +214,7 @@ void Canvas::mouseMoveEvent(QMouseEvent* event)
             break;
 
         case GRAPH_RESIZING:
-            hover_cmd_->resize(hover_position_, mouse_pos - resize_begin_);
-            resize_begin_ = mouse_pos;
+            hover_cmd_->resize(hover_position_, mouse_pos);
             break;
 
         default:  break;
@@ -228,6 +232,13 @@ QCursor Canvas::getCursorShape()
     if (edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
         circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
         return QCursor(circle_cursor_.cursor());
+    }
+
+    // TEXT
+    if (hover_cmd_ && hover_cmd_->visible() && 
+        hover_cmd_->graph() == TEXT && 
+        hover_position_ == Resizer::INSIDE) {
+        return Qt::IBeamCursor;
     }
 
     return PaintCommand::getCursorShapeByHoverPos(hover_position_);
@@ -301,6 +312,10 @@ void Canvas::updateHoverPos(const QPoint& pos)
 
         hover_position_ = command->hover(pos);
         if (hover_position_ & Resizer::ADJUST_AREA) {
+            hover_cmd_ = command;
+            break;
+        }
+        else if (command->graph() == TEXT && hover_position_ == Resizer::INSIDE) {
             hover_cmd_ = command;
             break;
         }

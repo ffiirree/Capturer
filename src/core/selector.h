@@ -59,16 +59,12 @@ protected:
     // selected area
     inline QRect selected() const { return box_.rect(); }
 
-    void updateSelected();
-
     QPainter painter_;
     SelectorStatus status_ = SelectorStatus::INITIAL;
     Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
 
     // move
     QPoint mbegin_{0, 0}, mend_{0, 0};
-    // resize
-    QPoint rbegin_{0, 0}, rend_{0, 0};
 
     Resizer box_;
     bool prevent_transparent_ = false;

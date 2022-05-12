@@ -11,20 +11,17 @@ class TextEdit : public QTextEdit
 public:
     explicit TextEdit(QWidget *parent = nullptr);
 
-    void setFont(const QFont& font);
-
-    QString text() const { return this->toPlainText(); }
-    void text(const QString& v) { setText(v); }
+public slots:
+    void setFont(const QFont& font) { QTextEdit::setFont(font); emit fontChanged(); };
 
 signals:
     void focus(bool);
+    void resized();
+    void fontChanged();
 
 protected:
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
-
-private:
-    QPainter painter_;
 };
 
 #endif // TEXTEDIT_H

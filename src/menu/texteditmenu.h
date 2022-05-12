@@ -13,9 +13,11 @@ public:
     explicit FontMenu(QWidget* parent = nullptr);
 
     inline QString  fontFamily()    const { return font_family_->currentText(); }
-    inline int      fontSize()      const { return font_size_->currentText().toInt(); }
+    inline float    fontSize()      const { return font_size_->currentText().toFloat(); }
     inline QString  fontStyle()     const { return font_style_->currentText(); }
     inline QColor   fontColor()     const { return color_panel_->color(); }
+
+    inline void     font(const QFont& font) { font_size_->setCurrentText(QString::number(font.pointSizeF(), 'f', 2)); }
 
     // cover QWidget::font()
     QFont font() const
@@ -23,7 +25,7 @@ public:
         QFont font;
         font.setFamily(fontFamily());
         font.setStyleName(fontStyle());
-        font.setPixelSize(fontSize());
+        font.setPointSizeF(fontSize());
         return font;
     }
 

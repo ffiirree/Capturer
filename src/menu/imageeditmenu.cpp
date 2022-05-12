@@ -145,13 +145,15 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     if (groups & EXIT_GROUP) {
         addSeparator();
 
-        auto close_btn = new QPushButton(this);
+        auto close_btn = new QPushButton(QIcon(":/icon/res/wrong"), QString(), this);
         close_btn->setObjectName("close_btn");
+        close_btn->setIconSize({ ICON_W, ICON_W });
         connect(close_btn, &QPushButton::clicked, [this]() { group_->uncheckAll(); exit(); hide(); });
         addWidget(close_btn);
 
-        auto ok_btn = new QPushButton(this);
+        auto ok_btn = new QPushButton(QIcon(":/icon/res/right"), QString(), this);
         ok_btn->setObjectName("ok_btn");
+        ok_btn->setIconSize({ ICON_W, ICON_W });
         connect(ok_btn, &QPushButton::clicked, [this]() { group_->uncheckAll(); ok(); hide(); });
         addWidget(ok_btn);
     }
@@ -242,6 +244,12 @@ QFont ImageEditMenu::font(Graph graph)
     case Graph::TEXT:       return text_menu_->font();
     default:                return QFont();
     }
+}
+
+void ImageEditMenu::font(const QFont& font)
+{
+    if (text_menu_)
+        text_menu_->font(font);
 }
 
 void ImageEditMenu::reset()

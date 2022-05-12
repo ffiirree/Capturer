@@ -48,13 +48,4 @@ ImageEditMenu QPushButton {
     width: 35px;
     height: 35px;
     border: none;
-    qproperty-iconSize: 25px;
-}
-
-QPushButton#close_btn {
-    qproperty-icon: url(:/icon/res/wrong);
-}
-
-QPushButton#ok_btn {
-    qproperty-icon: url(:/icon/res/right);
 }

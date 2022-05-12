@@ -32,5 +32,5 @@ void CustomButton::paintEvent(QPaintEvent *)
     paint(&painter);
 
     if (!isEnabled())
-        painter.fillRect(rect(), QColor{ 125, 125, 125, 75 });
+        painter.fillRect(rect(), QColor{ 145, 145, 145, 95 });
 }

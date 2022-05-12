@@ -32,7 +32,7 @@ protected:
     void addWidget(QWidget *);
 
     const int HEIGHT = 35;
-    const int ICON_W = 25;
+    const int ICON_W = 21;
 
     QPen pen_;
     bool fill_ = false;

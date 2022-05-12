@@ -18,49 +18,56 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
 
     // 3. movable with a widget
     case Graph::TEXT:
-        resizer_ = Resizer(start_point, start_point);
-
         widget_ = make_shared<TextEdit>();
-        connect(widget_.get(), &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
+        connect(widget_.get(), &TextEdit::textChanged, [this]() {
+            resizer_ = Resizer(resizer_.topLeft(), widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 }); // padding 5
+            modified(PaintType::REPAINT_ALL); 
+        });
 
-        widget_->setTextColor(pen.color());
-        // default color
+        widget_->setFont(font_);
         widget_->setStyleSheet(QString("QTextEdit{color:%1}").arg(pen.color().name()));
+
+        resizer_ = Resizer(start_point, widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 });
+
         widget_->setFocus();
-        widget_->move(start_point);
+        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
         widget_->show();
         break;
     default: break;
     }
 }
 
-PaintCommand& PaintCommand::operator=(const PaintCommand& cmd)
+PaintCommand& PaintCommand::operator=(const PaintCommand& other)
 {
-    this->graph_ = cmd.graph_;
-    this->pen_ = cmd.pen_;
-    this->font_ = cmd.font_;
-    this->is_fill_ = cmd.is_fill_;
-    this->points_ = cmd.points_;
-    this->points_buff_ = cmd.points_buff_;
+    graph_ = other.graph_;
+    pen_ = other.pen_;
+    font_ = other.font_;
+    is_fill_ = other.is_fill_;
+    points_ = other.points_;
+    points_buff_ = other.points_buff_;
 
-    this->resizer_ = cmd.resizer_;
+    resizer_ = other.resizer_;
 
-    if(cmd.widget_ != nullptr) {
+    if(other.widget_ != nullptr) {
         widget_ = make_shared<TextEdit>();
-        connect(widget_.get(), &TextEdit::textChanged, [this]() { modified(PaintType::REPAINT_ALL); });
 
-        widget_->setFont(this->font_);
-        widget_->setTextColor(this->pen_.color());
-        widget_->text(cmd.widget_->text());
+        widget_->setFont(other.widget_->font());
+        widget_->setText(other.widget_->toPlainText());
+        widget_->setStyleSheet(QString("QTextEdit{color:%1}").arg(pen_.color().name()));
+
+        connect(widget_.get(), &TextEdit::textChanged, [this]() {
+            resizer_ = Resizer(resizer_.topLeft(), widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 });
+            modified(PaintType::REPAINT_ALL);
+        });
 
         widget_->setFocus();
-        widget_->move(cmd.widget()->pos());
+        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
         widget_->show();
     }
 
-    this->visible_ = cmd.visible_;
-    this->pre_ = cmd.pre_;
-    this->adjusted_ = false;
+    visible_ = other.visible_;
+    pre_ = other.pre_;
+    adjusted_ = false;
 
     return *this;
 }
@@ -85,8 +92,8 @@ bool PaintCommand::push_point(const QPoint& pos)
         points_buff_.push_back(pos); emit modified(PaintType::DRAW_MODIFIED);
         return true;
 
-    case Graph::TEXT:      return false;
-    default:        return false;
+    case Graph::TEXT:       return false;
+    default:                return false;
     }
 }
 
@@ -105,7 +112,8 @@ void PaintCommand::move(const QPoint& diff)
         break;
 
     case Graph::TEXT:
-        widget()->move(widget()->pos() + diff);
+        resizer_.move(diff.x(), diff.y());
+        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
         break;
 
     default: break;
@@ -131,20 +139,65 @@ bool PaintCommand::isValid()
     }
 }
 
-void PaintCommand::resize(Resizer::PointPosition position, const QPoint& diff)
+void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_pos)
 {
+    auto pre_size_ = resizer_;
+
     switch (position) {
-    case Resizer::X1Y1_ANCHOR:  resizer_.rx1() += diff.x(); resizer_.ry1() += diff.y(); break;
-    case Resizer::X2Y1_ANCHOR:  resizer_.rx2() += diff.x(); resizer_.ry1() += diff.y(); break;
-    case Resizer::X1Y2_ANCHOR:  resizer_.rx1() += diff.x(); resizer_.ry2() += diff.y(); break;
-    case Resizer::X2Y2_ANCHOR:  resizer_.rx2() += diff.x(); resizer_.ry2() += diff.y(); break;
-    case Resizer::X1_ANCHOR:    resizer_.rx1() += diff.x(); break;
-    case Resizer::X2_ANCHOR:    resizer_.rx2() += diff.x(); break;
-    case Resizer::Y1_ANCHOR:    resizer_.ry1() += diff.y(); break;
-    case Resizer::Y2_ANCHOR:    resizer_.ry2() += diff.y(); break;
+    case Resizer::X1Y1_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
+    case Resizer::X2Y1_ANCHOR:  resizer_.rx2() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
+    case Resizer::X1Y2_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry2() = cursor_pos.y(); break;
+    case Resizer::X2Y2_ANCHOR:  resizer_.rx2() = cursor_pos.x(); resizer_.ry2() = cursor_pos.y(); break;
+    case Resizer::X1_ANCHOR:    resizer_.rx1() = cursor_pos.x(); break;
+    case Resizer::X2_ANCHOR:    resizer_.rx2() = cursor_pos.x(); break;
+    case Resizer::Y1_ANCHOR:    resizer_.ry1() = cursor_pos.y(); break;
+    case Resizer::Y2_ANCHOR:    resizer_.ry2() = cursor_pos.y(); break;
     default: break;
     }
-    if(graph() == Graph::ARROW) updateArrowPoints(resizer_.point1(), resizer_.point2());
+
+    switch (graph())
+    {
+    case Graph::ARROW:
+        updateArrowPoints(resizer_.point1(), resizer_.point2());
+        break;
+        // keep aspect ratio
+    case Graph::TEXT:
+    {
+        QSize text_size = widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText());
+        QSize diff;
+
+        if (pre_size_.rect().contains(resizer_.rect())) {
+            auto r = resizer_.rect().intersected(pre_size_.rect());
+            diff = text_size.scaled(r.size() - QSize(10, 10), position & 0x0f00 ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio) - (resizer_.size() - QSize{ 10, 10 });
+        }
+        else {
+            auto r = resizer_.rect().united(pre_size_.rect());
+            diff = text_size.scaled(r.size() - QSize(10, 10), Qt::KeepAspectRatioByExpanding) - (resizer_.size() - QSize{ 10, 10 });
+        }
+
+        switch (position) {
+        case Resizer::X1Y1_ANCHOR:  resizer_.ajust(-diff.width(), -diff.height(), 0, 0);    break;
+        case Resizer::X2Y1_ANCHOR:  resizer_.ajust(0, -diff.height(), diff.width(), 0);     break;
+        case Resizer::X1Y2_ANCHOR:  resizer_.ajust(-diff.width(), 0, 0, diff.height());     break;
+        case Resizer::X2Y2_ANCHOR:  resizer_.ajust(0, 0, diff.width(), diff.height());      break;
+        case Resizer::X1_ANCHOR:    resizer_.ajust(0, 0, 0, diff.height()); break;
+        case Resizer::X2_ANCHOR:    resizer_.ajust(0, 0, 0, diff.height()); break;
+        case Resizer::Y1_ANCHOR:    resizer_.ajust(0, 0, diff.width(), 0);  break;
+        case Resizer::Y2_ANCHOR:    resizer_.ajust(0, 0, diff.width(), 0);  break;
+        default: break;
+        }
+
+        font_.setPointSizeF(std::round(std::max<float>(1, font_.pointSizeF() * ((rect().width() - 5.0) / text_size.width())) * 100.0) / 100.0);
+        widget_->setFont(font_);
+
+        emit styleChanged();
+
+        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
+        break;
+    }
+    default:
+        break;
+    }
 
     adjusted_ = true;
     emit modified(PaintType::DRAW_MODIFYING);
@@ -216,7 +269,7 @@ void PaintCommand::draw(QPainter *painter, bool modified)
 
     case Graph::TEXT:
         painter->setFont(widget_->font());
-        painter->drawText(widget_->geometry().adjusted(2, 2, 0, 0), Qt::TextWordWrap, widget_->toPlainText());
+        painter->drawText(rect(), Qt::AlignCenter, widget_->toPlainText());
         break;
 
     default: break;
@@ -257,22 +310,20 @@ void PaintCommand::drawAnchors(QPainter* painter)
 
     case Graph::TEXT:
     {
-        Resizer resizer(geometry().adjusted(-2, -2, 2, 2));
-
         painter->save();
         painter->setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
         painter->setRenderHint(QPainter::Antialiasing, true);
         painter->setBrush(Qt::white);
-        painter->drawEllipse(resizer.rotateAnchor());
+        painter->drawEllipse(resizer_.rotateAnchor());
         painter->restore();
 
         // box border
         painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
-        painter->drawRect(resizer.rect());
+        painter->drawRect(resizer_.rect());
 
         // anchors
         painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
-        painter->drawRects(resizer.cornerAnchors());
+        painter->drawRects(resizer_.anchors());
         break;
     }
 
@@ -385,22 +436,9 @@ Resizer::PointPosition PaintCommand::hover(const QPoint& pos)
         else if (polygon.containsPoint(pos, Qt::OddEvenFill)) {
             return Resizer::BORDER;
         }
+        return Resizer::DEFAULT;
     }
-    case TEXT:
-    {
-        Resizer resizer(geometry().adjusted(-2, -2, 2, 2));
-        resizer.enableRotate(true);
-        auto hover_pos = resizer.absolutePos(pos);
-        switch (hover_pos) {
-        case Resizer::INSIDE:
-        case Resizer::X1_ANCHOR:
-        case Resizer::Y2_ANCHOR:
-        case Resizer::Y1_ANCHOR:
-        case Resizer::X2_ANCHOR: hover_pos = Resizer::BORDER; break;
-        default: break;
-        }
-        return hover_pos;
-    }
+    case TEXT: return resizer().absolutePos(pos);
     default: return Resizer::DEFAULT;
     }
 }
