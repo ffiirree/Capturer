@@ -37,6 +37,12 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             CAPTURED();
     });
 
+    connect(menu_, &ImageEditMenu::styleChanged, [this](Graph graph) {
+        if (graph == ERASER || graph == MOSAIC) {
+            setCursor(canvas_->getCursorShape());
+        }
+    });
+
     // show menu
     connect(this, &ScreenShoter::captured, [this](){ menu_->show(); moveMenu(); });
 

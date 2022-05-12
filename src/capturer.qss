@@ -2,7 +2,7 @@
 QComboBox {
     border-radius: 3px;
     height: 32px;
-    padding: 0 10px;
+    padding-left: 10px;
     margin: 1px 0px;
 }
 
@@ -10,7 +10,7 @@ QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: center right;
     width: 24px;
-    padding: 4px;
+    padding: 4px 0;
 
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;

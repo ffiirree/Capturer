@@ -1,6 +1,8 @@
 #include "command.h"
 #include <cmath>
 
+#define TEXT_EDIT_MARGIN   16
+
 PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool is_fill, const QPoint& start_point)
     : graph_(type), pen_(pen), font_(font), is_fill_(is_fill)
 {
@@ -20,18 +22,19 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
     case Graph::TEXT:
         widget_ = make_shared<TextEdit>();
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
-            resizer_ = Resizer(resizer_.topLeft(), widget_->size() + QSize{10, 10}); // padding 5
+            resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN }); // padding 5
             modified(PaintType::REPAINT_ALL); 
         });
 
         widget_->setFont(font_);
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen.color().name()));
 
-        resizer_ = Resizer(start_point, widget_->size() + QSize{10, 10});
+        resizer_ = Resizer(start_point, widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
 
         widget_->setFocus();
-        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
         widget_->show();
+        resizer_.enableRotate(true);
         break;
     default: break;
     }
@@ -56,15 +59,15 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen_.color().name()));
 
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
-            resizer_ = Resizer(resizer_.topLeft(), widget_->size() + QSize{10, 10});
+            resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
             modified(PaintType::REPAINT_ALL);
         });
 
         widget_->setFocus();
-        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
         widget_->show();
     }
-
+    
     visible_ = other.visible_;
     pre_ = other.pre_;
     adjusted_ = false;
@@ -113,7 +116,7 @@ void PaintCommand::move(const QPoint& diff)
 
     case Graph::TEXT:
         resizer_.move(diff.x(), diff.y());
-        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
         break;
 
     default: break;
@@ -141,7 +144,7 @@ bool PaintCommand::isValid()
 
 void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_pos)
 {
-    auto pre_size_ = resizer_;
+    auto pre_resizer_ = resizer_;
 
     switch (position) {
     case Resizer::X1Y1_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
@@ -166,13 +169,13 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
         QSize text_size = widget_->size();
         QSize diff;
 
-        if (pre_size_.rect().contains(resizer_.rect())) {
-            auto r = resizer_.rect().intersected(pre_size_.rect());
-            diff = text_size.scaled(r.size() - QSize(10, 10), position & 0x0f00 ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio) - (resizer_.size() - QSize{ 10, 10 });
+        if (pre_resizer_.rect().contains(resizer_.rect())) {
+            auto r = resizer_.rect().intersected(pre_resizer_.rect());
+            diff = text_size.scaled(r.size() - QSize(TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN), position & 0x0f00 ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio) - (resizer_.size() - QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
         }
         else {
-            auto r = resizer_.rect().united(pre_size_.rect());
-            diff = text_size.scaled(r.size() - QSize(10, 10), Qt::KeepAspectRatioByExpanding) - (resizer_.size() - QSize{ 10, 10 });
+            auto r = resizer_.rect().united(pre_resizer_.rect());
+            diff = text_size.scaled(r.size() - QSize(TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN), Qt::KeepAspectRatioByExpanding) - (resizer_.size() - QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
         }
 
         switch (position) {
@@ -187,12 +190,13 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
         default: break;
         }
 
-        font_.setPointSizeF(std::round(std::max<float>(1, font_.pointSizeF() * ((rect().width() - 5.0) / text_size.width())) * 100.0) / 100.0);
+        float font_size = std::max<float>(1, font_.pointSizeF() * ((rect().width() - TEXT_EDIT_MARGIN) / std::max<float>(text_size.width(), 10)));
+        font_.setPointSizeF(std::round(font_size * 100.0) / 100.0);
         widget_->setFont(font_);
 
         emit styleChanged();
 
-        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
         break;
     }
     default:
@@ -230,31 +234,28 @@ void PaintCommand::draw(QPainter *painter, bool modified)
     painter->setPen(pen());
     if(isFill()) painter->setBrush(pen().color());
 
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
     switch (graph()) {
     case Graph::RECTANGLE:
-        painter->setRenderHint(QPainter::Antialiasing, true);
         painter->drawRect(rect());
         break;
 
     case Graph::ELLIPSE:
-        painter->setRenderHint(QPainter::Antialiasing, true);
         painter->drawEllipse(rect());
         break;
 
     case Graph::LINE:
-        painter->setRenderHint(QPainter::Antialiasing, true);
         painter->drawLine(resizer_.point1(), resizer_.point2());
         break;
 
     case Graph::ARROW:
-        painter->setRenderHint(QPainter::Antialiasing, true);
         painter->drawPolygon(points_);
         break;
 
     case Graph::CURVES:
     case Graph::ERASER:
     case Graph::MOSAIC:
-        painter->setRenderHint(QPainter::Antialiasing, true);
         if(modified) {
             painter->drawPolyline(points_buff_);
             points_.append(points_buff_);
@@ -269,7 +270,7 @@ void PaintCommand::draw(QPainter *painter, bool modified)
 
     case Graph::TEXT:
         painter->setFont(widget_->font());
-        painter->drawText(rect().adjusted(5, 5, -5, -5), Qt::AlignVCenter, widget_->toPlainText());
+        painter->drawText(rect().adjusted(TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2), Qt::AlignVCenter, widget_->toPlainText());
         break;
 
     default: break;
@@ -280,49 +281,47 @@ void PaintCommand::draw(QPainter *painter, bool modified)
 void PaintCommand::drawAnchors(QPainter* painter)
 {
     painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    
+    auto color = QColor("#969696");
 
     switch (graph()) {
     case Graph::RECTANGLE:
     case Graph::ELLIPSE:
-        painter->setRenderHint(QPainter::Antialiasing, false);
         painter->setBrush(Qt::NoBrush);
 
         // box border
-        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
-        painter->drawRect(resizer().rect());
+        painter->setPen(QPen(color, 1, Qt::DashLine));
+        painter->drawRect(rect());
 
         // anchors
-        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        painter->setBrush(Qt::white);
+        painter->setPen(QPen(color, 1, Qt::SolidLine));
         painter->drawRects(resizer().anchors());
-
         break;
 
     case Graph::LINE:
     case Graph::ARROW:
-        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
-        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->drawLine(resizer().point1(), resizer().point2());
 
-        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        painter->setPen(QPen(color, 1, Qt::SolidLine));
+        painter->setBrush(Qt::white);
         painter->drawRect(resizer().X1Y1Anchor());
         painter->drawRect(resizer().X2Y2Anchor());
         break;
 
     case Graph::TEXT:
     {
-        painter->save();
-        painter->setPen(QPen(QColor("#333"), 2, Qt::SolidLine));
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        painter->setBrush(Qt::white);
-        painter->drawEllipse(resizer_.rotateAnchor());
-        painter->restore();
-
         // box border
-        painter->setPen(QPen(Qt::black, 1, Qt::DashLine));
+        painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->drawRect(resizer_.rect());
+        painter->drawLine(resizer_.rotateAnchor().center(), resizer_.topAnchor().center());
 
-        // anchors
-        painter->setPen(QPen(Qt::black, 1, Qt::SolidLine));
+        // 
+        painter->setBrush(Qt::white);
+        painter->setPen(QPen(color, 1, Qt::SolidLine));
+        painter->drawEllipse(resizer_.rotateAnchor());
         painter->drawRects(resizer_.anchors());
         break;
     }
@@ -460,7 +459,7 @@ QCursor PaintCommand::getCursorShapeByHoverPos(Resizer::PointPosition pos, const
     case Resizer::X2_BORDER:
     case Resizer::Y1_BORDER:
     case Resizer::Y2_BORDER:    return Qt::SizeAllCursor;
-    case Resizer::ROTATE_ANCHOR: return (QPixmap(":/icon/res/rotate").scaled(22, 22, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    case Resizer::ROTATE_ANCHOR: return (QPixmap(":/icon/res/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 
     default: return default_cursor;
     }

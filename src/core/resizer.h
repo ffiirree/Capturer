@@ -6,7 +6,7 @@
 #include<QRect>
 #include "displayinfo.h"
 
-#define ANCHOR_W        5
+#define ANCHOR_W        7
 
 #define MIN_W   1
 #define MIN_H   1
@@ -66,6 +66,12 @@ public:
     void reset(int x1, int y1, int x2, int y2) { x1_ = x1; y1_ = y1; x2_ = x2; y2_ = y2; }
     void reset(const QPoint& p1, const QPoint& p2) { x1_ = p1.x(); y1_ = p1.y(); x2_ = p2.x(); y2_ = p2.y(); }
     void reset(const QRect& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
+
+    void resize(const QSize& size) 
+    { 
+        x2_ = x1_ + (x2_ > x1_ ? (size.width() - 1) : (-size.width() + 1));
+        y2_ = y1_ + (y2_ > y1_ ? (size.height() - 1) : (-size.height() + 1));
+    }
 
     int& rx1() { return x1_; }  void x1(int val) { x1_ = val; } int x1() const { return x1_; }
     int& rx2() { return x2_; }  void x2(int val) { x2_ = val; } int x2() const { return x2_; }
@@ -164,8 +170,8 @@ public:
 
     QRect rotateAnchor() const
     {
-        QRect anchor{0, 0, 9, 9};
-        anchor.moveCenter({(x1_ + x2_)/2, top() - 10});
+        QRect anchor{0, 0, 11, 11};
+        anchor.moveCenter({(x1_ + x2_)/2, top() - 20});
         return anchor;
     }
 

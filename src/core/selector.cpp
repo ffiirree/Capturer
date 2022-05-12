@@ -221,8 +221,8 @@ void Selector::paintEvent(QPaintEvent *)
             painter_.drawRect(srect.adjusted(-pen_.width() % 2, -pen_.width() % 2, 0, 0));
 
             // draw anchors
-            painter_.setPen({ pen_.color(), pen_.widthF(), Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin });
-            painter_.setBrush(pen_.color());
+            painter_.setPen({ pen_.color(), pen_.widthF(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin });
+            painter_.setBrush(Qt::white);
             painter_.drawRects(box_.anchors());
         }
     }
