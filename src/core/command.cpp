@@ -20,17 +20,17 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
     case Graph::TEXT:
         widget_ = make_shared<TextEdit>();
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
-            resizer_ = Resizer(resizer_.topLeft(), widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 }); // padding 5
+            resizer_ = Resizer(resizer_.topLeft(), widget_->size() + QSize{10, 10}); // padding 5
             modified(PaintType::REPAINT_ALL); 
         });
 
         widget_->setFont(font_);
-        widget_->setStyleSheet(QString("QTextEdit{color:%1}").arg(pen.color().name()));
+        widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen.color().name()));
 
-        resizer_ = Resizer(start_point, widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 });
+        resizer_ = Resizer(start_point, widget_->size() + QSize{10, 10});
 
         widget_->setFocus();
-        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
+        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
         widget_->show();
         break;
     default: break;
@@ -53,15 +53,15 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
 
         widget_->setFont(other.widget_->font());
         widget_->setText(other.widget_->toPlainText());
-        widget_->setStyleSheet(QString("QTextEdit{color:%1}").arg(pen_.color().name()));
+        widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen_.color().name()));
 
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
-            resizer_ = Resizer(resizer_.topLeft(), widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText()) + QSize{ 10, 10 });
+            resizer_ = Resizer(resizer_.topLeft(), widget_->size() + QSize{10, 10});
             modified(PaintType::REPAINT_ALL);
         });
 
         widget_->setFocus();
-        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
+        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
         widget_->show();
     }
 
@@ -113,7 +113,7 @@ void PaintCommand::move(const QPoint& diff)
 
     case Graph::TEXT:
         resizer_.move(diff.x(), diff.y());
-        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
+        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
         break;
 
     default: break;
@@ -163,7 +163,7 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
         // keep aspect ratio
     case Graph::TEXT:
     {
-        QSize text_size = widget_->fontMetrics().size(Qt::AlignVCenter, widget_->toPlainText());
+        QSize text_size = widget_->size();
         QSize diff;
 
         if (pre_size_.rect().contains(resizer_.rect())) {
@@ -192,7 +192,7 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
 
         emit styleChanged();
 
-        widget_->setGeometry(resizer_.rect().adjusted(5, 5, -5, -5));
+        widget_->move(resizer_.topLeft() + QPoint{ 5, 5 });
         break;
     }
     default:
@@ -269,7 +269,7 @@ void PaintCommand::draw(QPainter *painter, bool modified)
 
     case Graph::TEXT:
         painter->setFont(widget_->font());
-        painter->drawText(rect(), Qt::AlignCenter, widget_->toPlainText());
+        painter->drawText(rect().adjusted(5, 5, -5, -5), Qt::AlignVCenter, widget_->toPlainText());
         break;
 
     default: break;

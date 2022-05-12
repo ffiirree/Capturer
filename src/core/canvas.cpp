@@ -128,6 +128,7 @@ void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
 
     // switch
     focus_cmd_ = cmd;
+    hover_cmd_ = focus_cmd_;
 
     if (focus_cmd_) {
         focus_cmd_->setFocus(true);
@@ -259,6 +260,7 @@ void Canvas::mouseReleaseEvent(QMouseEvent* event)
         }
         else {                                                      // Invalid, no modified. Back to the previous
             if (focus_cmd_->previous()) {
+                focus_cmd_->visible(false);
                 focus_cmd_->previous()->visible(true);
             }
             // foucs on null or the previous cmd
