@@ -15,16 +15,17 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
 
     // 2. nomovable and noresizable
     case Graph::MOSAIC:
-    case Graph::ERASER:
-    case Graph::CURVES: push_point(start_point); break;
+    case Graph::ERASER: 
+    case Graph::CURVES: push_point(start_point);  break;
 
     // 3. movable with a widget
     case Graph::TEXT:
         widget_ = make_shared<TextEdit>();
-        connect(widget_.get(), &TextEdit::resized, [this]() {
+        connect(widget_.get(), &TextEdit::textChanged, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN }); // padding 5
             modified(PaintType::REPAINT_ALL); 
         });
+        LOG(INFO)<< "FONT: " << font.pointSizeF();
 
         widget_->setFont(font_);
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen.color().name()));
@@ -58,7 +59,7 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
         widget_->setText(other.widget_->toPlainText());
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen_.color().name()));
 
-        connect(widget_.get(), &TextEdit::resized, [this]() {
+        connect(widget_.get(), &TextEdit::textChanged, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
             modified(PaintType::REPAINT_ALL);
         });
@@ -73,6 +74,15 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
     adjusted_ = false;
 
     return *this;
+}
+
+void PaintCommand::font(const QFont& font) {
+    if (graph_ != Graph::TEXT) return;
+
+    font_ = font;
+    widget_->setFont(font);
+    resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
+    emit modified(PaintType::REPAINT_ALL);
 }
 
 bool PaintCommand::push_point(const QPoint& pos)
@@ -240,7 +250,10 @@ void PaintCommand::draw(QPainter *painter, bool modified)
     if(!visible()) return;
 
     painter->save();
-    painter->setPen(pen());
+    
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+    painter->setPen(pen_);
     if(isFill()) painter->setBrush(pen().color());
 
     painter->setRenderHint(QPainter::Antialiasing, true);
@@ -259,6 +272,7 @@ void PaintCommand::draw(QPainter *painter, bool modified)
         break;
 
     case Graph::ARROW:
+        painter->setPen(QPen(pen_.color(), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin));
         painter->drawPolygon(points_);
         break;
 
@@ -278,6 +292,7 @@ void PaintCommand::draw(QPainter *painter, bool modified)
         break;
 
     case Graph::TEXT:
+        LOG(INFO) << "widget_->font()" << widget_->font().pointSizeF();
         painter->setFont(widget_->font());
         painter->drawText(rect().adjusted(TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2), Qt::AlignVCenter, widget_->toPlainText());
         break;
@@ -367,7 +382,7 @@ void PaintCommand::regularize()
 {
     switch (graph())
     {
-    case Graph::CIRCLE:
+    case Graph::ELLIPSE:
     case Graph::RECTANGLE:
     {
         int width = std::sqrt(resizer_.width() * resizer_.height());
@@ -412,7 +427,7 @@ Resizer::PointPosition PaintCommand::hover(const QPoint& pos)
     switch (graph_)
     {
     case RECTANGLE: return resizer().absolutePos(pos);
-    case CIRCLE:
+    case ELLIPSE:
     {
         QRegion r1(rect().adjusted(-2, -2, 2, 2), QRegion::Ellipse);
         QRegion r2(rect().adjusted(2, 2, -2, -2), QRegion::Ellipse);

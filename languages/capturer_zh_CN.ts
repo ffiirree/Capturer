@@ -39,42 +39,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="36"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="17"/>
         <source>Rectangle</source>
         <translation>矩形</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="46"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="21"/>
         <source>Ellipse</source>
         <translation>椭圆</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="56"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="25"/>
         <source>Arrow</source>
         <translation>箭头</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="66"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="30"/>
         <source>Line</source>
         <translation>直线</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="76"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
         <source>Pencil</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="86"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="38"/>
         <source>Text</source>
         <translation>文本</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="96"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="42"/>
         <source>Mosaic</source>
         <translation>马赛克</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="106"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="47"/>
         <source>Eraser</source>
         <translation>橡皮擦</translation>
     </message>
@@ -218,7 +218,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="223"/>
+        <location filename="../src/snip/screenshoter.cpp" line="219"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>

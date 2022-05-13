@@ -11,17 +11,20 @@ class EditMenu : public QWidget
 public:
     explicit EditMenu(QWidget *parent = nullptr);
 
-    virtual QPen pen() const { return pen_; }
-    virtual void pen(QPen pen) { pen_ = pen; emit styleChanged(); }
+    virtual QColor color() { return color_; }
+    virtual void color(const QColor& c) { color_ = c; }
 
-    virtual bool fill() const { return fill_; }
-    virtual void fill(bool fill) { fill_ = fill; emit styleChanged(); }
+    virtual int lineWidth() { return width_; }
+    virtual void lineWidth(int w) { width_ = std::max<int>(1, w); }
 
-    virtual void style(QPen pen, bool fill) { fill_ = fill; pen_ = pen; emit styleChanged(); }
+    virtual bool fill() { return fill_; }
+    virtual void fill(bool fill) { fill_ = fill; }
+
+    virtual QFont font() { return font_; }
+    virtual void font(const QFont& font) { font_ = font;  }
 
 signals:
-    void changed();
-    void styleChanged();
+    void changed();             // out event
     void moved();
 
 protected:
@@ -34,8 +37,10 @@ protected:
     const int HEIGHT = 35;
     const int ICON_W = 21;
 
-    QPen pen_;
-    bool fill_ = false;
+    QColor color_{ Qt::red };
+    int width_{ 3 };
+    bool fill_{ false };
+    QFont font_;                // family, style, size
 };
 
 #endif // EDIT_MENU_H

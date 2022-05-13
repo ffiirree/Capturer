@@ -12,9 +12,6 @@ class PaintCommand : public QObject
 {
     Q_OBJECT
 public:
-    explicit PaintCommand(Graph type) : PaintCommand(type, QPen(), QFont(), false, QPoint{}) { }
-    PaintCommand(Graph type, const QPen& pen) : PaintCommand(type, pen, QFont(), false, QPoint{}) { }
-
     PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&);
 
     PaintCommand(const PaintCommand& cmd) { *this = cmd; }
@@ -29,13 +26,7 @@ public:
     }
     [[nodiscard]] inline QPen pen() const { return pen_; }
 
-    inline void font(const QFont& font) {
-        if (graph_ != Graph::TEXT) return;
-
-        font_ = font;
-        widget_->setFont(font);
-        emit modified(PaintType::REPAINT_ALL); 
-    }
+    void font(const QFont& font);
     [[nodiscard]] inline QFont font() const { return font_; }
 
     inline void setFill(bool fill) { 

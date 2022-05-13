@@ -25,6 +25,8 @@ void ButtonGroup::addButton(QAbstractButton *btn)
             }
         }
     });
+
+    if (btn->isChecked()) checked_ = btn;
 }
 
 void ButtonGroup::uncheckAll()

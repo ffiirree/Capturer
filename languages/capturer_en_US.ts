@@ -32,42 +32,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="36"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="17"/>
         <source>Rectangle</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="46"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="21"/>
         <source>Ellipse</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="56"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="25"/>
         <source>Arrow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="66"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="30"/>
         <source>Line</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="76"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
         <source>Pencil</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="86"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="38"/>
         <source>Text</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="96"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="42"/>
         <source>Mosaic</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="106"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="47"/>
         <source>Eraser</source>
         <translation></translation>
     </message>
@@ -211,7 +211,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="223"/>
+        <location filename="../src/snip/screenshoter.cpp" line="219"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

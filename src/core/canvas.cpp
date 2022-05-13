@@ -29,11 +29,11 @@ Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
     connect(this, &Canvas::focusOnGraph, menu_, &ImageEditMenu::paintGraph);
 
     // attrs changed
-    connect(menu_, &ImageEditMenu::styleChanged, [this](Graph graph) {
-        if (focus_cmd_ && focus_cmd_->graph() == graph) {
-            focus_cmd_->font(menu_->font(graph));
-            focus_cmd_->pen(menu_->pen(graph));
-            focus_cmd_->setFill(menu_->fill(graph));
+    connect(menu_, &ImageEditMenu::changed, [this]() {
+        if (focus_cmd_ && focus_cmd_->graph() == menu_->graph()) {
+            focus_cmd_->font(menu_->font());
+            focus_cmd_->pen(QPen(menu_->color(), menu_->lineWidth()));
+            focus_cmd_->setFill(menu_->fill());
         }
     });
 
@@ -137,7 +137,12 @@ void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
 
     if (focus_cmd_) {
         focus_cmd_->setFocus(true);
-        menu_->style(focus_cmd_->graph(), focus_cmd_->pen(), focus_cmd_->isFill());
+        if (focus_cmd_->graph() == menu_->graph()) {
+            menu_->fill(focus_cmd_->isFill());
+            menu_->lineWidth(focus_cmd_->pen().width());
+            menu_->font(focus_cmd_->font());
+            menu_->color(focus_cmd_->pen().color());
+        }
     }
 
     // menu
@@ -183,7 +188,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
     // Not borders and anchors => Create
     else if (edit_status_ & GRAPH_MASK) {
         auto graph = Graph(edit_status_ & GRAPH_MASK);
-        auto pen = menu_->pen(graph);
+        QPen pen(menu_->color(), menu_->lineWidth());
 
         if (graph == Graph::MOSAIC) {
             pen.setBrush(QBrush(mosaic(canvas_.toImage())));
@@ -192,7 +197,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
             pen.setBrush(QBrush(backup_));
         }
 
-        hover_cmd_ = make_shared<PaintCommand>(graph, pen, menu_->font(graph), menu_->fill(graph), event->pos());
+        hover_cmd_ = make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos());
         edit_status_ |= GRAPH_CREATING;
     }
 
@@ -240,7 +245,7 @@ void Canvas::mouseMoveEvent(QMouseEvent* event)
 QCursor Canvas::getCursorShape()
 {
     if (edit_status_ & Graph::ERASER || edit_status_ & Graph::MOSAIC) {
-        circle_cursor_.setWidth(menu_->pen(Graph(edit_status_ & GRAPH_MASK)).width());
+        circle_cursor_.setWidth(menu_->lineWidth());
         return QCursor(circle_cursor_.cursor());
     }
 
@@ -305,11 +310,7 @@ void Canvas::wheelEvent(QWheelEvent* event)
 {
     if ((edit_status_ & Graph::ERASER) || (edit_status_ & Graph::MOSAIC)) {
         auto delta = event->delta() / 120;
-        auto graph = static_cast<Graph>(edit_status_ & GRAPH_MASK);
-        auto pen = menu_->pen(graph);
-
-        pen.setWidth(std::min(pen.width() + delta, 49));
-        menu_->pen(graph, pen);
+        menu_->lineWidth(std::min(menu_->lineWidth() + delta, 49));
     }
 }
 

@@ -103,17 +103,6 @@ QColorDialog {
     color: #e6e6e6;
 }
 
-QColorDialog QPushButton {
-    background-color: #323232;
-    height: 25px;
-    border-radius: 5px;
-    padding: 0px 15px;
-}
-
-QColorDialog QPushButton:hover {
-    background-color: #393939;
-}
-
 /*///////////////////////////////////////////////////////////////*/
 QPushButton {
     background-color: #232323;

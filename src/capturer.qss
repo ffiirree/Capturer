@@ -174,3 +174,11 @@ QLabel#size_info {
     background-color: rgba(0, 0, 0, 200);;
     color: white;
 }
+
+/*///////////////////////////////////////////////////////////////*/
+QColorDialog QPushButton {
+    height: 25px;
+    border-radius: 5px;
+    padding: 0px 15px;
+}
+

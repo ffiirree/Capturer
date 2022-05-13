@@ -4,112 +4,75 @@
 #include <QStyle>
 #include <QHBoxLayout>
 #include <QMoveEvent>
-
-#define CONNECT_BTN_MENU(X, BTN, MENU)      connect(BTN, &IconButton::toggled, [=](bool checked) {      \
-                                                if(checked) {                                           \
-                                                    emit graphChanged(X);                               \
-                                                    MENU->show();                                       \
-                                                    MENU->move(pos().x(), pos().y() +                   \
-                                                        (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));\
-                                                }                                                       \
-                                                else {                                                  \
-                                                    MENU->hide();                                       \
-                                                }                                                       \
-                                            });                                                         \
-                                            connect(this, &EditMenu::moved, [this]() {                  \
-                                                if(MENU->isVisible())                                   \
-                                                    MENU->move(pos().x(), pos().y() +                   \
-                                                        (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));\
-                                            })
+#include "logging.h"
 
 ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     : EditMenu(parent)
 {
     group_ = new ButtonGroup(this);
-    connect(group_, &ButtonGroup::uncheckedAll, [this]() { graphChanged(Graph::NONE); });
-
-    const auto icon_size = QSize(HEIGHT, HEIGHT);
+    connect(group_, &ButtonGroup::uncheckedAll, [this]() { graph_ = Graph::NONE; graphChanged(Graph::NONE); });
 
     if (groups & GRAPH_GROUP) {
-        auto rectangle_btn = new IconButton(QPixmap(":/icon/res/rectangle"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        rectangle_btn->setCheckable(true);
-        rectangle_btn->setToolTip(tr("Rectangle"));
-        rectangle_menu_ = new GraphMenu(this);
-        connect(rectangle_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::RECTANGLE); });
-        CONNECT_BTN_MENU(Graph::RECTANGLE, rectangle_btn, rectangle_menu_);
-        group_->addButton(rectangle_btn);
-        addButton(rectangle_btn);
-        buttons_[Graph::RECTANGLE] = rectangle_btn;
+        btn_menus_[Graph::RECTANGLE].first = new IconButton(QPixmap(":/icon/res/rectangle"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::RECTANGLE].first->setToolTip(tr("Rectangle"));
+        btn_menus_[Graph::RECTANGLE].second = new StyleMenu(StyleMenu::WIDTH_BTN | StyleMenu::FILL_BTN | StyleMenu::COLOR_PENAL, this);
 
-        auto circle_btn = new IconButton(QPixmap(":/icon/res/circle"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        circle_btn->setCheckable(true);
-        circle_btn->setToolTip(tr("Ellipse"));
-        circle_menu_ = new GraphMenu(this);
-        connect(circle_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::CIRCLE); });
-        CONNECT_BTN_MENU(Graph::CIRCLE, circle_btn, circle_menu_);
-        group_->addButton(circle_btn);
-        addButton(circle_btn);
-        buttons_[Graph::CIRCLE] = circle_btn;
+        btn_menus_[Graph::ELLIPSE].first = new IconButton(QPixmap(":/icon/res/circle"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::ELLIPSE].first->setToolTip(tr("Ellipse"));
+        btn_menus_[Graph::ELLIPSE].second = new StyleMenu(StyleMenu::WIDTH_BTN | StyleMenu::FILL_BTN | StyleMenu::COLOR_PENAL, this);
 
-        auto arrow_btn = new IconButton(QPixmap(":/icon/res/arrow"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        arrow_btn->setCheckable(true);
-        arrow_btn->setToolTip(tr("Arrow"));
-        arrow_menu_ = new ArrowEditMenu(this);
-        connect(arrow_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::ARROW); });
-        CONNECT_BTN_MENU(Graph::ARROW, arrow_btn, arrow_menu_);
-        group_->addButton(arrow_btn);
-        addButton(arrow_btn);
-        buttons_[Graph::ARROW] = arrow_btn;
+        btn_menus_[Graph::ARROW].first = new IconButton(QPixmap(":/icon/res/arrow"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::ARROW].first->setToolTip(tr("Arrow"));
+        btn_menus_[Graph::ARROW].second = new StyleMenu(StyleMenu::COLOR_PENAL, this);
+        btn_menus_[Graph::ARROW].second->fill(true);
 
-        auto line_btn = new IconButton(QPixmap(":/icon/res/line"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        line_btn->setCheckable(true);
-        line_btn->setToolTip(tr("Line"));
-        line_menu_ = new LineEditMenu(this);
-        connect(line_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::LINE); });
-        CONNECT_BTN_MENU(Graph::LINE, line_btn, line_menu_);
-        group_->addButton(line_btn);
-        addButton(line_btn);
-        buttons_[Graph::LINE] = line_btn;
+        btn_menus_[Graph::LINE].first = new IconButton(QPixmap(":/icon/res/line"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::LINE].first->setToolTip(tr("Line"));
+        btn_menus_[Graph::LINE].second = new StyleMenu(StyleMenu::WIDTH_BTN | StyleMenu::COLOR_PENAL, this);
 
-        auto pen_btn = new IconButton(QPixmap(":/icon/res/feather"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        pen_btn->setCheckable(true);
-        pen_btn->setToolTip(tr("Pencil"));
-        curves_menu_ = new LineEditMenu(this);
-        connect(curves_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::CURVES); });
-        CONNECT_BTN_MENU(Graph::CURVES, pen_btn, curves_menu_);
-        group_->addButton(pen_btn);
-        addButton(pen_btn);
-        buttons_[Graph::CURVES] = pen_btn;
+        btn_menus_[Graph::CURVES].first = new IconButton(QPixmap(":/icon/res/feather"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::CURVES].first->setToolTip(tr("Pencil"));
+        btn_menus_[Graph::CURVES].second = new StyleMenu(StyleMenu::WIDTH_BTN | StyleMenu::COLOR_PENAL, this);
 
-        auto text_btn = new IconButton(QPixmap(":/icon/res/text"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        text_btn->setCheckable(true);
-        text_btn->setToolTip(tr("Text"));
-        text_menu_ = new FontMenu(this);
-        connect(text_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::TEXT); });
-        CONNECT_BTN_MENU(Graph::TEXT, text_btn, text_menu_);
-        group_->addButton(text_btn);
-        addButton(text_btn);
-        buttons_[Graph::TEXT] = text_btn;
+        btn_menus_[Graph::TEXT].first = new IconButton(QPixmap(":/icon/res/text"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::TEXT].first->setToolTip(tr("Text"));
+        btn_menus_[Graph::TEXT].second = new StyleMenu(StyleMenu::FONT_BTNS | StyleMenu::COLOR_PENAL, this);
 
-        auto mosaic_btn = new IconButton(QPixmap(":/icon/res/mosaic"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        mosaic_btn->setCheckable(true);
-        mosaic_btn->setToolTip(tr("Mosaic"));
-        mosaic_menu_ = new EraseMenu(this);
-        connect(mosaic_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::MOSAIC); });
-        CONNECT_BTN_MENU(Graph::MOSAIC, mosaic_btn, mosaic_menu_);
-        group_->addButton(mosaic_btn);
-        addButton(mosaic_btn);
-        buttons_[Graph::MOSAIC] = mosaic_btn;
+        btn_menus_[Graph::MOSAIC].first = new IconButton(QPixmap(":/icon/res/mosaic"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::MOSAIC].first->setToolTip(tr("Mosaic"));
+        btn_menus_[Graph::MOSAIC].second = new StyleMenu(StyleMenu::WIDTH_BTN, this);
+        btn_menus_[Graph::MOSAIC].second->lineWidth(15);
 
-        auto eraser_btn = new IconButton(QPixmap(":/icon/res/eraser"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
-        eraser_btn->setCheckable(true);
-        eraser_btn->setToolTip(tr("Eraser"));
-        erase_menu_ = new EraseMenu(this);
-        connect(erase_menu_, &EditMenu::changed, [this]() { emit styleChanged(Graph::ERASER); });
-        CONNECT_BTN_MENU(Graph::ERASER, eraser_btn, erase_menu_);
-        group_->addButton(eraser_btn);
-        addButton(eraser_btn);
-        buttons_[Graph::ERASER] = eraser_btn;
+        btn_menus_[Graph::ERASER].first = new IconButton(QPixmap(":/icon/res/eraser"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, true, this);
+        btn_menus_[Graph::ERASER].first->setToolTip(tr("Eraser"));
+        btn_menus_[Graph::ERASER].second = new StyleMenu(StyleMenu::WIDTH_BTN, this);
+        btn_menus_[Graph::ERASER].second->lineWidth(15);
+
+        for (auto&& [g, bm] : btn_menus_) {
+            auto graph = g;
+            auto btn = bm.first;
+            auto menu = bm.second;
+
+            group_->addButton(btn);
+            addButton(btn);
+
+            connect(menu, &EditMenu::changed, this, &ImageEditMenu::changed);
+            connect(this, &EditMenu::moved, [=]() {
+                if (menu->isVisible())
+                    menu->move(pos().x(), pos().y() + (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));
+            });
+            connect(btn, &IconButton::toggled, [=](bool checked) {
+                if (checked) {
+                        emit graphChanged(graph);
+                        graph_ = graph;
+                        menu->show();
+                        menu->move(pos().x(), pos().y() + (height() + 3) * (sub_menu_show_pos_ ? -1 : 1)); 
+                }                                                       
+                else {
+                    menu->hide();
+                }                                                       
+            });                                                         
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -159,97 +122,44 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     }
 }
 
-QPen ImageEditMenu::pen(Graph graph)
+QColor ImageEditMenu::color()
 {
-    switch (graph) {
-    case Graph::RECTANGLE: return rectangle_menu_->pen();
-    case Graph::CIRCLE:    return circle_menu_->pen();
-    case Graph::LINE:      return line_menu_->pen();
-    case Graph::CURVES:    return curves_menu_->pen();
-    case Graph::MOSAIC:    return mosaic_menu_->pen();
-    case Graph::ARROW:     return arrow_menu_->pen();
-    case Graph::TEXT:      return text_menu_->pen();
-    case Graph::ERASER:    return erase_menu_->pen();
-    default:        break;
-    }
-    return QPen();
+    return graph_ ? btn_menus_[graph_].second->color() : Qt::red;
 }
 
-void ImageEditMenu::pen(Graph graph, QPen pen)
+void ImageEditMenu::color(const QColor& c)
 {
-    if (pen.width() < 1) pen.setWidth(1);
-
-    switch (graph) {
-    case Graph::RECTANGLE: rectangle_menu_->pen(pen);    break;
-    case Graph::CIRCLE:    circle_menu_->pen(pen);       break;
-    case Graph::LINE:      line_menu_->pen(pen);         break;
-    case Graph::CURVES:    curves_menu_->pen(pen);       break;
-    case Graph::MOSAIC:    mosaic_menu_->pen(pen);       break;
-    case Graph::ARROW:     arrow_menu_->pen(pen);        break;
-    case Graph::TEXT:      text_menu_->pen(pen);         break;
-    case Graph::ERASER:    erase_menu_->pen(pen);        break;
-    default:        break;
-    }
-    emit styleChanged(graph);
+    if (graph_) btn_menus_[graph_].second->color(c);
 }
 
-void ImageEditMenu::style(Graph graph, QPen pen, bool fill)
+int ImageEditMenu::lineWidth()
 {
-    if (pen.width() < 1) pen.setWidth(1);
-
-    switch (graph) {
-    case Graph::RECTANGLE: rectangle_menu_->style(pen, fill);   break;
-    case Graph::CIRCLE:    circle_menu_->style(pen, fill);      break;
-    case Graph::LINE:      line_menu_->pen(pen);                break;
-    case Graph::CURVES:    curves_menu_->pen(pen);              break;
-    case Graph::MOSAIC:    mosaic_menu_->pen(pen);              break;
-    case Graph::ARROW:     arrow_menu_->pen(pen);               break;
-    case Graph::TEXT:      text_menu_->pen(pen);                break;
-    case Graph::ERASER:    erase_menu_->pen(pen);               break;
-    default:        break;
-    }
-    emit styleChanged(graph);
+    return graph_ ? btn_menus_[graph_].second->lineWidth() : 3;
 }
 
-bool ImageEditMenu::fill(Graph graph)
+void ImageEditMenu::lineWidth(int w)
 {
-    switch (graph) {
-    case Graph::RECTANGLE: return rectangle_menu_->fill();
-    case Graph::CIRCLE:    return circle_menu_->fill();
-    case Graph::ARROW:     return true;
-
-    case Graph::LINE:
-    case Graph::CURVES:
-    case Graph::MOSAIC:
-    case Graph::TEXT:
-    case Graph::ERASER:
-    default:               return false;
-    }
+    if (graph_) btn_menus_[graph_].second->lineWidth(w);
 }
 
-void ImageEditMenu::fill(Graph graph, bool fill)
+bool ImageEditMenu::fill()
 {
-    switch (graph) {
-    case Graph::RECTANGLE: rectangle_menu_->fill(fill); break;
-    case Graph::CIRCLE:    circle_menu_->fill(fill);    break;
-    default:        break;
-    }
-
-    emit styleChanged(graph);
+    return graph_ ? btn_menus_[graph_].second->fill() : false;
 }
 
-QFont ImageEditMenu::font(Graph graph)
+void ImageEditMenu::fill(bool fill)
 {
-    switch (graph) {
-    case Graph::TEXT:       return text_menu_->font();
-    default:                return QFont();
-    }
+    if (graph_) btn_menus_[graph_].second->fill(fill);
+}
+
+QFont ImageEditMenu::font()
+{
+    return graph_ ? btn_menus_[graph_].second->font() : QFont();
 }
 
 void ImageEditMenu::font(const QFont& font)
 {
-    if (text_menu_)
-        text_menu_->font(font);
+    if (graph_) btn_menus_[graph_].second->font(font);
 }
 
 void ImageEditMenu::reset()

@@ -2,11 +2,7 @@
 #define IMAGE_EDIT_MENU_H
 
 #include "utils.h"
-#include "grapheditmenu.h"
-#include "arroweditmenu.h"
-#include "lineeditmenu.h"
-#include "texteditmenu.h"
-#include "erasemenu.h"
+#include "stylemenu.h"
 #include "iconbutton.h"
 #include "buttongroup.h"
 
@@ -29,13 +25,19 @@ public:
 
     void reset();
 
-    bool fill(Graph);
-    void fill(Graph, bool);
-    QPen pen(Graph);
-    void pen(Graph, QPen);
-    void style(Graph, QPen, bool);
-    QFont font(Graph);
-    void font(const QFont& font);
+    Graph graph() const { return graph_; }
+
+    QColor color() override;
+    void color(const QColor& c) override;
+
+    int lineWidth()  override;
+    void lineWidth(int w) override;
+
+    bool fill() override;
+    void fill(bool fill) override;
+
+    QFont font() override;
+    void font(const QFont& font) override;
 
     void setSubMenuShowAbove() { sub_menu_show_pos_ = true; }
     void setSubMenuShowBelow() { sub_menu_show_pos_ = false; }
@@ -47,7 +49,6 @@ signals:
     void exit();
 
     void graphChanged(Graph);          // start painting
-    void styleChanged(Graph);          // the style changed
 
     void undo();
     void redo();
@@ -55,23 +56,16 @@ signals:
 public slots:
     void disableUndo(bool val) { undo_btn_->setDisabled(val); }
     void disableRedo(bool val) { redo_btn_->setDisabled(val); }
-    void paintGraph(Graph graph) { buttons_[graph]->setChecked(true); }
+    void paintGraph(Graph graph) { graph_ = graph; btn_menus_[graph].first->setChecked(true); }
 
 private:
     IconButton* undo_btn_ = nullptr;
     IconButton* redo_btn_ = nullptr;
 
-    GraphMenu* rectangle_menu_ = nullptr;
-    GraphMenu* circle_menu_ = nullptr;
-    ArrowEditMenu* arrow_menu_ = nullptr;
-    LineEditMenu* line_menu_ = nullptr;
-    LineEditMenu* curves_menu_ = nullptr;
-    FontMenu* text_menu_ = nullptr;
-    EraseMenu* mosaic_menu_ = nullptr;
-    EraseMenu* erase_menu_ = nullptr;
-
     ButtonGroup* group_ = nullptr;
-    std::map<Graph, IconButton*> buttons_; // bind graph with buttons
+
+    Graph graph_{ Graph::NONE };
+    map<Graph, std::pair<IconButton*, EditMenu*>> btn_menus_; // bind graph with buttons
 
     bool sub_menu_show_pos_ = false;
 };
