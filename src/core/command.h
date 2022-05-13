@@ -53,31 +53,19 @@ public:
 
     bool push_point(const QPoint& pos);
     void move(const QPoint& diff);
-    void resize(Resizer::PointPosition position, const QPoint& diff);
+    void resize(Resizer::PointPosition, const QPoint&);
+    void rotate(const QPoint&);
 
     inline void setFocus(bool f)
     {
         if(widget_) {
-            if(f) {
-                widget_->show();
-                widget_->setFocus();
-
-                auto text_cursor = widget_->textCursor();
-                text_cursor.movePosition(QTextCursor::End);
-                widget_->setTextCursor(text_cursor);
-            }
-            else {
-                widget_->hide();
-            }
+            f ? widget_->show() : widget_->hide();
         }
 
         emit modified(PaintType::UPDATE_MASK);
     }
 
     bool isValid();
-
-    inline void widget(shared_ptr<TextEdit> widget) { widget_ = std::move(widget); }
-    [[nodiscard]] inline shared_ptr<TextEdit> widget() const { return widget_; }
 
     void drawAnchors(QPainter*);
     void draw_modified(QPainter *);
@@ -118,7 +106,8 @@ private:
     Graph graph_{ Graph::NONE };
     QPen pen_;
     QFont font_;
-    bool is_fill_ = false;
+    float theta_{ 0 };
+    bool is_fill_{ false };
     QVector<QPoint> points_;
     QVector<QPoint> points_buff_;
     shared_ptr<TextEdit> widget_ = nullptr;

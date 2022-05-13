@@ -10,7 +10,7 @@ TextEdit::TextEdit(QWidget * parent)
     setAttribute(Qt::WA_TranslucentBackground);
     ensureCursorVisible();
     QPalette p = palette();
-    p.setBrush(QPalette::Base, QColor(0, 0, 0, 1));
+    p.setBrush(QPalette::Base, QColor(0, 0, 0, 1)); // not completely transparent
     setPalette(p);
 
     document()->setDocumentMargin(0);
@@ -22,7 +22,8 @@ TextEdit::TextEdit(QWidget * parent)
     setAlignment(Qt::AlignVCenter);
 
     auto resize_fuctor = [this](){
-        setFixedSize(document()->size().toSize());
+        auto doc_size = document()->size().toSize();
+        setFixedSize(QSize(std::max<int>(2, doc_size.width()), doc_size.height()));
         emit resized();
     };
 

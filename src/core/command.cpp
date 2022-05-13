@@ -21,7 +21,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
     // 3. movable with a widget
     case Graph::TEXT:
         widget_ = make_shared<TextEdit>();
-        connect(widget_.get(), &TextEdit::textChanged, [this]() {
+        connect(widget_.get(), &TextEdit::resized, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN }); // padding 5
             modified(PaintType::REPAINT_ALL); 
         });
@@ -34,7 +34,6 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
         widget_->setFocus();
         widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
         widget_->show();
-        resizer_.enableRotate(true);
         break;
     default: break;
     }
@@ -46,6 +45,7 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
     pen_ = other.pen_;
     font_ = other.font_;
     is_fill_ = other.is_fill_;
+    theta_ = other.theta_;
     points_ = other.points_;
     points_buff_ = other.points_buff_;
 
@@ -58,7 +58,7 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
         widget_->setText(other.widget_->toPlainText());
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen_.color().name()));
 
-        connect(widget_.get(), &TextEdit::textChanged, [this]() {
+        connect(widget_.get(), &TextEdit::resized, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
             modified(PaintType::REPAINT_ALL);
         });
@@ -142,9 +142,18 @@ bool PaintCommand::isValid()
     }
 }
 
+void PaintCommand::rotate(const QPoint& point)
+{
+    QPoint center = rect().center();
+    theta_ = atan2(point.x() - center.x(), center.y() - point.y()) * 180.0 / 3.1415926;
+
+    emit modified(PaintType::DRAW_MODIFYING);
+}
+
 void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_pos)
 {
     auto pre_resizer_ = resizer_;
+    if (graph() == TEXT && widget_->toPlainText().isEmpty()) return;
 
     switch (position) {
     case Resizer::X1Y1_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
@@ -316,12 +325,12 @@ void PaintCommand::drawAnchors(QPainter* painter)
         // box border
         painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->drawRect(resizer_.rect());
-        painter->drawLine(resizer_.rotateAnchor().center(), resizer_.topAnchor().center());
+        //painter->drawLine(resizer_.rotateAnchor().center(), resizer_.topAnchor().center());
 
         // 
         painter->setBrush(Qt::white);
         painter->setPen(QPen(color, 1, Qt::SolidLine));
-        painter->drawEllipse(resizer_.rotateAnchor());
+        //painter->drawEllipse(resizer_.rotateAnchor());
         painter->drawRects(resizer_.anchors());
         break;
     }

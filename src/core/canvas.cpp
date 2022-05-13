@@ -116,7 +116,12 @@ bool Canvas::editing()
 
 void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
 {
-    if (focus_cmd_ == cmd) return;
+    if (focus_cmd_ == cmd) {
+        if (focus_cmd_ && focus_cmd_->graph() == TEXT) {
+            focus_cmd_->setFocus(true);
+        }
+        return;
+    }
 
     auto previous_focus_cmd = focus_cmd_;
     if (previous_focus_cmd) {
@@ -216,6 +221,10 @@ void Canvas::mouseMoveEvent(QMouseEvent* event)
 
         case GRAPH_RESIZING:
             hover_cmd_->resize(hover_position_, mouse_pos);
+            break;
+
+        case GRAPH_ROTATING:
+            hover_cmd_->rotate(mouse_pos);
             break;
 
         default:  break;

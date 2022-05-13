@@ -87,17 +87,17 @@ Keys | Actions
 git clone https://github.com/ffiirree/Capturer.git --recursive
 ```
 
-> 本项目开发使用的`Qt`版本为`Qt 5.12.12`
+> 本项目开发使用的`Qt`版本为`Qt 5.12.12`, `FFmpeg`版本为4.4.1
 
 ### Windows
 
 #### Install FFmpeg
 
-从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好库版本，添加到环境变量中。
+从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
 
 #### 编译
 
-使用`Visual Studio 2022`打开(CMake工程) 或 直接使用命令编译
+使用`Visual Studio 2022`打开(CMake工程)编译 或 直接使用命令编译
 
 ```bash
 cd Capturer
