@@ -95,22 +95,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="357"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Open image...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="359"/>
         <source>Save as...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="375"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="376"/>
         <source>Gray</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="364"/>
         <source>Rotate 90</source>
         <translation></translation>
     </message>
@@ -120,82 +120,82 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="362"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
         <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="364"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
         <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="366"/>
         <source>Flip H</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="366"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="367"/>
         <source>Flip V</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="370"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="371"/>
         <source>Background</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="374"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="375"/>
         <source>White</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="376"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="377"/>
         <source>Black</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="377"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="378"/>
         <source>Transparent</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
-        <source>Shadow</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
-        <source>Hide </source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
-        <source>Show </source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/pinned/imagewindow.cpp" line="380"/>
         <location filename="../src/pinned/imagewindow.cpp" line="394"/>
-        <source>Zoom : </source>
+        <source>Shadow</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
+        <source>Hide </source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
+        <source>Show </source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/pinned/imagewindow.cpp" line="381"/>
         <location filename="../src/pinned/imagewindow.cpp" line="395"/>
-        <source>Opacity : </source>
+        <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/pinned/imagewindow.cpp" line="382"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="396"/>
+        <source>Opacity : </source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/pinned/imagewindow.cpp" line="383"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="386"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="387"/>
         <source>Close</source>
         <translation></translation>
     </message>

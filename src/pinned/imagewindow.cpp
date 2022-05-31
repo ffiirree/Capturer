@@ -347,6 +347,7 @@ void ImageWindow::initContextMenu()
         canvas_->enable();
         setMouseTracking(true);
         canvas_->offset({ -shadow_r_, -shadow_r_ });
+        canvas_->globalOffset(geometry().topLeft());
         canvas_->pixmap(pixmap_.scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         menu_->show();
         moveMenu();

@@ -12,7 +12,7 @@ class PaintCommand : public QObject
 {
     Q_OBJECT
 public:
-    PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&);
+    PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&, const QPoint&);
 
     PaintCommand(const PaintCommand& cmd) { *this = cmd; }
     PaintCommand& operator=(const PaintCommand&);
@@ -101,14 +101,15 @@ private:
     bool is_fill_{ false };
     QVector<QPoint> points_;
     QVector<QPoint> points_buff_;
-    shared_ptr<TextEdit> widget_ = nullptr;
+    shared_ptr<TextEdit> widget_{ nullptr };
 
-    Resizer resizer_;
+    Resizer resizer_{};
 
-    bool visible_ = true;
-    shared_ptr<PaintCommand> pre_;
+    bool visible_{ true };
+    shared_ptr<PaintCommand> pre_{ nullptr };
 
     bool adjusted_ = false;
+    QPoint offset_{ 0,0 };
 };
 
 class CommandStack : public QObject

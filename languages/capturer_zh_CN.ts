@@ -107,102 +107,102 @@
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="357"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
         <source>Open image...</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="358"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="359"/>
         <source>Save as...</source>
         <translation>另存为...</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="375"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="376"/>
         <source>Gray</source>
         <translation>灰色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="364"/>
         <source>Rotate 90</source>
         <translation>顺时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="362"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="363"/>
         <source>Grayscale</source>
         <translation>灰阶</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="364"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
         <source>Rotate -90</source>
         <translation>逆时针旋转90°</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="365"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="366"/>
         <source>Flip H</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="366"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="367"/>
         <source>Flip V</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="370"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="371"/>
         <source>Background</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="374"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="375"/>
         <source>White</source>
         <translation>白色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="376"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="377"/>
         <source>Black</source>
         <translation>黑色</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="377"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="378"/>
         <source>Transparent</source>
         <translation>透明</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
         <source>Shadow</source>
         <translation>阴影</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
         <source>Hide </source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="379"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="393"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
         <source>Show </source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="380"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="394"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="381"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="395"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="381"/>
-        <location filename="../src/pinned/imagewindow.cpp" line="395"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="382"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="396"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="382"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="383"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/pinned/imagewindow.cpp" line="386"/>
+        <location filename="../src/pinned/imagewindow.cpp" line="387"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>

@@ -10,7 +10,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 #include <mutex>
-#include "ringbuffer.h"
+#include "ringvector.h"
 #include "utils.h"
 #include "mediadecoder.h"
 #include "logging.h"

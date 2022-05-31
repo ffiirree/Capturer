@@ -67,39 +67,39 @@ private:
     QRect getShadowGeometry(QSize size);
     QSize getShadowSize(QSize size) { return size + QSize{shadow_r_ * 2, shadow_r_ * 2}; }
 
-    WindowStatus status_ = WindowStatus::CREATED;
+    WindowStatus status_{ WindowStatus::CREATED };
 
-    Modified modified_status_ = Modified::ALL;
+    Modified modified_status_{ Modified::ALL };
 
     QPoint window_move_begin_pos_{0, 0};
 
     QPixmap original_pixmap_;
     QPixmap pixmap_;
     //QPixmap canvas_;
-    QPoint original_pos_ = {0, 0};
+    QPoint original_pos_{ 0, 0 };
 
-    bool thumbnail_ = false;
-    qreal scale_ = 1.0;
-    qreal opacity_ = 1.0;
-    Qt::GlobalColor bg_ = Qt::transparent;
+    bool thumbnail_{ false };
+    qreal scale_{ 1.0 };
+    qreal opacity_{ 1.0 };
+    Qt::GlobalColor bg_{ Qt::transparent };
 
-    bool ctrl_ = false;
+    bool ctrl_{ false };
 
-    Canvas * canvas_;
+    Canvas* canvas_{ nullptr };
     const static int DEFAULT_SHADOW_R_{ 10 };
     const static int THUMBNAIL_WIDTH_{ 125 };
     int shadow_r_ = DEFAULT_SHADOW_R_;
-    ImageEditMenu* menu_ = nullptr;
-    QGraphicsDropShadowEffect *effect_;
+    ImageEditMenu* menu_{ nullptr };
+    QGraphicsDropShadowEffect *effect_{ nullptr };
 
-    bool editing_ = false;
+    bool editing_{ false };
 
-    QMenu* context_menu_ = nullptr;
-    QAction* shadow_action_ = nullptr;
-    QAction* zoom_action_ = nullptr;
-    QAction* opacity_action_ = nullptr;
+    QMenu* context_menu_{ nullptr };
+    QAction* shadow_action_{ nullptr };
+    QAction* zoom_action_{ nullptr };
+    QAction* opacity_action_{ nullptr };
 
-    QString save_path_ = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
 };
 
 #endif // IMAGE_WINDOW_H

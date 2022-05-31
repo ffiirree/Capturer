@@ -3,8 +3,8 @@
 
 #define TEXT_EDIT_MARGIN   16
 
-PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool is_fill, const QPoint& start_point)
-    : graph_(type), pen_(pen), font_(font), is_fill_(is_fill)
+PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool is_fill, const QPoint& start_point, const QPoint& offset)
+    : graph_(type), pen_(pen), font_(font), is_fill_(is_fill), offset_(offset)
 {
     switch (graph_) {
     // 1. movable and resizable without a widget
@@ -33,7 +33,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
         resizer_ = Resizer(start_point, widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
 
         widget_->setFocus();
-        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + offset_);
         widget_->show();
         break;
     default: break;
@@ -65,13 +65,14 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
         });
 
         widget_->setFocus();
-        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + other.offset_);
         widget_->show();
     }
     
     visible_ = other.visible_;
     pre_ = other.pre_;
     adjusted_ = false;
+    offset_ = other.offset_;
 
     return *this;
 }
@@ -126,7 +127,7 @@ void PaintCommand::move(const QPoint& diff)
 
     case Graph::TEXT:
         resizer_.move(diff.x(), diff.y());
-        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + offset_);
         break;
 
     default: break;
@@ -215,7 +216,7 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
 
         emit styleChanged();
 
-        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 });
+        widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + offset_);
         break;
     }
     default:

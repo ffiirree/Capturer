@@ -197,7 +197,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
             pen.setBrush(QBrush(backup_));
         }
 
-        hover_cmd_ = make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos());
+        hover_cmd_ = make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos(), global_offset_);
         edit_status_ |= GRAPH_CREATING;
     }
 

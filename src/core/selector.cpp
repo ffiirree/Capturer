@@ -98,12 +98,12 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
 
     switch (status_) {
     case SelectorStatus::NORMAL:
-		if (use_detect_) {
-			box_.reset(WidgetsDetector::window());
+        if (use_detect_) {
+            box_.reset(WidgetsDetector::window());
             update();
-		}
-		setCursor(Qt::CrossCursor);
-		break;
+        }
+        setCursor(Qt::CrossCursor);
+        break;
 
     case SelectorStatus::SELECTING:
         box_.x2(mouse_pos.x());

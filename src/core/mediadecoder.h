@@ -14,7 +14,7 @@ extern "C" {
 #include <QThread>
 #include <QImage>
 #include <mutex>
-#include "ringbuffer.h"
+#include "ringvector.h"
 #include "utils.h"
 #include "logging.h"
 
@@ -140,7 +140,7 @@ private:
 	int64_t first_pts_{ AV_NOPTS_VALUE };
 	std::mutex mtx_;
 
-	RingBuffer<AVFrame*, FRAME_BUFFER_SIZE> buffer_{ 
+	RingVector<AVFrame*, FRAME_BUFFER_SIZE> buffer_{ 
 		[]() { return av_frame_alloc(); },
 		[](AVFrame** frame) { av_frame_free(frame); }
 	};

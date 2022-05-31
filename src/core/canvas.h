@@ -53,6 +53,7 @@ public:
     QPixmap pixmap() { return canvas_; }
 
     void offset(const QPoint& offset) { offset_ = offset; }
+    void globalOffset(const QPoint& offset) { global_offset_ = offset; }
 
     bool editing();
 
@@ -123,6 +124,7 @@ private:
     uint32_t edit_status_ = EditStatus::NONE;
 
     QPoint offset_{ 0, 0 };
+    QPoint global_offset_{ 0, 0 };
 
     bool enabled_ = false;
 };
