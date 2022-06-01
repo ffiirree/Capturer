@@ -73,6 +73,7 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         3rdparty
         src/core
+        src/media
         src/widgets
         src/menu
         src/pinned

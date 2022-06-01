@@ -6,8 +6,9 @@
 #include "selector.h"
 #include "record_menu.h"
 #include "config.h"
-#include "mediadecoder.h"
-#include "mediaencoder.h"
+#include "decoder.h"
+#include "encoder.h"
+#include "dispatcher.h"
 #include "videoplayer.h"
 
 class ScreenRecorder : public Selector
@@ -22,6 +23,7 @@ public:
     ~ScreenRecorder() override {
         delete decoder_; decoder_= nullptr;
         delete encoder_; encoder_ = nullptr;
+        delete dispatcher_; dispatcher_ = nullptr;
     }
 
     inline int framerate() const { return framerate_; }
@@ -63,10 +65,9 @@ private:
     bool m_mute_{ true };
     bool s_mute_{ true };
 
-    MediaDecoder* decoder_{ nullptr };
-    MediaEncoder* encoder_{ nullptr };
-    QThread* decoder_thread_{ nullptr };
-    QThread* encoder_thread_{ nullptr };
+    Decoder* decoder_{ nullptr };
+    Encoder* encoder_{ nullptr };
+    Dispatcher* dispatcher_{ nullptr };
 
     QTimer* timer_{ nullptr };
 

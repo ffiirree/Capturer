@@ -35,33 +35,16 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
 
-    decoder_ = new MediaDecoder();
-    encoder_ = new MediaEncoder(decoder_);
+    decoder_ = new Decoder();
+    encoder_ = new Encoder();
+    dispatcher_ = new Dispatcher();
 
-    decoder_thread_ = new QThread(this);
-    encoder_thread_ = new QThread(this);
-
-    decoder_->moveToThread(decoder_thread_);
-    encoder_->moveToThread(encoder_thread_);
-
-    connect(decoder_thread_, &QThread::started, decoder_, &MediaDecoder::process);
-    connect(encoder_thread_, &QThread::started, encoder_, &MediaEncoder::process);
-    connect(encoder_thread_, &QThread::finished, menu_, &RecordMenu::close);
-    
-    // start encoder after decoder is started
-    connect(decoder_, &MediaDecoder::started, [this]() { encoder_thread_->start(); });
-    connect(decoder_, &MediaDecoder::stopped, [this]() { decoder_thread_->quit(); });
-
-    // close decoder 
-    connect(encoder_, &MediaEncoder::stopped, [this]() { decoder_->stop(); encoder_thread_->quit(); });
-
-    connect(menu_, &RecordMenu::stopped, [this]() { decoder_->stop(); });
-    connect(menu_, &RecordMenu::paused, [this]() { decoder_->pause(); });
-    connect(menu_, &RecordMenu::resumed, [this]() { decoder_->resume(); });
+    connect(menu_, &RecordMenu::paused, [this]() { dispatcher_->pause(); });
+    connect(menu_, &RecordMenu::resumed, [this]() { dispatcher_->resume(); });
 
     // update time of the menu
     timer_ = new QTimer(this);
-    connect(timer_, &QTimer::timeout, [this]() { menu_->time(encoder_->escaped_ms()); });
+    connect(timer_, &QTimer::timeout, [this]() { menu_->time(dispatcher_->escaped_ms()); });
 }
 
 void ScreenRecorder::record()
@@ -71,11 +54,6 @@ void ScreenRecorder::record()
 
 void ScreenRecorder::start()
 {
-    if (decoder_->running() || decoder_->opened() || encoder_->opened()) {
-        LOG(WARNING) << "RECARDING!! Exit first.";
-        return;
-    }
-
     if (recording_type_ == VIDEO) {
         pix_fmt_ = AV_PIX_FMT_YUV420P;
         codec_name_ = Config::instance()["record"]["encoder"];
@@ -107,8 +85,6 @@ void ScreenRecorder::setup()
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
-        filters_,
-        pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
@@ -118,8 +94,6 @@ void ScreenRecorder::setup()
     decoder_->open(
         "desktop",
         "gdigrab",
-        filters_,
-        pix_fmt_,
         {
             {"framerate", std::to_string(framerate_)},
             {"offset_x", std::to_string(selected_area.x())},
@@ -128,33 +102,50 @@ void ScreenRecorder::setup()
         }
     );
 #endif
-    // start recording
-    if (decoder_->opened()) {
-        // open the output file
-        encoder_->open(
-            filename_,
-            codec_name_,
-            pix_fmt_,
-            { framerate_, 1 },
-            recording_type_ != VIDEO,
-            options_
-        );
 
-        if (encoder_->opened()) {
-            decoder_thread_->start();
-
-            menu_->start();
-            timer_->start(50);
-        }
+    if (dispatcher_->append(decoder_) < 0) {
+        LOG(INFO) << "appedn decoder failed";
+        return;
     }
+
+    encoder_->format(pix_fmt_);
+
+    AVFilterContext* sink = nullptr;
+    if ((sink = dispatcher_->append(encoder_)) == nullptr) {
+        LOG(INFO) << "appedn encoder failed";
+        return;
+    }
+
+    if (dispatcher_->create_filter_graph(filters_) < 0) {
+        LOG(INFO) << "crate filters failed";
+        return;
+    }
+    
+    encoder_->width(av_buffersink_get_w(sink));
+    encoder_->height(av_buffersink_get_h(sink));
+    encoder_->framerate(av_buffersink_get_frame_rate(sink));
+    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(sink));
+    encoder_->v_stream_tb(av_buffersink_get_time_base(sink));
+
+    if (encoder_->open(filename_, codec_name_, recording_type_ != VIDEO, options_) < 0) {
+        LOG(INFO) << "open encoder failed";
+        return;
+    }
+
+    if (dispatcher_->start()) {
+        LOG(WARNING) << "RECARDING!! Exit first.";
+        return;
+    }
+
+    menu_->start();
+    timer_->start(50);
 }
 
 void ScreenRecorder::exit()
 {
-    decoder_->stop();
+    dispatcher_->stop();
+
     menu_->close();
-    decoder_thread_->wait();
-    encoder_thread_->wait();
 
     if (timer_->isActive()) {
         emit SHOW_MESSAGE(recording_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>", tr("Path: ") + QString::fromStdString(filename_));
