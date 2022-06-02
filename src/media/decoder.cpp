@@ -2,6 +2,12 @@
 #include "decoder.h"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
+#include <libavutil/time.h>
+}
 
 using namespace std::chrono_literals;
 
@@ -150,6 +156,51 @@ std::string Decoder::format_str() const
     );
 }
 
+int Decoder::produce(AVFrame* frame, int type)
+{
+    switch (type)
+    {
+    case AVMEDIA_TYPE_VIDEO:
+        if (video_buffer_.empty()) return -1;
+
+        video_buffer_.pop(
+            [frame](AVFrame* popped) {
+                av_frame_unref(frame);
+                av_frame_move_ref(frame, popped);
+            }
+        );
+        return 0;
+
+    case AVMEDIA_TYPE_AUDIO:
+        if (audio_buffer_.empty()) return -1;
+
+        audio_buffer_.pop(
+            [frame](AVFrame* popped) {
+                av_frame_unref(frame);
+                av_frame_move_ref(frame, popped);
+            }
+        );
+        return 0;
+
+    default: return -1;
+    }
+}
+
+int Decoder::run()
+{
+    std::lock_guard lock(mtx_);
+
+    if (!ready_ || running_) {
+        LOG(ERROR) << "[DECODER] already running or not ready";
+        return -1;
+    }
+
+    running_ = true;
+    thread_ = std::thread([this]() { run_f(); });
+
+    return 0;
+}
+
 int Decoder::run_f()
 {
     LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] STARTED";
@@ -260,4 +311,39 @@ int Decoder::run_f()
     LOG(INFO) << "[DECODER] EXITED";
 
     return 0;
+}
+
+void Decoder::reset()
+{
+    destroy();
+    LOG(INFO) << "[DECODER] RESET";
+}
+
+void Decoder::destroy()
+{
+    std::lock_guard lock(mtx_);
+
+    running_ = false;
+    paused_ = false;
+    eof_ = 0x00;
+    ready_ = false;
+
+    wait();
+
+    eof_ = false;
+    first_pts_ = AV_NOPTS_VALUE;
+    last_pts_ = AV_NOPTS_VALUE;
+    time_offset_ = 0;
+    video_stream_idx_ = -1;
+    audio_stream_idx_ = -1;
+
+    av_packet_free(&packet_);
+    av_frame_free(&decoded_frame_);
+
+    avcodec_free_context(&video_decoder_ctx_);
+    avcodec_free_context(&audio_decoder_ctx_);
+    avformat_close_input(&fmt_ctx_);
+
+    video_buffer_.clear();
+    audio_buffer_.clear();
 }

@@ -10,6 +10,11 @@
 #include "devices.h"
 #include "logging.h"
 #include "config.h"
+extern "C" {
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+}
+
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
@@ -103,18 +108,10 @@ void ScreenRecorder::setup()
     );
 #endif
 
-    if (dispatcher_->append(decoder_) < 0) {
-        LOG(INFO) << "appedn decoder failed";
-        return;
-    }
+    dispatcher_->append(decoder_);
 
     encoder_->format(pix_fmt_);
-
-    AVFilterContext* sink = nullptr;
-    if ((sink = dispatcher_->append(encoder_)) == nullptr) {
-        LOG(INFO) << "appedn encoder failed";
-        return;
-    }
+    auto&[_, sink] = dispatcher_->append(encoder_);
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
         LOG(INFO) << "crate filters failed";

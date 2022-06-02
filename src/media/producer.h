@@ -8,9 +8,10 @@
 template<class T>
 class Producer {
 public:
-    virtual ~Producer() { reset(); }
-
-    virtual void reset()
+    Producer() = default;
+    Producer(const Producer&) = delete;
+    Producer& operator=(const Producer&) = delete;
+    virtual ~Producer()
     {
         std::lock_guard lock(mtx_);
 
@@ -23,6 +24,8 @@ public:
             thread_.join();
         }
     }
+
+    virtual void reset() = 0;
 
     virtual int run() = 0;
 

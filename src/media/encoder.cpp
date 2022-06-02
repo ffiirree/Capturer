@@ -3,6 +3,11 @@
 #include "fmt/format.h"
 #include "fmt/ranges.h"
 #include <chrono>
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/time.h>
+}
 
 using namespace std::chrono_literals;
 
@@ -112,6 +117,51 @@ int Encoder::open(const std::string& filename,
     return 0;
 }
 
+int Encoder::consume(AVFrame* frame, int type)
+{
+    switch (type)
+    {
+    case AVMEDIA_TYPE_VIDEO:
+        if (video_buffer_.full()) return -1;
+
+        video_buffer_.push(
+            [frame](AVFrame* p_frame) {
+                av_frame_unref(p_frame);
+                av_frame_move_ref(p_frame, frame);
+            }
+        );
+        return 0;
+
+    case AVMEDIA_TYPE_AUDIO:
+        if (audio_buffer_.full()) return -1;
+
+        audio_buffer_.push(
+            [frame](AVFrame* p_frame) {
+                av_frame_unref(p_frame);
+                av_frame_move_ref(p_frame, frame);
+            }
+        );
+        return 0;
+
+    default: return -1;
+    }
+}
+
+int Encoder::run()
+{
+    std::lock_guard lock(mtx_);
+
+    if (!ready_ || running_) {
+        LOG(INFO) << "[ENCODER] already running or not ready";
+        return -1;
+    }
+
+    running_ = true;
+    thread_ = std::thread([this]() { run_f(); });
+
+    return 0;
+}
+
 int Encoder::run_f()
 {
     LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] STARTED";
@@ -212,4 +262,47 @@ int Encoder::run_f()
     LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] EXITED";
 
     return ret;
+}
+
+void Encoder::reset()
+{
+    destroy();
+    LOG(INFO) << "[ENCODER] RESET";
+}
+
+void Encoder::destroy()
+{
+    std::lock_guard lock(mtx_);
+
+    running_ = false;
+    paused_ = false;
+    eof_ = 0x00;
+    ready_ = false;
+
+    if (thread_.joinable()) {
+        thread_.join();
+    }
+
+    first_pts_ = AV_NOPTS_VALUE;
+    video_stream_idx_ = -1;
+    audio_stream_idx_ = -1;
+
+    if (av_write_trailer(fmt_ctx_) != 0) {
+        LOG(ERROR) << "av_write_trailer";
+    }
+
+    if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
+        if (avio_close(fmt_ctx_->pb) < 0) {
+            LOG(ERROR) << "avio_close";
+        }
+    }
+
+    av_packet_free(&packet_);
+
+    avcodec_free_context(&video_encoder_ctx_);
+    avcodec_free_context(&audio_encoder_ctx_);
+    avformat_free_context(fmt_ctx_);
+
+    video_buffer_.clear();
+    audio_buffer_.clear();
 }

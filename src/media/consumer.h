@@ -8,9 +8,10 @@
 template<class T>
 class Consumer {
 public:
-    virtual ~Consumer() { reset(); }
-    virtual void reset()
-    {
+    Consumer() = default;
+    Consumer(const Consumer&) = delete;
+    Consumer& operator=(const Consumer&) = delete;
+    virtual ~Consumer() {
         std::lock_guard lock(mtx_);
 
         running_ = false;
@@ -22,6 +23,7 @@ public:
             thread_.join();
         }
     }
+    virtual void reset() = 0;
 
     virtual int run() = 0;
     virtual int consume(T*, int) = 0;

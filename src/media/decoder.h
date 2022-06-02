@@ -4,10 +4,6 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libswscale/swscale.h>
-#include <libavutil/time.h>
-#include <libavutil/imgutils.h>
 }
 #include "utils.h"
 #include "logging.h"
@@ -24,75 +20,16 @@ class Decoder : public Producer<AVFrame> {
         DECODING_EOF = DEMUXING_EOF | VDECODING_EOF | ADECODING_EOF
     };
 public:
-    void reset() override 
-    {
-        std::lock_guard lock(mtx_);
-
-        running_ = false;
-        ready_ = false;
-        eof_ = false;
-
-        wait();
-
-        av_packet_free(&packet_);
-        av_frame_free(&decoded_frame_);
-
-        avcodec_free_context(&video_decoder_ctx_);
-        avcodec_free_context(&audio_decoder_ctx_);
-        avformat_close_input(&fmt_ctx_);
-
-        video_buffer_.clear();
-        audio_buffer_.clear();
-
-        LOG(INFO) << "[DECODER] RESETED";
-    }
-
+    ~Decoder() override { destroy(); }
+    void reset() override;
+    
+    // open input
     int open(const std::string& name, const std::string& format = "", const std::map<std::string, std::string>& options = {});
 
-    int run() override
-    {
-        std::lock_guard lock(mtx_);
+    // start thread
+    int run() override;
 
-        if (!ready_ || running_) {
-            LOG(ERROR) << "[DECODER] already running or not ready";
-            return -1;
-        }
-
-        running_ = true;
-        thread_ = std::thread([this]() { run_f(); });
-        
-        return 0;
-    }
-
-    int produce(AVFrame* frame, int type) override
-    {
-        switch (type)
-        {
-        case AVMEDIA_TYPE_VIDEO:
-            if (video_buffer_.empty()) return -1;
-
-            video_buffer_.pop(
-                [frame](AVFrame* popped) {
-                    av_frame_unref(frame);
-                    av_frame_move_ref(frame, popped);
-                }
-            );
-            return 0;
-
-        case AVMEDIA_TYPE_AUDIO:
-            if (audio_buffer_.empty()) return -1;
-
-            audio_buffer_.pop(
-                [frame](AVFrame* popped) {
-                    av_frame_unref(frame);
-                    av_frame_move_ref(frame, popped);
-                }
-            );
-            return 0;
-
-        default: return -1;
-        }
-    }
+    int produce(AVFrame* frame, int type) override;
 
     bool empty(int type) override
     {
@@ -104,11 +41,12 @@ public:
         }
     }
 
-    std::string format_str() const;
+    std::string format_str() const override;
     bool eof() override { return eof_ == DECODING_EOF; }
 
 private:
     int run_f();
+    void destroy();
 
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_decoder_ctx_{ nullptr };

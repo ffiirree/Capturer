@@ -4,10 +4,6 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libswscale/swscale.h>
-#include <libavutil/time.h>
-#include <libavutil/imgutils.h>
 }
 #include "consumer.h"
 #include "logging.h"
@@ -18,90 +14,14 @@ class Encoder : public Consumer<AVFrame> {
 public:
     enum { V_ENCODING_EOF = 0x01, A_ENCODING_EOF = 0x01, ENCODING_EOF = V_ENCODING_EOF | A_ENCODING_EOF };
 public:
-    void reset() override
-    {
-        std::lock_guard lock(mtx_);
-
-        running_ = false;
-        paused_ = false;
-        eof_ = 0x00;
-        ready_ = false;
-
-        if (thread_.joinable()) {
-            thread_.join();
-        }
-
-        first_pts_ = AV_NOPTS_VALUE;
-
-        if (av_write_trailer(fmt_ctx_) != 0) {
-            LOG(ERROR) << "av_write_trailer";
-        }
-
-        if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
-            if (avio_close(fmt_ctx_->pb) < 0) {
-                LOG(ERROR) << "avio_close";
-            }
-        }
-
-        av_packet_free(&packet_);
-
-        avcodec_free_context(&video_encoder_ctx_);
-        avcodec_free_context(&audio_encoder_ctx_);
-        avformat_free_context(fmt_ctx_);
-
-        video_buffer_.clear();
-        audio_buffer_.clear();
-
-        LOG(INFO) << "[ENCODER] RESETED";
-    }
+    ~Encoder() override { destroy(); }
+    void reset() override;
 
     int open(const std::string& filename, const std::string& codec_name,
              bool is_cfr = false, const std::map<std::string, std::string>& options = {});
     
-    int run() override
-    {
-        std::lock_guard lock(mtx_);
-
-        if (!ready_ || running_) {
-            LOG(INFO) << "[ENCODER] already running or not ready";
-            return -1;
-        }
-
-        running_ = true;
-        thread_ = std::thread([this]() { run_f(); });
-
-        return 0;
-    }
-
-    int consume(AVFrame* frame, int type) override
-    {
-        switch (type)
-        {
-        case AVMEDIA_TYPE_VIDEO:
-            if (video_buffer_.full()) return -1;
-
-            video_buffer_.push(
-                [frame](AVFrame* p_frame) {
-                    av_frame_unref(p_frame);
-                    av_frame_move_ref(p_frame, frame);
-                }
-            );
-            return 0;
-
-        case AVMEDIA_TYPE_AUDIO:
-            if (audio_buffer_.full()) return -1;
-
-            audio_buffer_.push(
-                [frame](AVFrame* p_frame) {
-                    av_frame_unref(p_frame);
-                    av_frame_move_ref(p_frame, frame);
-                }
-            );
-            return 0;
-
-        default: return -1;
-        }
-    }
+    int run() override;
+    int consume(AVFrame* frame, int type) override;
 
     bool full(int type) override
     {
@@ -114,10 +34,7 @@ public:
         }
     }
 
-    int format() const override
-    {
-        return pix_fmt_;
-    }
+    int format() const override { return pix_fmt_; }
 
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
@@ -131,6 +48,7 @@ public:
 
 private:
     int run_f();
+    void destroy();
 
     enum AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
     int video_stream_idx_{ -1 };
