@@ -55,6 +55,10 @@ void Selector::exit()
 
     setMouseTracking(false);
 
+    mask_hidded_ = false;
+    box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() });
+    repaint();
+
     QWidget::hide();
 }
 

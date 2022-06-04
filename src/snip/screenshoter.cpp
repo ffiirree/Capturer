@@ -68,11 +68,8 @@ void ScreenShoter::start()
 
 void ScreenShoter::exit()
 {
-    // prevent the window flinker
-    box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() });
     canvas_->reset();
     canvas_->disable();
-    repaint();
 
     menu_->reset();
     menu_->hide();

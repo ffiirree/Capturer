@@ -149,7 +149,6 @@ void ScreenRecorder::exit()
         timer_->stop();
     }
 
-    hideMask(false);
     Selector::exit();
 }
 
