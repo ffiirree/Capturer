@@ -10,8 +10,6 @@ extern "C" {
 #include "producer.h"
 #include "ringvector.h"
 
-const int FRAME_BUFFER_SIZE = 20;
-
 class Decoder : public Producer<AVFrame> {
     enum {
         DEMUXING_EOF = 0x10,
@@ -21,6 +19,8 @@ class Decoder : public Producer<AVFrame> {
     };
 public:
     ~Decoder() override { destroy(); }
+
+    // reset and stop the thread
     void reset() override;
     
     // open input
@@ -63,12 +63,12 @@ private:
     AVPacket* packet_{ nullptr };
     AVFrame* decoded_frame_{ nullptr };
 
-    RingVector<AVFrame*, FRAME_BUFFER_SIZE> video_buffer_{
+    RingVector<AVFrame*, 3> video_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, FRAME_BUFFER_SIZE> audio_buffer_{
+    RingVector<AVFrame*, 9> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

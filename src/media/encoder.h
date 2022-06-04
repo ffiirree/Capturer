@@ -12,7 +12,7 @@ extern "C" {
 
 class Encoder : public Consumer<AVFrame> {
 public:
-    enum { V_ENCODING_EOF = 0x01, A_ENCODING_EOF = 0x01, ENCODING_EOF = V_ENCODING_EOF | A_ENCODING_EOF };
+    enum { V_ENCODING_EOF = 0x01, A_ENCODING_EOF = 0x02, ENCODING_EOF = V_ENCODING_EOF | A_ENCODING_EOF };
 public:
     ~Encoder() override { destroy(); }
     void reset() override;
@@ -74,12 +74,12 @@ private:
     AVPacket* packet_{ nullptr };
     AVFrame* filtered_frame_{ nullptr };
 
-    RingVector<AVFrame*, 10> video_buffer_{
+    RingVector<AVFrame*, 6> video_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, 10> audio_buffer_{
+    RingVector<AVFrame*, 12> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

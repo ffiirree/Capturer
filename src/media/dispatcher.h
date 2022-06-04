@@ -27,7 +27,7 @@ public:
 
     decltype(auto) append(Consumer<AVFrame>* encoder)
     {
-        return encoders_.emplace_back(std::pair{ encoder, nullptr });
+        return encoders_.emplace_back(std::tuple{ encoder, nullptr, false });
     }
 
     int create_filter_graph(const std::string_view& filters);
@@ -61,7 +61,7 @@ private:
     std::atomic<bool> ready_{ false };
 
     std::vector<std::pair<Producer<AVFrame>*, AVFilterContext*>> decoders_;
-    std::vector<std::pair<Consumer<AVFrame>*, AVFilterContext*>> encoders_;
+    std::vector<std::tuple<Consumer<AVFrame>*, AVFilterContext*, bool>> encoders_;
 
     std::string filters_{ };
 

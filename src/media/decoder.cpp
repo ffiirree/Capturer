@@ -129,6 +129,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             av_get_bytes_per_sample(audio_decoder_ctx_->sample_fmt) * 8
         );
     }
+
     // prepare 
     packet_ = av_packet_alloc();
     decoded_frame_ = av_frame_alloc();
@@ -204,6 +205,10 @@ int Decoder::run()
 int Decoder::run_f()
 {
     LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] STARTED";
+
+    // reset the buffer
+    video_buffer_.clear();
+    audio_buffer_.clear();
 
     while (running_) {
         if (paused() || video_buffer_.full() || audio_buffer_.full()) {
@@ -305,6 +310,11 @@ int Decoder::run_f()
         } // decoding
     } // while(running_)
 
+    // EOF
+    if (video_stream_idx_ >= 0) video_buffer_.push([](AVFrame* nil) { av_frame_unref(nil); });
+    if (audio_stream_idx_ >= 0) audio_buffer_.push([](AVFrame* nil) { av_frame_unref(nil); });
+    eof_ = DECODING_EOF;
+
     LOG(INFO) << fmt::format("[DECODER] frames = {:>5d}, fps = {:>6.2f}",
         video_decoder_ctx_->frame_number, 
         (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_));
@@ -330,7 +340,6 @@ void Decoder::destroy()
 
     wait();
 
-    eof_ = false;
     first_pts_ = AV_NOPTS_VALUE;
     last_pts_ = AV_NOPTS_VALUE;
     time_offset_ = 0;
@@ -344,6 +353,8 @@ void Decoder::destroy()
     avcodec_free_context(&audio_decoder_ctx_);
     avformat_close_input(&fmt_ctx_);
 
-    video_buffer_.clear();
-    audio_buffer_.clear();
+    // clear before starting the decoding stread sine the buffers may be not empty, 
+    //LOG(INFO) << "[DECODER] VIDEO BUFFER = " << video_buffer_.size();
+    //video_buffer_.clear();
+    //audio_buffer_.clear();
 }

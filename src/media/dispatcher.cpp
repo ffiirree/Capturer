@@ -86,7 +86,7 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
     }
 
     // buffersink
-    for (auto& [coder, ctx] : encoders_) {
+    for (auto& [coder, ctx, _] : encoders_) {
         if (create_filter_for_output(coder, &ctx) < 0) {
             LOG(INFO) << "[DISPATCHER] create_filter_for_output";
             return -1;
@@ -126,7 +126,7 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
                 LOG(ERROR) << "error filters";
                 return -1;
             }
-            if (avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].second, 0) != 0) {
+            if (avfilter_link(ptr->filter_ctx, ptr->pad_idx, std::get<1>(encoders_[index]), 0) != 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
@@ -137,7 +137,7 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
         }
     }
     else {
-        if (avfilter_link(decoders_[0].second, 0, encoders_[0].second, 0) != 0) {
+        if (avfilter_link(decoders_[0].second, 0, std::get<1>(encoders_[0]), 0) != 0) {
             LOG(ERROR) << "avfilter_link";
             return -1;
         }
@@ -169,7 +169,7 @@ int Dispatcher::start()
         }
     }
 
-    for (auto& [encoder, _] : encoders_) {
+    for (auto& [encoder, _, __] : encoders_) {
         if (!encoder->ready()) {
             LOG(ERROR) << "encoder not ready!";
             return -1;
@@ -180,7 +180,7 @@ int Dispatcher::start()
         coder->run();
     }
 
-    for (auto& [coder, _] : encoders_) {
+    for (auto& [coder, _, __] : encoders_) {
         coder->run();
     }
 
@@ -204,8 +204,11 @@ int Dispatcher::dispatch_thread_f()
     while (running_) {
         for (auto& [decoder, buffersrc_ctx] : decoders_) {
             if (decoder->produce(frame_, AVMEDIA_TYPE_VIDEO) >= 0) {
-                ret = av_buffersrc_add_frame_flags(buffersrc_ctx, frame_, AV_BUFFERSRC_FLAG_PUSH);
-
+                ret = av_buffersrc_add_frame_flags(
+                    buffersrc_ctx, 
+                    (!frame_->width && !frame_->height) ? nullptr : frame_,
+                    AV_BUFFERSRC_FLAG_PUSH
+                );
                 if (ret < 0) {
                     LOG(ERROR) << "av_buffersrc_add_frame_flags";
                     running_ = false;
@@ -234,8 +237,8 @@ int Dispatcher::dispatch_thread_f()
         }
         // @}
 
-        for (auto& [encoder, buffersink_ctx] : encoders_) {
-            while (ret >= 0) {
+        for (auto& [encoder, buffersink_ctx, sink_eof] : encoders_) {
+            while (ret >= 0 && !sink_eof) {
                 av_frame_unref(filtered_frame);
                 ret = av_buffersink_get_frame_flags(buffersink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
@@ -243,11 +246,10 @@ int Dispatcher::dispatch_thread_f()
                     continue;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[FILTER THREAD] EOF";
-
-                    // flush and exit
-                    ret = encoder->consume(nullptr, AVMEDIA_TYPE_VIDEO);
-                    break;
+                    LOG(INFO) << "[DISPATCHER] EOF";
+                    sink_eof = true;
+                    // through and send null packet
+                    av_frame_unref(filtered_frame);
                 }
                 else if (ret < 0) {
                     LOG(ERROR) << "av_buffersink_get_frame_flags()";
@@ -255,6 +257,9 @@ int Dispatcher::dispatch_thread_f()
                     break;
                 }
 
+                while (encoder->full(AVMEDIA_TYPE_VIDEO) && running_) {
+                    std::this_thread::sleep_for(20ms);
+                }
                 ret = encoder->consume(filtered_frame, AVMEDIA_TYPE_VIDEO);
             }
         }
@@ -265,11 +270,11 @@ int Dispatcher::dispatch_thread_f()
 
 void Dispatcher::pause()
 {
-    for (auto& [coder, _] : encoders_) {
+    for (auto& [coder, _] : decoders_) {
         coder->pause();
     }
 
-    for (auto& [coder, _] : decoders_) {
+    for (auto& [coder, _, __] : encoders_) {
         coder->pause();
     }
 
@@ -280,7 +285,7 @@ void Dispatcher::resume()
 {
     paused_ = false;
 
-    for (auto& [coder, _] : encoders_) {
+    for (auto& [coder, _, __] : encoders_) {
         coder->resume();
     }
 
@@ -292,7 +297,6 @@ void Dispatcher::resume()
 
 int Dispatcher::reset()
 {
-    running_ = false;
     paused_ = false;
     ready_ = false;
 
@@ -300,9 +304,17 @@ int Dispatcher::reset()
         coder->reset();
     }
 
-    for (auto& [coder, _] : encoders_) {
+    for (auto& [coder, _, __] : encoders_) {
+        // wait 0~3s
+        for (int i = 0; i < 30; i++) {
+            if (coder->eof()) break;
+
+            std::this_thread::sleep_for(100ms);
+        }
         coder->reset();
     }
+
+    running_ = false;
 
     if (dispatch_thread_.joinable()) {
         dispatch_thread_.join();

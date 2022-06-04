@@ -36,7 +36,7 @@ public:
 
     virtual void pause() { paused_ = true; }
     virtual void resume() { paused_ = false; }
-    virtual void stop() { running_ = false; reset(); }
+    virtual void stop() { running_ = false; }
     virtual bool eof() { return eof_ != 0; }
 
     virtual int wait()

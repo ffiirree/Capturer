@@ -56,8 +56,6 @@ int Encoder::open(const std::string& filename,
 
     }
     if (codec_name == "libx264" || codec_name == "libx265") {
-        av_dict_set(&encoder_options, "preset", "ultrafast", AV_DICT_DONT_OVERWRITE);
-        av_dict_set(&encoder_options, "tune", "zerolatency", AV_DICT_DONT_OVERWRITE);
         av_dict_set(&encoder_options, "crf", "23", AV_DICT_DONT_OVERWRITE);
         av_dict_set(&encoder_options, "threads", "auto", AV_DICT_DONT_OVERWRITE);
     }
@@ -166,10 +164,13 @@ int Encoder::run_f()
 {
     LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] STARTED";
 
+    if (video_stream_idx_ < 0) eof_ |= V_ENCODING_EOF;
+    if (audio_stream_idx_ < 0) eof_ |= A_ENCODING_EOF;
+
     int ret = 0;
-    while (running_) {
+    while (running_ && !eof()) {
         if (video_buffer_.empty() && audio_buffer_.empty()) {
-            std::this_thread::sleep_for(50ms);
+            std::this_thread::sleep_for(20ms);
             continue;
         }
 
@@ -184,8 +185,9 @@ int Encoder::run_f()
                 }
             );
 
+            filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
 
-            ret = avcodec_send_frame(video_encoder_ctx_, filtered_frame_);
+            ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width && !filtered_frame_->height) ? nullptr : filtered_frame_);
             while (ret >= 0) {
                 av_packet_unref(packet_);
                 ret = avcodec_receive_packet(video_encoder_ctx_, packet_);
@@ -246,7 +248,7 @@ int Encoder::run_f()
 
                 packet_->stream_index = audio_stream_idx_;
 
-                //av_packet_rescale_ts(packet_, audio_encoder_ctx_->time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
+                av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
                 if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
                     LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";

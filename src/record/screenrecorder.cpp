@@ -111,7 +111,7 @@ void ScreenRecorder::setup()
     dispatcher_->append(decoder_);
 
     encoder_->format(pix_fmt_);
-    auto&[_, sink] = dispatcher_->append(encoder_);
+    auto&[_, sink, __] = dispatcher_->append(encoder_);
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
         LOG(INFO) << "crate filters failed";
@@ -124,7 +124,7 @@ void ScreenRecorder::setup()
     encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(sink));
     encoder_->v_stream_tb(av_buffersink_get_time_base(sink));
 
-    if (encoder_->open(filename_, codec_name_, recording_type_ != VIDEO, options_) < 0) {
+    if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";
         return;
     }
@@ -140,9 +140,9 @@ void ScreenRecorder::setup()
 
 void ScreenRecorder::exit()
 {
-    dispatcher_->stop();
-
     menu_->close();
+
+    dispatcher_->stop();
 
     if (timer_->isActive()) {
         emit SHOW_MESSAGE(recording_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>", tr("Path: ") + QString::fromStdString(filename_));

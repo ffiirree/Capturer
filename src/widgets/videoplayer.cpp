@@ -11,7 +11,7 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     }
 
     dispatcher_->append(decoder_);
-    auto& [_, sink] = dispatcher_->append(this);
+    auto& [_, sink, __] = dispatcher_->append(this);
 
     if (dispatcher_->create_filter_graph(filters)) {
         LOG(INFO) << "create filters failed";
