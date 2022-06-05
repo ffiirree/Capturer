@@ -5,7 +5,7 @@
 TextEdit::TextEdit(QWidget * parent)
     : QTextEdit(parent)
 {
-    setWindowFlags(Qt::Widget | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setFrameShape(QFrame::NoFrame);
     setAttribute(Qt::WA_TranslucentBackground);
     ensureCursorVisible();

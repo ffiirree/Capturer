@@ -38,8 +38,11 @@ public slots:
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
-    void hideMask(bool v = true) { info_->hide(); mask_hidded_ = v; update(); };
+    void showRegion() { info_->hide(); mask_hidded_ = true; }
+    void resetSelected() { box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() }); }
 
+    // hiding
+    void hide() { resetSelected(); repaint(); QWidget::hide(); }
     virtual void exit();
 
     void updateTheme(json& setting);

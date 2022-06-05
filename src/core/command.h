@@ -50,7 +50,7 @@ public:
     inline void setFocus(bool f)
     {
         if(widget_) {
-            f ? widget_->show() : widget_->hide();
+            f ? widget_->show(), widget_->activateWindow() : widget_->hide();
         }
 
         emit modified(PaintType::UPDATE_MASK);

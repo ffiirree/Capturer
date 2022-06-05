@@ -51,15 +51,10 @@ void Selector::start()
 void Selector::exit()
 {
     status_ = SelectorStatus::INITIAL;
-    info_->hide();
-
     setMouseTracking(false);
 
     mask_hidded_ = false;
-    box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() });
-    repaint();
-
-    QWidget::hide();
+    hide();
 }
 
 void Selector::mousePressEvent(QMouseEvent *event)

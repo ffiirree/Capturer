@@ -25,16 +25,15 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN }); // padding 5
             modified(PaintType::REPAINT_ALL); 
         });
-        LOG(INFO)<< "FONT: " << font.pointSizeF();
 
         widget_->setFont(font_);
         widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen.color().name()));
 
         resizer_ = Resizer(start_point, widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
 
-        widget_->setFocus();
         widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + offset_);
         widget_->show();
+        widget_->activateWindow();
         break;
     default: break;
     }
@@ -64,9 +63,9 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
             modified(PaintType::REPAINT_ALL);
         });
 
-        widget_->setFocus();
         widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + other.offset_);
         widget_->show();
+        widget_->activateWindow();
     }
     
     visible_ = other.visible_;
@@ -293,7 +292,6 @@ void PaintCommand::draw(QPainter *painter, bool modified)
         break;
 
     case Graph::TEXT:
-        LOG(INFO) << "widget_->font()" << widget_->font().pointSizeF();
         painter->setFont(widget_->font());
         painter->drawText(rect().adjusted(TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2, -TEXT_EDIT_MARGIN / 2), Qt::AlignVCenter, widget_->toPlainText());
         break;

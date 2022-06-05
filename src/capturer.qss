@@ -128,7 +128,7 @@ QSpinBox::down-button {
     width: 20px;
     margin-right: 2px;
     margin-bottom: 2px;
-    margin-up: 1px;
+    margin-top: 1px;
 }
 
 QSpinBox::down-button:hover,

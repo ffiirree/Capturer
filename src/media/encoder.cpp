@@ -204,14 +204,19 @@ int Encoder::run_f()
                     return ret;
                 }
 
-                packet_->stream_index = video_stream_idx_;
-
                 av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
+                if (last_dts_ != AV_NOPTS_VALUE && last_dts_ >= packet_->dts) {
+                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP FRAME: dts = " << packet_->dts;
+                    continue;
+                }
+                last_dts_ = packet_->dts;
+
+                packet_->stream_index = video_stream_idx_;
                 LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-                    << fmt::format("pts = {:>6.2f}s, frame = {:>5d}, fps = {:>6.2f}", 
-                        packet_->pts * av_q2d(fmt_ctx_->streams[video_stream_idx_]->time_base), video_encoder_ctx_->frame_number,
-                        (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_));
+                    << fmt::format("frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}", 
+                        video_encoder_ctx_->frame_number, (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_),
+                        packet_->pts, packet_->dts, packet_->size);
 
                 if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
                     LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";

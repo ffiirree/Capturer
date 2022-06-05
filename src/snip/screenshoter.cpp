@@ -129,7 +129,6 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton && status_ >= SelectorStatus::CAPTURED) {
         snipped();
-
         exit();
     }
 
@@ -211,14 +210,18 @@ void ScreenShoter::save()
 {
     QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
  
+#ifdef _WIN32
     QString filename = QFileDialog::getSaveFileName(
         this,
         tr("Save Image"),
         save_path_ + QDir::separator() + default_filename,
         "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)"
     );
+#elif __linux__
+    QString filename = save_path_ + QDir::separator() + default_filename;
+#endif
 
-    if(!filename.isEmpty()) {
+    if (!filename.isEmpty()) {
         QFileInfo fileinfo(filename);
         save_path_ = fileinfo.absoluteDir().path();
         snippedImage().save(filename);

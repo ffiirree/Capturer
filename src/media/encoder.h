@@ -70,6 +70,7 @@ private:
     AVCodec* audio_encoder_{ nullptr };
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
+    int64_t last_dts_{ AV_NOPTS_VALUE };
 
     AVPacket* packet_{ nullptr };
     AVFrame* filtered_frame_{ nullptr };

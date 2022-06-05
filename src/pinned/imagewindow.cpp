@@ -217,12 +217,12 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
 
 void ImageWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-
 }
 
 void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    // thumbnail_
+    if (editing_) return;
+
     thumbnail_ = !thumbnail_;
     update(Modified::THUMBNAIL);
 }

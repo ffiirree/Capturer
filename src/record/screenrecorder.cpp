@@ -78,14 +78,14 @@ void ScreenRecorder::start()
 void ScreenRecorder::setup()
 {
     status_ = SelectorStatus::LOCKED;
-    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? hideMask(true) : hide();
+    QRect selected_area = selected();
+
+    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion() : hide();
 
     auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
     auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
-
-    auto selected_area = selected();
 #ifdef __linux__
     decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
