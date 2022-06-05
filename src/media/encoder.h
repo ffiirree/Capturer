@@ -34,7 +34,25 @@ public:
         }
     }
 
-    int format() const override { return pix_fmt_; }
+    bool accepts(int type) const override
+    {
+        switch (type)
+        {
+        case AVMEDIA_TYPE_VIDEO: return true;
+        case AVMEDIA_TYPE_AUDIO: return false;
+        default: return false;
+        }
+    }
+
+    int format(int type) const override 
+    { 
+        switch (type)
+        {
+        case AVMEDIA_TYPE_VIDEO: return pix_fmt_;
+        case AVMEDIA_TYPE_AUDIO: return sample_fmt_;
+        default: return -1;
+        }
+    }
 
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
@@ -51,6 +69,7 @@ private:
     void destroy();
 
     enum AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
+    enum AVSampleFormat sample_fmt_{ AV_SAMPLE_FMT_FLTP };
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
 

@@ -22,12 +22,12 @@ public:
 
     decltype(auto) append(Producer<AVFrame>* decoder)
     {
-        return decoders_.emplace_back(std::pair{ decoder, nullptr });
+        return decoders_.emplace_back(Source{ decoder });
     }
 
     decltype(auto) append(Consumer<AVFrame>* encoder)
     {
-        return encoders_.emplace_back(std::tuple{ encoder, nullptr, false });
+        return encoders_.emplace_back(Sink{ encoder });
     }
 
     int create_filter_graph(const std::string_view& filters);
@@ -48,8 +48,10 @@ public:
     int64_t escaped_ms() const { return escaped_us() / 1000; }
 
 private:
-    int create_filter_for_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
-    int create_filter_for_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
+    int create_filter_for_video_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
+    int create_filter_for_video_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
+    int create_filter_for_audio_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
+    int create_filter_for_audio_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
     int dispatch_thread_f();
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
@@ -60,8 +62,24 @@ private:
     std::atomic<bool> paused_{ false };
     std::atomic<bool> ready_{ false };
 
-    std::vector<std::pair<Producer<AVFrame>*, AVFilterContext*>> decoders_;
-    std::vector<std::tuple<Consumer<AVFrame>*, AVFilterContext*, bool>> encoders_;
+    struct Source {
+        explicit Source(Producer<AVFrame>* const p) : producer(p) { }
+        Producer<AVFrame>* producer{ nullptr };
+        AVFilterContext* video_src_ctx{ nullptr };
+        AVFilterContext* audio_src_ctx{ nullptr };
+        bool eof{ false };
+    };
+
+    struct Sink {
+        explicit Sink(Consumer<AVFrame>* const c) : consumer(c) { }
+        Consumer<AVFrame>* consumer{ nullptr };
+        AVFilterContext* video_sink_ctx{ nullptr };
+        AVFilterContext* audio_sink_ctx{ nullptr };
+        bool eof{ false };
+    };
+
+    std::vector<Source> decoders_;
+    std::vector<Sink> encoders_;
 
     std::string filters_{ };
 

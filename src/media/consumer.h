@@ -28,7 +28,8 @@ public:
     virtual int run() = 0;
     virtual int consume(T*, int) = 0;
     virtual bool full(int) = 0;
-    virtual int format() const = 0;
+    virtual int format(int) const = 0;
+    virtual bool accepts(int) const = 0;
 
     virtual void pause() { paused_ = true; }
     virtual void resume() { paused_ = false; }

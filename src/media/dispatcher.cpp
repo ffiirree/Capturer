@@ -13,13 +13,13 @@ extern "C" {
 }
 using namespace std::chrono_literals;
 
-int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx)
+int Dispatcher::create_filter_for_video_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx)
 {
     if (!decoder->ready()) {
         LOG(ERROR) << "[DISPATCHER] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] " << "buffersrc: " << decoder->format_str();
+    LOG(INFO) << "[DISPATCHER] " << "video buffersrc: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
 
     const AVFilter* buffersrc = avfilter_get_by_name("buffer");
     if (!buffersrc) {
@@ -27,7 +27,7 @@ int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilt
         return -1;
     }
 
-    if (avfilter_graph_create_filter(ctx, buffersrc, "in", decoder->format_str().c_str(), nullptr, filter_graph_) < 0) {
+    if (avfilter_graph_create_filter(ctx, buffersrc, "v_src", decoder->format_str(AVMEDIA_TYPE_VIDEO).c_str(), nullptr, filter_graph_) < 0) {
         LOG(ERROR) << "avfilter_graph_create_filter";
         return -1;
     }
@@ -35,7 +35,7 @@ int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilt
     return 0;
 }
 
-int Dispatcher::create_filter_for_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx)
+int Dispatcher::create_filter_for_video_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx)
 {
     const AVFilter* buffersink = avfilter_get_by_name("buffersink");
     if (!buffersink) {
@@ -43,15 +43,53 @@ int Dispatcher::create_filter_for_output(const Consumer<AVFrame>* encoder, AVFil
         return -1;
     }
 
-    if (avfilter_graph_create_filter(ctx, buffersink, "out", nullptr, nullptr, filter_graph_) < 0) {
+    if (avfilter_graph_create_filter(ctx, buffersink, "v_sink", nullptr, nullptr, filter_graph_) < 0) {
         LOG(ERROR) << "avfilter_graph_create_filter";
         return -1;
     }
 
-    enum AVPixelFormat pix_fmt = ((AVPixelFormat)encoder->format() == AV_PIX_FMT_NONE) ? AV_PIX_FMT_YUV420P : (AVPixelFormat)encoder->format();
+    enum AVPixelFormat pix_fmt = ((AVPixelFormat)encoder->format(AVMEDIA_TYPE_VIDEO) == AV_PIX_FMT_NONE) ? AV_PIX_FMT_YUV420P : (AVPixelFormat)encoder->format(AVMEDIA_TYPE_VIDEO);
     enum AVPixelFormat pix_fmts[] = { pix_fmt, AV_PIX_FMT_NONE };
     if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
         LOG(ERROR) << "av_opt_set_int_list";
+        return -1;
+    }
+
+    return 0;
+}
+
+int Dispatcher::create_filter_for_audio_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx)
+{
+    if (!decoder->ready()) {
+        LOG(ERROR) << "[DISPATCHER] decoder is not ready";
+        return -1;
+    }
+    LOG(INFO) << "[DISPATCHER] " << "audio buffersrc: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
+
+    const AVFilter* buffersrc = avfilter_get_by_name("abuffer");
+    if (!buffersrc) {
+        LOG(ERROR) << "avfilter_get_by_name";
+        return -1;
+    }
+
+    if (avfilter_graph_create_filter(ctx, buffersrc, "a_src", decoder->format_str(AVMEDIA_TYPE_AUDIO).c_str(), nullptr, filter_graph_) < 0) {
+        LOG(ERROR) << "avfilter_graph_create_filter";
+        return -1;
+    }
+
+    return 0;
+}
+
+int Dispatcher::create_filter_for_audio_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx)
+{
+    const AVFilter* abuffersink = avfilter_get_by_name("abuffersink");
+    if (!abuffersink) {
+        LOG(ERROR) << "avfilter_get_by_name";
+        return -1;
+    }
+
+    if (avfilter_graph_create_filter(ctx, abuffersink, "a_sink", nullptr, nullptr, filter_graph_) < 0) {
+        LOG(ERROR) << "avfilter_graph_create_filter";
         return -1;
     }
 
@@ -78,16 +116,30 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
     }
 
     // buffersrc
-    for (auto& [coder, ctx] : decoders_) {
-        if (create_filter_for_input(coder, &ctx) < 0) {
+    for (auto& coder : decoders_) {
+        if (coder.producer->has(AVMEDIA_TYPE_VIDEO) &&
+            create_filter_for_video_input(coder.producer, &coder.video_src_ctx) < 0) {
+            LOG(INFO) << "[DISPATCHER] create_filter_for_input";
+            return -1;
+        }
+
+        if (coder.producer->has(AVMEDIA_TYPE_AUDIO) &&
+            create_filter_for_audio_input(coder.producer, &coder.audio_src_ctx) < 0) {
             LOG(INFO) << "[DISPATCHER] create_filter_for_input";
             return -1;
         }
     }
 
     // buffersink
-    for (auto& [coder, ctx, _] : encoders_) {
-        if (create_filter_for_output(coder, &ctx) < 0) {
+    for (auto& coder : encoders_) {
+        if (coder.consumer->accepts(AVMEDIA_TYPE_VIDEO) &&
+            create_filter_for_video_output(coder.consumer, &coder.video_sink_ctx) < 0) {
+            LOG(INFO) << "[DISPATCHER] create_filter_for_output";
+            return -1;
+        }
+
+        if (coder.consumer->accepts(AVMEDIA_TYPE_AUDIO) &&
+            create_filter_for_audio_output(coder.consumer, &coder.audio_sink_ctx) < 0) {
             LOG(INFO) << "[DISPATCHER] create_filter_for_output";
             return -1;
         }
@@ -106,38 +158,21 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
 
         auto index = 0;
         for (auto ptr = inputs; ptr; ptr = ptr->next, index++) {
-            if (index >= decoders_.size()) {
-                LOG(ERROR) << "error filters";
-                return -1;
-            }
-            if (avfilter_link(decoders_[index].second, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
+            if (avfilter_link(decoders_[index].video_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
         }
-        if (index != decoders_.size()) {
-            LOG(ERROR) << "error filters";
-            return -1;
-        }
-
         index = 0;
         for (auto ptr = outputs; ptr; ptr = ptr->next, index++) {
-            if (index >= encoders_.size()) {
-                LOG(ERROR) << "error filters";
-                return -1;
-            }
-            if (avfilter_link(ptr->filter_ctx, ptr->pad_idx, std::get<1>(encoders_[index]), 0) != 0) {
+            if (avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].video_sink_ctx, 0) != 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
-        }
-        if (index != encoders_.size()) {
-            LOG(ERROR) << "error filters";
-            return -1;
         }
     }
     else {
-        if (avfilter_link(decoders_[0].second, 0, std::get<1>(encoders_[0]), 0) != 0) {
+        if (avfilter_link(decoders_[0].video_src_ctx, 0, encoders_[0].video_sink_ctx, 0) != 0) {
             LOG(ERROR) << "avfilter_link";
             return -1;
         }
@@ -162,26 +197,26 @@ int Dispatcher::start()
         return -1;
     }
 
-    for (auto& [decoder, _] : decoders_) {
-        if (!decoder->ready()) {
+    for (auto& coder : decoders_) {
+        if (!coder.producer->ready()) {
             LOG(ERROR) << "deocoder not ready!";
             return -1;
         }
     }
 
-    for (auto& [encoder, _, __] : encoders_) {
-        if (!encoder->ready()) {
+    for (auto& coder : encoders_) {
+        if (!coder.consumer->ready()) {
             LOG(ERROR) << "encoder not ready!";
             return -1;
         }
     }
 
-    for (auto& [coder, _] : decoders_) {
-        coder->run();
+    for (auto& coder : decoders_) {
+        coder.producer->run();
     }
 
-    for (auto& [coder, _, __] : encoders_) {
-        coder->run();
+    for (auto& coder : encoders_) {
+        coder.consumer->run();
     }
 
     running_ = true;
@@ -202,11 +237,26 @@ int Dispatcher::dispatch_thread_f()
 
     int ret = 0;
     while (running_) {
-        for (auto& [decoder, buffersrc_ctx] : decoders_) {
-            if (decoder->produce(frame_, AVMEDIA_TYPE_VIDEO) >= 0) {
+        for (auto& decoder : decoders_) {
+            if (decoder.video_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_VIDEO) >= 0) {
+
                 ret = av_buffersrc_add_frame_flags(
-                    buffersrc_ctx, 
+                    decoder.video_src_ctx,
                     (!frame_->width && !frame_->height) ? nullptr : frame_,
+                    AV_BUFFERSRC_FLAG_PUSH
+                );
+                if (ret < 0) {
+                    LOG(ERROR) << "av_buffersrc_add_frame_flags";
+                    running_ = false;
+                    break;
+                }
+            }
+
+            if (decoder.audio_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_AUDIO) >= 0) {
+
+                ret = av_buffersrc_add_frame_flags(
+                    decoder.audio_src_ctx,
+                    (!frame_->linesize[0]) ? nullptr : frame_,
                     AV_BUFFERSRC_FLAG_PUSH
                 );
                 if (ret < 0) {
@@ -237,17 +287,17 @@ int Dispatcher::dispatch_thread_f()
         }
         // @}
 
-        for (auto& [encoder, buffersink_ctx, sink_eof] : encoders_) {
-            while (ret >= 0 && !sink_eof) {
+        for (auto& encoder : encoders_) {
+            while (ret >= 0 && !encoder.eof) {
                 av_frame_unref(filtered_frame);
-                ret = av_buffersink_get_frame_flags(buffersink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+                ret = av_buffersink_get_frame_flags(encoder.video_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
                 if (ret == AVERROR(EAGAIN)) {
                     continue;
                 }
                 else if (ret == AVERROR_EOF) {
                     LOG(INFO) << "[DISPATCHER] EOF";
-                    sink_eof = true;
+                    encoder.eof = true;
                     // through and send null packet
                     av_frame_unref(filtered_frame);
                 }
@@ -257,10 +307,10 @@ int Dispatcher::dispatch_thread_f()
                     break;
                 }
 
-                while (encoder->full(AVMEDIA_TYPE_VIDEO) && running_) {
+                while (encoder.consumer->full(AVMEDIA_TYPE_VIDEO) && running_) {
                     std::this_thread::sleep_for(20ms);
                 }
-                ret = encoder->consume(filtered_frame, AVMEDIA_TYPE_VIDEO);
+                ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_VIDEO);
             }
         }
     }
@@ -270,12 +320,12 @@ int Dispatcher::dispatch_thread_f()
 
 void Dispatcher::pause()
 {
-    for (auto& [coder, _] : decoders_) {
-        coder->pause();
+    for (auto& coder : decoders_) {
+        coder.producer->pause();
     }
 
-    for (auto& [coder, _, __] : encoders_) {
-        coder->pause();
+    for (auto& coder : encoders_) {
+        coder.consumer->pause();
     }
 
     paused_ = true;
@@ -285,13 +335,13 @@ void Dispatcher::resume()
 {
     paused_ = false;
 
-    for (auto& [coder, _, __] : encoders_) {
-        coder->resume();
+    for (auto& coder : encoders_) {
+        coder.consumer->resume();
     }
 
-    for (auto& [coder, _] : decoders_) {
-        coder->time_offset(offset_pts_);
-        coder->resume();
+    for (auto& coder : decoders_) {
+        coder.producer->time_offset(offset_pts_);
+        coder.producer->resume();
     }
 }
 
@@ -300,18 +350,18 @@ int Dispatcher::reset()
     paused_ = false;
     ready_ = false;
 
-    for (auto& [coder, _] : decoders_) {
-        coder->reset();
+    for (auto& coder : decoders_) {
+        coder.producer->reset();
     }
 
-    for (auto& [coder, _, __] : encoders_) {
+    for (auto& coder : encoders_) {
         // wait 0~3s
-        for (int i = 0; i < 30; i++) {
-            if (coder->eof()) break;
+        for (int i = 0; i < 100; i++) {
+            if (coder.consumer->eof()) break;
 
             std::this_thread::sleep_for(100ms);
         }
-        coder->reset();
+        coder.consumer->reset();
     }
 
     running_ = false;

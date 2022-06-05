@@ -47,7 +47,8 @@ public:
         return 0;
     };
     bool full(int) override { return false; }
-    int format() const override { return AV_PIX_FMT_RGB24; }
+    bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
+    int format(int) const override { return AV_PIX_FMT_RGB24; }
 
     bool play(const std::string& name, const std::string& fmt = "", const std::string& filters = "");
 

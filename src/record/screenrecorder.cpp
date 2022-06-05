@@ -111,18 +111,18 @@ void ScreenRecorder::setup()
     dispatcher_->append(decoder_);
 
     encoder_->format(pix_fmt_);
-    auto&[_, sink, __] = dispatcher_->append(encoder_);
+    auto& coder = dispatcher_->append(encoder_);
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
         LOG(INFO) << "crate filters failed";
         return;
     }
     
-    encoder_->width(av_buffersink_get_w(sink));
-    encoder_->height(av_buffersink_get_h(sink));
-    encoder_->framerate(av_buffersink_get_frame_rate(sink));
-    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(sink));
-    encoder_->v_stream_tb(av_buffersink_get_time_base(sink));
+    encoder_->width(av_buffersink_get_w(coder.video_sink_ctx));
+    encoder_->height(av_buffersink_get_h(coder.video_sink_ctx));
+    encoder_->framerate(av_buffersink_get_frame_rate(coder.video_sink_ctx));
+    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(coder.video_sink_ctx));
+    encoder_->v_stream_tb(av_buffersink_get_time_base(coder.video_sink_ctx));
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";

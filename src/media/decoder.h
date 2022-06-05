@@ -41,7 +41,8 @@ public:
         }
     }
 
-    std::string format_str() const override;
+    bool has(int) const override;
+    std::string format_str(int) const override;
     bool eof() override { return eof_ == DECODING_EOF; }
 
 private:

@@ -32,7 +32,8 @@ public:
     virtual int produce(T*, int) = 0;
     virtual bool empty(int) = 0;
 
-    virtual std::string format_str() const = 0;
+    virtual bool has(int) const = 0;
+    virtual std::string format_str(int) const = 0;
 
     virtual void pause() { paused_ = true; }
     virtual void resume() { paused_ = false; }

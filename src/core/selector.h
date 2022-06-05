@@ -38,7 +38,7 @@ public slots:
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
-    void showRegion() { info_->hide(); mask_hidded_ = true; }
+    void showRegion() { info_->hide(); mask_hidded_ = true; update(); }
     void resetSelected() { box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() }); }
 
     // hiding

@@ -291,14 +291,15 @@ void Encoder::destroy()
     }
 
     first_pts_ = AV_NOPTS_VALUE;
+    last_dts_ = AV_NOPTS_VALUE;
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 
-    if (av_write_trailer(fmt_ctx_) != 0) {
+    if (fmt_ctx_ && av_write_trailer(fmt_ctx_) != 0) {
         LOG(ERROR) << "av_write_trailer";
     }
 
-    if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
+    if (fmt_ctx_ && !(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
         if (avio_close(fmt_ctx_->pb) < 0) {
             LOG(ERROR) << "avio_close";
         }
@@ -309,6 +310,7 @@ void Encoder::destroy()
     avcodec_free_context(&video_encoder_ctx_);
     avcodec_free_context(&audio_encoder_ctx_);
     avformat_free_context(fmt_ctx_);
+    fmt_ctx_ = nullptr;
 
     video_buffer_.clear();
     audio_buffer_.clear();

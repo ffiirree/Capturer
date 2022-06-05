@@ -144,17 +144,39 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     return 0;
 }
 
-std::string Decoder::format_str() const
+bool Decoder::has(int type) const
 {
-    auto video_stream = fmt_ctx_->streams[video_stream_idx_];
-    auto fr = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
-    return fmt::format(
-        "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:frame_rate={}/{}",
-        video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
-        video_stream->time_base.num, video_stream->time_base.den,
-        video_stream->codecpar->sample_aspect_ratio.num, std::max<int>(1, video_stream->codecpar->sample_aspect_ratio.den),
-        fr.num, fr.den
-    );
+    switch (type)
+    {
+    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ >= 0;
+    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ >= 0;
+    default: return false;
+    }
+}
+
+std::string Decoder::format_str(int type) const
+{
+    switch (type)
+    {
+    case AVMEDIA_TYPE_VIDEO:
+    {
+        auto video_stream = fmt_ctx_->streams[video_stream_idx_];
+        auto fr = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
+        return fmt::format(
+            "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:frame_rate={}/{}",
+            video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
+            video_stream->time_base.num, video_stream->time_base.den,
+            video_stream->codecpar->sample_aspect_ratio.num, std::max<int>(1, video_stream->codecpar->sample_aspect_ratio.den),
+            fr.num, fr.den
+        );
+    }
+    case AVMEDIA_TYPE_AUDIO:
+        return fmt::format(
+            "sample_rate={}:sample_fmt={}:channel_layout={}",
+            audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->sample_fmt, audio_decoder_ctx_->channel_layout
+        );
+    default: return {};
+    }
 }
 
 int Decoder::produce(AVFrame* frame, int type)
