@@ -9,7 +9,7 @@ QSize AppTabBar::tabSizeHint(int index) const
     return s;
 }
 
-void AppTabBar::paintEvent(QPaintEvent *event)
+void AppTabBar::paintEvent(QPaintEvent* event)
 {
     QStylePainter painter(this);
     QStyleOptionTab opt;

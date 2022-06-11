@@ -7,7 +7,7 @@ AppTabControl::AppTabControl(QWidget *parent) : QTabWidget(parent)
 }
 
 AppTabControl::AppTabControl(int width, int height, QWidget *parent)
-	: QTabWidget(parent), width_(width), height_(height)
+    : QTabWidget(parent), width_(width), height_(height)
 {
     this->setTabBar(new AppTabBar(width_, height_, parent));
     this->setTabPosition(QTabWidget::West);

@@ -11,16 +11,16 @@
 class AppTabControl : public QTabWidget
 {
 public:
-	AppTabControl() = default;
+    AppTabControl() = default;
     explicit AppTabControl(QWidget *parent);
     AppTabControl(int width, int height, QWidget *parent = nullptr);
 
     void setTabControlSize(int width, int height);
-	~AppTabControl() override = default;
+    ~AppTabControl() override = default;
 
 private:
-	int width_ = 0;
-	int height_ = 0;
+    int width_ = 0;
+    int height_ = 0;
 };
 
 #endif // APP_TAB_CONTROL_H
