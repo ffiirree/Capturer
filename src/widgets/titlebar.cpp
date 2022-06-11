@@ -25,7 +25,7 @@ TitleBar::TitleBar(QWidget *parent)
     icon_label_->setScaledContents(true);
 
 	title_label_ = new QLabel("");
-    title_label_->setFixedWidth(175);
+    title_label_->setFixedWidth(150);
 	title_label_->setObjectName("title");
 
     layout->addWidget(icon_label_);

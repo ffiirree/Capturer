@@ -5,6 +5,14 @@ QComboBox {
     color: #e6e6e6;
 }
 
+QComboBox::down-arrow {
+    image: url(:/icon/res/arrow_down-light.png);
+}
+
+QComboBox::down-arrow:on {
+    image: url(:/icon/res/arrow_up-light.png);
+}
+
 QComboBox:hover {
     border: 1px solid #232323;
 }

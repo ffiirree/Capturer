@@ -1,5 +1,5 @@
 #settings-mainwindow {
-    background-color: #f5f5f7;
+    background-color: #f5f7fa;
 }
 
 #settings-mainwindow QWidget {
@@ -8,67 +8,28 @@
 
 /*///////////////////////////////////////////////////////////////*/
 TitleBar {
-    height: 50px;
-    background-color: #fbfbfd;
+    background-color: #fcfdfe;
 }
 
 QLabel#logo {
-    background-color: #f5f5f7;
+    background-color: #f5f7fa;
 }
 
 QLabel#title {
-    height: 50px;
-    padding-left； 15px;
-
-    color: #606060;
-    font-size: 24px;
-    font-family: "华文新魏";
-    background-color: #f5f5f7;
+    color: #50505f;
+    background-color: #f5f7fa;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
-    border: none;
-    background: #fbfbfd;
-}
-
-QTabWidget#firstmenu::tab-bar {
+    background: #fcfdfe;
 }
 
 QTabBar#fristtab::tab {
-    margin: 0;
-    padding: 0;
-    color: #666;
-    font-size: 16px;
-    font-family: "Microsoft Yahei";
-    border-left: 5px solid #f5f5f7;
+    color: #50505f;
 }
 
 QTabBar#fristtab::tab:selected,
-QTabBar#fristtab::tab:selected:hover {
-    background: #e9e9eb;
-    color: #333;
-    border-left: 5px solid #409eff;
-}
-
 QTabBar#fristtab::tab:hover {
-    color: #333;
-}
-
-/*///////////////////////////////////////////////////////////////*/
-ShortcutInput:focus {
-    color: #409eff;
-}
-
-ColorDialogButton {
-    height: 32px;
-    border-radius: 3px;
-    margin: 1px 0px;
-}
-#sub-title {
-    font-weight: bold;
-}
-#copyright-label {
-    color: #888888;
-    font-size: 15px;
+    background: #e3e4e8;
 }

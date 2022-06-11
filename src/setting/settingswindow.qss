@@ -8,9 +8,6 @@ TitleBar {
     height: 50px;
 }
 
-QLabel#logo {
-}
-
 QLabel#title {
     height: 50px;
     padding-left； 15px;
@@ -32,13 +29,9 @@ QTabBar#fristtab::tab {
     padding: 0;
     font-size: 16px;
     font-family: "Microsoft Yahei";
-}
-
-QTabBar#fristtab::tab:selected,
-QTabBar#fristtab::tab:selected:hover {
-}
-
-QTabBar#fristtab::tab:hover {
+    background-color: transparent;
+    margin: 2px 7px;
+    border-radius: 5px;
 }
 
 /*///////////////////////////////////////////////////////////////*/

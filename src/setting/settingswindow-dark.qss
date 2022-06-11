@@ -21,39 +21,14 @@ QLabel#title {
 
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
-    border: none;
     background: #323232;
-}
-
-QTabWidget#firstmenu::tab-bar {
 }
 
 QTabBar#fristtab::tab {
     color: #e6e6e6;
-    background-color: transparent;
-    margin: 2px 5px;
-    border-radius: 5px;
 }
 
 QTabBar#fristtab::tab:selected,
 QTabBar#fristtab::tab:hover {
     background: #323232;
-}
-
-/*///////////////////////////////////////////////////////////////*/
-ShortcutInput:focus {
-    color: #409eff;
-}
-
-ColorDialogButton {
-    height: 32px;
-    border-radius: 3px;
-    margin: 1px 0px;
-}
-#sub-title {
-    font-weight: bold;
-}
-#copyright-label {
-    color: #888888;
-    font-size: 15px;
 }

@@ -21,6 +21,8 @@
         <file>res/rotate.png</file>
         <file>res/arrow_down.png</file>
         <file>res/arrow_up.png</file>
+        <file>res/arrow_down-light.png</file>
+        <file>res/arrow_up-light.png</file>
         <file>res/spin_down.png</file>
         <file>res/spin_up.png</file>
         <file>res/pause-dark.png</file>

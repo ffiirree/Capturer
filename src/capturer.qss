@@ -17,12 +17,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(:/icon/res/arrow_down.png);
     width: 24px;
-}
-
-QComboBox::down-arrow:on {
-    image: url(:/icon/res/arrow_up.png);
 }
 
 QComboBox QAbstractItemView {
@@ -156,7 +151,7 @@ QMenu::item {
     background-color: transparent;
     border-radius: 5px;
     height: 27px;
-    padding-left: 15px;
+    padding-left: 20px;
     padding-right: 25px;
     font-family: "Microsoft YaHei";
     font-size: 13px;

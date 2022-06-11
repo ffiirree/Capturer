@@ -53,7 +53,7 @@ SettingWindow::SettingWindow(QWidget * parent)
     });
     layout->addWidget(titlebar);
 
-    tabwidget_ = new AppTabControl(40, 225);
+    tabwidget_ = new AppTabControl(45, 200);
     tabwidget_->setObjectName("firstmenu");
     tabwidget_->tabBar()->setObjectName("fristtab");
     layout->addWidget(tabwidget_);
@@ -84,7 +84,8 @@ void SettingWindow::setupGeneralWidget()
     //
     auto _1_2 = new QComboBox();
     _1_2->setView(new QListView());
-    _1_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _1_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _1_2->addItem("English");
     _1_2->addItem("简体中文");
     auto language = config["language"].get<QString>();
@@ -110,7 +111,8 @@ void SettingWindow::setupGeneralWidget()
     //
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _3_2->addItem(tr("Dark"));
     _3_2->addItem(tr("Light"));
     auto theme = config["theme"].get<QString>();
@@ -159,7 +161,9 @@ void SettingWindow::setupSnipWidget()
 
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+
     _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
     _3_2->setCurrentIndex(config["snip"]["selector"]["border"]["style"].get<Qt::PenStyle>());
     connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
@@ -179,7 +183,7 @@ void SettingWindow::setupSnipWidget()
 
 void SettingWindow::setupRecordWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Screen recording"));
+    auto index = tabwidget_->addTab(new QWidget(), tr("Screen Recording"));
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -206,7 +210,8 @@ void SettingWindow::setupRecordWidget()
 
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
     _3_2->setCurrentIndex(config["record"]["selector"]["border"]["style"].get<int>());
     connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
@@ -237,7 +242,8 @@ void SettingWindow::setupRecordWidget()
 
     auto _7_2 = new QComboBox();
     _7_2->setView(new QListView());
-    _7_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _7_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _7_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _7_2->addItems({ "libx264 [H.264 / AVC / MPEG-4 part 10]", "libx265 [H.265 / HEVC]" });
     _7_2->setCurrentIndex(config["record"]["encoder"].get<QString>() != "libx265" ? 0 : 1);
     connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
@@ -249,7 +255,8 @@ void SettingWindow::setupRecordWidget()
     auto _8_2 = new QComboBox();
     auto quality = config["record"]["quality"].get<QString>();
     _8_2->setView(new QListView());
-    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
     _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
     connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
@@ -265,7 +272,7 @@ void SettingWindow::setupRecordWidget()
 
 void SettingWindow::setupGIFWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Gif recording"));
+    auto index = tabwidget_->addTab(new QWidget(), tr("GIF Recording"));
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -291,7 +298,8 @@ void SettingWindow::setupGIFWidget()
 
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
     _3_2->setCurrentIndex(config["gif"]["selector"]["border"]["style"].get<int>());
     connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
@@ -323,7 +331,8 @@ void SettingWindow::setupGIFWidget()
     auto _8_2 = new QComboBox();
     auto quality = config["gif"]["quality"].get<QString>();
     _8_2->setView(new QListView());
-    _8_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
     _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
     connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
@@ -345,21 +354,24 @@ void SettingWindow::setupDevicesWidget()
 
     auto _1_2 = new QComboBox();
     _1_2->setView(new QListView());
-    _1_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _1_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _1_2->addItems(Devices::microphones());
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new QComboBox();
     _2_2->setView(new QListView());
-    _2_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _2_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _2_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _2_2->addItems(Devices::speakers());
     layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _3_2->addItems(Devices::cameras());
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
     connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {

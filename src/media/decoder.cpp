@@ -242,9 +242,11 @@ int Decoder::run_f()
         av_packet_unref(packet_);
         int ret = av_read_frame(fmt_ctx_, packet_);
         if ((ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) && !(eof_ & DEMUXING_EOF)) {
-            // [flushing] 1. Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or avcodec_send_frame() (encoding) functions. This will enter draining mode.
-            // [flushing] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned.The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
-            LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "EOF => PUT NULL PACKET TO FLUSH DECODERS";
+            // [draining] 1. Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or avcodec_send_frame() (encoding) functions. 
+            //               This will enter draining mode.
+            // [draining] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned.
+            //               The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
+            LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "EOF => PUT NULL PACKET TO ENTER DRAINING MODE";
             eof_ |= DEMUXING_EOF;
         }
         else if (ret < 0) {
@@ -374,7 +376,7 @@ void Decoder::destroy()
     avcodec_free_context(&audio_decoder_ctx_);
     avformat_close_input(&fmt_ctx_);
 
-    // clear before starting the decoding stread sine the buffers may be not empty, 
+    // clear before starting the decoding stread since the buffers may be not empty here
     //LOG(INFO) << "[DECODER] VIDEO BUFFER = " << video_buffer_.size();
     //video_buffer_.clear();
     //audio_buffer_.clear();
