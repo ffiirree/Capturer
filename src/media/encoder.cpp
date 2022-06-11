@@ -283,17 +283,10 @@ void Encoder::destroy()
 
     running_ = false;
     paused_ = false;
-    eof_ = 0x00;
-    ready_ = false;
 
     if (thread_.joinable()) {
         thread_.join();
     }
-
-    first_pts_ = AV_NOPTS_VALUE;
-    last_dts_ = AV_NOPTS_VALUE;
-    video_stream_idx_ = -1;
-    audio_stream_idx_ = -1;
 
     if (fmt_ctx_ && ready_ && av_write_trailer(fmt_ctx_) != 0) {
         LOG(ERROR) << "av_write_trailer";
@@ -304,6 +297,14 @@ void Encoder::destroy()
             LOG(ERROR) << "avio_close";
         }
     }
+
+    eof_ = 0x00;
+    ready_ = false;     // after av_write_trailer()
+
+    first_pts_ = AV_NOPTS_VALUE;
+    last_dts_ = AV_NOPTS_VALUE;
+    video_stream_idx_ = -1;
+    audio_stream_idx_ = -1;
 
     av_packet_free(&packet_);
 
