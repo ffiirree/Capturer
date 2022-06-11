@@ -74,13 +74,13 @@ public:
         full_ = false;
     }
 
-    bool empty()
+    bool empty() const
     {
         std::lock_guard<std::mutex> lock(mtx_);
         return EMPTY;
     }
 
-    size_t size()
+    size_t size() const
     {
         std::lock_guard<std::mutex> lock(mtx_);
 
@@ -90,7 +90,7 @@ public:
         return ((pushed_idx_ >= popped_idx_) ? (pushed_idx_) : (pushed_idx_ + N)) - popped_idx_;
     }
 
-    bool full()
+    bool full() const
     {
         std::lock_guard<std::mutex> lock(mtx_);
         return full_;
@@ -104,7 +104,7 @@ private:
     bool full_{ false };
 
     T buffer_[N]{};
-    std::mutex mtx_;
+    mutable std::mutex mtx_;
 };
 #undef EMPTY
 #endif // !CAPTURER_RING_VECTOR_H

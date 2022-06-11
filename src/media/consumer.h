@@ -23,19 +23,14 @@ public:
             thread_.join();
         }
     }
-    virtual void reset() = 0;
 
     virtual int run() = 0;
     virtual int consume(T*, int) = 0;
-    virtual bool full(int) = 0;
-    virtual int format(int) const = 0;
-    virtual bool accepts(int) const = 0;
 
     virtual void pause() { paused_ = true; }
     virtual void resume() { paused_ = false; }
     virtual void stop() { running_ = false; reset(); }
-    virtual bool eof() const { return eof_; }
-
+    virtual void reset() = 0;
     virtual int wait()
     {
         if (thread_.joinable()) {
@@ -44,9 +39,14 @@ public:
         return 0;
     }
 
+    virtual bool full(int) const = 0;
+    virtual int format(int) const = 0;
+    virtual bool accepts(int) const = 0;
+
     virtual bool ready() const { return ready_; }
     bool running() const { return running_; }
     bool paused() const { return paused_; }
+    virtual bool eof() const { return eof_; }
 
 protected:
     std::atomic<bool> running_{ false };

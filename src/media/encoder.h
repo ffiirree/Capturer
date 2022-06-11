@@ -23,7 +23,7 @@ public:
     int run() override;
     int consume(AVFrame* frame, int type) override;
 
-    bool full(int type) override
+    bool full(int type) const override
     {
         switch (type) {
         case AVMEDIA_TYPE_VIDEO:
