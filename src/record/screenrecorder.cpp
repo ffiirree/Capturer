@@ -20,6 +20,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
     recording_type_ = type;
+    setMinValidSize({ 16, 16 });
 
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE, this);
     prevent_transparent_ = true;
@@ -115,6 +116,7 @@ void ScreenRecorder::setup()
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
         LOG(INFO) << "crate filters failed";
+        exit();
         return;
     }
     
@@ -126,11 +128,13 @@ void ScreenRecorder::setup()
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";
+        exit();
         return;
     }
 
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECARDING!! Exit first.";
+        exit();
         return;
     }
 

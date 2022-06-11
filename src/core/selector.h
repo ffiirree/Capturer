@@ -20,6 +20,7 @@ public:
     enum class SelectorStatus {
         INITIAL,
         NORMAL,
+        START_SELECTING,
         SELECTING,
         CAPTURED,
         MOVING,
@@ -39,13 +40,17 @@ public slots:
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
     void showRegion() { info_->hide(); mask_hidded_ = true; update(); }
-    void resetSelected() { box_.reset({ 0, 0, DisplayInfo::maxSize().width(), DisplayInfo::maxSize().height() }); }
+    void resetSelected() { box_.reset({ 0, 0, use_detect_ ? DisplayInfo::maxSize().width() : 0, use_detect_ ? DisplayInfo::maxSize().height() : 0 }); }
 
     // hiding
-    void hide() { resetSelected(); repaint(); QWidget::hide(); }
+    void hide() { info_->hide(); resetSelected(); repaint();  QWidget::hide(); }
     virtual void exit();
 
     void updateTheme(json& setting);
+
+    // minimum size of selected area
+    void setMinValidSize(const QSize& size) { min_size_ = size; }
+    bool isValid() { return box_.width() >= min_size_.width() && box_.height() >= min_size_.height(); }
 
 signals:
     void captured();
@@ -69,6 +74,9 @@ protected:
     // move
     QPoint mbegin_{0, 0}, mend_{0, 0};
 
+    // selecting
+    QPoint sbegin_{ 0,0 };
+
     Resizer box_;
     bool prevent_transparent_ = false;
 
@@ -82,6 +90,8 @@ private:
     QColor mask_color_{ 0, 0, 0, 100 };
     bool use_detect_{ true };
     bool mask_hidded_{ false };
+
+    QSize min_size_{ 2, 2 };
 };
 
 #endif //! CAPTURER_SELECTOR_H

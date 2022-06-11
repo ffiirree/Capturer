@@ -17,6 +17,7 @@ Selector::Selector(QWidget * parent)
     info_->setFixedSize(100, 24);
     info_->setAlignment(Qt::AlignCenter);
     info_->setObjectName("size_info");
+    info_->setVisible(false);
 
     setAttribute(Qt::WA_TranslucentBackground);
 
@@ -66,10 +67,8 @@ void Selector::mousePressEvent(QMouseEvent *event)
 
         switch (status_) {
         case SelectorStatus::NORMAL:
-            box_.reset(pos, pos);
-            info_->show();
-
-            status_ = SelectorStatus::SELECTING;
+            sbegin_ = pos;
+            status_ = SelectorStatus::START_SELECTING;
             break;
 
         case SelectorStatus::CAPTURED:
@@ -102,6 +101,16 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
             update();
         }
         setCursor(Qt::CrossCursor);
+        break;
+
+    case SelectorStatus::START_SELECTING:
+        if (std::abs(mouse_pos.x() - sbegin_.x()) >= std::min(min_size_.width(), 4) &&
+            std::abs(mouse_pos.y() - sbegin_.y()) >= std::min(min_size_.height(), 4)) {
+            box_.reset(sbegin_, mouse_pos);
+            info_->show();
+            status_ = SelectorStatus::SELECTING;
+            update();
+        }
         break;
 
     case SelectorStatus::SELECTING:
@@ -175,12 +184,31 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
     if(event->button() == Qt::LeftButton) {
         switch (status_) {
         case SelectorStatus::NORMAL:break;
-        case SelectorStatus::SELECTING:
-            // detected window
-            if(box_.width() == 1 && box_.height() == 1 && use_detect_) {
-                box_.reset(WidgetsDetector::window());
+        case SelectorStatus::START_SELECTING:
+            if (use_detect_) {
+                CAPTURED();
             }
-            CAPTURED();
+            else {
+                status_ = SelectorStatus::NORMAL;
+            }
+            break;
+        case SelectorStatus::SELECTING:
+            // invalid size
+            if(!isValid()) {
+                if (use_detect_) { // detected window
+                    box_.reset(WidgetsDetector::window());
+                    CAPTURED();
+                }
+                else {   // reset
+                    info_->hide();
+                    box_.reset({ 0,0 }, { 0,0 });
+                    status_ = SelectorStatus::NORMAL;
+                    update();
+                }
+            }
+            else {
+                CAPTURED();
+            }
             break;
         case SelectorStatus::MOVING:
         case SelectorStatus::RESIZING:  CAPTURED(); break;
@@ -209,7 +237,7 @@ void Selector::paintEvent(QPaintEvent *)
 
         if (use_detect_ || status_ > SelectorStatus::NORMAL) {
             // info
-            info_->setText(QString::fromStdString(fmt::format("{} x {}", selected().width(), selected().height())));
+            info_->setText(isValid() ? fmt::format("{} x {}", selected().width(), selected().height()).c_str() : "-- x --");
             auto info_y = box_.top() - info_->geometry().height() - 1;
             info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
 
@@ -222,7 +250,7 @@ void Selector::paintEvent(QPaintEvent *)
             // draw anchors
             painter_.setPen({ pen_.color(), pen_.widthF(), Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin });
             painter_.setBrush(Qt::white);
-            painter_.drawRects(box_.anchors());
+            painter_.drawRects((srect.width() >= 32 && srect.height() >= 32) ? box_.anchors() : box_.cornerAnchors());
         }
     }
     else {

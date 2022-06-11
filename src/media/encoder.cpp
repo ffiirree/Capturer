@@ -295,7 +295,7 @@ void Encoder::destroy()
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 
-    if (fmt_ctx_ && av_write_trailer(fmt_ctx_) != 0) {
+    if (fmt_ctx_ && ready_ && av_write_trailer(fmt_ctx_) != 0) {
         LOG(ERROR) << "av_write_trailer";
     }
 

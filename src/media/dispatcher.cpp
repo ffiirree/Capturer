@@ -357,7 +357,7 @@ int Dispatcher::reset()
     for (auto& coder : encoders_) {
         // wait 0~3s
         for (int i = 0; i < 100; i++) {
-            if (coder.consumer->eof()) break;
+            if (!coder.consumer->ready() || coder.consumer->eof()) break;
 
             std::this_thread::sleep_for(100ms);
         }
