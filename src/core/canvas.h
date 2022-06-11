@@ -76,6 +76,7 @@ signals:
     void focusOnGraph(Graph);
     void closed();
     void changed();
+    void cursorChanged();
 
 public slots:
     void enable() { enabled_ = true; }

@@ -19,6 +19,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     magnifier_ = new Magnifier(this);
 
     connect(canvas_, &Canvas::changed, [this]() { update(); });
+    connect(canvas_, &Canvas::cursorChanged, [this]() { setCursor(canvas_->getCursorShape()); });
+
     connect(this, &ScreenShoter::locked, canvas_, &Canvas::enable);
     connect(this, &ScreenShoter::captured, canvas_, &Canvas::disable);
 
@@ -36,8 +38,6 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         else if (!canvas_->editing())
             CAPTURED();
     });
-
-    connect(menu_, &ImageEditMenu::changed, [this]() { setCursor(canvas_->getCursorShape()); });
 
     // show menu
     connect(this, &ScreenShoter::captured, [this](){ menu_->show(); moveMenu(); });
