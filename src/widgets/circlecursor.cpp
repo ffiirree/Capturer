@@ -1,6 +1,5 @@
 #include "circlecursor.h"
 #include <QPainter>
-#include <QDebug>
 
 CircleCursor::CircleCursor()
     : CircleCursor(3)
@@ -12,7 +11,6 @@ CircleCursor::CircleCursor(int width)
 {
     repaint();
 }
-
 
 void CircleCursor::repaint()
 {

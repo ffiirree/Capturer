@@ -1,5 +1,6 @@
 #include "command.h"
 #include <cmath>
+#include <QPainter>
 
 #define TEXT_EDIT_MARGIN   16
 

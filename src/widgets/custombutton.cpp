@@ -1,5 +1,5 @@
 #include "custombutton.h"
-#include <QKeyEvent>
+#include <QPainter>
 
 CustomButton::CustomButton(QWidget *parent)
     : QAbstractButton (parent)

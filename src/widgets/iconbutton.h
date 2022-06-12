@@ -7,10 +7,10 @@
 class IconButton : public CustomButton
 {
 public:
-    explicit IconButton(const QPixmap &, QWidget *parent = nullptr);
-    IconButton(const QPixmap &, const QSize&, const QSize&, bool checkable = false, QWidget *parent = nullptr);
+    explicit IconButton(const QPixmap&, QWidget* = nullptr);
+    IconButton(const QPixmap&, const QSize&, const QSize&, bool = false, QWidget* = nullptr);
 
-    void paint(QPainter *) override;
+    void paint(QPainter*) override;
 private:
     QPixmap icon_;
     QSize isize_;

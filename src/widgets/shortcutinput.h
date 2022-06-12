@@ -21,7 +21,6 @@ signals:
 
 private:
     void keyPressEvent(QKeyEvent *event) override;
-
 };
 
 #endif // SHORTCUT_INPUT_H

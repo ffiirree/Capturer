@@ -1,5 +1,6 @@
 #include "textedit.h"
-#include <QKeyEvent>
+#include <QFocusEvent>
+#include <QPainter>
 #include "logging.h"
 
 TextEdit::TextEdit(QWidget * parent)

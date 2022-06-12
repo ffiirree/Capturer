@@ -35,7 +35,7 @@ public:
         GRAPH_MASK      = 0x0000ffff
     };
 public:
-    Canvas(ImageEditMenu * menu, QWidget*parent = nullptr);
+    Canvas(ImageEditMenu*, QWidget* = nullptr);
 
     ImageEditMenu* menu()  const { return menu_; }
 
@@ -99,35 +99,35 @@ public slots:
     }
 
 private:
-    bool eventFilter(QObject* object, QEvent* event);
+    bool eventFilter(QObject*, QEvent*);
     void focusOn(shared_ptr<PaintCommand>);
 
     void updateHoverPos(const QPoint&);
-    QImage mosaic(const QImage& );
+    QImage mosaic(const QImage&);
 
-    ImageEditMenu* menu_ = nullptr;
+    ImageEditMenu* menu_{ nullptr };
 
-    Resizer::PointPosition hover_position_ = Resizer::OUTSIDE;
+    Resizer::PointPosition hover_position_{ Resizer::OUTSIDE };
     QPoint move_begin_{ 0, 0 };
 
     CommandStack commands_;
     CommandStack redo_stack_;
 
-    shared_ptr<PaintCommand> hover_cmd_ = nullptr;    // hover
-    shared_ptr<PaintCommand> focus_cmd_ = nullptr;    // focus
-    shared_ptr<PaintCommand> copied_cmd_ = nullptr;   // copied
+    shared_ptr<PaintCommand> hover_cmd_{ nullptr };    // hover
+    shared_ptr<PaintCommand> focus_cmd_{ nullptr };    // focus
+    shared_ptr<PaintCommand> copied_cmd_{ nullptr };   // copied
 
-    PaintType modified_ = PaintType::UNMODIFIED;
+    PaintType modified_{ PaintType::UNMODIFIED };
 
     CircleCursor circle_cursor_{ 20 };
     QPixmap canvas_;
     QPixmap backup_;
-    uint32_t edit_status_ = EditStatus::NONE;
+    uint32_t edit_status_{ EditStatus::NONE };
 
     QPoint offset_{ 0, 0 };
     QPoint global_offset_{ 0, 0 };
 
-    bool enabled_ = false;
+    bool enabled_{ false };
 };
 
 #endif // CANVAS_H

@@ -19,9 +19,9 @@ public:
     enum { VIDEO, GIF };
 
 public:
-    explicit ScreenRecorder(int type = VIDEO, QWidget *parent = nullptr);
+    explicit ScreenRecorder(int type = VIDEO, QWidget* = nullptr);
     ~ScreenRecorder() override {
-        delete decoder_; decoder_= nullptr;
+        delete decoder_; decoder_ = nullptr;
         delete encoder_; encoder_ = nullptr;
         delete dispatcher_; dispatcher_ = nullptr;
     }
@@ -29,8 +29,9 @@ public:
     inline int framerate() const { return framerate_; }
 
 signals:
-    void SHOW_MESSAGE(const QString &title, const QString &msg,
-                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
+    void SHOW_MESSAGE(const QString&, const QString&, 
+        QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10000);
+
 public slots:
     virtual void exit() override;
 
@@ -41,12 +42,13 @@ public slots:
     void mute(int type, bool v) { type ? m_mute_ = v : s_mute_ = v; }
     void updateTheme()
     {
-        Selector::updateTheme(recording_type_ == VIDEO ? Config::instance()["record"]["selector"] : Config::instance()["gif"]["selector"]);
+        Selector::updateTheme(Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"]);
     }
+
 private:
     void setup();
 
-    void keyPressEvent(QKeyEvent *event) override;
+    void keyPressEvent(QKeyEvent*) override;
 
     int recording_type_{ VIDEO };
 
@@ -61,7 +63,7 @@ private:
 
     VideoPlayer* player_{ nullptr };
 
-    RecordMenu *menu_{ nullptr };
+    RecordMenu* menu_{ nullptr };
     bool m_mute_{ true };
     bool s_mute_{ true };
 

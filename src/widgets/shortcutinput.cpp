@@ -1,6 +1,5 @@
 #include "shortcutinput.h"
 #include <QKeyEvent>
-#include <QDebug>
 
 ShortcutInput::ShortcutInput(QWidget * parent)
     : QLineEdit(parent)

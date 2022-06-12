@@ -6,7 +6,6 @@
 #include <utility>
 #include <QFile>
 #include <map>
-#include <queue>
 
 #ifndef st
 #define st(X) do{X}while(0)
@@ -41,7 +40,6 @@ using std::vector;
 using std::pair;
 using std::make_pair;
 using std::map;
-using std::queue;
 
 template<typename T>
 inline void LOAD_QSS(T* obj, vector<QString> files)

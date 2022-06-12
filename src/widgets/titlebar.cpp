@@ -16,45 +16,45 @@ TitleBar::TitleBar(QWidget *parent)
     setLayout(layout);
 
     // logo & title
-    icon_label_ = new QLabel();
-    icon_label_->setObjectName("logo");
+    auto icon_label = new QLabel(this);
+    icon_label->setObjectName("logo");
     auto logo = QPixmap(":/icon/res/icon");
-    icon_label_->setPixmap(logo);
-    icon_label_->setFixedSize(50, 50);
-    icon_label_->setContentsMargins({10, 10, 10, 10});
-    icon_label_->setScaledContents(true);
+    icon_label->setPixmap(logo);
+    icon_label->setFixedSize(50, 50);
+    icon_label->setContentsMargins({10, 10, 10, 10});
+    icon_label->setScaledContents(true);
 
-    title_label_ = new QLabel("");
+    title_label_ = new QLabel("", this);
     title_label_->setFixedWidth(150);
     title_label_->setObjectName("title");
 
-    layout->addWidget(icon_label_);
+    layout->addWidget(icon_label);
     layout->addWidget(title_label_);
 
     // blank
     layout->addSpacerItem(new QSpacerItem(20, 50, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     // close button
-    close_btn_ = new IconButton(QPixmap(":/icon/res/close"), { 50, 50 }, { 24, 24 });
-    close_btn_->normal(QColor("#afafaf"));
-    close_btn_->hover(QColor("#409eff"));
-    connect(close_btn_, &QPushButton::clicked, this, &TitleBar::close);
+    auto close_btn = new IconButton(QPixmap(":/icon/res/close"), { 50, 50 }, { 24, 24 }, false, this);
+    close_btn->normal(QColor("#afafaf"));
+    close_btn->hover(QColor("#409eff"));
+    connect(close_btn, &QPushButton::clicked, this, &TitleBar::close);
 
-    layout->addWidget(close_btn_);
+    layout->addWidget(close_btn);
 }
 
 void TitleBar::mousePressEvent(QMouseEvent * event)
 {
     if (event->button() == Qt::LeftButton) {
         begin_ = event->globalPos();
-        moving = true;
+        moving_ = true;
     }
 }
 
 void TitleBar::mouseMoveEvent(QMouseEvent * event)
 {
     auto mouse_global_pos = event->globalPos();
-    if (moving) {
+    if (moving_) {
         moved(mouse_global_pos - begin_);
         begin_ = mouse_global_pos;
     }
@@ -62,5 +62,5 @@ void TitleBar::mouseMoveEvent(QMouseEvent * event)
 
 void TitleBar::mouseReleaseEvent(QMouseEvent *)
 {
-    moving = false;
+    moving_ = false;
 }

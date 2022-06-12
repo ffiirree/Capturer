@@ -34,18 +34,18 @@ public:
     }
 
 protected:
-    void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *) override;
 
 private:
-    QLabel * label_ = nullptr;
+    QLabel * label_{ nullptr };
     QPixmap pixmap_;
 
-    int alpha_ = 5;
+    int alpha_{ 5 };
     QSize msize_{ 31, 25 };
     QSize psize_{ 0, 0 };
     QColor center_color_;
 
-    ColorFormat color_format_ = ColorFormat::HEX;
+    ColorFormat color_format_{ ColorFormat::HEX };
 };
 
 #endif // MAGNIFIER_H

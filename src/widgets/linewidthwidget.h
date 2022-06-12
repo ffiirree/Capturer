@@ -7,7 +7,7 @@ class WidthButton : public CustomButton
 {
     Q_OBJECT
 public:
-    explicit WidthButton(const QSize& size, int width = 1, bool checkable = false, QWidget *parent = nullptr)
+    explicit WidthButton(const QSize& size, int width = 1, bool checkable = false, QWidget* parent = nullptr)
         : CustomButton(size, checkable, parent), width_(width) {
         checkValue();
     }
@@ -17,7 +17,7 @@ public:
     void setMaxValue(int max) { max_ = max; }
     void setMinValue(int min) { min_ = min; }
 
-    virtual void paint(QPainter *) override;
+    virtual void paint(QPainter*) override;
 
 signals:
     void changed(int);
@@ -32,18 +32,18 @@ public slots:
     }
 
 protected:
-    void wheelEvent(QWheelEvent *) override;
+    void wheelEvent(QWheelEvent*) override;
 
 private:
     void checkValue()
     {
-        if(width_ > max_) width_ = max_;
-        if(width_ < min_) width_ = min_;
+        if (width_ > max_) width_ = max_;
+        if (width_ < min_) width_ = min_;
     }
 
-    int width_ = 2;
-    int max_ = 25;
-    int min_ = 1;
+    int width_{ 2 };
+    int max_{ 25 };
+    int min_{ 1 };
 };
 
 #endif // LINE_WIDTH_WIDGET_H

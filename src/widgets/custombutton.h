@@ -2,15 +2,14 @@
 #define CUSTOM_BUTTON_H
 
 #include <QAbstractButton>
-#include <QPainter>
 
 class CustomButton : public QAbstractButton
 {
 public:
-    explicit CustomButton(QWidget* parent = nullptr);
-    explicit CustomButton(const QSize&, bool checkable = false, QWidget* parent = nullptr);
+    explicit CustomButton(QWidget* = nullptr);
+    explicit CustomButton(const QSize&, bool = false, QWidget* = nullptr);
 
-    virtual void paint(QPainter* painter) = 0;
+    virtual void paint(QPainter*) = 0;
 
     inline void normal(const QColor& icon, const QColor& bg = Qt::transparent) { icon_normal_color_ = icon, bg_normal_color_ = bg; update(); }
     inline void hover(const QColor& icon, const QColor& bg = Qt::transparent) { icon_hover_color_ = icon, bg_hover_color_ = bg; update(); }
@@ -21,11 +20,11 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override;
-    void enterEvent(QEvent* event) override;
-    void leaveEvent(QEvent* event) override;
+    void enterEvent(QEvent*) override;
+    void leaveEvent(QEvent*) override;
 
 protected:
-    bool hover_ = false;
+    bool hover_{ false };
 
     // icon
     QColor icon_normal_color_{ 0x38, 0x38, 0x38 };
@@ -37,4 +36,5 @@ protected:
     QColor bg_hover_color_{ Qt::transparent };
     QColor bg_checked_color_{ Qt::transparent };
 };
+
 #endif // CUSTOM_BUTTON_H

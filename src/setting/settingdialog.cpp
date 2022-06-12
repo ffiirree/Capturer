@@ -1,17 +1,22 @@
 #include "settingdialog.h"
-#include "shortcutinput.h"
-#include <string>
 #include <QStandardPaths>
 #include <QSpinBox>
 #include <QComboBox>
 #include <QListView>
 #include <QVBoxLayout>
 #include <QGraphicsDropShadowEffect>
+#include <QCheckBox>
+#include <QSettings>
+#include <QCoreApplication>
+#include "shortcutinput.h"
 #include "colorpanel.h"
 #include "titlebar.h"
 #include "devices.h"
 #include "logging.h"
 #include "version.h"
+#ifdef __linux__
+#include <QTextStream>
+#endif
 
 SettingWindow::SettingWindow(QWidget * parent)
     : QWidget(parent)

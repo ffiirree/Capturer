@@ -8,6 +8,7 @@
 class EditMenu : public QWidget
 {
     Q_OBJECT
+
 public:
     explicit EditMenu(QWidget *parent = nullptr);
 

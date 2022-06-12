@@ -2,9 +2,6 @@
 #define APP_TAB_BAR_H
 
 #include <QTabBar>
-#include <QStylePainter>
-#include <QStyleOptionTab>
-#include <QProxyStyle>
 
 class AppTabBar : public QTabBar
 {

@@ -2,10 +2,6 @@
 #define APP_TAB_CONTROL_H
 
 #include <QTabWidget>
-#include <QTabBar>
-#include <QPalette>
-#include <QPainter>
-#include <QDebug>
 #include "apptabbar.h"
 
 class AppTabControl : public QTabWidget
@@ -19,8 +15,8 @@ public:
     ~AppTabControl() override = default;
 
 private:
-    int width_ = 0;
-    int height_ = 0;
+    int width_{ 0 };
+    int height_{ 0 };
 };
 
 #endif // APP_TAB_CONTROL_H

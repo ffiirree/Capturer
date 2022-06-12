@@ -2,7 +2,6 @@
 #define TEXTEDIT_H
 
 #include <QTextEdit>
-#include <QPainter>
 
 class TextEdit : public QTextEdit
 {

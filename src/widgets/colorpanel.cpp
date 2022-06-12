@@ -1,5 +1,6 @@
 #include "colorpanel.h"
 #include <QWheelEvent>
+#include <QGridLayout>
 
 ColorButton::ColorButton(QWidget *parent)
     : ColorButton(Qt::blue, parent)

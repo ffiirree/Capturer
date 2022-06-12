@@ -3,7 +3,6 @@
 #include <QApplication>
 #include <QScreen>
 #include <QDesktopWidget>
-#include <QDebug>
 
 Magnifier::Magnifier(QWidget *parent)
     :QWidget(parent)

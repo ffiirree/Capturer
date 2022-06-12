@@ -3,6 +3,7 @@
 #include <QFontDatabase>
 #include <QListView>
 #include <QLineEdit>
+#include <QLayout>
 #include "separator.h"
 
 StyleMenu::StyleMenu(int buttons, QWidget* parent)

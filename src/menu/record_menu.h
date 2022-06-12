@@ -43,17 +43,17 @@ private:
     void mouseReleaseEvent(QMouseEvent*) override;
 
 private:
-    QWidget* window_ = nullptr;
+    QWidget* window_{ nullptr };
 
-    QPushButton* close_btn_ = nullptr;
-    QCheckBox* mic_ = nullptr;
-    QCheckBox* speaker_ = nullptr;
-    QCheckBox* camera_ = nullptr;
-    QCheckBox* pause_ = nullptr;
-    QLabel* time_label_ = nullptr;
+    QPushButton* close_btn_{ nullptr };
+    QCheckBox* mic_{ nullptr };
+    QCheckBox* speaker_{ nullptr };
+    QCheckBox* camera_{ nullptr };
+    QCheckBox* pause_{ nullptr };
+    QLabel* time_label_{ nullptr };
 
-    QPoint begin_pos_{ 0,0 };
-    bool moving_ = false;
+    QPoint begin_pos_{ 0, 0 };
+    bool moving_{ false };
 };
 
 #endif // RECORD_MENU_H

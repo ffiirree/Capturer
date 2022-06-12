@@ -1,4 +1,7 @@
 #include "apptabbar.h"
+#include <QStylePainter>
+#include <QStyleOptionTab>
+#include <QProxyStyle>
 
 QSize AppTabBar::tabSizeHint(int index) const
 {

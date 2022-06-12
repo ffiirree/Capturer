@@ -59,15 +59,15 @@ public slots:
     void paintGraph(Graph graph) { graph_ = graph; btn_menus_[graph].first->setChecked(true); }
 
 private:
-    IconButton* undo_btn_ = nullptr;
-    IconButton* redo_btn_ = nullptr;
+    IconButton* undo_btn_{ nullptr };
+    IconButton* redo_btn_{ nullptr };
 
-    ButtonGroup* group_ = nullptr;
+    ButtonGroup* group_{ nullptr };
 
     Graph graph_{ Graph::NONE };
     map<Graph, std::pair<IconButton*, EditMenu*>> btn_menus_; // bind graph with buttons
 
-    bool sub_menu_show_pos_ = false;
+    bool sub_menu_show_pos_{ false };
 };
 
 

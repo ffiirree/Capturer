@@ -21,7 +21,7 @@ public slots:
 
 private:
     QPixmap cursor_{51, 51};
-    int width_;
+    int width_{ 3 };
 };
 
 #endif // CIRCLE_CURSOR_H
