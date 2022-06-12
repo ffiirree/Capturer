@@ -47,6 +47,8 @@ public:
 
     int64_t escaped_ms() const { return escaped_us() / 1000; }
 
+    bool has_audio() const { return has_audio_in_; }
+
 private:
     int create_filter_for_video_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
     int create_filter_for_video_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
@@ -61,6 +63,7 @@ private:
     std::atomic<bool> running_{ false };
     std::atomic<bool> paused_{ false };
     std::atomic<bool> ready_{ false };
+    std::atomic<bool> has_audio_in_{ false };
 
     struct Source {
         explicit Source(Producer<AVFrame>* const p) : producer(p) { }
@@ -75,7 +78,7 @@ private:
         Consumer<AVFrame>* consumer{ nullptr };
         AVFilterContext* video_sink_ctx{ nullptr };
         AVFilterContext* audio_sink_ctx{ nullptr };
-        bool eof{ false };
+        uint8_t eof{ 0x00 };
     };
 
     std::vector<Source> decoders_;

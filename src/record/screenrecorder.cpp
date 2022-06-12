@@ -16,13 +16,18 @@ extern "C" {
 }
 
 
-ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
+ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     : Selector(parent)
 {
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
 
+#ifdef _WIN32
+    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::MICROPHONE | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
+#elif __linux__
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE, this);
+#endif // _WIN32
+
     prevent_transparent_ = true;
 
     player_ = new VideoPlayer(this);
@@ -41,9 +46,10 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
 
-    decoder_ = new Decoder();
-    encoder_ = new Encoder();
-    dispatcher_ = new Dispatcher();
+    desktop_decoder_ = std::make_unique<Decoder>();
+    microphone_decoder_ = std::make_unique<Decoder>();
+    encoder_ = std::make_unique<Encoder>();
+    dispatcher_ = std::make_unique<Dispatcher>();
 
     connect(menu_, &RecordMenu::paused, [this]() { dispatcher_->pause(); });
     connect(menu_, &RecordMenu::resumed, [this]() { dispatcher_->resume(); });
@@ -83,12 +89,15 @@ void ScreenRecorder::setup()
 
     Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion() : hide();
 
+    menu_->disable_mic(Devices::microphones().size() == 0);
+    menu_->disable_cam(Devices::cameras().size() == 0);
+
     auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
     auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
-    decoder_->open(
+    desktop_decoder_->open(
         QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
         "x11grab",
         {
@@ -97,7 +106,7 @@ void ScreenRecorder::setup()
         }
     );
 #elif _WIN32
-    decoder_->open(
+    if (desktop_decoder_->open(
         "desktop",
         "gdigrab",
         {
@@ -106,16 +115,30 @@ void ScreenRecorder::setup()
             {"offset_y", std::to_string(selected_area.y())},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
-    );
+    ) < 0) {
+        exit();
+        return;
+    }
+
+    if (Devices::microphones().size() > 0) {
+        microphone_decoder_->open(
+            fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
+            "dshow"
+        );
+    }
 #endif
 
-    dispatcher_->append(decoder_);
+    dispatcher_->append(desktop_decoder_.get());
+    if (Devices::microphones().size() > 0 && microphone_decoder_->ready()) {
+        dispatcher_->append(microphone_decoder_.get());
+    }
 
     encoder_->format(pix_fmt_);
-    auto& coder = dispatcher_->append(encoder_);
+    encoder_->enable(AVMEDIA_TYPE_AUDIO, Devices::microphones().size() > 0);
+    auto& coder = dispatcher_->append(encoder_.get());
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
-        LOG(INFO) << "crate filters failed";
+        LOG(INFO) << "create filters failed";
         exit();
         return;
     }
@@ -125,6 +148,9 @@ void ScreenRecorder::setup()
     encoder_->framerate(av_buffersink_get_frame_rate(coder.video_sink_ctx));
     encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(coder.video_sink_ctx));
     encoder_->v_stream_tb(av_buffersink_get_time_base(coder.video_sink_ctx));
+    if (coder.audio_sink_ctx) {
+        encoder_->a_stream_tb(av_buffersink_get_time_base(coder.audio_sink_ctx));
+    }
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";

@@ -363,6 +363,9 @@ void SettingWindow::setupDevicesWidget()
     _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _1_2->addItems(Devices::microphones());
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
+    connect(_1_2, &QComboBox::currentTextChanged, [this](QString s) {
+        config.set(config["devices"]["microphones"], s);
+    });
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new QComboBox();
@@ -371,6 +374,9 @@ void SettingWindow::setupDevicesWidget()
     _2_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     _2_2->addItems(Devices::speakers());
     layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
+    connect(_2_2, &QComboBox::currentTextChanged, [this](QString s) {
+        config.set(config["devices"]["speakers"], s);
+    });
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new QComboBox();
@@ -381,7 +387,7 @@ void SettingWindow::setupDevicesWidget()
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
     connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
         config.set(config["devices"]["cameras"], s);
-        });
+    });
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     layout->setRowStretch(5, 1);

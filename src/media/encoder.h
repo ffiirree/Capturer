@@ -4,6 +4,7 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/audio_fifo.h>
 }
 #include "consumer.h"
 #include "logging.h"
@@ -12,7 +13,12 @@ extern "C" {
 
 class Encoder : public Consumer<AVFrame> {
 public:
-    enum { V_ENCODING_EOF = 0x01, A_ENCODING_EOF = 0x02, ENCODING_EOF = V_ENCODING_EOF | A_ENCODING_EOF };
+    enum { 
+        V_ENCODING_EOF = 0x01, 
+        A_ENCODING_EOF = 0x02, 
+        A_ENCODING_FIFO_EOF = 0x04, 
+        ENCODING_EOF = V_ENCODING_EOF | A_ENCODING_EOF | A_ENCODING_FIFO_EOF
+    };
 public:
     ~Encoder() override { destroy(); }
     void reset() override;
@@ -39,8 +45,17 @@ public:
         switch (type)
         {
         case AVMEDIA_TYPE_VIDEO: return true;
-        case AVMEDIA_TYPE_AUDIO: return false;
+        case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
         default: return false;
+        }
+    }
+
+    void enable(int type, bool v = true) override
+    {
+        switch (type)
+        {
+        case AVMEDIA_TYPE_VIDEO: break;
+        case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
         }
     }
 
@@ -68,21 +83,30 @@ private:
     int run_f();
     void destroy();
 
-    enum AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
-    enum AVSampleFormat sample_fmt_{ AV_SAMPLE_FMT_FLTP };
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
+    std::atomic<bool> audio_enabled_{ false };
 
+    // video params @{
     int width_{ 0 };
     int height_{ 0 };
-    
+
     bool is_cfr_{ false };
-    AVFormatContext* fmt_ctx_{ nullptr };
+    enum AVPixelFormat pix_fmt_ { AV_PIX_FMT_YUV420P };
     AVRational framerate_{ 24, 1 };
     AVRational sample_aspect_ratio_{ 1,1 };
     AVRational v_stream_time_base_{ 1, AV_TIME_BASE };
     AVRational a_stream_time_base_{ 1, AV_TIME_BASE };
+    //@}
 
+    // audio params @{
+    int sample_rate_{ 44100 };
+    int channels_{ 2 };
+    enum AVSampleFormat sample_fmt_ { AV_SAMPLE_FMT_FLTP };
+    uint64_t channel_layout_{ 0 };
+    //@}
+
+    AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_encoder_ctx_{ nullptr };
     AVCodecContext* audio_encoder_ctx_{ nullptr };
     AVCodec* video_encoder_{ nullptr };
@@ -90,9 +114,12 @@ private:
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
     int64_t last_dts_{ AV_NOPTS_VALUE };
+    int64_t audio_pts_{ 0 };
 
     AVPacket* packet_{ nullptr };
     AVFrame* filtered_frame_{ nullptr };
+
+    AVAudioFifo* audio_fifo_buffer_{ nullptr };
 
     RingVector<AVFrame*, 6> video_buffer_{
         []() { return av_frame_alloc(); },

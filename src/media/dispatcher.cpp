@@ -19,7 +19,7 @@ int Dispatcher::create_filter_for_video_input(const Producer<AVFrame>* decoder, 
         LOG(ERROR) << "[DISPATCHER] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] " << "video buffersrc: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
+    LOG(INFO) << "[DISPATCHER] " << "create filter for video buffersrc: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
 
     const AVFilter* buffersrc = avfilter_get_by_name("buffer");
     if (!buffersrc) {
@@ -55,6 +55,8 @@ int Dispatcher::create_filter_for_video_output(const Consumer<AVFrame>* encoder,
         return -1;
     }
 
+    LOG(INFO) << "[DISPATCHER] " << "create filter for video buffersink";
+
     return 0;
 }
 
@@ -64,7 +66,7 @@ int Dispatcher::create_filter_for_audio_input(const Producer<AVFrame>* decoder, 
         LOG(ERROR) << "[DISPATCHER] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] " << "audio buffersrc: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
+    LOG(INFO) << "[DISPATCHER] " << "create filter for audio buffersrc: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
 
     const AVFilter* buffersrc = avfilter_get_by_name("abuffer");
     if (!buffersrc) {
@@ -77,6 +79,7 @@ int Dispatcher::create_filter_for_audio_input(const Producer<AVFrame>* decoder, 
         return -1;
     }
 
+    has_audio_in_ = true;
     return 0;
 }
 
@@ -92,6 +95,16 @@ int Dispatcher::create_filter_for_audio_output(const Consumer<AVFrame>* encoder,
         LOG(ERROR) << "avfilter_graph_create_filter";
         return -1;
     }
+
+    enum AVSampleFormat encoder_fmt = (AVSampleFormat)encoder->format(AVMEDIA_TYPE_AUDIO) ;
+    enum AVSampleFormat sink_fmt = (encoder_fmt == AV_SAMPLE_FMT_NONE) ? AV_SAMPLE_FMT_FLTP : encoder_fmt;
+    enum AVSampleFormat sink_fmts[] = { sink_fmt, AV_SAMPLE_FMT_NONE };
+    if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
+        LOG(ERROR) << "av_opt_set_int_list";
+        return -1;
+    }
+
+    LOG(INFO) << "[DISPATCHER] " << "create filter for audio buffersink";
 
     return 0;
 }
@@ -110,10 +123,10 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
         return -1;
     }
 
-    if ((decoders_.size() > 1 || encoders_.size() > 1) && filters_.length() == 0) {
-        LOG(ERROR) << "parameters error";
-        return -1;
-    }
+    //if ((decoders_.size() > 1 || encoders_.size() > 1) && filters_.length() == 0) {
+    //    LOG(ERROR) << "parameters error";
+    //    return -1;
+    //}
 
     // buffersrc
     for (auto& coder : decoders_) {
@@ -138,8 +151,11 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
             return -1;
         }
 
-        if (coder.consumer->accepts(AVMEDIA_TYPE_AUDIO) &&
-            create_filter_for_audio_output(coder.consumer, &coder.audio_sink_ctx) < 0) {
+        if (!has_audio_in_) {
+            coder.consumer->enable(AVMEDIA_TYPE_AUDIO, false);
+        }
+        else if (coder.consumer->accepts(AVMEDIA_TYPE_AUDIO) &&
+                 create_filter_for_audio_output(coder.consumer, &coder.audio_sink_ctx) < 0) {
             LOG(INFO) << "[DISPATCHER] create_filter_for_output";
             return -1;
         }
@@ -151,6 +167,8 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
         defer(avfilter_inout_free(&inputs));
         defer(avfilter_inout_free(&outputs));
 
+        LOG(FATAL) << "not support";
+
         if (avfilter_graph_parse2(filter_graph_, filters_.c_str(), &inputs, &outputs) < 0) {
             LOG(ERROR) << "avfilter_graph_parse2";
             return -1;
@@ -158,14 +176,26 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
 
         auto index = 0;
         for (auto ptr = inputs; ptr; ptr = ptr->next, index++) {
-            if (avfilter_link(decoders_[index].video_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
+            if (decoders_[index].video_src_ctx && avfilter_link(decoders_[index].video_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
+                LOG(ERROR) << "avfilter_link";
+                return -1;
+            }
+
+            ptr = ptr->next;
+            if (decoders_[index].audio_src_ctx && avfilter_link(decoders_[index].audio_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
         }
         index = 0;
         for (auto ptr = outputs; ptr; ptr = ptr->next, index++) {
-            if (avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].video_sink_ctx, 0) != 0) {
+            if (encoders_[index].video_sink_ctx && avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].video_sink_ctx, 0) != 0) {
+                LOG(ERROR) << "avfilter_link";
+                return -1;
+            }
+
+            ptr = ptr->next;
+            if (encoders_[index].audio_sink_ctx && avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].audio_sink_ctx, 0) != 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
@@ -173,6 +203,11 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
     }
     else {
         if (avfilter_link(decoders_[0].video_src_ctx, 0, encoders_[0].video_sink_ctx, 0) != 0) {
+            LOG(ERROR) << "avfilter_link";
+            return -1;
+        }
+
+        if (has_audio_in_ && encoders_[0].audio_sink_ctx && avfilter_link(decoders_[1].audio_src_ctx, 0, encoders_[0].audio_sink_ctx, 0) != 0) {
             LOG(ERROR) << "avfilter_link";
             return -1;
         }
@@ -288,7 +323,7 @@ int Dispatcher::dispatch_thread_f()
         // @}
 
         for (auto& encoder : encoders_) {
-            while (ret >= 0 && !encoder.eof) {
+            while (ret >= 0 && !(encoder.eof & 0x01)) {
                 av_frame_unref(filtered_frame);
                 ret = av_buffersink_get_frame_flags(encoder.video_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
@@ -296,8 +331,8 @@ int Dispatcher::dispatch_thread_f()
                     continue;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DISPATCHER] EOF";
-                    encoder.eof = true;
+                    LOG(INFO) << "[DISPATCHER] VIDEO EOF";
+                    encoder.eof |= 0x01;
                     // through and send null packet
                     av_frame_unref(filtered_frame);
                 }
@@ -311,6 +346,33 @@ int Dispatcher::dispatch_thread_f()
                     std::this_thread::sleep_for(20ms);
                 }
                 ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_VIDEO);
+            }
+
+            ret = 0;
+            while (ret >= 0 && encoder.audio_sink_ctx && !(encoder.eof & 0x02)) {
+                av_frame_unref(filtered_frame);
+                ret = av_buffersink_get_frame_flags(encoder.audio_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+
+                if (ret == AVERROR(EAGAIN)) {
+                    continue;
+                }
+                else if (ret == AVERROR_EOF) {
+                    LOG(INFO) << "[DISPATCHER] AUDIO EOF";
+                    encoder.eof |= 0x02;
+                    // through and send null packet
+                    av_frame_unref(filtered_frame);
+                }
+                else if (ret < 0) {
+                    LOG(ERROR) << "av_buffersink_get_frame_flags()";
+                    running_ = false;
+                    break;
+                }
+
+                while (encoder.consumer->full(AVMEDIA_TYPE_AUDIO) && running_) {
+                    std::this_thread::sleep_for(20ms);
+                }
+                LOG(INFO) << "[DISPATCHER] audio frame pts = " << filtered_frame->pts;
+                ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_AUDIO);
             }
         }
     }

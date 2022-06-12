@@ -20,6 +20,7 @@ public:
     int consume(AVFrame* frame, int type) override;
 
     bool full(int) const override { return false; }
+    void enable(int, bool) override { }
     bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
     int format(int) const override { return AV_PIX_FMT_RGB24; }
 

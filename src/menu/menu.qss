@@ -17,9 +17,6 @@ RecordMenu QCheckBox::indicator {
     height: 20px;
     width: 20px;
     padding: 10px;
-}
-
-RecordMenu QCheckBox::indicator::hover {
     border-radius: 5px;
 }
 

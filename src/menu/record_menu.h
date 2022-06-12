@@ -37,6 +37,9 @@ public slots:
     void mute(int, bool);
     void close_camera();
 
+    void disable_mic(bool);
+    void disable_cam(bool);
+
 private:
     void mousePressEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;

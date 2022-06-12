@@ -42,6 +42,7 @@ public:
     virtual bool full(int) const = 0;
     virtual int format(int) const = 0;
     virtual bool accepts(int) const = 0;
+    virtual void enable(int, bool = true) = 0;
 
     virtual bool ready() const { return ready_; }
     bool running() const { return running_; }

@@ -20,11 +20,6 @@ public:
 
 public:
     explicit ScreenRecorder(int type = VIDEO, QWidget* = nullptr);
-    ~ScreenRecorder() override {
-        delete decoder_; decoder_ = nullptr;
-        delete encoder_; encoder_ = nullptr;
-        delete dispatcher_; dispatcher_ = nullptr;
-    }
 
     inline int framerate() const { return framerate_; }
 
@@ -39,7 +34,7 @@ public slots:
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
 
-    void mute(int type, bool v) { type ? m_mute_ = v : s_mute_ = v; }
+    void mute(int type, bool v) { type ? m_mute_ = v, microphone_decoder_->mute(v) : s_mute_ = v; }
     void updateTheme()
     {
         Selector::updateTheme(Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"]);
@@ -64,12 +59,13 @@ private:
     VideoPlayer* player_{ nullptr };
 
     RecordMenu* menu_{ nullptr };
-    bool m_mute_{ true };
+    bool m_mute_{ false };
     bool s_mute_{ true };
 
-    Decoder* decoder_{ nullptr };
-    Encoder* encoder_{ nullptr };
-    Dispatcher* dispatcher_{ nullptr };
+    std::unique_ptr<Decoder> desktop_decoder_{ nullptr };
+    std::unique_ptr<Decoder> microphone_decoder_{ nullptr };
+    std::unique_ptr<Encoder> encoder_{ nullptr };
+    std::unique_ptr<Dispatcher> dispatcher_{ nullptr };
 
     QTimer* timer_{ nullptr };
 

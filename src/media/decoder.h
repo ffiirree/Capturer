@@ -45,9 +45,13 @@ public:
     std::string format_str(int) const override;
     bool eof() override { return eof_ == DECODING_EOF; }
 
+    void mute(bool v) { muted_ = v; }
+
 private:
     int run_f();
     void destroy();
+
+    std::atomic<bool> muted_{ false };
 
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_decoder_ctx_{ nullptr };

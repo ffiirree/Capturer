@@ -68,6 +68,12 @@ Config::Config()
     if(Devices::cameras().size() > 0)
         settings_["devices"]["cameras"] = Devices::cameras()[0];
 
+    if (Devices::microphones().size() > 0)
+        settings_["devices"]["microphones"] = Devices::microphones()[0];
+
+    if (Devices::speakers().size() > 0)
+        settings_["devices"]["speakers"] = Devices::speakers()[0];
+
     connect(this, &Config::changed, this, &Config::save);
 }
 

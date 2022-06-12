@@ -120,3 +120,17 @@ void RecordMenu::close_camera()
     if (camera_) 
         camera_->setChecked(false);
 }
+
+void RecordMenu::disable_cam(bool v) 
+{
+    if (camera_) {
+        camera_->setDisabled(v);
+    }
+}
+
+void RecordMenu::disable_mic(bool v)
+{
+    if (mic_) {
+        mic_->setDisabled(v);
+    }
+}
