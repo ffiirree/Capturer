@@ -275,11 +275,11 @@ int Encoder::run_f()
 
                 av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
-                if (last_dts_ != AV_NOPTS_VALUE && last_dts_ >= packet_->dts) {
-                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP FRAME: dts = " << packet_->dts;
+                if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
+                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP VIDEO FRAME: dts = " << packet_->dts;
                     continue;
                 }
-                last_dts_ = packet_->dts;
+                v_last_dts_ = packet_->dts;
 
                 packet_->stream_index = video_stream_idx_;
                 //LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
@@ -318,7 +318,7 @@ int Encoder::run_f()
             CHECK(av_audio_fifo_realloc(audio_fifo_buffer_, av_audio_fifo_size(audio_fifo_buffer_) + filtered_frame_->nb_samples) >= 0);
             CHECK(av_audio_fifo_write(audio_fifo_buffer_, (void**)filtered_frame_->data, filtered_frame_->nb_samples) >= filtered_frame_->nb_samples);
 
-            audio_pts_ = filtered_frame_->pts;
+            audio_pts_ = filtered_frame_->pts + av_audio_fifo_size(audio_fifo_buffer_);
         }
 
         while (!(eof_ & A_ENCODING_EOF) && 
@@ -363,6 +363,12 @@ int Encoder::run_f()
                     LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
                     return ret;
                 }
+
+                if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
+                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP AUDIO FRAME: dts = " << packet_->dts;
+                    continue;
+                }
+                a_last_dts_ = packet_->dts;
 
                 packet_->stream_index = audio_stream_idx_;
                 LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
@@ -417,7 +423,8 @@ void Encoder::destroy()
     ready_ = false;     // after av_write_trailer()
 
     first_pts_ = AV_NOPTS_VALUE;
-    last_dts_ = AV_NOPTS_VALUE;
+    v_last_dts_ = AV_NOPTS_VALUE;
+    a_last_dts_ = AV_NOPTS_VALUE;
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 

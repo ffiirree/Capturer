@@ -113,7 +113,8 @@ private:
     AVCodec* audio_encoder_{ nullptr };
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
-    int64_t last_dts_{ AV_NOPTS_VALUE };
+    int64_t v_last_dts_{ AV_NOPTS_VALUE };
+    int64_t a_last_dts_{ AV_NOPTS_VALUE };
     int64_t audio_pts_{ 0 };
 
     AVPacket* packet_{ nullptr };

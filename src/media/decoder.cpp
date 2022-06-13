@@ -92,7 +92,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         }
 
         auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
-        LOG(INFO) << fmt::format("[DECODER] SIZE = {}x{}, FORMAT = {}, FRAMERATE = {}/{}, STREAM TIME_BASE = {}/{}",
+        LOG(INFO) << fmt::format("[DECODER] {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
             video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
             fr.num, fr.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
@@ -122,11 +122,12 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             return false;
         }
 
-        LOG(INFO) << fmt::format("[DECODER] SAMPLE_RATE = {}, CHANNELS = {}, CHANNEL_LAYOUT = {}, SAMPLE_FMT = {}, SAMPLE_SIZE = {}",
+        LOG(INFO) << fmt::format("[DECODER] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}",
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
             av_get_sample_fmt_name(audio_decoder_ctx_->sample_fmt),
-            av_get_bytes_per_sample(audio_decoder_ctx_->sample_fmt) * 8
+            fmt_ctx_->streams[audio_stream_idx_]->nb_frames,
+            fmt_ctx_->streams[audio_stream_idx_]->start_time
         );
     }
 
@@ -296,7 +297,7 @@ int Decoder::run_f()
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
-                //LOG(INFO)
+                // LOG(INFO)
                 //    << "[DECODER@" << std::this_thread::get_id() << "] "
                 //    << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}",
                 //        video_decoder_ctx_->frame_number, (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_),

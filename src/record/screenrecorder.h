@@ -34,7 +34,16 @@ public slots:
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
 
-    void mute(int type, bool v) { type ? m_mute_ = v, microphone_decoder_->mute(v) : s_mute_ = v; }
+    void mute(int type, bool v) 
+    { 
+        if(type) {
+            m_mute_ = v; 
+            microphone_decoder_->mute(v);
+        } else {
+            s_mute_ = v;
+        } 
+    }
+
     void updateTheme()
     {
         Selector::updateTheme(Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"]);

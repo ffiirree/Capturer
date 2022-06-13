@@ -14,7 +14,9 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
 }
-
+#ifdef __linux__
+#include <cstdlib>
+#endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     : Selector(parent)
@@ -22,11 +24,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
 
-#ifdef _WIN32
     menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::MICROPHONE | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
-#elif __linux__
-    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::CAMERA | RecordMenu::PAUSE, this);
-#endif // _WIN32
 
     prevent_transparent_ = true;
 
@@ -41,7 +39,18 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
         }
         QString camera_name = Config::instance()["devices"]["cameras"].get<QString>();
         LOG(INFO) << "camera name : " << camera_name;
-        opened ? player_->play("video=" + camera_name.toStdString(), "dshow") : player_->close();
+        if(opened) {
+#ifdef _WIN32
+            if (!player_->play("video=" + camera_name.toStdString(), "dshow")) {
+#elif __linux__
+            if (!player_->play("/dev/video0", "v4l2")) {
+#endif
+                menu_->close_camera();
+            }
+        }
+        else {
+            player_->close();
+        }
     });
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
@@ -97,14 +106,23 @@ void ScreenRecorder::setup()
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
-    desktop_decoder_->open(
-        QString(":0.0+%1,%2").arg((selected_area.x() / 2) * 2).arg((selected_area.y()) / 2 * 2).toStdString(),
+    if (desktop_decoder_->open(
+        // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
+        // echo $DISPLAY
+        fmt::format("{}.0+{},{}", getenv("DISPLAY"), (selected_area.x() / 2) * 2, (selected_area.y()) / 2 * 2),
         "x11grab",
         {
             {"framerate", std::to_string(framerate_)},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
-    );
+    ) < 0) {
+        exit();
+        return;
+    }
+
+    if (Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
+        microphone_decoder_->open("default", "pulse");
+    }
 #elif _WIN32
     if (desktop_decoder_->open(
         "desktop",
