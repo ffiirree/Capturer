@@ -140,5 +140,5 @@ make package
 
 ### 录屏
 
-- [ ] Speakers and Microphones
+- [ ] Speakers
 - [ ] 添加水印

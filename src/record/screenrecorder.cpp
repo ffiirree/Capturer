@@ -109,7 +109,7 @@ void ScreenRecorder::setup()
     if (desktop_decoder_->open(
         // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
         // echo $DISPLAY
-        fmt::format("{}.0+{},{}", getenv("DISPLAY"), (selected_area.x() / 2) * 2, (selected_area.y()) / 2 * 2),
+        fmt::format("{}.0+{},{}", getenv("DISPLAY"), selected_area.x(), selected_area.y()),
         "x11grab",
         {
             {"framerate", std::to_string(framerate_)},

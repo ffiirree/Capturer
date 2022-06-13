@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(capturer VERSION 1.3.6 LANGUAGES C CXX)
+project(capturer VERSION 1.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
