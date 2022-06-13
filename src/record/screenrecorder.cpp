@@ -110,7 +110,9 @@ void ScreenRecorder::setup()
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
     if (Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
-        microphone_decoder_->open("default", "pulse");
+        if (microphone_decoder_->open("default", "pulse") < 0) {
+            microphone_decoder_->reset();
+        }
     }
 
     if (desktop_decoder_->open(
@@ -123,6 +125,7 @@ void ScreenRecorder::setup()
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
     ) < 0) {
+        desktop_decoder_->reset();
         exit();
         return;
     }
@@ -137,15 +140,18 @@ void ScreenRecorder::setup()
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
     ) < 0) {
+        desktop_decoder_->reset();
         exit();
         return;
     }
 
     if (Devices::microphones().size() > 0) {
-        microphone_decoder_->open(
+        if (microphone_decoder_->open(
             fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
             "dshow"
-        );
+        ) < 0) {
+            microphone_decoder_->reset();
+        }
     }
 #endif
 
@@ -178,12 +184,14 @@ void ScreenRecorder::setup()
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";
+        encoder_->reset();
         exit();
         return;
     }
 
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECARDING!! Exit first.";
+        dispatcher_->reset();
         exit();
         return;
     }

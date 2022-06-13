@@ -16,6 +16,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     LOG(INFO) << fmt::format("[DECODER] \"{}\", format = {}, options = {}", name, format, options);
 
     // format context
+    if (fmt_ctx_) destroy();
     fmt_ctx_ = avformat_alloc_context();
     if (!fmt_ctx_) {
         LOG(INFO) << "avformat_alloc_context";

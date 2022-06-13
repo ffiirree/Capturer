@@ -27,6 +27,7 @@ VideoPlayer::~VideoPlayer()
 bool VideoPlayer::play(const std::string& name, const std::string& fmt, const std::string& filters)
 {
     if (decoder_->open(name, fmt, {}) != 0) {
+        decoder_->reset();
         return false;
     }
 
@@ -51,6 +52,7 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     eof_ = 0x00;
 
     if (dispatcher_->start() < 0) {
+        dispatcher_->reset();
         LOG(INFO) << "failed to start";
         return false;
     }

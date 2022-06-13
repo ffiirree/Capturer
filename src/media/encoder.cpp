@@ -12,9 +12,9 @@ extern "C" {
 using namespace std::chrono_literals;
 
 int Encoder::open(const std::string& filename, 
-                   const std::string& codec_name,
-                   bool is_cfr, 
-                   const std::map<std::string, std::string>& options)
+                  const std::string& codec_name,
+                  bool is_cfr, 
+                  const std::map<std::string, std::string>& options)
 {
     std::lock_guard lock(mtx_);
 
@@ -25,6 +25,7 @@ int Encoder::open(const std::string& filename,
     LOG(INFO) << fmt::format("[ENCODER->AUDIO] < tbn = {}/{}", a_stream_time_base_.num, a_stream_time_base_.den);
 
     // format context
+    if (fmt_ctx_) destroy();
     if (avformat_alloc_output_context2(&fmt_ctx_, nullptr, nullptr, filename.c_str()) < 0) {
         LOG(ERROR) << "avformat_alloc_output_context2";
         return -1;
@@ -169,7 +170,7 @@ int Encoder::open(const std::string& filename,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
         );
     }
-    
+
     if (audio_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format("[ENCODER->AUDIO] \"{}\", sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
             audio_encoder_->name, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
@@ -415,9 +416,7 @@ void Encoder::destroy()
     running_ = false;
     paused_ = false;
 
-    if (thread_.joinable()) {
-        thread_.join();
-    }
+    wait();
 
     if (fmt_ctx_ && ready_ && av_write_trailer(fmt_ctx_) != 0) {
         LOG(ERROR) << "av_write_trailer";
@@ -439,7 +438,9 @@ void Encoder::destroy()
     audio_stream_idx_ = -1;
 
     av_packet_free(&packet_);
+    av_frame_free(&filtered_frame_);
     av_audio_fifo_free(audio_fifo_buffer_);
+    audio_fifo_buffer_ = nullptr;
 
     avcodec_free_context(&video_encoder_ctx_);
     avcodec_free_context(&audio_encoder_ctx_);
