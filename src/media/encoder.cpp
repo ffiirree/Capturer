@@ -244,150 +244,160 @@ int Encoder::run_f()
 
         first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 
-        // video encoding
-        if (!video_buffer_.empty()) {
-
-            video_buffer_.pop(
-                [=](AVFrame* popped) {
-                    av_frame_unref(filtered_frame_);
-                    av_frame_move_ref(filtered_frame_, popped);
-                }
-            );
-
-            filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
-
-            ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width && !filtered_frame_->height) ? nullptr : filtered_frame_);
-            while (ret >= 0) {
-                av_packet_unref(packet_);
-                ret = avcodec_receive_packet(video_encoder_ctx_, packet_);
-                if (ret == AVERROR(EAGAIN)) {
-                    break;
-                }
-                else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] VIDEO EOF";
-                    eof_ |= V_ENCODING_EOF;
-                    break;
-                }
-                else if (ret < 0) {
-                    LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
-                    return ret;
-                }
-
-                av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
-
-                if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
-                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP VIDEO FRAME: dts = " << packet_->dts;
-                    continue;
-                }
-                v_last_dts_ = packet_->dts;
-
-                packet_->stream_index = video_stream_idx_;
-                //LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-                //    << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}", 
-                //        video_encoder_ctx_->frame_number, (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_),
-                //        packet_->pts, packet_->dts, packet_->size);
-
-                if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-                    LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
-                    return -1;
-                }
-            }
-        }
-
-        // audio encoding
-        if (!audio_enabled_) continue;
-
-        while (!(eof_ & A_ENCODING_FIFO_EOF) && av_audio_fifo_size(audio_fifo_buffer_) < audio_encoder_ctx_->frame_size) {
-            if (audio_buffer_.empty()) {
-                break;
-            }
-
-            audio_buffer_.pop(
-                [=](AVFrame* popped) {
-                    av_frame_unref(filtered_frame_);
-                    av_frame_move_ref(filtered_frame_, popped);
-                }
-            );
-
-            if (filtered_frame_->nb_samples == 0) {
-                LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO DRAINING";
-                eof_ |= A_ENCODING_FIFO_EOF;
-                break;
-            }
-
-            CHECK(av_audio_fifo_realloc(audio_fifo_buffer_, av_audio_fifo_size(audio_fifo_buffer_) + filtered_frame_->nb_samples) >= 0);
-            CHECK(av_audio_fifo_write(audio_fifo_buffer_, (void**)filtered_frame_->data, filtered_frame_->nb_samples) >= filtered_frame_->nb_samples);
-
-            audio_pts_ = filtered_frame_->pts + av_audio_fifo_size(audio_fifo_buffer_);
-        }
-
-        while (!(eof_ & A_ENCODING_EOF) && 
-            (av_audio_fifo_size(audio_fifo_buffer_) >= audio_encoder_ctx_->frame_size || (eof_ & A_ENCODING_FIFO_EOF))) {
-
-            if (av_audio_fifo_size(audio_fifo_buffer_) >= audio_encoder_ctx_->frame_size) {
-                av_frame_unref(filtered_frame_);
-
-                filtered_frame_->nb_samples = audio_encoder_ctx_->frame_size;
-                filtered_frame_->channels = fmt_ctx_->streams[audio_stream_idx_]->codecpar->channels;
-                filtered_frame_->channel_layout = fmt_ctx_->streams[audio_stream_idx_]->codecpar->channel_layout;
-                filtered_frame_->format = fmt_ctx_->streams[audio_stream_idx_]->codecpar->format;
-                filtered_frame_->sample_rate = fmt_ctx_->streams[audio_stream_idx_]->codecpar->sample_rate;
-
-                av_frame_get_buffer(filtered_frame_, 0);
-
-                CHECK(av_audio_fifo_read(audio_fifo_buffer_, (void**)filtered_frame_->data, audio_encoder_ctx_->frame_size) >= audio_encoder_ctx_->frame_size);
-
-                filtered_frame_->pts = audio_pts_ - av_audio_fifo_size(audio_fifo_buffer_);
-                ret = avcodec_send_frame(audio_encoder_ctx_, filtered_frame_);
-            }
-            else if (eof_ & A_ENCODING_FIFO_EOF) {
-                ret = avcodec_send_frame(audio_encoder_ctx_, nullptr);
-            }
-            else {
-                LOG(ERROR) << "unknown error";
-                break;
-            }
-
-            while (ret >= 0) {
-                av_packet_unref(packet_);
-                ret = avcodec_receive_packet(audio_encoder_ctx_, packet_);
-                if (ret == AVERROR(EAGAIN)) {
-                    break;
-                }
-                else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO EOF";
-                    eof_ |= A_ENCODING_EOF;
-                    break;
-                }
-                else if (ret < 0) {
-                    LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
-                    return ret;
-                }
-
-                if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
-                    LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP AUDIO FRAME: dts = " << packet_->dts;
-                    continue;
-                }
-                a_last_dts_ = packet_->dts;
-
-                packet_->stream_index = audio_stream_idx_;
-                LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-                    << fmt::format("audio frame = {:>5d}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}",
-                        audio_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size);
-                av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
-
-                if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-                    LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
-                    return -1;
-                }
-            }
-        } // audio output
+        ret = process_video_frames();
+        ret = process_audio_frames();
     } // running
-    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-        << fmt::format("frame = {:>5d}, fps = {:>6.2f}", 
-            video_encoder_ctx_->frame_number,
-            (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_));
+
+    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] " << "encoded frame = " << video_encoder_ctx_->frame_number;
     LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] EXITED";
+
+    return ret;
+}
+
+int Encoder::process_video_frames()
+{
+    if (video_buffer_.empty()) return AVERROR(EAGAIN);
+
+    video_buffer_.pop(
+        [=](AVFrame* popped) {
+            av_frame_unref(filtered_frame_);
+            av_frame_move_ref(filtered_frame_, popped);
+        }
+    );
+
+    filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
+
+    int ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width && !filtered_frame_->height) ? nullptr : filtered_frame_);
+    while (ret >= 0) {
+        av_packet_unref(packet_);
+        ret = avcodec_receive_packet(video_encoder_ctx_, packet_);
+        if (ret == AVERROR(EAGAIN)) {
+            break;
+        }
+        else if (ret == AVERROR_EOF) {
+            LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] VIDEO EOF";
+            eof_ |= V_ENCODING_EOF;
+            break;
+        }
+        else if (ret < 0) {
+            LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
+            return ret;
+        }
+
+        av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
+
+        if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
+            LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP VIDEO FRAME: dts = " << packet_->dts;
+            continue;
+        }
+        v_last_dts_ = packet_->dts;
+
+        packet_->stream_index = video_stream_idx_;
+        LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
+            << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}",
+                video_encoder_ctx_->frame_number, (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_),
+                packet_->pts, packet_->dts, packet_->size);
+
+        if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
+            LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
+            return -1;
+        }
+    }
+
+    return ret;
+}
+
+int Encoder::process_audio_frames()
+{
+    if (audio_buffer_.empty()) return AVERROR(EAGAIN);
+
+    int ret = 0;
+    // write to fifo buffer
+    while (!(eof_ & A_ENCODING_FIFO_EOF) && av_audio_fifo_size(audio_fifo_buffer_) < audio_encoder_ctx_->frame_size) {
+        if (audio_buffer_.empty()) {
+            break;
+        }
+
+        audio_buffer_.pop(
+            [=](AVFrame* popped) {
+                av_frame_unref(filtered_frame_);
+                av_frame_move_ref(filtered_frame_, popped);
+            }
+        );
+
+        if (filtered_frame_->nb_samples == 0) {
+            LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO DRAINING";
+            eof_ |= A_ENCODING_FIFO_EOF;
+            break;
+        }
+
+        CHECK(av_audio_fifo_realloc(audio_fifo_buffer_, av_audio_fifo_size(audio_fifo_buffer_) + filtered_frame_->nb_samples) >= 0);
+        CHECK(av_audio_fifo_write(audio_fifo_buffer_, (void**)filtered_frame_->data, filtered_frame_->nb_samples) >= filtered_frame_->nb_samples);
+
+        audio_pts_ = filtered_frame_->pts + av_audio_fifo_size(audio_fifo_buffer_);
+    }
+
+    // encode and write to the output
+    while (!(eof_ & A_ENCODING_EOF) && (av_audio_fifo_size(audio_fifo_buffer_) >= audio_encoder_ctx_->frame_size || (eof_ & A_ENCODING_FIFO_EOF))) {
+
+        if (av_audio_fifo_size(audio_fifo_buffer_) >= audio_encoder_ctx_->frame_size) {
+            av_frame_unref(filtered_frame_);
+
+            filtered_frame_->nb_samples = audio_encoder_ctx_->frame_size;
+            filtered_frame_->channels = fmt_ctx_->streams[audio_stream_idx_]->codecpar->channels;
+            filtered_frame_->channel_layout = fmt_ctx_->streams[audio_stream_idx_]->codecpar->channel_layout;
+            filtered_frame_->format = fmt_ctx_->streams[audio_stream_idx_]->codecpar->format;
+            filtered_frame_->sample_rate = fmt_ctx_->streams[audio_stream_idx_]->codecpar->sample_rate;
+
+            av_frame_get_buffer(filtered_frame_, 0);
+
+            CHECK(av_audio_fifo_read(audio_fifo_buffer_, (void**)filtered_frame_->data, audio_encoder_ctx_->frame_size) >= audio_encoder_ctx_->frame_size);
+
+            filtered_frame_->pts = audio_pts_ - av_audio_fifo_size(audio_fifo_buffer_);
+            ret = avcodec_send_frame(audio_encoder_ctx_, filtered_frame_);
+        }
+        else if (eof_ & A_ENCODING_FIFO_EOF) {
+            ret = avcodec_send_frame(audio_encoder_ctx_, nullptr);
+        }
+        else {
+            LOG(ERROR) << "unknown error";
+            break;
+        }
+
+        while (ret >= 0) {
+            av_packet_unref(packet_);
+            ret = avcodec_receive_packet(audio_encoder_ctx_, packet_);
+            if (ret == AVERROR(EAGAIN)) {
+                break;
+            }
+            else if (ret == AVERROR_EOF) {
+                LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO EOF";
+                eof_ |= A_ENCODING_EOF;
+                break;
+            }
+            else if (ret < 0) {
+                LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
+                return ret;
+            }
+
+            if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
+                LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP AUDIO FRAME: dts = " << packet_->dts;
+                continue;
+            }
+            a_last_dts_ = packet_->dts;
+
+            packet_->stream_index = audio_stream_idx_;
+            LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
+                << fmt::format("audio frame = {:>5d}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}",
+                    audio_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size);
+            av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
+
+            if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
+                LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
+                return -1;
+            }
+        }
+    } // audio output
 
     return ret;
 }

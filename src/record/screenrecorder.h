@@ -34,6 +34,8 @@ public slots:
     void record();
     void setFramerate(int fr) { framerate_ = fr; }
 
+    void switchCamera();
+
     void mute(int type, bool v) 
     { 
         if(type) {

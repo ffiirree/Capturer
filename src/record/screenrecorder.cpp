@@ -32,28 +32,10 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
 
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
-    connect(menu_, &RecordMenu::opened, [this](bool opened) {
-        if (Devices::cameras().size() == 0) {
-            LOG(WARNING) << "camera not found";
-            return;
-        }
-        QString camera_name = Config::instance()["devices"]["cameras"].get<QString>();
-        LOG(INFO) << "camera name : " << camera_name;
-        if(opened) {
-#ifdef _WIN32
-            if (!player_->play("video=" + camera_name.toStdString(), "dshow")) {
-#elif __linux__
-            if (!player_->play("/dev/video0", "v4l2")) {
-#endif
-                menu_->close_camera();
-            }
-        }
-        else {
-            player_->close();
-        }
-    });
+    connect(menu_, &RecordMenu::opened, [this](bool opened) { switchCamera(); });
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
-    connect(player_, &VideoPlayer::closed, [this]() { menu_->close_camera(); });
+    connect(player_, &VideoPlayer::started, [this]() { menu_->camera_checked(true); });
+    connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });
 
     desktop_decoder_ = std::make_unique<Decoder>();
     microphone_decoder_ = std::make_unique<Decoder>();
@@ -66,6 +48,27 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     // update time of the menu
     timer_ = new QTimer(this);
     connect(timer_, &QTimer::timeout, [this]() { menu_->time(dispatcher_->escaped_ms()); });
+}
+
+void ScreenRecorder::switchCamera()
+{
+    if (player_->ready()) {
+        player_->close();
+        return;
+    }
+
+    if (Devices::cameras().size() == 0) {
+        LOG(WARNING) << "camera not found";
+        return;
+    }
+
+#ifdef _WIN32
+    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<string>(), "dshow")) {
+#elif __linux__
+    if (!player_->play("/dev/video0", "v4l2")) {
+#endif
+        player_->close();
+    }
 }
 
 void ScreenRecorder::record()

@@ -68,12 +68,12 @@ private:
     AVPacket* packet_{ nullptr };
     AVFrame* decoded_frame_{ nullptr };
 
-    RingVector<AVFrame*, 3> video_buffer_{
+    RingVector<AVFrame*, 4> video_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, 9> audio_buffer_{
+    RingVector<AVFrame*, 4> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

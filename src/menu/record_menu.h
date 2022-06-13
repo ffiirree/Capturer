@@ -35,7 +35,7 @@ public slots:
     void start();
     void time(int64_t);
     void mute(int, bool);
-    void close_camera();
+    void camera_checked(bool);
 
     void disable_mic(bool);
     void disable_cam(bool);

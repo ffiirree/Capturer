@@ -297,11 +297,11 @@ int Decoder::run_f()
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
-                // LOG(INFO)
-                //    << "[DECODER@" << std::this_thread::get_id() << "] "
-                //    << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}",
-                //        video_decoder_ctx_->frame_number, (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_),
-                //        decoded_frame_->pts);
+                 LOG(INFO)
+                    << "[DECODER@" << std::this_thread::get_id() << "] "
+                    << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}",
+                        video_decoder_ctx_->frame_number, (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_),
+                        decoded_frame_->pts);
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {

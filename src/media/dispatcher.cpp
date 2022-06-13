@@ -271,6 +271,7 @@ int Dispatcher::dispatch_thread_f()
     defer(LOG(INFO) << "[DISPATCHER@" << std::this_thread::get_id() << "] EXITED");
 
     int ret = 0;
+    bool need_dispatch = false;
     while (running_) {
         for (auto& decoder : decoders_) {
             if (decoder.video_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_VIDEO) >= 0) {
@@ -285,6 +286,8 @@ int Dispatcher::dispatch_thread_f()
                     running_ = false;
                     break;
                 }
+
+                need_dispatch = true;
             }
 
             if (decoder.audio_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_AUDIO) >= 0) {
@@ -299,7 +302,16 @@ int Dispatcher::dispatch_thread_f()
                     running_ = false;
                     break;
                 }
+
+                need_dispatch = true;
             }
+        }
+
+        if (!need_dispatch) {
+            std::this_thread::sleep_for(20ms);
+            need_dispatch = true;
+            LOG(INFO) << "[DISPATCHER] sleep 20ms";
+            continue;
         }
 
         first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
@@ -328,7 +340,7 @@ int Dispatcher::dispatch_thread_f()
                 ret = av_buffersink_get_frame_flags(encoder.video_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
                 if (ret == AVERROR(EAGAIN)) {
-                    continue;
+                    break;
                 }
                 else if (ret == AVERROR_EOF) {
                     LOG(INFO) << "[DISPATCHER] VIDEO EOF";
@@ -354,7 +366,7 @@ int Dispatcher::dispatch_thread_f()
                 ret = av_buffersink_get_frame_flags(encoder.audio_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
                 if (ret == AVERROR(EAGAIN)) {
-                    continue;
+                    break;
                 }
                 else if (ret == AVERROR_EOF) {
                     LOG(INFO) << "[DISPATCHER] AUDIO EOF";
@@ -371,7 +383,6 @@ int Dispatcher::dispatch_thread_f()
                 while (encoder.consumer->full(AVMEDIA_TYPE_AUDIO) && running_) {
                     std::this_thread::sleep_for(20ms);
                 }
-                LOG(INFO) << "[DISPATCHER] audio frame pts = " << filtered_frame->pts;
                 ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_AUDIO);
             }
         }

@@ -115,10 +115,10 @@ void RecordMenu::mute(int type, bool muted)
     }
 }
 
-void RecordMenu::close_camera()
+void RecordMenu::camera_checked(bool v)
 {
     if (camera_) 
-        camera_->setChecked(false);
+        camera_->setChecked(v);
 }
 
 void RecordMenu::disable_cam(bool v) 

@@ -14,7 +14,7 @@ public:
     ~VideoPlayer() override;
 
     int run() override { return 0; };
-    bool ready() const override { return true; }
+    bool ready() const override { return decoder_ && decoder_->ready(); }
     void reset() override { }
 
     int consume(AVFrame* frame, int type) override;
@@ -27,6 +27,7 @@ public:
     bool play(const std::string& name, const std::string& fmt = "", const std::string& filters = "");
 
 signals:
+    void started();
     void closed();
 
 protected:

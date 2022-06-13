@@ -98,6 +98,8 @@ void Capturer::setupSystemTrayIcon()
     menu->addAction(QIcon(":/icon/res/capture-" + theme),    tr("Record Video"), recorder_, &ScreenRecorder::record);
     menu->addAction(QIcon(":/icon/res/gif-" + theme),        tr("Record GIF"), gifcptr_, &ScreenRecorder::record);
     menu->addSeparator();
+    menu->addAction(QIcon(":/icon/res/camera-" + theme), tr("Open Camera"), recorder_, &ScreenRecorder::switchCamera);
+    menu->addSeparator();
     menu->addAction(QIcon(":/icon/res/setting-" + theme),    tr("Settings"), setting_dialog_, &SettingWindow::show);
     menu->addSeparator();
     menu->addAction(QIcon(":/icon/res/exit-" + theme),       tr("Quit"), qApp, &QCoreApplication::exit);

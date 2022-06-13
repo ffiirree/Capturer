@@ -81,6 +81,8 @@ public:
 
 private:
     int run_f();
+    int process_video_frames();
+    int process_audio_frames();
     void destroy();
 
     int video_stream_idx_{ -1 };
@@ -127,7 +129,7 @@ private:
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, 12> audio_buffer_{
+    RingVector<AVFrame*, 6> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

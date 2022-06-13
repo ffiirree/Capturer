@@ -57,6 +57,7 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
 
     QWidget::show();
 
+    emit started();
     return true;
 }
 

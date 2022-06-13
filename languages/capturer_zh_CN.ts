@@ -20,11 +20,16 @@
     </message>
     <message>
         <location filename="../src/capturer.cpp" line="101"/>
+        <source>Open Camera</source>
+        <translation>打开摄像头</translation>
+    </message>
+    <message>
+        <location filename="../src/capturer.cpp" line="103"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="103"/>
+        <location filename="../src/capturer.cpp" line="105"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
@@ -210,7 +215,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="196"/>
+        <location filename="../src/record/screenrecorder.cpp" line="199"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>
