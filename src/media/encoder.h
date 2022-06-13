@@ -77,6 +77,10 @@ public:
     void framerate(const AVRational& f) { framerate_ = f; }
     void sample_aspect_ratio(const AVRational& sar) { sample_aspect_ratio_ = sar; }
     void v_stream_tb(const AVRational& tb) { v_stream_time_base_ = tb; }
+
+    void channels(int n) { channels_ = n; }
+    void channel_layout(uint64_t cl) { channel_layout_ = cl; }
+    void sample_rate(int sample_rate) { sample_rate_ = sample_rate; }
     void a_stream_tb(const AVRational& tb) { a_stream_time_base_ = tb; }
 
 private:

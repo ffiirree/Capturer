@@ -109,6 +109,10 @@ void ScreenRecorder::setup()
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
+    if (Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
+        microphone_decoder_->open("default", "pulse");
+    }
+
     if (desktop_decoder_->open(
         // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
         // echo $DISPLAY
@@ -121,10 +125,6 @@ void ScreenRecorder::setup()
     ) < 0) {
         exit();
         return;
-    }
-
-    if (Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
-        microphone_decoder_->open("default", "pulse");
     }
 #elif _WIN32
     if (desktop_decoder_->open(
@@ -170,6 +170,9 @@ void ScreenRecorder::setup()
     encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(coder.video_sink_ctx));
     encoder_->v_stream_tb(av_buffersink_get_time_base(coder.video_sink_ctx));
     if (coder.audio_sink_ctx) {
+        encoder_->channels(av_buffersink_get_channels(coder.audio_sink_ctx));
+        encoder_->channel_layout(av_buffersink_get_channel_layout(coder.audio_sink_ctx));
+        encoder_->sample_rate(av_buffersink_get_sample_rate(coder.audio_sink_ctx));
         encoder_->a_stream_tb(av_buffersink_get_time_base(coder.audio_sink_ctx));
     }
 

@@ -22,6 +22,7 @@ int Encoder::open(const std::string& filename,
 
     LOG(INFO) << fmt::format("[ENCODER->VIDEO] < \"{}\", options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
         codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den, v_stream_time_base_.num, v_stream_time_base_.den);
+    LOG(INFO) << fmt::format("[ENCODER->AUDIO] < tbn = {}/{}", a_stream_time_base_.num, a_stream_time_base_.den);
 
     // format context
     if (avformat_alloc_output_context2(&fmt_ctx_, nullptr, nullptr, filename.c_str()) < 0) {
@@ -294,9 +295,8 @@ int Encoder::process_video_frames()
 
         packet_->stream_index = video_stream_idx_;
         LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-            << fmt::format("video frame = {:>5d}, fps = {:>6.2f}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}",
-                video_encoder_ctx_->frame_number, (video_encoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_),
-                packet_->pts, packet_->dts, packet_->size);
+            << fmt::format("video frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
+                video_encoder_ctx_->frame_number, packet_->pts, packet_->size);
 
         if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
             LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
@@ -388,8 +388,8 @@ int Encoder::process_audio_frames()
 
             packet_->stream_index = audio_stream_idx_;
             LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-                << fmt::format("audio frame = {:>5d}, pts = {:>9d}, dts = {:>9d}, size = {:>6d}",
-                    audio_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size);
+                << fmt::format("audio frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
+                    audio_encoder_ctx_->frame_number, packet_->pts, packet_->size);
             av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
