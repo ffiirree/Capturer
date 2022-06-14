@@ -1,30 +1,23 @@
 #ifndef CAPTURER_H
 #define CAPTURER_H
 
-#include <vector>
-#include <queue>
-#include <memory>
-#include <QPixmap>
 #include <QSystemTrayIcon>
-#include <QMimeData>
-#include <QMenu>
 #include "screenshoter.h"
 #include "imagewindow.h"
 #include "screenrecorder.h"
 #include "qhotkey.h"
 #include "screenshoter.h"
 #include "settingdialog.h"
-#include "json.hpp"
 
-template <typename T, int MAX_SIZE = 100>
+template <typename T, int MAX_SIZE = 32>
 class LimitSizeVector : public std::vector<T> {
 public:
-    void push(const T& value)
+    void append(const T& value)
     {
-        this->push_back(value);
+        push_back(value);
 
-        if(this->size() > MAX_SIZE) {
-            this->erase(this->begin());
+        if(size() > MAX_SIZE) {
+            erase(begin());
         }
     }
 };
@@ -56,7 +49,8 @@ private:
     ScreenRecorder * recorder_ = nullptr;
     ScreenRecorder* gifcptr_ = nullptr;
 
-    LimitSizeVector<ImageWindow *> clipboard_history_;
+    LimitSizeVector<std::shared_ptr<ImageWindow>, 16> clipboard_history_;
+    size_t pin_idx_ = 0;
 
     QSystemTrayIcon *sys_tray_icon_ = nullptr;
 

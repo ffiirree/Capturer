@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="97"/>
+        <location filename="../src/capturer.cpp" line="99"/>
         <source>Screenshot</source>
         <translation>截图</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="98"/>
+        <location filename="../src/capturer.cpp" line="100"/>
         <source>Record Video</source>
         <translation>录屏</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="99"/>
+        <location filename="../src/capturer.cpp" line="101"/>
         <source>Record GIF</source>
         <translation>录GIF</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="101"/>
+        <location filename="../src/capturer.cpp" line="103"/>
         <source>Open Camera</source>
         <translation>打开摄像头</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="103"/>
+        <location filename="../src/capturer.cpp" line="105"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="105"/>
+        <location filename="../src/capturer.cpp" line="107"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>

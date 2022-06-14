@@ -69,13 +69,7 @@ private:
     CircleCursor circle_cursor_{ 20 };
     Canvas* canvas_{ nullptr };
 
-    struct History {
-        QPixmap image_;
-        QRect rect_;
-        CommandStack commands_;
-    };
-
-    vector<History> history_;
+    vector<QRect> history_;
     size_t history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };

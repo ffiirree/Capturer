@@ -195,7 +195,7 @@ QPixmap ScreenShoter::snipped()
     // Ownership of the data is transferred to the clipboard: https://doc.qt.io/qt-5/qclipboard.html#setMimeData
     QApplication::clipboard()->setMimeData(mimedata);
 
-    history_.push_back({captured_screen_, selected(), canvas_->commands()});
+    history_.push_back(selected());
     history_idx_ = history_.size() - 1;
 
     return image;
@@ -275,26 +275,18 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
     connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
 
-    auto setCurrent = [this](const History& history) {
-        captured_screen_ = history.image_;
-        box_.reset(history.rect_);
-        CAPTURED();
-        LOCKED();
-        canvas_->commands(history.commands_);
-        LOCKED();
-        repaint();
-    };
-
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=](){
         if(history_idx_ < history_.size()) {
-            setCurrent(history_[history_idx_]);
+            box_.reset(history_[history_idx_]);
+            CAPTURED();
             if(history_idx_ > 0) history_idx_--;
         }
     });
 
     connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=](){
         if(history_idx_ < history_.size()) {
-            setCurrent(history_[history_idx_]);
+            box_.reset(history_[history_idx_]);
+            CAPTURED();
             if(history_idx_ < history_.size() - 1) history_idx_++;
         }
     });

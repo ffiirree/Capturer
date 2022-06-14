@@ -298,8 +298,10 @@ int Decoder::run_f()
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
+#ifndef NDEBUG
                 LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] "
                     << fmt::format("video frame = {:>5d}, pts = {:>9d}", video_decoder_ctx_->frame_number, decoded_frame_->pts);
+#endif // !NDEBUG
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {
@@ -331,10 +333,12 @@ int Decoder::run_f()
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[audio_stream_idx_]->start_time;
+#ifndef NDEBUG
                 LOG(INFO)
                     << "[DECODER@" << std::this_thread::get_id() << "] "
                     << fmt::format("audio frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
                         audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
+#endif // !NDEBUG
 
                 if (muted_) {
                     av_samples_set_silence(

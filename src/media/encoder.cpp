@@ -294,11 +294,13 @@ int Encoder::process_video_frames()
         }
         v_last_dts_ = packet_->dts;
 
-        packet_->stream_index = video_stream_idx_;
+#ifndef NDEBUG
         LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
             << fmt::format("video frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
                 video_encoder_ctx_->frame_number, packet_->pts, packet_->size);
+#endif // !NDEBUG
 
+        packet_->stream_index = video_stream_idx_;
         if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
             LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
             return -1;
@@ -387,10 +389,13 @@ int Encoder::process_audio_frames()
             }
             a_last_dts_ = packet_->dts;
 
-            packet_->stream_index = audio_stream_idx_;
+#ifndef NDEBUG
             LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
                 << fmt::format("audio frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
                     audio_encoder_ctx_->frame_number, packet_->pts, packet_->size);
+#endif // !NDEBUG
+
+            packet_->stream_index = audio_stream_idx_;
             av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
