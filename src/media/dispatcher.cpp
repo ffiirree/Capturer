@@ -13,6 +13,24 @@ extern "C" {
 }
 using namespace std::chrono_literals;
 
+int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx, enum AVMediaType type)
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO: return create_filter_for_video_input(decoder, ctx);
+    case AVMEDIA_TYPE_AUDIO: return create_filter_for_audio_input(decoder, ctx);
+    default: return -1;
+    }
+}
+
+int Dispatcher::create_filter_for_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx, enum AVMediaType type)
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO: return create_filter_for_video_output(encoder, ctx);
+    case AVMEDIA_TYPE_AUDIO: return create_filter_for_audio_output(encoder, ctx);
+    default: return -1;
+    }
+}
+
 int Dispatcher::create_filter_for_video_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx)
 {
     if (!decoder->ready()) {
@@ -96,7 +114,7 @@ int Dispatcher::create_filter_for_audio_output(const Consumer<AVFrame>* encoder,
         return -1;
     }
 
-    enum AVSampleFormat encoder_fmt = (AVSampleFormat)encoder->format(AVMEDIA_TYPE_AUDIO) ;
+    enum AVSampleFormat encoder_fmt = (AVSampleFormat)encoder->format(AVMEDIA_TYPE_AUDIO);
     enum AVSampleFormat sink_fmt = (encoder_fmt == AV_SAMPLE_FMT_NONE) ? AV_SAMPLE_FMT_FLTP : encoder_fmt;
     enum AVSampleFormat sink_fmts[] = { sink_fmt, AV_SAMPLE_FMT_NONE };
     if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
@@ -109,107 +127,145 @@ int Dispatcher::create_filter_for_audio_output(const Consumer<AVFrame>* encoder,
     return 0;
 }
 
-int Dispatcher::create_filter_graph(const std::string_view& filters)
+int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
 {
-    filters_ = filters;
+    graph_desc_ = graph_desc;
 
-    if (filter_graph_) {
-        avfilter_graph_free(&filter_graph_);
+    LOG(INFO) << "[DISPATCHER] create filter graph: " << graph_desc_;
+
+    if (encoders_.size() < 1 || decoders_.size() < 1) {
+        LOG(INFO) << "At least on input and one output";
+        return -1;
     }
 
-    // filters
+    // filter graph
+    if (filter_graph_) avfilter_graph_free(&filter_graph_);
     if (!(filter_graph_ = avfilter_graph_alloc())) {
         LOG(ERROR) << "avfilter_graph_alloc";
         return -1;
     }
 
-    //if ((decoders_.size() > 1 || encoders_.size() > 1) && filters_.length() == 0) {
-    //    LOG(ERROR) << "parameters error";
-    //    return -1;
-    //}
+    AVFilterInOut* inputs = nullptr, * outputs = nullptr;
+    defer(avfilter_inout_free(&inputs); avfilter_inout_free(&outputs));
 
-    // buffersrc
-    for (auto& coder : decoders_) {
-        if (coder.producer->has(AVMEDIA_TYPE_VIDEO) &&
-            create_filter_for_video_input(coder.producer, &coder.video_src_ctx) < 0) {
-            LOG(INFO) << "[DISPATCHER] create_filter_for_input";
-            return -1;
-        }
+    if (graph_desc_.empty()) {
+        for (const auto& mt : { AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO }) {
+            if (encoders_[0]->accepts(mt)) {
+                bool ok = false;
+                for (const auto& decoder : decoders_) {
+                    if (decoder->has(mt)) {
+                        AVFilterContext* src_ctx = nullptr, * sink_ctx = nullptr;
 
-        if (coder.producer->has(AVMEDIA_TYPE_AUDIO) &&
-            create_filter_for_audio_input(coder.producer, &coder.audio_src_ctx) < 0) {
-            LOG(INFO) << "[DISPATCHER] create_filter_for_input";
-            return -1;
+                        if (create_filter_for_input(decoder, &src_ctx, mt) < 0) {
+                            return -1;
+                        }
+
+                        if (create_filter_for_output(encoders_[0], &sink_ctx, mt) < 0) {
+                            return -1;
+                        }
+
+                        if (avfilter_link(src_ctx, 0, sink_ctx, 0) < 0) {
+                            return -1;
+                        }
+                        decoder->enable(mt);
+                        i_streams_.push_back({ src_ctx, decoder, false });
+                        o_streams_.push_back({ sink_ctx, encoders_[0], false });
+                        ok = true;
+                        break;
+                    }
+                }
+                if (!ok) {
+                    LOG(INFO) << "video: [input] x [output]";
+                    return -1;
+                }
+            }
         }
     }
-
-    // buffersink
-    for (auto& coder : encoders_) {
-        if (coder.consumer->accepts(AVMEDIA_TYPE_VIDEO) &&
-            create_filter_for_video_output(coder.consumer, &coder.video_sink_ctx) < 0) {
-            LOG(INFO) << "[DISPATCHER] create_filter_for_output";
-            return -1;
-        }
-
-        if (!has_audio_in_) {
-            coder.consumer->enable(AVMEDIA_TYPE_AUDIO, false);
-        }
-        else if (coder.consumer->accepts(AVMEDIA_TYPE_AUDIO) &&
-                 create_filter_for_audio_output(coder.consumer, &coder.audio_sink_ctx) < 0) {
-            LOG(INFO) << "[DISPATCHER] create_filter_for_output";
-            return -1;
-        }
-    }
-
-    if (filters_.length() > 0) {
-        AVFilterInOut* inputs = nullptr;
-        AVFilterInOut* outputs = nullptr;
-        defer(avfilter_inout_free(&inputs));
-        defer(avfilter_inout_free(&outputs));
-
-        LOG(FATAL) << "not support";
-
-        if (avfilter_graph_parse2(filter_graph_, filters_.c_str(), &inputs, &outputs) < 0) {
+    else {  // complex filter graph
+        if (avfilter_graph_parse2(filter_graph_, graph_desc_.c_str(), &inputs, &outputs) < 0) {
             LOG(ERROR) << "avfilter_graph_parse2";
             return -1;
         }
 
-        auto index = 0;
-        for (auto ptr = inputs; ptr; ptr = ptr->next, index++) {
-            if (decoders_[index].video_src_ctx && avfilter_link(decoders_[index].video_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
-                LOG(ERROR) << "avfilter_link";
+        for (auto in = inputs; in; in = in->next) {
+            enum AVMediaType mt = avfilter_pad_get_type(in->filter_ctx->input_pads, in->pad_idx);
+            if (mt != AVMEDIA_TYPE_AUDIO && mt != AVMEDIA_TYPE_VIDEO) {
+                LOG(ERROR) << "Only video and audio filters supported currently";
                 return -1;
             }
 
-            ptr = ptr->next;
-            if (decoders_[index].audio_src_ctx && avfilter_link(decoders_[index].audio_src_ctx, 0, ptr->filter_ctx, ptr->pad_idx) != 0) {
-                LOG(ERROR) << "avfilter_link";
-                return -1;
+            Producer<AVFrame>* producer = nullptr;
+            if (in->name) {
+                LOG(INFO) << fmt::format("[FILTER GRAPH] I : {}, type = {}, idx = {}", in->name, av_get_media_type_string(mt), in->pad_idx);
+
+                char* end_ptr = nullptr;
+                int idx = std::strtol(in->name, &end_ptr, 0);
+                if (idx < 0 || idx > decoders_.size()) {
+                    LOG(ERROR) << "Invalid file index " << idx << " in filtergraph description " << graph_desc_;
+                    return -1;
+                }
+
+                if (decoders_[idx]->has(mt)) {
+                    producer = decoders_[idx];
+                }
             }
-        }
-        index = 0;
-        for (auto ptr = outputs; ptr; ptr = ptr->next, index++) {
-            if (encoders_[index].video_sink_ctx && avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].video_sink_ctx, 0) != 0) {
-                LOG(ERROR) << "avfilter_link";
+            else {
+                // find the first unused stream of corresponding type
+                for (const auto& coder : decoders_) {
+                    if (coder->has(mt) && !coder->enabled(mt)) {
+                        producer = coder;
+                    }
+                }
+            }
+
+            if (!producer) {
+                LOG(INFO) << "not found input for " << in->filter_ctx->name;
                 return -1;
             }
 
-            ptr = ptr->next;
-            if (encoders_[index].audio_sink_ctx && avfilter_link(ptr->filter_ctx, ptr->pad_idx, encoders_[index].audio_sink_ctx, 0) != 0) {
-                LOG(ERROR) << "avfilter_link";
+            AVFilterContext* ctx = nullptr;
+            if (create_filter_for_input(producer, &ctx, mt) < 0) {
                 return -1;
             }
-        }
-    }
-    else {
-        if (avfilter_link(decoders_[0].video_src_ctx, 0, encoders_[0].video_sink_ctx, 0) != 0) {
-            LOG(ERROR) << "avfilter_link";
-            return -1;
+            if (avfilter_link(ctx, 0, in->filter_ctx, in->pad_idx) < 0) {
+                LOG(ERROR) << "link failed";
+                return -1;
+            }
+
+            producer->enable(mt);
+            i_streams_.push_back({ ctx, producer, false });
         }
 
-        if (has_audio_in_ && encoders_[0].audio_sink_ctx && avfilter_link(decoders_[1].audio_src_ctx, 0, encoders_[0].audio_sink_ctx, 0) != 0) {
-            LOG(ERROR) << "avfilter_link";
-            return -1;
+        for (auto out = outputs; out; out = out->next) {
+            enum AVMediaType mt = avfilter_pad_get_type(out->filter_ctx->input_pads, out->pad_idx);
+            if (mt != AVMEDIA_TYPE_AUDIO && mt != AVMEDIA_TYPE_VIDEO) {
+                LOG(ERROR) << "Only video and audio filters supported currently";
+                return -1;
+            }
+
+            Consumer<AVFrame>* consumer = nullptr;
+            for (const auto& encoder : encoders_) {
+                if (encoder->accepts(mt)) {
+                    consumer = encoder;
+                }
+            }
+
+            if (!consumer) {
+                LOG(ERROR) << out->filter_ctx->name << "has a unconnected output";
+                return -1;
+            }
+
+            AVFilterContext* sink_ctx = nullptr;
+            if (create_filter_for_output(consumer, &sink_ctx, mt) < 0) {
+                return -1;
+            }
+
+            if (avfilter_link(out->filter_ctx, out->pad_idx, sink_ctx, 0) < 0) {
+                LOG(ERROR) << "link failed";
+                return -1;
+            }
+
+            o_streams_.push_back({ sink_ctx, consumer, false });
         }
     }
 
@@ -225,6 +281,16 @@ int Dispatcher::create_filter_graph(const std::string_view& filters)
     return 0;
 }
 
+AVFilterContext* Dispatcher::find_sink(Consumer<AVFrame>* ptr, enum AVMediaType type)
+{
+    for (const auto& [ctx, coder, _] : o_streams_) {
+        if (coder == ptr && av_buffersink_get_type(ctx) == type) {
+            return ctx;
+        }
+    }
+    return nullptr;
+}
+
 int Dispatcher::start()
 {
     if (!ready_ || running_) {
@@ -233,25 +299,25 @@ int Dispatcher::start()
     }
 
     for (auto& coder : decoders_) {
-        if (!coder.producer->ready()) {
+        if (!coder->ready()) {
             LOG(ERROR) << "deocoder not ready!";
             return -1;
         }
     }
 
     for (auto& coder : encoders_) {
-        if (!coder.consumer->ready()) {
+        if (!coder->ready()) {
             LOG(ERROR) << "encoder not ready!";
             return -1;
         }
     }
 
     for (auto& coder : decoders_) {
-        coder.producer->run();
+        coder->run();
     }
 
     for (auto& coder : encoders_) {
-        coder.consumer->run();
+        coder->run();
     }
 
     running_ = true;
@@ -273,28 +339,12 @@ int Dispatcher::dispatch_thread_f()
     int ret = 0;
     bool need_dispatch = false;
     while (running_) {
-        for (auto& decoder : decoders_) {
-            if (decoder.video_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_VIDEO) >= 0) {
+        for (auto& [src_ctx, producer, eof] : i_streams_) {
+            if (producer->produce(frame_, avfilter_pad_get_type(src_ctx->filter->outputs, 0)) >= 0) {
 
                 ret = av_buffersrc_add_frame_flags(
-                    decoder.video_src_ctx,
-                    (!frame_->width && !frame_->height) ? nullptr : frame_,
-                    AV_BUFFERSRC_FLAG_PUSH
-                );
-                if (ret < 0) {
-                    LOG(ERROR) << "av_buffersrc_add_frame_flags";
-                    running_ = false;
-                    break;
-                }
-
-                need_dispatch = true;
-            }
-
-            if (decoder.audio_src_ctx && decoder.producer->produce(frame_, AVMEDIA_TYPE_AUDIO) >= 0) {
-
-                ret = av_buffersrc_add_frame_flags(
-                    decoder.audio_src_ctx,
-                    (!frame_->linesize[0]) ? nullptr : frame_,
+                    src_ctx,
+                    (!frame_->width && !frame_->nb_samples) ? nullptr : frame_,
                     AV_BUFFERSRC_FLAG_PUSH
                 );
                 if (ret < 0) {
@@ -334,43 +384,19 @@ int Dispatcher::dispatch_thread_f()
         }
         // @}
 
-        for (auto& encoder : encoders_) {
-            while (ret >= 0 && !(encoder.eof & 0x01)) {
-                av_frame_unref(filtered_frame);
-                ret = av_buffersink_get_frame_flags(encoder.video_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
-
-                if (ret == AVERROR(EAGAIN)) {
-                    break;
-                }
-                else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DISPATCHER] VIDEO EOF";
-                    encoder.eof |= 0x01;
-                    // through and send null packet
-                    av_frame_unref(filtered_frame);
-                }
-                else if (ret < 0) {
-                    LOG(ERROR) << "av_buffersink_get_frame_flags()";
-                    running_ = false;
-                    break;
-                }
-
-                while (encoder.consumer->full(AVMEDIA_TYPE_VIDEO) && running_) {
-                    std::this_thread::sleep_for(20ms);
-                }
-                ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_VIDEO);
-            }
-
+        for (auto& [sink_ctx, consumer, stream_eof] : o_streams_) {
+            enum AVMediaType media_type = av_buffersink_get_type(sink_ctx);
             ret = 0;
-            while (ret >= 0 && encoder.audio_sink_ctx && !(encoder.eof & 0x02)) {
+            while (ret >= 0 && !stream_eof) {
                 av_frame_unref(filtered_frame);
-                ret = av_buffersink_get_frame_flags(encoder.audio_sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+                ret = av_buffersink_get_frame_flags(sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
                 if (ret == AVERROR(EAGAIN)) {
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DISPATCHER] AUDIO EOF";
-                    encoder.eof |= 0x02;
+                    LOG(INFO) << "[DISPATCHER] " << av_get_media_type_string(media_type) <<" EOF";
+                    stream_eof = true;
                     // through and send null packet
                     av_frame_unref(filtered_frame);
                 }
@@ -380,10 +406,10 @@ int Dispatcher::dispatch_thread_f()
                     break;
                 }
 
-                while (encoder.consumer->full(AVMEDIA_TYPE_AUDIO) && running_) {
+                while (consumer->full(media_type) && running_) {
                     std::this_thread::sleep_for(20ms);
                 }
-                ret = encoder.consumer->consume(filtered_frame, AVMEDIA_TYPE_AUDIO);
+                ret = consumer->consume(filtered_frame, media_type);
             }
         }
     }
@@ -394,11 +420,11 @@ int Dispatcher::dispatch_thread_f()
 void Dispatcher::pause()
 {
     for (auto& coder : decoders_) {
-        coder.producer->pause();
+        coder->pause();
     }
 
     for (auto& coder : encoders_) {
-        coder.consumer->pause();
+        coder->pause();
     }
 
     paused_ = true;
@@ -409,12 +435,12 @@ void Dispatcher::resume()
     paused_ = false;
 
     for (auto& coder : encoders_) {
-        coder.consumer->resume();
+        coder->resume();
     }
 
     for (auto& coder : decoders_) {
-        coder.producer->time_offset(offset_pts_);
-        coder.producer->resume();
+        coder->time_offset(offset_pts_);
+        coder->resume();
     }
 }
 
@@ -424,17 +450,17 @@ int Dispatcher::reset()
     ready_ = false;
 
     for (auto& coder : decoders_) {
-        coder.producer->reset();
+        coder->reset();
     }
 
     for (auto& coder : encoders_) {
         // wait 0~3s
         for (int i = 0; i < 100; i++) {
-            if (!coder.consumer->ready() || coder.consumer->eof()) break;
+            if (!coder->ready() || coder->eof()) break;
 
             std::this_thread::sleep_for(100ms);
         }
-        coder.consumer->reset();
+        coder->reset();
     }
 
     running_ = false;
@@ -445,6 +471,10 @@ int Dispatcher::reset()
 
     decoders_.clear();
     encoders_.clear();
+    i_streams_.clear();
+    o_streams_.clear();
+
+    graph_desc_ = "";
 
     first_pts_ = AV_NOPTS_VALUE;
     paused_pts_ = AV_NOPTS_VALUE;

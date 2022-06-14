@@ -16,18 +16,18 @@ extern "C" {
 class Dispatcher {
 public:
     explicit Dispatcher() = default;
-    explicit Dispatcher(const std::string_view& filter_complex) : filters_(filter_complex) { }
+    explicit Dispatcher(const std::string_view& graph_desc) : graph_desc_(graph_desc) { }
 
     ~Dispatcher() { reset(); }
 
     decltype(auto) append(Producer<AVFrame>* decoder)
     {
-        return decoders_.emplace_back(Source{ decoder });
+        return decoders_.emplace_back(decoder);
     }
 
     decltype(auto) append(Consumer<AVFrame>* encoder)
     {
-        return encoders_.emplace_back(Sink{ encoder });
+        return encoders_.emplace_back(encoder);
     }
 
     int create_filter_graph(const std::string_view& filters);
@@ -49,11 +49,17 @@ public:
 
     bool has_audio() const { return has_audio_in_; }
 
+    AVFilterContext* find_sink(Consumer<AVFrame>*, enum AVMediaType);
+
 private:
-    int create_filter_for_video_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
-    int create_filter_for_video_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
-    int create_filter_for_audio_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx);
-    int create_filter_for_audio_output(const Consumer<AVFrame>* encoder, AVFilterContext** ctx);
+    int create_filter_for_input(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
+    int create_filter_for_output(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
+
+    int create_filter_for_video_input(const Producer<AVFrame>*, AVFilterContext**);
+    int create_filter_for_video_output(const Consumer<AVFrame>*, AVFilterContext**);
+    
+    int create_filter_for_audio_input(const Producer<AVFrame>*, AVFilterContext**);
+    int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
     int dispatch_thread_f();
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
@@ -65,26 +71,13 @@ private:
     std::atomic<bool> ready_{ false };
     std::atomic<bool> has_audio_in_{ false };
 
-    struct Source {
-        explicit Source(Producer<AVFrame>* const p) : producer(p) { }
-        Producer<AVFrame>* producer{ nullptr };
-        AVFilterContext* video_src_ctx{ nullptr };
-        AVFilterContext* audio_src_ctx{ nullptr };
-        bool eof{ false };
-    };
+    std::vector<Producer<AVFrame>*> decoders_;
+    std::vector<Consumer<AVFrame>*> encoders_;
 
-    struct Sink {
-        explicit Sink(Consumer<AVFrame>* const c) : consumer(c) { }
-        Consumer<AVFrame>* consumer{ nullptr };
-        AVFilterContext* video_sink_ctx{ nullptr };
-        AVFilterContext* audio_sink_ctx{ nullptr };
-        uint8_t eof{ 0x00 };
-    };
+    std::vector<std::tuple<AVFilterContext*, Producer<AVFrame>*, bool>> i_streams_;
+    std::vector<std::tuple<AVFilterContext*, Consumer<AVFrame>*, bool>> o_streams_;
 
-    std::vector<Source> decoders_;
-    std::vector<Sink> encoders_;
-
-    std::string filters_{ };
+    std::string graph_desc_{ };
 
     AVFilterGraph* filter_graph_{ nullptr };
 

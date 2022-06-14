@@ -19,6 +19,7 @@ public:
         paused_ = false;
         eof_ = 0x00;
         ready_ = false;
+        enabled_.clear();
 
         if (thread_.joinable()) {
             thread_.join();
@@ -34,7 +35,9 @@ public:
 
     virtual bool has(int) const = 0;
     virtual std::string format_str(int) const = 0;
+    virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
+    virtual void enable(int t) { enabled_[t] = true; }
     virtual void pause() { paused_ = true; }
     virtual void resume() { paused_ = false; }
     virtual void stop() { running_ = false; }
@@ -62,6 +65,7 @@ protected:
     std::thread thread_;
     std::mutex mtx_;
     std::atomic<int64_t> time_offset_{ 0 };
+    std::map<int, bool> enabled_;
 };
 
 #endif // !CAPTURER_PRODUCER_H

@@ -32,15 +32,21 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     }
 
     dispatcher_->append(decoder_);
-    auto& coder = dispatcher_->append(this);
+    dispatcher_->append(this);
 
     if (dispatcher_->create_filter_graph(filters)) {
         LOG(INFO) << "create filters failed";
         return false;
     }
 
-    int width = av_buffersink_get_w(coder.video_sink_ctx);
-    int height = av_buffersink_get_h(coder.video_sink_ctx);
+    auto sink = dispatcher_->find_sink(this, AVMEDIA_TYPE_VIDEO);
+    if (sink == nullptr) {
+        LOG(INFO) << "not found the sink filter";
+        return false;
+    }
+
+    int width = av_buffersink_get_w(sink);
+    int height = av_buffersink_get_h(sink);
 
     if (width > 1440 || height > 810) {
         resize(QSize(width, height).scaled(1440, 810, Qt::KeepAspectRatio));

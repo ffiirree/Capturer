@@ -24,7 +24,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
 
-    menu_ = new RecordMenu(m_mute_, s_mute_, RecordMenu::MICROPHONE | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
+    menu_ = new RecordMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordMenu::MICROPHONE) | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
 
     prevent_transparent_ = true;
 
@@ -38,7 +38,9 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });
 
     desktop_decoder_ = std::make_unique<Decoder>();
-    microphone_decoder_ = std::make_unique<Decoder>();
+    if (recording_type_ != GIF) {
+        microphone_decoder_ = std::make_unique<Decoder>();
+    }
     encoder_ = std::make_unique<Encoder>();
     dispatcher_ = std::make_unique<Dispatcher>();
 
@@ -63,9 +65,9 @@ void ScreenRecorder::switchCamera()
     }
 
 #ifdef _WIN32
-    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<string>(), "dshow")) {
+    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<string>(), "dshow", "hflip")) {
 #elif __linux__
-    if (!player_->play("/dev/video0", "v4l2")) {
+    if (!player_->play("/dev/video0", "v4l2", "hflip")) {
 #endif
         player_->close();
     }
@@ -109,8 +111,8 @@ void ScreenRecorder::setup()
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
-    if (Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
-        if (microphone_decoder_->open("default", "pulse") < 0) {
+    if (recording_type_ != GIF && Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
+        if (microphone_decoder_ && microphone_decoder_->open("default", "pulse") < 0) {
             microphone_decoder_->reset();
         }
     }
@@ -145,7 +147,7 @@ void ScreenRecorder::setup()
         return;
     }
 
-    if (Devices::microphones().size() > 0) {
+    if (recording_type_ != GIF && Devices::microphones().size() > 0) {
         if (microphone_decoder_->open(
             fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
             "dshow"
@@ -156,13 +158,13 @@ void ScreenRecorder::setup()
 #endif
 
     dispatcher_->append(desktop_decoder_.get());
-    if (Devices::microphones().size() > 0 && microphone_decoder_->ready()) {
+    if (recording_type_ != GIF && Devices::microphones().size() > 0 && microphone_decoder_->ready()) {
         dispatcher_->append(microphone_decoder_.get());
     }
 
     encoder_->format(pix_fmt_);
-    encoder_->enable(AVMEDIA_TYPE_AUDIO, Devices::microphones().size() > 0);
-    auto& coder = dispatcher_->append(encoder_.get());
+    encoder_->enable(AVMEDIA_TYPE_AUDIO, (recording_type_ != GIF && Devices::microphones().size() > 0));
+    dispatcher_->append(encoder_.get());
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {
         LOG(INFO) << "create filters failed";
@@ -170,16 +172,24 @@ void ScreenRecorder::setup()
         return;
     }
     
-    encoder_->width(av_buffersink_get_w(coder.video_sink_ctx));
-    encoder_->height(av_buffersink_get_h(coder.video_sink_ctx));
-    encoder_->framerate(av_buffersink_get_frame_rate(coder.video_sink_ctx));
-    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(coder.video_sink_ctx));
-    encoder_->v_stream_tb(av_buffersink_get_time_base(coder.video_sink_ctx));
-    if (coder.audio_sink_ctx) {
-        encoder_->channels(av_buffersink_get_channels(coder.audio_sink_ctx));
-        encoder_->channel_layout(av_buffersink_get_channel_layout(coder.audio_sink_ctx));
-        encoder_->sample_rate(av_buffersink_get_sample_rate(coder.audio_sink_ctx));
-        encoder_->a_stream_tb(av_buffersink_get_time_base(coder.audio_sink_ctx));
+    auto v_sink = dispatcher_->find_sink(encoder_.get(), AVMEDIA_TYPE_VIDEO);
+    auto a_sink = dispatcher_->find_sink(encoder_.get(), AVMEDIA_TYPE_AUDIO);
+    if (v_sink == nullptr) {
+        LOG(INFO) << "not found the sink context";
+        exit();
+        return;
+    }
+
+    encoder_->width(av_buffersink_get_w(v_sink));
+    encoder_->height(av_buffersink_get_h(v_sink));
+    encoder_->framerate(av_buffersink_get_frame_rate(v_sink));
+    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(v_sink));
+    encoder_->v_stream_tb(av_buffersink_get_time_base(v_sink));
+    if (a_sink) {
+        encoder_->channels(av_buffersink_get_channels(a_sink));
+        encoder_->channel_layout(av_buffersink_get_channel_layout(a_sink));
+        encoder_->sample_rate(av_buffersink_get_sample_rate(a_sink));
+        encoder_->a_stream_tb(av_buffersink_get_time_base(a_sink));
     }
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {

@@ -394,6 +394,8 @@ void Decoder::destroy()
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 
+    enabled_.clear();
+
     av_packet_free(&packet_);
     av_frame_free(&decoded_frame_);
 
