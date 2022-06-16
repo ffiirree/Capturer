@@ -35,7 +35,7 @@ public:
         case AVMEDIA_TYPE_VIDEO:
             return video_buffer_.full();
         case AVMEDIA_TYPE_AUDIO:
-            return video_buffer_.full();
+            return audio_buffer_.full();
         default: return true;
         }
     }
@@ -128,12 +128,12 @@ private:
 
     AVAudioFifo* audio_fifo_buffer_{ nullptr };
 
-    RingVector<AVFrame*, 6> video_buffer_{
+    RingVector<AVFrame*, 4> video_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, 6> audio_buffer_{
+    RingVector<AVFrame*, 4> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

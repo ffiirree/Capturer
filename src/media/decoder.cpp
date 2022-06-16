@@ -53,24 +53,17 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         return -1;
     }
 
-    av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
+    // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
 
     // find video & audio streams
-    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder_, 0);
+    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder_, 0);
     if (video_stream_idx_ < 0 && audio_stream_idx_ < 0) {
         LOG(ERROR) << "not found any stream";
         return -1;
     }
 
     if (video_stream_idx_ >= 0) {
-        // decoder
-        video_decoder_ = avcodec_find_decoder(fmt_ctx_->streams[video_stream_idx_]->codecpar->codec_id);
-        if (!video_decoder_) {
-            LOG(ERROR) << "avcodec_find_decoder";
-            return -1;
-        }
-
         // decoder context
         video_decoder_ctx_ = avcodec_alloc_context3(video_decoder_);
         if (!video_decoder_ctx_) {
@@ -101,12 +94,6 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     }
 
     if (audio_stream_idx_ >= 0) {
-        audio_decoder_ = avcodec_find_decoder(fmt_ctx_->streams[audio_stream_idx_]->codecpar->codec_id);
-        if (!audio_decoder_) {
-            LOG(ERROR) << "avcodec_find_decoder() for audio";
-            return false;
-        }
-
         audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder_);
         if (!audio_decoder_ctx_) {
             LOG(ERROR) << "avcodec_alloc_context3 failed for audio";
@@ -127,7 +114,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
             av_get_sample_fmt_name(audio_decoder_ctx_->sample_fmt),
-            fmt_ctx_->streams[audio_stream_idx_]->nb_frames,
+            audio_decoder_ctx_->frame_size,
             fmt_ctx_->streams[audio_stream_idx_]->start_time
         );
     }

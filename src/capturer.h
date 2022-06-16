@@ -14,10 +14,10 @@ class LimitSizeVector : public std::vector<T> {
 public:
     void append(const T& value)
     {
-        push_back(value);
+        this->push_back(value);
 
-        if(size() > MAX_SIZE) {
-            erase(begin());
+        if(this->size() > MAX_SIZE) {
+            this->erase(this->begin());
         }
     }
 };

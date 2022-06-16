@@ -37,7 +37,7 @@ int Dispatcher::create_filter_for_video_input(const Producer<AVFrame>* decoder, 
         LOG(ERROR) << "[DISPATCHER] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] " << "create filter for video buffersrc: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
+    LOG(INFO) << "[DISPATCHER] " << "create  buffersrc: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
 
     const AVFilter* buffersrc = avfilter_get_by_name("buffer");
     if (!buffersrc) {
@@ -73,7 +73,7 @@ int Dispatcher::create_filter_for_video_output(const Consumer<AVFrame>* encoder,
         return -1;
     }
 
-    LOG(INFO) << "[DISPATCHER] " << "create filter for video buffersink";
+    LOG(INFO) << "[DISPATCHER] " << "create  buffersink";
 
     return 0;
 }
@@ -84,7 +84,7 @@ int Dispatcher::create_filter_for_audio_input(const Producer<AVFrame>* decoder, 
         LOG(ERROR) << "[DISPATCHER] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] " << "create filter for audio buffersrc: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
+    LOG(INFO) << "[DISPATCHER] " << "create abuffersrc: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
 
     const AVFilter* buffersrc = avfilter_get_by_name("abuffer");
     if (!buffersrc) {
@@ -122,7 +122,7 @@ int Dispatcher::create_filter_for_audio_output(const Consumer<AVFrame>* encoder,
         return -1;
     }
 
-    LOG(INFO) << "[DISPATCHER] " << "create filter for audio buffersink";
+    LOG(INFO) << "[DISPATCHER] " << "create abuffersink";
 
     return 0;
 }
@@ -275,9 +275,8 @@ int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
     }
 
     ready_ = true;
-    LOG(INFO) << "[ENCODER] " << "filter graph @{";
-    LOG(INFO) << "\n" << avfilter_graph_dump(filter_graph_, nullptr);
-    LOG(INFO) << "[ENCODER] " << "@}";
+    LOG(INFO) << "[DISPATCHER] " << "filter graph @{\n" << avfilter_graph_dump(filter_graph_, nullptr);
+    LOG(INFO) << "[DISPATCHER] " << "@}";
     return 0;
 }
 
@@ -387,7 +386,7 @@ int Dispatcher::dispatch_thread_f()
         for (auto& [sink_ctx, consumer, stream_eof] : o_streams_) {
             enum AVMediaType media_type = av_buffersink_get_type(sink_ctx);
             ret = 0;
-            while (ret >= 0 && !stream_eof) {
+            while (ret >= 0 && !stream_eof && !consumer->full(media_type)) {
                 av_frame_unref(filtered_frame);
                 ret = av_buffersink_get_frame_flags(sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
 
@@ -407,6 +406,7 @@ int Dispatcher::dispatch_thread_f()
                 }
 
                 while (consumer->full(media_type) && running_) {
+                    LOG(WARNING) << "[DISPATCHER] better not be here";
                     std::this_thread::sleep_for(20ms);
                 }
                 ret = consumer->consume(filtered_frame, media_type);

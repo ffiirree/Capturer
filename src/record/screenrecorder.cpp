@@ -112,7 +112,7 @@ void ScreenRecorder::setup()
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
     if (recording_type_ != GIF && Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
-        if (microphone_decoder_ && microphone_decoder_->open("default", "pulse") < 0) {
+        if (microphone_decoder_ && microphone_decoder_->open("default", "alsa") < 0) {
             microphone_decoder_->reset();
         }
     }
