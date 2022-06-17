@@ -37,7 +37,7 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
 
         // font family
         font_family_ = new QComboBox(this);
-        font_family_->setView(new QListView());
+        font_family_->setView(new QListView());     // qss
         font_family_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
         font_family_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
         font_family_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);

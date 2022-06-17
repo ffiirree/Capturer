@@ -29,7 +29,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
     connect(menu_, &ImageEditMenu::ok,  this, &ScreenShoter::copy);
-    connect(menu_, &ImageEditMenu::fix,  this, &ScreenShoter::pin);
+    connect(menu_, &ImageEditMenu::pin,  this, &ScreenShoter::pin);
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
     connect(menu_, &ImageEditMenu::graphChanged, [this](Graph graph) {
@@ -128,7 +128,7 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::LeftButton && status_ >= SelectorStatus::CAPTURED) {
-        snipped();
+        save2clipboard(snip(), false);
         exit();
     }
 
@@ -185,25 +185,22 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
     Selector::paintEvent(event);
 }
 
-QPixmap ScreenShoter::snipped()
+QPixmap ScreenShoter::snip()
 {
-    auto mimedata = new QMimeData();
-    auto position = selected().topLeft();
-    auto&& image = snippedImage();
-    mimedata->setData("application/qpoint", QByteArray().append(reinterpret_cast<char*>(&position), sizeof (QPoint)));
-    mimedata->setImageData(QVariant(image));
-    // Ownership of the data is transferred to the clipboard: https://doc.qt.io/qt-5/qclipboard.html#setMimeData
-    QApplication::clipboard()->setMimeData(mimedata);
-
     history_.push_back(selected());
     history_idx_ = history_.size() - 1;
 
-    return image;
+    return canvas_->pixmap().copy(selected());
 }
 
-QPixmap ScreenShoter::snippedImage()
+void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
 {
-    return canvas_->pixmap().copy(selected());
+    auto mimedata = new QMimeData();
+    mimedata->setImageData(QVariant(image));
+    mimedata->setData("application/x-snipped", QByteArray().append(pinned ? "pinned" : "copied"));
+    mimedata->setImageData(QVariant(image));
+    // Ownership of the data is transferred to the clipboard: https://doc.qt.io/qt-5/qclipboard.html#setMimeData
+    QApplication::clipboard()->setMimeData(mimedata);
 }
 
 void ScreenShoter::save()
@@ -224,25 +221,28 @@ void ScreenShoter::save()
     if (!filename.isEmpty()) {
         QFileInfo fileinfo(filename);
         save_path_ = fileinfo.absoluteDir().path();
-        snippedImage().save(filename);
+        
+        snip().save(filename);
+        
         emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
-
-        snipped();
-
         exit();
     }
 }
 
 void ScreenShoter::copy()
 {
-    snipped();
+    save2clipboard(snip(), false);
 
     exit();
 }
 
 void ScreenShoter::pin()
 {
-    emit FIX_IMAGE(snipped(), { selected().topLeft() });
+    auto& snipped = snip();
+
+    emit pinSnipped(snipped, { selected().topLeft() });
+
+    save2clipboard(snipped, true);
 
     exit();
 }

@@ -13,7 +13,7 @@ Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
     CHECK(menu);
 
     menu_ = menu;
-    connect(menu_, &ImageEditMenu::fix, [this]() { focusOn(nullptr); emit closed(); });
+    connect(menu_, &ImageEditMenu::pin, [this]() { focusOn(nullptr); emit closed(); });
     connect(menu_, &ImageEditMenu::ok, [this]() {
         // copy to clipboard
         QApplication::clipboard()->setPixmap(canvas_);

@@ -25,14 +25,14 @@ QComboBox QAbstractItemView {
     border: 1px solid #e4e7ed;
 }
 
-QComboBox QListView {
+QComboBox QAbstractItemView {
     background-color: #fcfcfc;
     border: 1px solid #dfdfdf;
     padding: 5px;
     border-radius: 5px;
 }
 
-QComboBox QListView::item {
+QComboBox QAbstractItemView::item {
     border-radius: 5px;
     padding-left: 10px;
     height: 30px;
@@ -40,9 +40,9 @@ QComboBox QListView::item {
     background-color: transparent;
 }
 
-QComboBox QListView::item:hover,
-QComboBox QListView::item:selected,
-QComboBox QListView::item:checked {
+QComboBox QAbstractItemView::item:hover,
+QComboBox QAbstractItemView::item:selected,
+QComboBox QAbstractItemView::item:checked {
     background-color: #f2f2f2;
 }
 

@@ -44,7 +44,7 @@ public:
 
 signals:
     void save();
-    void fix();
+    void pin();
     void ok();
     void exit();
 

@@ -7,7 +7,6 @@
 #include <QTextEdit>
 #include <QScrollBar>
 #include "logging.h"
-#include "imagewindow.h"
 
 #define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true)) error += tr("Failed to register hotkey:<%1>\n").arg(Y.toString());)
 
@@ -20,11 +19,7 @@ Capturer::Capturer(QWidget *parent)
     recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
     gifcptr_ = new ScreenRecorder(ScreenRecorder::GIF, this);
 
-    connect(sniper_, &ScreenShoter::FIX_IMAGE, [this](const QPixmap& image, const QPoint& pos) {
-        clipboard_history_.append(std::make_shared<ImageWindow>(image, pos));
-        pin_idx_ = clipboard_history_.size() - 1;
-        pinLastImage();
-    });
+    connect(sniper_, &ScreenShoter::pinSnipped, this, &Capturer::pinPixmap);
 
     sys_tray_icon_ = new QSystemTrayIcon(this);
 
@@ -32,7 +27,7 @@ Capturer::Capturer(QWidget *parent)
     connect(snip_sc_, &QHotkey::activated, sniper_, &ScreenShoter::start);
 
     pin_sc_ = new QHotkey(this);
-    connect(pin_sc_, &QHotkey::activated, this, &Capturer::pinLastImage);
+    connect(pin_sc_, &QHotkey::activated, this, &Capturer::pin);
 
     show_pin_sc_ = new QHotkey(this);
     connect(show_pin_sc_, &QHotkey::activated, this, &Capturer::showImages);
@@ -60,7 +55,7 @@ Capturer::Capturer(QWidget *parent)
     connect(gifcptr_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
 
     // clipboard
-    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &Capturer::clipboardChanged);
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, [this]() { clipboard_changed_ = true; });
 
     LOG(INFO) << "initialized.";
 }
@@ -121,87 +116,108 @@ void Capturer::showMessage(const QString &title, const QString &msg, QSystemTray
     if(icon == QSystemTrayIcon::Critical) LOG(ERROR) << msg;
 }
 
-void Capturer::clipboardChanged()
+std::pair<DataFormat, std::any> Capturer::clipboard_data()
 {
     const auto mimedata = QApplication::clipboard()->mimeData();
 
-    // only image
     if(mimedata->hasHtml() && mimedata->hasImage()) {
-        LOG(INFO) << "IMAGE";
-
-        auto image_rect = mimedata->imageData().value<QPixmap>().rect();
-        image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
-        clipboard_history_.append(make_shared<ImageWindow>(mimedata->imageData().value<QPixmap>(), image_rect.topLeft()));
-        pin_idx_ = clipboard_history_.size() - 1;
+        return { DataFormat::PIXMAP, mimedata->imageData().value<QPixmap>() };
     }
     else if(mimedata->hasHtml()) {
-        LOG(INFO) << "HTML";
+        return { DataFormat::HTML, mimedata->html() };
+    }
+    else if(mimedata->hasFormat("application/x-snipped") && mimedata->hasImage()) {
+        QString type = mimedata->data("application/x-snipped");
+        return (type == "copied") ? 
+            std::pair<DataFormat, std::any>{DataFormat::PIXMAP, mimedata->imageData().value<QPixmap>()} :
+            std::pair<DataFormat, std::any>{DataFormat::UNKNOWN, nullptr};
+    }
+    else if(mimedata->hasUrls() 
+        && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
+        return { DataFormat::URLS, mimedata->urls() };
+    }
+    else if(mimedata->hasText()) {
+        return { DataFormat::TEXT, mimedata->text() };
+    }
+    else if(mimedata->hasColor()) {
+        return { DataFormat::COLOR, mimedata->colorData().value<QColor>() };
+    } 
+    else {
+        return { DataFormat::UNKNOWN, nullptr };
+    }
+}
 
+std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::any>& data_pair)
+{
+    auto& [type, data] = data_pair;
+
+    switch (type)
+    {
+    case DataFormat::PIXMAP: return { true,  std::any_cast<QPixmap>(data) };
+    case DataFormat::HTML:
+    {
         QTextEdit view;
         view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view.setLineWrapMode(QTextEdit::NoWrap);
 
-        view.setHtml(mimedata->html());
+        view.setHtml(std::any_cast<QString>(data));
         view.setFixedSize(view.document()->size().toSize());
 
-        clipboard_history_.append(make_shared<ImageWindow>(view.grab(), QCursor::pos()));
-        pin_idx_ = clipboard_history_.size() - 1;
+        return { true, view.grab() };
     }
-    else if(mimedata->hasFormat("application/qpoint") && mimedata->hasImage()) {
-        LOG(INFO) << "SNIP";
-
-        auto pos = *reinterpret_cast<QPoint *>(mimedata->data("application/qpoint").data());
-        for(const auto& item : clipboard_history_) {
-            if(item->image().cacheKey() == mimedata->imageData().value<QPixmap>().cacheKey()) {
-                return;
-            }
-        }
-        clipboard_history_.append(make_shared<ImageWindow>(mimedata->imageData().value<QPixmap>(), pos));
-        pin_idx_ = clipboard_history_.size() - 1;
+    case DataFormat::TEXT:
+    {
+        QLabel label(std::any_cast<QString>(data));
+        label.setWordWrap(true);
+        label.setMargin(10);
+        label.setStyleSheet("background-color:white");
+        label.setFont({ "Consolas", 12 });
+        return { true, label.grab() };
     }
-
-    else if(mimedata->hasUrls() 
-        && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
-        LOG(INFO) << "IMAGE URL";
-
-        QPixmap pixmap;
-        pixmap.load(mimedata->urls()[0].toLocalFile());
-        auto image_rect = pixmap.rect();
-        image_rect.moveCenter(DisplayInfo::screens()[0]->geometry().center());
-        clipboard_history_.append(make_shared<ImageWindow>(pixmap, image_rect.topLeft()));
-        pin_idx_ = clipboard_history_.size() - 1;
-    }
-    else if(mimedata->hasText()) {
-        LOG(INFO) << "TEXT";
-
-        auto label = new QLabel(mimedata->text());
-        label->setWordWrap(true);
-        label->setMargin(10);
-        label->setStyleSheet("background-color:white");
-        label->setFont({"Consolas", 12});
-
-        clipboard_history_.append(make_shared<ImageWindow>(label->grab(), QCursor::pos()));
-        pin_idx_ = clipboard_history_.size() - 1;
-    }
-    else if(mimedata->hasColor()) {
-        // Do nothing.
-        LOG(WARNING) << "COLOR";
+    case DataFormat::URLS: return { true, QPixmap(std::any_cast<QList<QUrl>>(data)[0].toLocalFile()) };
+    default: LOG(WARNING) << "not support"; return { false, {} };
     }
 }
 
-void Capturer::pinLastImage()
+void Capturer::pin()
 {
-    if(clipboard_history_.empty()) return;
+    auto& [fmt, data] = clipboard_data();
+    if (clipboard_changed_) {
+        auto& [ok, pixmap] = to_pixmap({ fmt, data });
+        if (ok) {
+            history_.append({
+                fmt,
+                data,
+                std::make_shared<ImageWindow>(
+                    pixmap,
+                    DisplayInfo::screens()[0]->geometry().center() - QPoint{ pixmap.width(), pixmap.height() } / 2
+                )
+            });
+            pin_idx_ = history_.size() - 1;
+        }
+    }
+    else {
+        auto& [_1, _2, win] = history_[pin_idx_];
+        if (win) {
+            win->show();
+        }
+        pin_idx_ = std::clamp<size_t>(pin_idx_-1, 0, history_.size() - 1);
+    }
 
-    clipboard_history_[pin_idx_]->show();
-    pin_idx_ = (pin_idx_ + clipboard_history_.size() - 1) % clipboard_history_.size();
+    clipboard_changed_ = false;
+}
+
+void Capturer::pinPixmap(const QPixmap& image, const QPoint& pos)
+{
+    history_.append({ DataFormat::PIXMAP, image, std::make_shared<ImageWindow>(image, pos) });
+    pin_idx_ = history_.size() - 1;
 }
 
 void Capturer::showImages()
 {
     images_visible_ = !images_visible_;
-    for(auto& window: clipboard_history_) {
-        images_visible_ ? window->show(false) : window->hide();
+    for(auto& [_1, _2, win] : history_) {
+        images_visible_ && win ? win->show(false) : win->hide();
     }
 }

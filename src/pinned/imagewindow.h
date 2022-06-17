@@ -27,6 +27,8 @@ public:
     {
         this->image(image);
         original_pos_ = pos;
+
+        show();
     }
     ~ImageWindow() override = default;
 
@@ -45,27 +47,27 @@ public slots:
     void effectEnabled();
 
 private:
-    void mousePressEvent(QMouseEvent *) override;
-    void mouseMoveEvent(QMouseEvent *) override;
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void mouseDoubleClickEvent(QMouseEvent*) override;
 
-    void wheelEvent(QWheelEvent *) override;
-    void keyPressEvent(QKeyEvent *) override;
-    void keyReleaseEvent(QKeyEvent *) override;
-    void paintEvent(QPaintEvent *) override;
-    void contextMenuEvent(QContextMenuEvent *) override;
-    void moveEvent(QMoveEvent *) override;
-    void dropEvent(QDropEvent *) override;
-    void dragEnterEvent(QDragEnterEvent *) override;
+    void wheelEvent(QWheelEvent*) override;
+    void keyPressEvent(QKeyEvent*) override;
+    void keyReleaseEvent(QKeyEvent*) override;
+    void paintEvent(QPaintEvent*) override;
+    void contextMenuEvent(QContextMenuEvent*) override;
+    void moveEvent(QMoveEvent*) override;
+    void dropEvent(QDropEvent*) override;
+    void dragEnterEvent(QDragEnterEvent*) override;
 
     void registerShortcuts();
     void moveMenu();
     void initContextMenu();
 
-    void update(Modified type);
-    QRect getShadowGeometry(QSize size);
-    QSize getShadowSize(QSize size) { return size + QSize{shadow_r_ * 2, shadow_r_ * 2}; }
+    void update(Modified);
+    QRect getShadowGeometry(QSize);
+    QSize getShadowSize(QSize size) { return size + QSize{ shadow_r_ * 2, shadow_r_ * 2 }; }
 
     WindowStatus status_{ WindowStatus::CREATED };
 

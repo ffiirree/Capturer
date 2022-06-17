@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="99"/>
+        <location filename="../src/capturer.cpp" line="94"/>
         <source>Screenshot</source>
         <translation>截图</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="100"/>
+        <location filename="../src/capturer.cpp" line="95"/>
         <source>Record Video</source>
         <translation>录屏</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="101"/>
+        <location filename="../src/capturer.cpp" line="96"/>
         <source>Record GIF</source>
         <translation>录GIF</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="103"/>
+        <location filename="../src/capturer.cpp" line="98"/>
         <source>Open Camera</source>
         <translation>打开摄像头</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="105"/>
+        <location filename="../src/capturer.cpp" line="100"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="107"/>
+        <location filename="../src/capturer.cpp" line="102"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
@@ -223,7 +223,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="216"/>
+        <location filename="../src/snip/screenshoter.cpp" line="213"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>

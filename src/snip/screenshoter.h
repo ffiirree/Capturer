@@ -22,7 +22,7 @@ public:
 
 signals:
     void focusOnGraph(Graph);
-    void FIX_IMAGE(const QPixmap& image, const QPoint& pos);
+    void pinSnipped(const QPixmap& image, const QPoint& pos);
     void SHOW_MESSAGE(const QString& title, const QString& msg,
         QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
@@ -33,14 +33,14 @@ public slots:
     void save();
     void copy();
     void pin();
-    QPixmap snipped();
+    QPixmap snip();
+    void save2clipboard(const QPixmap&, bool);
 
     void updateTheme()
     {
         Selector::updateTheme(Config::instance()["snip"]["selector"]);
     }
 
-private slots:
     void moveMenu();
 
 protected:
@@ -56,7 +56,6 @@ private:
 
     void moveMagnifier();
 
-    QPixmap snippedImage();
 
     QPixmap captured_screen_;
 

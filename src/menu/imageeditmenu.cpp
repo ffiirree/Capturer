@@ -94,9 +94,9 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     if (groups & SAVE_GROUP) {
         addSeparator();
 
-        auto fix_btn = new IconButton(QPixmap(":/icon/res/pin"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, false, this);
-        connect(fix_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); fix(); hide(); });
-        addButton(fix_btn);
+        auto pin_btn = new IconButton(QPixmap(":/icon/res/pin"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, false, this);
+        connect(pin_btn, &IconButton::clicked, [this]() { group_->uncheckAll(); pin(); hide(); });
+        addButton(pin_btn);
 
         auto save_btn = new IconButton(QPixmap(":/icon/res/save"), { HEIGHT, HEIGHT }, { ICON_W, ICON_W }, false, this);
         connect(save_btn, &IconButton::clicked, this, &ImageEditMenu::save);
