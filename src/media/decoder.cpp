@@ -181,7 +181,7 @@ int Decoder::produce(AVFrame* frame, int type)
     switch (type)
     {
     case AVMEDIA_TYPE_VIDEO:
-        if (video_buffer_.empty()) return -1;
+        if (video_buffer_.empty()) return (eof_ & VDECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
 
         video_buffer_.pop(
             [frame](AVFrame* popped) {
@@ -192,7 +192,7 @@ int Decoder::produce(AVFrame* frame, int type)
         return 0;
 
     case AVMEDIA_TYPE_AUDIO:
-        if (audio_buffer_.empty()) return -1;
+        if (audio_buffer_.empty()) return (eof_ & ADECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
 
         audio_buffer_.pop(
             [frame](AVFrame* popped) {
@@ -348,8 +348,6 @@ int Decoder::run_f()
     } // while(running_)
 
     // EOF
-    if (video_stream_idx_ >= 0) video_buffer_.push([](AVFrame* nil) { av_frame_unref(nil); });
-    if (audio_stream_idx_ >= 0) audio_buffer_.push([](AVFrame* nil) { av_frame_unref(nil); });
     eof_ = DECODING_EOF;
 
     if (video_stream_idx_ >= 0) {

@@ -114,6 +114,7 @@ void ScreenRecorder::setup()
     if (recording_type_ != GIF && Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
         if (microphone_decoder_ && microphone_decoder_->open("default", "alsa") < 0) {
             microphone_decoder_->reset();
+            menu_->disable_mic(true);
         }
     }
 
@@ -152,18 +153,20 @@ void ScreenRecorder::setup()
             fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
             "dshow"
         ) < 0) {
+            LOG(WARNING) << "open microphone failed";
             microphone_decoder_->reset();
+            menu_->disable_mic(true);
         }
     }
 #endif
 
     dispatcher_->append(desktop_decoder_.get());
-    if (recording_type_ != GIF && Devices::microphones().size() > 0 && microphone_decoder_->ready()) {
+    if (microphone_decoder_ && microphone_decoder_->ready()) {
         dispatcher_->append(microphone_decoder_.get());
     }
 
     encoder_->format(pix_fmt_);
-    encoder_->enable(AVMEDIA_TYPE_AUDIO, (recording_type_ != GIF && Devices::microphones().size() > 0));
+    encoder_->enable(AVMEDIA_TYPE_AUDIO, (microphone_decoder_ && microphone_decoder_->ready()));
     dispatcher_->append(encoder_.get());
 
     if (dispatcher_->create_filter_graph(filters_) < 0) {

@@ -336,16 +336,20 @@ int Dispatcher::dispatch_thread_f()
     defer(LOG(INFO) << "[DISPATCHER@" << std::this_thread::get_id() << "] EXITED");
 
     int ret = 0;
-    bool need_dispatch = false;
     while (running_) {
+        bool need_dispatch = false;
+        // input streams
         for (auto& [src_ctx, producer, eof] : i_streams_) {
-            if (producer->produce(frame_, avfilter_pad_get_type(src_ctx->filter->outputs, 0)) >= 0) {
+            if (!eof) {
+                ret = producer->produce(frame_, avfilter_pad_get_type(src_ctx->filter->outputs, 0));
+                if (ret == AVERROR_EOF) {
+                    eof = true;
+                }
+                else if (ret < 0) {
+                    continue;
+                }
 
-                ret = av_buffersrc_add_frame_flags(
-                    src_ctx,
-                    (!frame_->width && !frame_->nb_samples) ? nullptr : frame_,
-                    AV_BUFFERSRC_FLAG_PUSH
-                );
+                ret = av_buffersrc_add_frame_flags(src_ctx, (ret == AVERROR_EOF) ? nullptr : frame_, AV_BUFFERSRC_FLAG_PUSH);
                 if (ret < 0) {
                     LOG(ERROR) << "av_buffersrc_add_frame_flags";
                     running_ = false;
@@ -357,9 +361,7 @@ int Dispatcher::dispatch_thread_f()
         }
 
         if (!need_dispatch) {
-            std::this_thread::sleep_for(20ms);
-            need_dispatch = true;
-            LOG(INFO) << "[DISPATCHER] sleep 20ms";
+            std::this_thread::sleep_for(10ms);
             continue;
         }
 
@@ -383,6 +385,7 @@ int Dispatcher::dispatch_thread_f()
         }
         // @}
 
+        // output streams
         for (auto& [sink_ctx, consumer, stream_eof] : o_streams_) {
             enum AVMediaType media_type = av_buffersink_get_type(sink_ctx);
             ret = 0;

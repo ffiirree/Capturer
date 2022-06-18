@@ -1,7 +1,7 @@
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
     border: 1px solid #323232;
-    background-color: #232323;
+    background-color: #323232;
     color: #e6e6e6;
 }
 
@@ -14,7 +14,8 @@ QComboBox::down-arrow:on {
 }
 
 QComboBox:hover {
-    border: 1px solid #232323;
+    background-color: #393939;
+    border: 1px solid #393939;
 }
 
 QComboBox:on {
@@ -26,30 +27,31 @@ QComboBox QAbstractItemView {
     border: 1px solid #e4e7ed;
 }
 
-QComboBox QListView {
+QComboBox QAbstractItemView {
     background-color: #232323;
     border: 1px solid #323232;
 }
 
-QComboBox QListView::item {
+QComboBox QAbstractItemView::item {
     color: #e6e6e6;
 }
 
-QComboBox QListView::item:hover,
-QComboBox QListView::item:selected,
-QComboBox QListView::item:checked {
+QComboBox QAbstractItemView::item:hover,
+QComboBox QAbstractItemView::item:selected,
+QComboBox QAbstractItemView::item:checked {
     background-color: #323232;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QLineEdit {
-    background-color: #232323;
+    background-color: #323232;
     border: 1px solid #323232;
     color: #50505f;
 }
 
 QLineEdit:hover {
-    border: 1px solid #323232;
+    background-color: #393939;
+    border: 1px solid #393939;
 }
 
 QLineEdit:focus {
@@ -65,12 +67,13 @@ QLineEdit[readOnly="true"] {
 /*///////////////////////////////////////////////////////////////*/
 QSpinBox {
     border: 1px solid #323232;
-    background-color: #232323;
+    background-color: #323232;
     color: #e6e6e6;
 }
 
 QSpinBox:hover {
-    border: 1px solid #323232;
+    background-color: #393939;
+    border: 1px solid #393939;
 }
 
 QSpinBox:focus {
@@ -113,17 +116,22 @@ QColorDialog {
 
 /*///////////////////////////////////////////////////////////////*/
 QPushButton {
-    background-color: #232323;
+    background-color: #323232;
     border: 1px solid #323232;
     color: #e6e6e6;
 }
 
 QPushButton:hover {
-    background-color: #323232;
+    background-color: #383838;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 /* QFrame::VLine == 0x0005 */
 QFrame[frameShape="5"] {
     color: #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLabel {
+    color: #e6e6e6;
 }

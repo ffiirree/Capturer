@@ -58,3 +58,7 @@ QPushButton#RecordStopButton::hover {
 EditMenu {
     background-color: #232323;
 }
+
+ImageEditMenu QPushButton {
+    background-color: #232323;
+}

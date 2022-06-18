@@ -1,5 +1,5 @@
 #settings-mainwindow {
-    background-color: #232323;
+    background-color: #202021;
 }
 
 #settings-mainwindow QWidget {
@@ -8,20 +8,20 @@
 
 /*///////////////////////////////////////////////////////////////*/
 TitleBar {
-    background-color: #323232;
+    background-color: #272728;
 }
 
 QLabel#logo {
-    background-color: #232323;
+    background-color: #202021;
 }
 
 QLabel#title {
-    background-color: #232323;
+    background-color: #202021;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
-    background: #323232;
+    background: #272728;
 }
 
 QTabBar#fristtab::tab {
@@ -30,5 +30,5 @@ QTabBar#fristtab::tab {
 
 QTabBar#fristtab::tab:selected,
 QTabBar#fristtab::tab:hover {
-    background: #323232;
+    background: #272728;
 }
