@@ -133,7 +133,7 @@ std::pair<DataFormat, std::any> Capturer::clipboard_data()
             std::pair<DataFormat, std::any>{DataFormat::UNKNOWN, nullptr};
     }
     else if(mimedata->hasUrls() 
-        && QString("jpg;jpeg;png;JPG;JPEG;PNG;bmp;BMP;ico;ICO;gif;GIF").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix())) {
+        && QString("jpg;jpeg;png;bmp;ico;gif;svg").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
         return { DataFormat::URLS, mimedata->urls() };
     }
     else if(mimedata->hasText()) {
