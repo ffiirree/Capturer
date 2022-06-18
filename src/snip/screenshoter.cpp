@@ -1,5 +1,4 @@
 #include "screenshoter.h"
-#include <cmath>
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QFileDialog>
@@ -68,6 +67,7 @@ void ScreenShoter::start()
 
 void ScreenShoter::exit()
 {
+    captured_screen_ = {};
     canvas_->reset();
     canvas_->disable();
 
@@ -238,7 +238,7 @@ void ScreenShoter::copy()
 
 void ScreenShoter::pin()
 {
-    auto& snipped = snip();
+    auto snipped = snip();
 
     emit pinSnipped(snipped, { selected().topLeft() });
 

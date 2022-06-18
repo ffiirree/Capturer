@@ -399,7 +399,7 @@ void Canvas::clear()
 void Canvas::reset()
 {
     clear();
-    canvas_.fill(Qt::transparent);
+    canvas_ = {};
     modified_ = PaintType::REPAINT_ALL;
 }
 
