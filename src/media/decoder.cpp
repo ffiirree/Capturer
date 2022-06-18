@@ -215,6 +215,7 @@ int Decoder::run()
         return -1;
     }
 
+    eof_ = 0x00;
     running_ = true;
     thread_ = std::thread([this]() { run_f(); });
 
@@ -228,6 +229,9 @@ int Decoder::run_f()
     // reset the buffer
     video_buffer_.clear();
     audio_buffer_.clear();
+
+    eof_ |= audio_stream_idx_ < 0 ? ADECODING_EOF : 0x00;
+    eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
     while (running_) {
         if (paused() || video_buffer_.full() || audio_buffer_.full()) {
@@ -347,9 +351,6 @@ int Decoder::run_f()
         } // decoding
     } // while(running_)
 
-    // EOF
-    eof_ = DECODING_EOF;
-
     if (video_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format("[DECODER] frames = {:>5d}, fps = {:>6.2f}",
             video_decoder_ctx_->frame_number,
@@ -372,8 +373,9 @@ void Decoder::destroy()
 
     running_ = false;
     paused_ = false;
-    eof_ = 0x00;
     ready_ = false;
+
+    eof_ = DECODING_EOF;
 
     wait();
 

@@ -80,11 +80,12 @@ void SettingWindow::setupGeneralWidget()
     layout->setContentsMargins(35, 10, 35, 15);
 
     //
-    auto _01 = new QCheckBox(tr("Run on startup"));
+    auto _01 = new QCheckBox();
     _01->setChecked(config["autorun"].get<bool>());
     setAutoRun(_01->checkState());
     connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
-    layout->addWidget(_01, 0, 0, 1, 2);
+    layout->addWidget(new QLabel(tr("Run on Startup")), 0, 0, 1, 1);
+    layout->addWidget(_01, 0, 1, 1, 2);
 
     //
     auto _1_2 = new QComboBox();
@@ -110,7 +111,7 @@ void SettingWindow::setupGeneralWidget()
     auto _2_2 = new QLineEdit(config.getFilePath());
     _2_2->setContextMenuPolicy(Qt::NoContextMenu);
     _2_2->setFocusPolicy(Qt::NoFocus);
-    layout->addWidget(new QLabel(tr("Settings file")), 2, 0, 1, 1);
+    layout->addWidget(new QLabel(tr("Settings File")), 2, 0, 1, 1);
     layout->addWidget(_2_2, 2, 1, 1, 2);
 
     //
@@ -156,12 +157,12 @@ void SettingWindow::setupSnipWidget()
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["snip"]["selector"]["border"]["width"], w);
     });
-    layout->addWidget(new QLabel(tr("Border width")), 1, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new ColorDialogButton(config["snip"]["selector"]["border"]["color"].get<QColor>());
     connect(_2_2, &ColorDialogButton::changed, [this](auto&& c) { config.set(config["snip"]["selector"]["border"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Border color")), 2, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new QComboBox();
@@ -174,12 +175,12 @@ void SettingWindow::setupSnipWidget()
     connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
         config.set(config["snip"]["selector"]["border"]["style"], s);
     });
-    layout->addWidget(new QLabel(tr("Line type")), 3, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     auto _4_2 = new ColorDialogButton(config["snip"]["selector"]["mask"]["color"].get<QColor>());
     connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ config.set(config["snip"]["selector"]["mask"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Mask color")), 4, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
     layout->addWidget(_4_2, 4, 2, 1, 2);
 
     layout->setRowStretch(5, 1);
@@ -205,12 +206,12 @@ void SettingWindow::setupRecordWidget()
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["record"]["selector"]["border"]["width"], w);
     });
-    layout->addWidget(new QLabel(tr("Border width")), 1, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new ColorDialogButton(config["record"]["selector"]["border"]["color"].get<QColor>());
     connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ config.set(config["record"]["selector"]["border"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Border color")), 2, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new QComboBox();
@@ -222,19 +223,27 @@ void SettingWindow::setupRecordWidget()
     connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
         config.set(config["record"]["selector"]["border"]["style"], s);
     });
-    layout->addWidget(new QLabel(tr("Line type")), 3, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     auto _4_2 = new ColorDialogButton(config["record"]["selector"]["mask"]["color"].get<QColor>());
     connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ config.set(config["record"]["selector"]["mask"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Mask color")), 4, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
     layout->addWidget(_4_2, 4, 2, 1, 2);
 
-    layout->addWidget(new QLabel(), 5, 1, 1, 1);
+    auto _5_2 = new QCheckBox();
+    _5_2->setChecked(config["record"]["box"].get<bool>());
+    connect(_5_2, &QCheckBox::stateChanged, [this](int state) {
+        config.set(config["record"]["box"], state == Qt::Checked);
+    });
+    layout->addWidget(new QLabel(tr("Show Region")), 5, 1, 1, 1);
+    layout->addWidget(_5_2, 5, 2, 1, 2);
+
+    layout->addWidget(new QLabel(), 6, 1, 1, 1);
 
     auto _5 = new QLabel(tr("Params:"));
     _5->setObjectName("sub-title");
-    layout->addWidget(_5, 6, 1, 1, 1);
+    layout->addWidget(_5, 7, 1, 1, 1);
 
     auto _6_2 = new QSpinBox();
     _6_2->setContextMenuPolicy(Qt::NoContextMenu);
@@ -242,8 +251,8 @@ void SettingWindow::setupRecordWidget()
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["record"]["framerate"], w);
     });
-    layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
-    layout->addWidget(_6_2, 7, 2, 1, 2);
+    layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
+    layout->addWidget(_6_2, 8, 2, 1, 2);
 
     auto _7_2 = new QComboBox();
     _7_2->setView(new QListView());
@@ -254,8 +263,8 @@ void SettingWindow::setupRecordWidget()
     connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
         config.set(config["record"]["encoder"], s == 0 ? "libx264" : "libx265");
     });
-    layout->addWidget(new QLabel(tr("Encoder")), 8, 1, 1, 1);
-    layout->addWidget(_7_2, 8, 2, 1, 2);
+    layout->addWidget(new QLabel(tr("Encoder")), 9, 1, 1, 1);
+    layout->addWidget(_7_2, 9, 2, 1, 2);
 
     auto _8_2 = new QComboBox();
     auto quality = config["record"]["quality"].get<QString>();
@@ -267,10 +276,10 @@ void SettingWindow::setupRecordWidget()
     connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
         config.set(config["record"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
         });
-    layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
-    layout->addWidget(_8_2, 9, 2, 1, 2);
+    layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
+    layout->addWidget(_8_2, 10, 2, 1, 2);
 
-    layout->setRowStretch(10, 1);
+    layout->setRowStretch(11, 1);
 
     tabwidget_->widget(index)->setLayout(layout);
 }
@@ -293,13 +302,13 @@ void SettingWindow::setupGIFWidget()
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["gif"]["selector"]["border"]["width"], w);
     });
-    layout->addWidget(new QLabel(tr("Border width")), 1, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new ColorDialogButton(config["gif"]["selector"]["border"]["color"].get<QColor>());
     connect(_2_2, &ColorDialogButton::changed, [this](auto&& c){ config.set(config["gif"]["selector"]["border"]["color"], c); });
     layout->addWidget(_2_2, 2, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Border color")), 2, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
 
     auto _3_2 = new QComboBox();
     _3_2->setView(new QListView());
@@ -311,18 +320,26 @@ void SettingWindow::setupGIFWidget()
         config.set(config["gif"]["selector"]["border"]["style"], s);
     });
     layout->addWidget(_3_2, 3, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Line type")), 3, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
 
     auto _4_2 = new ColorDialogButton(config["gif"]["selector"]["mask"]["color"].get<QColor>());
     connect(_4_2, &ColorDialogButton::changed, [this](auto&& c){ config.set(config["gif"]["selector"]["mask"]["color"], c); });
     layout->addWidget(_4_2, 4, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Mask color")), 4, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
 
-    layout->addWidget(new QLabel(), 5, 1, 1, 1);
+    auto _5_2 = new QCheckBox();
+    _5_2->setChecked(config["gif"]["box"].get<bool>());
+    connect(_5_2, &QCheckBox::stateChanged, [this](int state) {
+        config.set(config["gif"]["box"], state == Qt::Checked);
+        });
+    layout->addWidget(new QLabel(tr("Show Region")), 5, 1, 1, 1);
+    layout->addWidget(_5_2, 5, 2, 1, 2);
+
+    layout->addWidget(new QLabel(), 6, 1, 1, 1);
 
     auto _5 = new QLabel(tr("Params:"));
     _5->setObjectName("sub-title");
-    layout->addWidget(_5, 6, 1, 1, 1);
+    layout->addWidget(_5, 7, 1, 1, 1);
 
     auto _7_2 = new QSpinBox();
     _7_2->setContextMenuPolicy(Qt::NoContextMenu);
@@ -330,8 +347,8 @@ void SettingWindow::setupGIFWidget()
     connect(_7_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
         config.set(config["gif"]["framerate"], w);
     });
-    layout->addWidget(new QLabel(tr("Framerate")), 7, 1, 1, 1);
-    layout->addWidget(_7_2, 7, 2, 1, 2);
+    layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
+    layout->addWidget(_7_2, 8, 2, 1, 2);
 
     auto _8_2 = new QComboBox();
     auto quality = config["gif"]["quality"].get<QString>();
@@ -343,10 +360,10 @@ void SettingWindow::setupGIFWidget()
     connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
         config.set(config["gif"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
     });
-    layout->addWidget(new QLabel(tr("Quality")), 8, 1, 1, 1);
-    layout->addWidget(_8_2, 8, 2, 1, 2);
+    layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
+    layout->addWidget(_8_2, 9, 2, 1, 2);
 
-    layout->setRowStretch(9, 1);
+    layout->setRowStretch(10, 1);
     tabwidget_->widget(index)->setLayout(layout);
 }
 
@@ -422,21 +439,21 @@ void SettingWindow::setupHotkeyWidget()
     connect(hide_show_images, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["pin"]["visiable"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Hide/Show all images")), idx_row, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Hide/Show All Images")), idx_row, 1, 1, 1);
     layout->addWidget(hide_show_images, idx_row++, 2, 1, 3);
 
     auto _3_2 = new ShortcutInput(config["record"]["hotkey"].get<QKeySequence>());
     connect(_3_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["record"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Video recording")), idx_row, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Video Recording")), idx_row, 1, 1, 1);
     layout->addWidget(_3_2, idx_row++, 2, 1, 3);
 
     auto _4_2 = new ShortcutInput(config["gif"]["hotkey"].get<QKeySequence>());
     connect(_4_2, &ShortcutInput::changed, [this](auto&& ks){
         config.set(config["gif"]["hotkey"], ks);
     });
-    layout->addWidget(new QLabel(tr("Gif recording")), idx_row, 1, 1, 1);
+    layout->addWidget(new QLabel(tr("Gif Recording")), idx_row, 1, 1, 1);
     layout->addWidget(_4_2, idx_row++, 2, 1, 3);
 
     layout->setRowStretch(idx_row, 1);
