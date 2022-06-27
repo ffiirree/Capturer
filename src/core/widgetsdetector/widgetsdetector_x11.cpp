@@ -10,9 +10,9 @@
 #include <X11/Xatom.h>
 #include "displayinfo.h"
 
-std::vector<std::pair<QString, QRect>> WidgetsDetector::windows_;
+std::vector<std::tuple<QString, QRect, uint64_t>> WidgetsDetector::windows_;
 
-void WidgetsDetector::reset()
+void WidgetsDetector::refresh()
 {
     windows_.clear();
 
@@ -20,38 +20,44 @@ void WidgetsDetector::reset()
     auto root_window = DefaultRootWindow(display);
 
     Window root_return, parent_return;
-    Window *child_windows = nullptr;
+    Window* child_windows = nullptr;
     unsigned int child_num = 0;
     XQueryTree(display, root_window, &root_return, &parent_return, &child_windows, &child_num);
 
-    for(unsigned int i = 0; i < child_num; ++i) {
+    for (unsigned int i = 0; i < child_num; ++i) {
         XWindowAttributes attrs;
         XGetWindowAttributes(display, child_windows[i], &attrs);
-        char * buffer;
-        XFetchName(display, child_windows[i], &buffer);
-        auto name = QString(buffer);
+        if (attrs.map_state >= 2) { // IsViewable
+            char* buffer;
+            XFetchName(display, child_windows[i], &buffer);
 
-        QRect rect(attrs.x, attrs.y, attrs.width, attrs.height);
-
-        windows_.push_back({name, rect});
+            QRect rect(attrs.x, attrs.y, attrs.width, attrs.height);
+            windows_.push_back({ QString(buffer), rect, child_windows[i] });
+        }
     }
 
     XFree(child_windows);
 }
 
-QRect WidgetsDetector::window()
+std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
     QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();
-    QRect result = fullscreen;
+    std::tuple<QString, QRect, uint64_t> window("desktop", fullscreen, 0);
 
-    for(const auto& window: windows_) {
-        if(window.second.contains(cpos)
-                && (result.width() * result.height() > window.second.width() * window.second.height())) {
-            result = fullscreen.intersected(window.second);
+    QRect rect = fullscreen;
+    for (const auto& [wname, wrect, wid] : windows_) {
+        if (wrect.contains(cpos) && (rect.width() * rect.height() > wrect.width() * wrect.height())) {
+            rect = fullscreen.intersected(wrect);
+            window = { wname, rect, wid };
         }
     }
 
-    return result;
+    return window;
+}
+
+QRect WidgetsDetector::window_rect()
+{
+    return std::get<1>(window());
 }
 #endif

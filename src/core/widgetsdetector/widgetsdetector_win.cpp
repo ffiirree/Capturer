@@ -7,7 +7,7 @@
 #include "dwmapi.h"
 #include "displayinfo.h"
 
-std::vector<std::pair<QString, QRect>> WidgetsDetector::windows_;
+std::vector<std::tuple<QString, QRect, uint64_t>> WidgetsDetector::windows_;
 
 QRect getRect(HWND hWnd)
 {
@@ -25,7 +25,7 @@ QRect getRect(HWND hWnd)
      return QString::fromWCharArray(buffer);
  }
 
-void WidgetsDetector::reset()
+void WidgetsDetector::refresh()
 {
     windows_.clear();
 
@@ -35,23 +35,28 @@ void WidgetsDetector::reset()
         auto rect = getRect(hwnd);
 
         if(IsWindowVisible(hwnd) && rect.isValid()) {
-            windows_.push_back({ getName(hwnd), rect });
+            windows_.push_back({ getName(hwnd), rect, (uint64_t)hwnd });
         }
 
         hwnd = GetNextWindow(hwnd, GW_HWNDNEXT);        // Z-index: up to down
     }
 }
 
-QRect WidgetsDetector::window()
+std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
     QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();
 
-    for(const auto& window : windows_) {
-        if(window.second.contains(cpos)) {
-            return fullscreen.intersected(window.second);
+    for (const auto& [wname, wrect, wid] : windows_) {
+        if (wrect.contains(cpos)) {
+            return { wname, fullscreen.intersected(wrect), wid };
         }
     }
-    return fullscreen;
+    return { "desktop", fullscreen, 0 };
+}
+
+QRect WidgetsDetector::window_rect()
+{
+    return std::get<1>(window());
 }
 #endif

@@ -126,19 +126,3 @@ make package
 ## FFmpeg代码示例
 
 可以参考 [ffmpeg_examples](https://github.com/ffiirree/ffmpeg_examples)，有不少`FFmpeg`的基础用法。
-
-## Todo
-
-### 截图
-
-- [ ] 长截图
-- [ ] Latex OCR
-
-### 编辑
-
-- [ ] 文本框旋转
-
-### 录屏
-
-- [ ] Speakers
-- [ ] 添加水印

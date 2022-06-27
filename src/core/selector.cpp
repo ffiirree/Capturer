@@ -39,8 +39,8 @@ void Selector::start()
         setMouseTracking(true);
 
         if(use_detect_) {
-            WidgetsDetector::reset();
-            box_.reset(WidgetsDetector::window());
+            WidgetsDetector::refresh();
+            box_.reset(WidgetsDetector::window_rect());
             info_->show();
         }
 
@@ -97,7 +97,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     switch (status_) {
     case SelectorStatus::NORMAL:
         if (use_detect_) {
-            box_.reset(WidgetsDetector::window());
+            box_.reset(WidgetsDetector::window_rect());
             update();
         }
         setCursor(Qt::CrossCursor);
@@ -196,7 +196,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             // invalid size
             if(!isValid()) {
                 if (use_detect_) { // detected window
-                    box_.reset(WidgetsDetector::window());
+                    box_.reset(WidgetsDetector::window_rect());
                     CAPTURED();
                 }
                 else {   // reset

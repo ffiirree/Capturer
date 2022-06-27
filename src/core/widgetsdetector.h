@@ -3,15 +3,17 @@
 
 #include <QRect>
 #include <vector>
+#include <tuple>
 
 class WidgetsDetector
 {
 public:
-    static QRect window();
+    static std::tuple<QString, QRect, uint64_t> window();       // window rect, name and id
+    static QRect window_rect();
     static QRect widget();
-    static void reset();
+    static void refresh();
 private:
-    static std::vector<std::pair<QString, QRect>> windows_;
+    static std::vector<std::tuple<QString, QRect, uint64_t>> windows_;
 };
 
 #endif // WIDGETS_DETECTOR_H
