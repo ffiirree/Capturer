@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
 
 template<class T>
 class Producer {
