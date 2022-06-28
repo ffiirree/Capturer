@@ -5,9 +5,8 @@
 #include <QScreen>
 #include <QX11Info>
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include "displayinfo.h"
+
 
 std::vector<std::tuple<QString, QRect, uint64_t>> WidgetsDetector::windows_;
 
@@ -32,11 +31,13 @@ void WidgetsDetector::refresh()
         XWindowAttributes attrs;
         XGetWindowAttributes(display, child_windows[i], &attrs);
         if (attrs.map_state >= 2) { // IsViewable
-            char* buffer;
+            char* buffer = nullptr;
             XFetchName(display, child_windows[i], &buffer);
 
             QRect rect(attrs.x, attrs.y, attrs.width, attrs.height);
             windows_.push_back({ QString(buffer), rect, child_windows[i] });
+
+            XFree(buffer);
         }
     }
 
