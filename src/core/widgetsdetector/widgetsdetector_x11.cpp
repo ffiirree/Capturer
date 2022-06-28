@@ -5,7 +5,6 @@
 #include <QScreen>
 #include <QX11Info>
 #include <X11/Xlib.h>
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include "displayinfo.h"
@@ -22,6 +21,11 @@ void WidgetsDetector::refresh()
     Window root_return, parent_return;
     Window* child_windows = nullptr;
     unsigned int child_num = 0;
+    // The XQueryTree() function returns the root ID, the parent window ID, a pointer to the list of children windows (NULL when there are no children), 
+    // and the number of children in the list for the specified window. 
+    // The children are listed in current stacking order, from bottommost (first) to topmost (last). 
+    // XQueryTree() returns zero if it fails and nonzero if it succeeds. 
+    // To free a non-NULL children list when it is no longer needed, use XFree().
     XQueryTree(display, root_window, &root_return, &parent_return, &child_windows, &child_num);
 
     for (unsigned int i = 0; i < child_num; ++i) {
@@ -43,17 +47,16 @@ std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
     QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
     auto cpos = QCursor::pos();
-    std::tuple<QString, QRect, uint64_t> window("desktop", fullscreen, 0);
 
-    QRect rect = fullscreen;
-    for (const auto& [wname, wrect, wid] : windows_) {
-        if (wrect.contains(cpos) && (rect.width() * rect.height() > wrect.width() * wrect.height())) {
-            rect = fullscreen.intersected(wrect);
-            window = { wname, rect, wid };
+    // listed in current stacking order, from bottommost (first) to topmost (last).
+    for (auto first = windows_.rbegin(); first != windows_.rend(); ++first) {
+        const auto& [wname, wrect, wid] = *first;
+        if (wrect.contains(cpos)) {
+            return std::tuple<QString, QRect, uint64_t>(wname, fullscreen.intersected(wrect), wid);
         }
     }
 
-    return window;
+    return { "desktop", fullscreen, 0 };
 }
 
 QRect WidgetsDetector::window_rect()
