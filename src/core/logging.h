@@ -52,6 +52,11 @@ inline std::ostream& operator<<(std::ostream& out, const QStringList& list)
     return out;
 }
 
+inline std::ostream& operator<<(std::ostream& out, const QPoint& point)
+{
+    return out << "<" << point.x() << ", " << point.y() << ">";
+}
+
 inline std::ostream& operator<<(std::ostream& out, const QSize& size) 
 {
     return out << "<" << size.width() << " x " << size.height() << ">";
