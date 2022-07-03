@@ -33,7 +33,7 @@ void ColorButton::paintEvent(QPaintEvent *)
     painter.end();
 }
 
-void ColorButton::enterEvent(QEvent *)
+void ColorButton::enterEvent(QEvent*)
 {
     border_pen_.setColor(hover_color_);
 }
@@ -70,7 +70,7 @@ ColorDialogButton::ColorDialogButton(const QColor& color, QWidget *parent)
 
 void ColorDialogButton::wheelEvent(QWheelEvent* event)
 {
-    color_.setAlpha(color_.alpha() + event->delta() / 60);
+    color_.setAlpha(color_.alpha() + event->angleDelta().y() / 60);
     color(color_);
 }
 

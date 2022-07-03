@@ -11,7 +11,7 @@ TitleBar::TitleBar(QWidget *parent)
     setAutoFillBackground(true);
 
     auto layout = new QHBoxLayout();
-    layout->setMargin(0);
+    layout->setContentsMargins({});
     layout->setSpacing(0);
     setLayout(layout);
 

@@ -16,7 +16,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
 
     auto *layout_ = new QHBoxLayout();
     layout_->setSpacing(0);
-    layout_->setMargin(0);
+    layout_->setContentsMargins({});
 
     if (buttons & RecordMenu::MICROPHONE) {
         mic_ = new QCheckBox();
@@ -64,7 +64,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
 
     auto *backgroud_layout = new QHBoxLayout();
     backgroud_layout->setSpacing(0);
-    backgroud_layout->setMargin(0);
+    backgroud_layout->setContentsMargins({});
     backgroud_layout->addWidget(window_);
     setLayout(backgroud_layout);
 }

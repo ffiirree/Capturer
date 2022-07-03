@@ -31,7 +31,7 @@ SettingWindow::SettingWindow(QWidget * parent)
 
     auto shadow_layout = new QVBoxLayout();
     shadow_layout->setSpacing(0);
-    shadow_layout->setMargin(0);
+    shadow_layout->setContentsMargins({});
     auto window = new QWidget();
     window->setObjectName("settings-mainwindow");
     shadow_layout->addWidget(window);
@@ -46,7 +46,7 @@ SettingWindow::SettingWindow(QWidget * parent)
 
     auto layout = new QVBoxLayout();
     layout->setSpacing(0);
-    layout->setMargin(0);
+    layout->setContentsMargins({});
     window->setLayout(layout);
 
     // title bar

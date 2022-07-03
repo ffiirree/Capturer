@@ -231,15 +231,15 @@ void ImageWindow::wheelEvent(QWheelEvent* event)
 {
     if (editing_) return;
 
+    auto delta = event->angleDelta().y();
     if (ctrl_) {
-        opacity_ += (event->delta() / 12000.0);
-        if (opacity_ < 0.01) opacity_ = 0.01;
-        if (opacity_ > 1.00) opacity_ = 1.00;
+        opacity_ += (delta / 12000.0);
+        opacity_ = std::clamp(opacity_, 0.01, 1.0);
 
         setWindowOpacity(opacity_);
     }
     else if (!thumbnail_) {
-        scale_ = event->delta() > 0 ? scale_ * 1.05 : scale_ / 1.05;
+        scale_ = delta > 0 ? scale_ * 1.05 : scale_ / 1.05;
         scale_ = std::max(std::min(125.0 / std::min(pixmap_.size().width(), pixmap_.size().height()), 1.0), scale_);
 
         update(Modified::SCALED);

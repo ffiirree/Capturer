@@ -6,7 +6,7 @@ void WidthButton::wheelEvent(QWheelEvent *event)
 {
     if (!isChecked()) return;
 
-    width_ +=  event->delta() / 120;
+    width_ +=  event->angleDelta().y() / 120;
     checkValue();
 
     emit changed(width_);

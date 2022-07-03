@@ -12,10 +12,9 @@ EditMenu::EditMenu(QWidget *parent)
     setAttribute(Qt::WA_ShowWithoutActivating);
     setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
 
-    auto layout = new QHBoxLayout();
-    layout->setSpacing(0);
-    layout->setMargin(0);
-    setLayout(layout);
+    setLayout(new QHBoxLayout(this));
+    layout()->setSpacing(0);
+    layout()->setContentsMargins({});
 }
 
 void EditMenu::addButton(CustomButton * btn)

@@ -310,7 +310,7 @@ void Canvas::keyReleaseEvent(QKeyEvent* event)
 void Canvas::wheelEvent(QWheelEvent* event)
 {
     if ((edit_status_ & Graph::ERASER) || (edit_status_ & Graph::MOSAIC)) {
-        auto delta = event->delta() / 120;
+        auto delta = event->angleDelta().y() / 120;
         menu_->lineWidth(std::min(menu_->lineWidth() + delta, 49));
         emit cursorChanged();
     }

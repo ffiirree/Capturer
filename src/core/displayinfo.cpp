@@ -1,7 +1,6 @@
 #include "displayinfo.h"
 #include <QScreen>
 #include <QApplication>
-#include <QDesktopWidget>
 #include "utils.h"
 #include "logging.h"
 
