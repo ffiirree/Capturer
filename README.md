@@ -85,6 +85,9 @@ Keys | Actions
 
 ```bash
 git clone https://github.com/ffiirree/Capturer.git --recursive
+
+# update submodules
+git submodule update --init --recursive
 ```
 
 > 本项目开发使用的`Qt`版本为`Qt 5.12.12`, `FFmpeg`版本为4.4.1

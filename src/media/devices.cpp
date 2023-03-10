@@ -9,7 +9,7 @@ QList<QString> Devices::cameras()
         cameras.insert(info.description());
     }
 
-    return cameras.toList();
+    return cameras.values();
 }
 
 QList<QString> Devices::microphones()
@@ -20,7 +20,7 @@ QList<QString> Devices::microphones()
         microphones.insert(info.deviceName());
     }
 
-    return microphones.toList();
+    return microphones.values();
 }
 
 QString Devices::defaultMicrophone()
@@ -35,7 +35,7 @@ QList<QString> Devices::speakers()
         speakers.insert(info.deviceName());
     }
 
-    return speakers.toList();
+    return speakers.values();
 }
 
 QString Devices::defaultSpeaker()

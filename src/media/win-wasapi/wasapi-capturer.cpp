@@ -194,7 +194,7 @@ int WasapiCapturer::run_f()
             }
 
             while (buffer_.full() && running_) {
-                av_usleep(10'000); // 10ms
+                av_usleep(10000); // 10ms
             }
 
             buffer_.push([frame](AVFrame* pushed) {
