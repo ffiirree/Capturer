@@ -111,8 +111,14 @@ cmake --build . --config Release --target install
 
 ```bash
 sudo apt install build-essential gcc g++ cmake 
-sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev 
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
+
+# Ubuntu 20.04 
+sudo apt install qt5-default  
+# Ubuntu 22.04
+sudo apt install qtbase5-dev
+
+sudo apt install libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev
 
 cd Capturer
 mkdir build && cd build
