@@ -286,28 +286,28 @@ void Selector::registerShortcuts()
 
     // resize
     // increase
-    connect(new QShortcut(QKeySequence(Qt::CTRL, Qt::Key_Up), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Up, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rtop() = std::max(box_.top() - 1, 0);
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL, Qt::Key_Down), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Down, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rbottom() = std::min(box_.bottom() + 1, height());
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL, Qt::Key_Left), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Left, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rleft() = std::max(box_.left() - 1, 0);
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL, Qt::Key_Right), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Right, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rright() = std::min(box_.right() + 1, width());
             emit resized();
@@ -315,35 +315,35 @@ void Selector::registerShortcuts()
     });
 
     // decrease
-    connect(new QShortcut(QKeySequence(Qt::SHIFT, Qt::Key_Up), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Up, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rtop() = std::min(box_.top() + 1, box_.bottom());
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::SHIFT, Qt::Key_Down), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rbottom() = std::max(box_.bottom() - 1, box_.top());
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::SHIFT, Qt::Key_Left), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Left, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rleft() = std::min(box_.left() + 1, box_.right());
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::SHIFT, Qt::Key_Right), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Right, this), &QShortcut::activated, [this]() {
         if(status_ == SelectorStatus::CAPTURED) {
             box_.rright() = std::max(box_.right() - 1, box_.left());
             emit resized();
         }
     });
 
-    connect(new QShortcut(QKeySequence(Qt::CTRL, Qt::Key_A), this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
             box_.reset(rect());
             emit resized();

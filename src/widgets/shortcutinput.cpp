@@ -26,7 +26,7 @@ void ShortcutInput::keyPressEvent(QKeyEvent *event)
 
     if(key >= Qt::Key_Escape && key < Qt::Key_F1) return;
 
-    auto shortcut = QKeySequence(mods + key).toString();
+    auto shortcut = QKeySequence(mods | key).toString();
     setText(shortcut);
     emit changed(shortcut);
 }

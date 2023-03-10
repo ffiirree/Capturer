@@ -334,8 +334,8 @@ void ImageWindow::initContextMenu()
     context_menu_->setWindowFlag(Qt::NoDropShadowWindowHint);
     context_menu_->setAttribute(Qt::WA_TranslucentBackground);
 
-    addAction(context_menu_->addAction(tr("Copy image"), [this]() { editing_ ? canvas_->copy() : QApplication::clipboard()->setPixmap(image()); }, QKeySequence(Qt::CTRL + Qt::Key_C)));
-    addAction(context_menu_->addAction(tr("Paste image"), [this](){ editing_ ? canvas_->paste() : paste(); }, QKeySequence(Qt::CTRL + Qt::Key_V)));
+    addAction(context_menu_->addAction(tr("Copy image"), [this]() { editing_ ? canvas_->copy() : QApplication::clipboard()->setPixmap(image()); }, QKeySequence(Qt::CTRL | Qt::Key_C)));
+    addAction(context_menu_->addAction(tr("Paste image"), [this](){ editing_ ? canvas_->paste() : paste(); }, QKeySequence(Qt::CTRL | Qt::Key_V)));
 
     context_menu_->addSeparator();
 
@@ -355,14 +355,14 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    addAction(context_menu_->addAction(tr("Open image..."), this, &ImageWindow::open, QKeySequence(Qt::CTRL + Qt::Key_O)));
-    addAction(context_menu_->addAction(tr("Save as..."), this, &ImageWindow::saveAs, QKeySequence(Qt::CTRL + Qt::Key_S)));
+    addAction(context_menu_->addAction(tr("Open image..."), this, &ImageWindow::open, QKeySequence(Qt::CTRL | Qt::Key_O)));
+    addAction(context_menu_->addAction(tr("Save as..."), this, &ImageWindow::saveAs, QKeySequence(Qt::CTRL | Qt::Key_S)));
 
     context_menu_->addSeparator();
 
     addAction(context_menu_->addAction(tr("Grayscale"), [this]() { update(Modified::GRAY); }, QKeySequence(Qt::Key_G)));
     addAction(context_menu_->addAction(tr("Rotate 90"), [this]() { update(Modified::ROTATED); }, QKeySequence(Qt::Key_R)));
-    addAction(context_menu_->addAction(tr("Rotate -90"), [this]() { update(Modified::ROTATED); }, QKeySequence(Qt::CTRL + Qt::Key_R)));
+    addAction(context_menu_->addAction(tr("Rotate -90"), [this]() { update(Modified::ROTATED); }, QKeySequence(Qt::CTRL | Qt::Key_R)));
     addAction(context_menu_->addAction(tr("Flip H"), [this]() { update(Modified::FLIPPED_H); }, QKeySequence(Qt::Key_H)));
     addAction(context_menu_->addAction(tr("Flip V"), [this]() { update(Modified::FLIPPED_V); }, QKeySequence(Qt::Key_V)));
 
