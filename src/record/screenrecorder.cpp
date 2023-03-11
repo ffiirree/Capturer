@@ -59,7 +59,7 @@ void ScreenRecorder::switchCamera()
         return;
     }
 
-    if (Devices::cameras().size() == 0) {
+    if (Devices::cameras().empty()) {
         LOG(WARNING) << "camera not found";
         return;
     }
@@ -103,15 +103,15 @@ void ScreenRecorder::setup()
 
     Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion() : hide();
 
-    menu_->disable_mic(Devices::microphones().size() == 0);
-    menu_->disable_cam(Devices::cameras().size() == 0);
+    menu_->disable_mic(Devices::microphones().empty());
+    menu_->disable_cam(Devices::cameras().empty());
 
     auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
     auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
-    if (recording_type_ != GIF && Devices::microphones().size() > 0 && Devices::microphones().contains("default")) {
+    if (recording_type_ != GIF && !Devices::microphones().empty() && Devices::microphones().contains("default")) {
         if (microphone_decoder_ && microphone_decoder_->open("default", "alsa") < 0) {
             microphone_decoder_->reset();
             menu_->disable_mic(true);
@@ -203,7 +203,7 @@ void ScreenRecorder::setup()
     }
 
     if (dispatcher_->start()) {
-        LOG(WARNING) << "RECARDING!! Exit first.";
+        LOG(WARNING) << "RECORDING!! Please exit first.";
         dispatcher_->reset();
         exit();
         return;

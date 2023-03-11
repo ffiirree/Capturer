@@ -38,16 +38,13 @@ public:
     int reset();
     void stop() { reset(); }
 
-    bool running() const { return running_; }
+    [[nodiscard]] bool running() const { return running_; }
 
-    int64_t escaped_us() const 
-    {
-        return (first_pts_ == AV_NOPTS_VALUE) ? 0 : std::max<int64_t>(0, av_gettime_relative() - first_pts_ - offset_pts_);
-    }
+    [[nodiscard]] int64_t escaped_us() const;
 
-    int64_t escaped_ms() const { return escaped_us() / 1000; }
+    [[nodiscard]] int64_t escaped_ms() const { return escaped_us() / 1000; }
 
-    bool has_audio() const { return has_audio_in_; }
+    [[nodiscard]] bool has_audio() const { return has_audio_in_; }
 
     AVFilterContext* find_sink(Consumer<AVFrame>*, enum AVMediaType);
 

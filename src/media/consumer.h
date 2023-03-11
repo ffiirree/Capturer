@@ -39,15 +39,15 @@ public:
         return 0;
     }
 
-    virtual bool full(int) const = 0;
-    virtual int format(int) const = 0;
-    virtual bool accepts(int) const = 0;
+    [[nodiscard]] virtual bool full(int) const = 0;
+    [[nodiscard]] virtual int format(int) const = 0;
+    [[nodiscard]] virtual bool accepts(int) const = 0;
     virtual void enable(int, bool = true) = 0;
 
-    virtual bool ready() const { return ready_; }
-    bool running() const { return running_; }
-    bool paused() const { return paused_; }
-    virtual bool eof() const { return eof_; }
+    [[nodiscard]] virtual bool ready() const { return ready_; }
+    [[nodiscard]] bool running() const { return running_; }
+    [[nodiscard]] bool paused() const { return paused_; }
+    [[nodiscard]] virtual bool eof() const { return eof_; }
 
 protected:
     std::atomic<bool> running_{ false };

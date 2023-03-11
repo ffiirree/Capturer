@@ -6,7 +6,11 @@ QList<QString> Devices::cameras()
 {
     QSet<QString> cameras{};
     for (const auto& info : QCameraInfo::availableCameras()) {
+#ifdef __linux__
+        cameras.insert(info.deviceName());
+#elif
         cameras.insert(info.description());
+#endif
     }
 
     return cameras.values();
@@ -15,7 +19,6 @@ QList<QString> Devices::cameras()
 QList<QString> Devices::microphones()
 {
     QSet<QString> microphones{};
-    auto x = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
     for (const auto& info : QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
         microphones.insert(info.deviceName());
     }

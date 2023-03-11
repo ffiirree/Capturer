@@ -45,7 +45,7 @@ void Selector::start()
         }
 
         show();
-        activateWindow(); //  Qt::BypassWindowManagerhint: no keyboard input unless call QWidget::activateWindow()
+        activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     }
 }
 

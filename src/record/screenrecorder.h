@@ -21,14 +21,14 @@ public:
 public:
     explicit ScreenRecorder(int type = VIDEO, QWidget* = nullptr);
 
-    inline int framerate() const { return framerate_; }
+    [[nodiscard]] inline int framerate() const { return framerate_; }
 
 signals:
     void SHOW_MESSAGE(const QString&, const QString&, 
         QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10000);
 
 public slots:
-    virtual void exit() override;
+    void exit() override;
 
     void start() override;
     void record();

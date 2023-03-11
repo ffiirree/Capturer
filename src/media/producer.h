@@ -34,8 +34,8 @@ public:
     virtual int produce(T*, int) = 0;
     virtual bool empty(int) = 0;
 
-    virtual bool has(int) const = 0;
-    virtual std::string format_str(int) const = 0;
+    [[nodiscard]] virtual bool has(int) const = 0;
+    [[nodiscard]] virtual std::string format_str(int) const = 0;
     virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
     virtual void enable(int t) { enabled_[t] = true; }
@@ -52,9 +52,9 @@ public:
         return 0;
     }
     
-    bool ready() const { return ready_; }
-    bool running() const { return running_; }
-    bool paused() const { return paused_; }
+    [[nodiscard]] bool ready() const { return ready_; }
+    [[nodiscard]] bool running() const { return running_; }
+    [[nodiscard]] bool paused() const { return paused_; }
 
     void time_offset(int64_t offset) { time_offset_ = offset; }
     

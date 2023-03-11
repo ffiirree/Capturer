@@ -25,7 +25,7 @@ public:
     }
 
 private:
-    Logger(char** argv) {
+    explicit Logger(char** argv) {
         if (!QDir(GLOG_DIR).exists()) QDir().mkdir(GLOG_DIR);
 
         FLAGS_log_dir = GLOG_DIR;

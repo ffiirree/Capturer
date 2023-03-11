@@ -14,15 +14,15 @@ public:
     ~VideoPlayer() override;
 
     int run() override { return 0; };
-    bool ready() const override { return decoder_ && decoder_->ready(); }
+    [[nodiscard]] bool ready() const override { return decoder_ && decoder_->ready(); }
     void reset() override { }
 
     int consume(AVFrame* frame, int type) override;
 
-    bool full(int) const override { return false; }
+    [[nodiscard]] bool full(int) const override { return false; }
     void enable(int, bool) override { }
-    bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
-    int format(int) const override { return AV_PIX_FMT_RGB24; }
+    [[nodiscard]] bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
+    [[nodiscard]] int format(int) const override { return AV_PIX_FMT_RGB24; }
 
     bool play(const std::string& name, const std::string& fmt = "", const std::string& filters = "");
 

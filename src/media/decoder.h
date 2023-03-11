@@ -53,6 +53,8 @@ private:
 
     std::atomic<bool> muted_{ false };
 
+    std::string name_{"unknown"};
+
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_decoder_ctx_{ nullptr };
     AVCodecContext* audio_decoder_ctx_{ nullptr };

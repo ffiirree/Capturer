@@ -168,8 +168,8 @@ int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
                             return -1;
                         }
                         decoder->enable(mt);
-                        i_streams_.push_back({ src_ctx, decoder, false });
-                        o_streams_.push_back({ sink_ctx, encoders_[0], false });
+                        i_streams_.emplace_back(src_ctx, decoder, false);
+                        o_streams_.emplace_back(sink_ctx, encoders_[0], false);
                         ok = true;
                         break;
                     }
@@ -233,7 +233,7 @@ int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
             }
 
             producer->enable(mt);
-            i_streams_.push_back({ ctx, producer, false });
+            i_streams_.emplace_back(ctx, producer, false);
         }
 
         for (auto out = outputs; out; out = out->next) {
@@ -265,7 +265,7 @@ int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
                 return -1;
             }
 
-            o_streams_.push_back({ sink_ctx, consumer, false });
+            o_streams_.emplace_back( sink_ctx, consumer, false );
         }
     }
 
@@ -275,8 +275,8 @@ int Dispatcher::create_filter_graph(const std::string_view& graph_desc)
     }
 
     ready_ = true;
-    LOG(INFO) << "[DISPATCHER] " << "filter graph @{\n" << avfilter_graph_dump(filter_graph_, nullptr);
-    LOG(INFO) << "[DISPATCHER] " << "@}";
+   LOG(INFO) << "[DISPATCHER] " << "filter graph @{\n" << avfilter_graph_dump(filter_graph_, nullptr);
+   LOG(INFO) << "[DISPATCHER] " << "@}";
     return 0;
 }
 
@@ -299,14 +299,14 @@ int Dispatcher::start()
 
     for (auto& coder : decoders_) {
         if (!coder->ready()) {
-            LOG(ERROR) << "deocoder not ready!";
+            LOG(ERROR) << "[DISPATCHER] decoder not ready!";
             return -1;
         }
     }
 
     for (auto& coder : encoders_) {
         if (!coder->ready()) {
-            LOG(ERROR) << "encoder not ready!";
+            LOG(ERROR) << "[DISPATCHER] encoder not ready!";
             return -1;
         }
     }
@@ -487,4 +487,8 @@ int Dispatcher::reset()
 
     LOG(INFO) << "[DISPATCHER] RESETED";
     return 0;
+}
+
+int64_t Dispatcher::escaped_us() const {
+    return (first_pts_ == AV_NOPTS_VALUE) ? 0 : std::max<int64_t>(0, av_gettime_relative() - first_pts_ - offset_pts_);
 }

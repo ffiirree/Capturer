@@ -13,13 +13,15 @@ using namespace std::chrono_literals;
 
 int Decoder::open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
 {
-    LOG(INFO) << fmt::format("[DECODER] \"{}\", format = {}, options = {}", name, format, options);
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}], format = {}, options = {}", name, format, options);
+
+    name_ = name;
 
     // format context
     if (fmt_ctx_) destroy();
     fmt_ctx_ = avformat_alloc_context();
     if (!fmt_ctx_) {
-        LOG(INFO) << "avformat_alloc_context";
+        LOG(INFO) << "[   DECODER] avformat_alloc_context";
         return -1;
     }
 
@@ -30,7 +32,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     if (!format.empty()) {
         input_fmt = av_find_input_format(format.c_str());
         if (!input_fmt) {
-            LOG(ERROR) << "av_find_input_format";
+            LOG(ERROR) << "[   DECODER] av_find_input_format";
             return -1;
         }
     }
@@ -44,12 +46,12 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 
     // open input
     if (avformat_open_input(&fmt_ctx_, name.c_str(), input_fmt, &input_options) < 0) {
-        LOG(ERROR) << "avformat_open_input";
+        LOG(ERROR) << "[   DECODER] avformat_open_input";
         return -1;
     }
 
     if (avformat_find_stream_info(fmt_ctx_, nullptr) < 0) {
-        LOG(ERROR) << "avformat_find_stream_info";
+        LOG(ERROR) << "[   DECODER] avformat_find_stream_info";
         return -1;
     }
 
@@ -59,7 +61,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder_, 0);
     audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder_, 0);
     if (video_stream_idx_ < 0 && audio_stream_idx_ < 0) {
-        LOG(ERROR) << "not found any stream";
+        LOG(ERROR) << "[   DECODER] not found any stream";
         return -1;
     }
 
@@ -67,12 +69,12 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         // decoder context
         video_decoder_ctx_ = avcodec_alloc_context3(video_decoder_);
         if (!video_decoder_ctx_) {
-            LOG(ERROR) << "avcodec_alloc_context3";
+            LOG(ERROR) << "[   DECODER] avcodec_alloc_context3";
             return -1;
         }
 
         if (avcodec_parameters_to_context(video_decoder_ctx_, fmt_ctx_->streams[video_stream_idx_]->codecpar) < 0) {
-            LOG(ERROR) << "avcodec_parameters_to_context";
+            LOG(ERROR) << "[   DECODER] avcodec_parameters_to_context";
             return -1;
         }
 
@@ -81,12 +83,13 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         defer(av_dict_free(&decoder_options));
         av_dict_set(&decoder_options, "threads", "auto", 0);
         if (avcodec_open2(video_decoder_ctx_, video_decoder_, &decoder_options) < 0) {
-            LOG(ERROR) << "avcodec_open2";
+            LOG(ERROR) << "[DECODER] avcodec_open2";
             return -1;
         }
 
         auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
-        LOG(INFO) << fmt::format("[DECODER] {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
+            name_,
             video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
             fr.num, fr.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
@@ -96,21 +99,22 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     if (audio_stream_idx_ >= 0) {
         audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder_);
         if (!audio_decoder_ctx_) {
-            LOG(ERROR) << "avcodec_alloc_context3 failed for audio";
+            LOG(ERROR) << "[   DECODER] avcodec_alloc_context3 failed for audio";
             return false;
         }
 
         if (avcodec_parameters_to_context(audio_decoder_ctx_, fmt_ctx_->streams[audio_stream_idx_]->codecpar) < 0) {
-            LOG(ERROR) << "avcodec_parameters_to_context";
+            LOG(ERROR) << "[   DECODER] avcodec_parameters_to_context";
             return false;
         }
 
         if (avcodec_open2(audio_decoder_ctx_, audio_decoder_, nullptr) < 0) {
-            LOG(ERROR) << "avcodec_open2 failed for audio";
+            LOG(ERROR) << "[   DECODER] avcodec_open2 failed for audio";
             return false;
         }
 
-        LOG(INFO) << fmt::format("[DECODER] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}",
+        LOG(INFO) << fmt::format("[DECODER] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}",
+            name_,
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
             av_get_sample_fmt_name(audio_decoder_ctx_->sample_fmt),
@@ -123,13 +127,13 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     packet_ = av_packet_alloc();
     decoded_frame_ = av_frame_alloc();
     if (!packet_ || !decoded_frame_) {
-        LOG(ERROR) << "av_frame_alloc";
+        LOG(ERROR) << "[   DECODER] av_frame_alloc";
         return -1;
     }
 
     ready_ = true;
 
-    LOG(INFO) << "[DECODER]: \"" << name << "\" is opened";
+    LOG(INFO) << fmt::format("[    DECODER] {{{:>10}}} is opened", name_);
     return 0;
 }
 
@@ -211,7 +215,7 @@ int Decoder::run()
     std::lock_guard lock(mtx_);
 
     if (!ready_ || running_) {
-        LOG(ERROR) << "[DECODER] already running or not ready";
+        LOG(ERROR) << fmt::format("[   DECODER] {{{:>10}}} already running or not ready", name_);
         return -1;
     }
 
@@ -224,7 +228,7 @@ int Decoder::run()
 
 int Decoder::run_f()
 {
-    LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] STARTED";
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] STARTED", name_);
 
     // reset the buffer
     video_buffer_.clear();
@@ -247,11 +251,11 @@ int Decoder::run_f()
             //               This will enter draining mode.
             // [draining] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned.
             //               The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
-            LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "EOF => PUT NULL PACKET TO ENTER DRAINING MODE";
+            LOG(INFO) << fmt::format("[   DECODER] [{:>10}] EOF => PUT NULL PACKET TO ENTER DRAINING MODE", name_);
             eof_ |= DEMUXING_EOF;
         }
         else if (ret < 0) {
-            LOG(ERROR) << "[DECODER@" << std::this_thread::get_id() << "] " << "READ FRAME FAILED";
+            LOG(ERROR) << fmt::format("[   DECODER] [{:>10}] READ FRAME FAILED", name_);
             running_ = false;
             break;
         }
@@ -261,14 +265,14 @@ int Decoder::run_f()
         // resume @{
         if (packet_->pts - time_offset_ <= last_pts_) {
             // drop the packet
-            LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] DROP A PACKET";
+            LOG(INFO) << fmt::format("[   DECODER] [{:>10}] DROP A PACKET", name_);
             continue;
         }
         packet_->pts -= time_offset_;
         last_pts_ = packet_->pts;
         // @}
 
-        // video decoing 
+        // video decoding
         if (packet_->stream_index == video_stream_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
             ret = avcodec_send_packet(video_decoder_ctx_, packet_);
             while (ret >= 0) {
@@ -278,21 +282,20 @@ int Decoder::run_f()
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "VIDEO EOF";
+                    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] EOF", name_);
                     eof_ |= VDECODING_EOF;
                     break;
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "VIDEO DECODING ERROR";
+                    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] DECODING ERROR", name_);
                     return ret;
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
-#ifndef NDEBUG
-                LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] "
-                    << fmt::format("video frame = {:>5d}, pts = {:>9d}", video_decoder_ctx_->frame_number, decoded_frame_->pts);
-#endif // !NDEBUG
+
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}",
+                                         name_, video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {
@@ -313,23 +316,20 @@ int Decoder::run_f()
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "AUDIO EOF";
+                    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] EOF", name_);
                     eof_ |= ADECODING_EOF;
                     break;
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << "[DECODER@" << std::this_thread::get_id() << "] " << "AUDIO DECODING ERROR";
+                    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] DECODING ERROR", name_);
                     return ret;
                 }
 
                 decoded_frame_->pts -= fmt_ctx_->streams[audio_stream_idx_]->start_time;
-#ifndef NDEBUG
-                LOG(INFO)
-                    << "[DECODER@" << std::this_thread::get_id() << "] "
-                    << fmt::format("audio frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
-                        audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
-#endif // !NDEBUG
+
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+                        name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
 
                 if (muted_) {
                     av_samples_set_silence(
@@ -352,11 +352,11 @@ int Decoder::run_f()
     } // while(running_)
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[DECODER] frames = {:>5d}, fps = {:>6.2f}",
-            video_decoder_ctx_->frame_number,
+        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frames = {:>5d}, fps = {:>6.2f}",
+            name_, video_decoder_ctx_->frame_number,
             (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_));
     }
-    LOG(INFO) << "[DECODER] EXITED";
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] EXITED", name_);
 
     return 0;
 }
@@ -364,7 +364,7 @@ int Decoder::run_f()
 void Decoder::reset()
 {
     destroy();
-    LOG(INFO) << "[DECODER] RESET";
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] RESET", name_);
 }
 
 void Decoder::destroy()
@@ -394,7 +394,7 @@ void Decoder::destroy()
     avcodec_free_context(&audio_decoder_ctx_);
     avformat_close_input(&fmt_ctx_);
 
-    // clear before starting the decoding stread since the buffers may be not empty here
+    // clear before starting the decoding stream since the buffers may be not empty here
     //LOG(INFO) << "[DECODER] VIDEO BUFFER = " << video_buffer_.size();
     //video_buffer_.clear();
     //audio_buffer_.clear();
