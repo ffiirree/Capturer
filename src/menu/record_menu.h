@@ -22,7 +22,6 @@ public:
 
     explicit RecordMenu(bool, bool, uint8_t = ALL, QWidget* parent = nullptr);
 
-
 signals:
     void started();
     void paused();

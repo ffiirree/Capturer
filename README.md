@@ -121,7 +121,13 @@ sudo apt install qt5-default
 # Ubuntu 22.04
 sudo apt install qtbase5-dev
 
-sudo apt install libqt5x11extras5-dev qttools5-dev qttools5-dev-tools qtmultimedia5-dev
+sudo apt install libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
+
+# pulse
+sudo apt install libpulse-dev
+
+# v4l2
+sudo apt install libv4l-dev v4l-utils
 
 cd Capturer
 mkdir build && cd build

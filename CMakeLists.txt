@@ -38,6 +38,8 @@ if(WIN32)
     add_definitions(-DUNICODE -DNOMINMAX)
 elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
+    find_package(PulseAudio REQUIRED)
+    find_package(Libv4l2 REQUIRED)
 endif()
 
 ########################################################################################################################
@@ -60,13 +62,16 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey 
-        Qt5::Widgets Qt5::Gui Qt5::Multimedia
+        Qt5::Widgets Qt5::Gui
         glog::glog
         fmt::fmt
         FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
+        $<$<PLATFORM_ID:Windows>:Qt5::Multimedia>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+        $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
+        $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -80,6 +85,7 @@ target_include_directories(${PROJECT_NAME}
         src/snip
         src/record
         src/setting
+        ${PULSEAUDIO_INCLUDE_DIR}
         ${PROJECT_BINARY_DIR} # Generated header files
 )
 
@@ -113,7 +119,7 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "ffmpeg")
 
 # Set a Package Maintainer.
 # This is required
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Zhang Liangqi(zhliangqi@gmail.com)")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liangqi Zhang(zhliangqi@gmail.com)")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Capturer")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Screenshots and recording screens.")

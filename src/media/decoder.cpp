@@ -13,7 +13,7 @@ using namespace std::chrono_literals;
 
 int Decoder::open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
 {
-    LOG(INFO) << fmt::format("[   DECODER] [{:>10}], format = {}, options = {}", name, format, options);
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] format = {}, options = {}", name, format, options);
 
     name_ = name;
 

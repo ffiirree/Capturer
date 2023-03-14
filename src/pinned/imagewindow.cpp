@@ -61,7 +61,7 @@ void ImageWindow::image(const QPixmap& image)
     }
 }
 
-void ImageWindow::show(bool visable)
+void ImageWindow::show(bool visible)
 {
     switch (status_)
     {
@@ -72,8 +72,8 @@ void ImageWindow::show(bool visable)
         QWidget::show();
         break;
 
-    case WindowStatus::INVISABLE:
-        if (visable) {
+    case WindowStatus::INVISIBLE:
+        if (visible) {
             status_ = WindowStatus::SHOWED;
             QWidget::show();
         }
@@ -102,9 +102,9 @@ void ImageWindow::hide()
     }
 }
 
-void ImageWindow::invisable()
+void ImageWindow::invisible()
 {
-    status_ = WindowStatus::INVISABLE;
+    status_ = WindowStatus::INVISIBLE;
     setMouseTracking(false);
     editing_ = false;
     canvas_->disable();
@@ -384,7 +384,7 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    context_menu_->addAction(tr("Close"), this, &ImageWindow::invisable, QKeySequence(Qt::Key_Escape));
+    context_menu_->addAction(tr("Close"), this, &ImageWindow::invisible, QKeySequence(Qt::Key_Escape));
 }
 
 void ImageWindow::contextMenuEvent(QContextMenuEvent* event)
@@ -459,7 +459,7 @@ void ImageWindow::registerShortcuts()
             menu_->hide();
         }
         else {
-            invisable();
+            invisible();
         }
     });
 

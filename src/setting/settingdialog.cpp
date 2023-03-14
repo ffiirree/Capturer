@@ -481,7 +481,7 @@ void SettingWindow::setupAboutWidget()
     /////
     parent_layout->addStretch();
 
-    auto copyright_ = new QLabel(tr("Copyright © 2018 - 2022 ffiirree. All rights reserved"));
+    auto copyright_ = new QLabel(tr("Copyright © 2018 - 2023 ffiirree. All rights reserved"));
     copyright_->setObjectName("copyright-label");
     copyright_->setAlignment(Qt::AlignCenter);
     parent_layout->addWidget(copyright_);

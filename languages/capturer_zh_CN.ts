@@ -418,8 +418,8 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="484"/>
-        <source>Copyright © 2018 - 2022 ffiirree. All rights reserved</source>
-        <translation></translation>
+        <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

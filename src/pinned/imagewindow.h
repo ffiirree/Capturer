@@ -18,7 +18,7 @@ public:
     };
 
     enum class WindowStatus {
-        CREATED, INVISABLE, HIDED, SHOWED
+        CREATED, INVISIBLE, HIDED, SHOWED
     };
 
     explicit ImageWindow(QWidget *parent = nullptr);
@@ -38,7 +38,7 @@ public:
 public slots:
     void show(bool = true);
     void hide();
-    void invisable();
+    void invisible();
 
     void paste();
     void open();
@@ -67,7 +67,7 @@ private:
 
     void update(Modified);
     QRect getShadowGeometry(QSize);
-    QSize getShadowSize(QSize size) { return size + QSize{ shadow_r_ * 2, shadow_r_ * 2 }; }
+    QSize getShadowSize(QSize size) const { return size + QSize{ shadow_r_ * 2, shadow_r_ * 2 }; }
 
     WindowStatus status_{ WindowStatus::CREATED };
 

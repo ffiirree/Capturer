@@ -67,7 +67,7 @@ void ScreenRecorder::switchCamera()
 #ifdef _WIN32
     if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<string>(), "dshow", "hflip")) {
 #elif __linux__
-    if (!player_->play("/dev/video0", "v4l2", "hflip")) {
+    if (!player_->play(Devices::cameras()[0].toStdString(), "v4l2", "hflip")) {
 #endif
         player_->close();
     }
@@ -111,8 +111,8 @@ void ScreenRecorder::setup()
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 #ifdef __linux__
-    if (recording_type_ != GIF && !Devices::microphones().empty() && Devices::microphones().contains("default")) {
-        if (microphone_decoder_ && microphone_decoder_->open("default", "alsa") < 0) {
+    if (recording_type_ != GIF && !Devices::microphones().empty()) {
+        if (microphone_decoder_ && microphone_decoder_->open(Devices::microphones()[0].toStdString(), "pulse") < 0) {
             microphone_decoder_->reset();
             menu_->disable_mic(true);
         }
