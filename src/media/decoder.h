@@ -58,8 +58,6 @@ private:
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_decoder_ctx_{ nullptr };
     AVCodecContext* audio_decoder_ctx_{ nullptr };
-    AVCodec* video_decoder_{ nullptr };
-    AVCodec* audio_decoder_{ nullptr };
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };

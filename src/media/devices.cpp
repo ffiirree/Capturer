@@ -6,7 +6,7 @@
 #include "linux-pulse/linux-pulse.h"
 #include "linux-v4l2/linux-v4l2.h"
 
-#elif
+#elif _WIN32
 #include <QCameraInfo>
 #include <QAudioDeviceInfo>
 #endif
@@ -18,7 +18,7 @@ QList<QString> Devices::cameras() {
     for (auto &device: devices) {
         cameras.insert(QString::fromStdString(device.name_));
     }
-#elif
+#elif _WIN32
     for (const auto& info : QCameraInfo::availableCameras()) {
         cameras.insert(info.description());
     }
@@ -37,7 +37,7 @@ QList<QString> Devices::microphones() {
             microphones.insert(QString::fromStdString(s.name_));
     }
     pulse_unref();
-#elif
+#elif _WIN32
     for (const auto &info: QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
         microphones.insert(info.deviceName());
     }
@@ -56,7 +56,7 @@ QList<QString> Devices::speakers() {
             speakers.insert(QString::fromStdString(s.name_));
     }
     pulse_unref();
-#elif
+#elif _WIN32
     for (const auto &info: QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
         speakers.insert(info.deviceName());
     }

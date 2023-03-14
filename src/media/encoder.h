@@ -115,8 +115,6 @@ private:
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_encoder_ctx_{ nullptr };
     AVCodecContext* audio_encoder_ctx_{ nullptr };
-    AVCodec* video_encoder_{ nullptr };
-    AVCodec* audio_encoder_{ nullptr };
 
     int64_t first_pts_{ AV_NOPTS_VALUE };
     int64_t v_last_dts_{ AV_NOPTS_VALUE };

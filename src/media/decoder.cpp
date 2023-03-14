@@ -28,7 +28,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     avdevice_register_all();
 
     // input format
-    AVInputFormat* input_fmt = nullptr;
+    const AVInputFormat* input_fmt = nullptr;
     if (!format.empty()) {
         input_fmt = av_find_input_format(format.c_str());
         if (!input_fmt) {
@@ -58,8 +58,10 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
 
     // find video & audio streams
-    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder_, 0);
-    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder_, 0);
+    const AVCodec* video_decoder{ nullptr };
+    const AVCodec* audio_decoder{ nullptr };
+    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder, 0);
+    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder, 0);
     if (video_stream_idx_ < 0 && audio_stream_idx_ < 0) {
         LOG(ERROR) << "[   DECODER] not found any stream";
         return -1;
@@ -67,7 +69,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 
     if (video_stream_idx_ >= 0) {
         // decoder context
-        video_decoder_ctx_ = avcodec_alloc_context3(video_decoder_);
+        video_decoder_ctx_ = avcodec_alloc_context3(video_decoder);
         if (!video_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] avcodec_alloc_context3";
             return -1;
@@ -82,7 +84,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         AVDictionary* decoder_options = nullptr;
         defer(av_dict_free(&decoder_options));
         av_dict_set(&decoder_options, "threads", "auto", 0);
-        if (avcodec_open2(video_decoder_ctx_, video_decoder_, &decoder_options) < 0) {
+        if (avcodec_open2(video_decoder_ctx_, video_decoder, &decoder_options) < 0) {
             LOG(ERROR) << "[DECODER] avcodec_open2";
             return -1;
         }
@@ -97,7 +99,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     }
 
     if (audio_stream_idx_ >= 0) {
-        audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder_);
+        audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder);
         if (!audio_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] avcodec_alloc_context3 failed for audio";
             return false;
@@ -108,7 +110,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             return false;
         }
 
-        if (avcodec_open2(audio_decoder_ctx_, audio_decoder_, nullptr) < 0) {
+        if (avcodec_open2(audio_decoder_ctx_, audio_decoder, nullptr) < 0) {
             LOG(ERROR) << "[   DECODER] avcodec_open2 failed for audio";
             return false;
         }

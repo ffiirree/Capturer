@@ -39,13 +39,13 @@ int Encoder::open(const std::string& filename,
     }
     video_stream_idx_ = v_stream->index;
 
-    video_encoder_ = avcodec_find_encoder_by_name(codec_name.c_str());
-    if (!video_encoder_) {
+    auto video_encoder = avcodec_find_encoder_by_name(codec_name.c_str());
+    if (!video_encoder) {
         LOG(ERROR) << "avcodec_find_encoder_by_name";
         return -1;
     }
 
-    video_encoder_ctx_ = avcodec_alloc_context3(video_encoder_);
+    video_encoder_ctx_ = avcodec_alloc_context3(video_encoder);
     if (!video_encoder_ctx_) {
         LOG(ERROR) << "avcodec_alloc_context3";
         return -1;
@@ -75,7 +75,7 @@ int Encoder::open(const std::string& filename,
         video_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    if (avcodec_open2(video_encoder_ctx_, video_encoder_, &encoder_options) < 0) {
+    if (avcodec_open2(video_encoder_ctx_, video_encoder, &encoder_options) < 0) {
         LOG(ERROR) << "avcodec_open2";
         return -1;
     }
@@ -84,6 +84,15 @@ int Encoder::open(const std::string& filename,
         LOG(ERROR) << "avcodec_parameters_from_context";
         return -1;
     }
+
+    if (video_stream_idx_ >= 0) {
+        LOG(INFO) << fmt::format("[ENCODER->VIDEO] \"{}\", options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
+            codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den,
+            video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
+            fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
+        );
+    }
+
     // @}
 
     // create audio stream @{
@@ -95,13 +104,13 @@ int Encoder::open(const std::string& filename,
         }
         audio_stream_idx_ = a_stream->index;
 
-        audio_encoder_ = avcodec_find_encoder_by_name("aac");
-        if (!audio_encoder_) {
+        auto audio_encoder = avcodec_find_encoder_by_name("aac");
+        if (!audio_encoder) {
             LOG(ERROR) << "avcodec_find_encoder_by_name";
             return -1;
         }
 
-        audio_encoder_ctx_ = avcodec_alloc_context3(audio_encoder_);
+        audio_encoder_ctx_ = avcodec_alloc_context3(audio_encoder);
         if (!audio_encoder_ctx_) {
             LOG(ERROR) << "avcodec_alloc_context3";
             return -1;
@@ -121,7 +130,7 @@ int Encoder::open(const std::string& filename,
             audio_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
         }
 
-        if (avcodec_open2(audio_encoder_ctx_, audio_encoder_, nullptr) < 0) {
+        if (avcodec_open2(audio_encoder_ctx_, audio_encoder, nullptr) < 0) {
             LOG(ERROR) << "avcodec_open2";
             return -1;
         }
@@ -135,6 +144,17 @@ int Encoder::open(const std::string& filename,
         if (!audio_fifo_buffer_) {
             LOG(ERROR) << "av_audio_fifo_alloc";
             return -1;
+        }
+
+
+        if (audio_stream_idx_ >= 0) {
+            LOG(INFO) << fmt::format("[ENCODER->AUDIO] \"{}\", sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
+                audio_encoder->name, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
+                av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
+                fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
+                audio_encoder_ctx_->time_base.num, audio_encoder_ctx_->time_base.den,
+                fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
+            );
         }
     }
     // @}
@@ -162,24 +182,6 @@ int Encoder::open(const std::string& filename,
     ready_ = true;
 
     av_dump_format(fmt_ctx_, 0, filename.c_str(), 1);
-
-    if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[ENCODER->VIDEO] \"{}\", options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
-            codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den,
-            video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
-            fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
-        );
-    }
-
-    if (audio_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[ENCODER->AUDIO] \"{}\", sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
-            audio_encoder_->name, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
-            av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
-            fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
-            audio_encoder_ctx_->time_base.num, audio_encoder_ctx_->time_base.den,
-            fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
-        );
-    }
 
     LOG(INFO) << "[ENCODER] \"" << filename << "\" is opened";
     return 0;
