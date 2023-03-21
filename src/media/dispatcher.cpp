@@ -360,13 +360,6 @@ int Dispatcher::dispatch_thread_f()
             }
         }
 
-        if (!need_dispatch) {
-            std::this_thread::sleep_for(10ms);
-            continue;
-        }
-
-        first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
-
         // pause @{
         if (paused_) {
             if (paused_pts_ != AV_NOPTS_VALUE) {
@@ -374,16 +367,19 @@ int Dispatcher::dispatch_thread_f()
             }
 
             paused_pts_ = av_gettime_relative();
-
-            std::this_thread::sleep_for(20ms);
-            continue;
         }
-
-        if (paused_pts_ != AV_NOPTS_VALUE) {
+        else if (paused_pts_ != AV_NOPTS_VALUE) {
             offset_pts_ += av_gettime_relative() - paused_pts_;
             paused_pts_ = AV_NOPTS_VALUE;
         }
         // @}
+
+        if (!need_dispatch) {
+            std::this_thread::sleep_for(10ms);
+            continue;
+        }
+
+        first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 
         // output streams
         for (auto& [sink_ctx, consumer, stream_eof] : o_streams_) {

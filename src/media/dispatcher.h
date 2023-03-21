@@ -59,9 +59,11 @@ private:
     int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
     int dispatch_thread_f();
 
+    // clock @{
     int64_t first_pts_{ AV_NOPTS_VALUE };
     int64_t paused_pts_{ AV_NOPTS_VALUE };
-    int64_t offset_pts_{ 0 };    // AV_TIME_BASE_Q unit
+    int64_t offset_pts_{ 0 };               // AV_TIME_BASE_Q unit
+    //@}
 
     std::atomic<bool> running_{ false };
     std::atomic<bool> paused_{ false };

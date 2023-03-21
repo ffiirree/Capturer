@@ -20,34 +20,34 @@ int Encoder::open(const std::string& filename,
 
     is_cfr_ = is_cfr;
 
-    LOG(INFO) << fmt::format("[ENCODER->VIDEO] < \"{}\", options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
+    LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
         codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den, v_stream_time_base_.num, v_stream_time_base_.den);
-    LOG(INFO) << fmt::format("[ENCODER->AUDIO] < tbn = {}/{}", a_stream_time_base_.num, a_stream_time_base_.den);
+    LOG(INFO) << fmt::format("[   ENCODER] [A] <<< tbn = {}/{}", a_stream_time_base_.num, a_stream_time_base_.den);
 
     // format context
     if (fmt_ctx_) destroy();
     if (avformat_alloc_output_context2(&fmt_ctx_, nullptr, nullptr, filename.c_str()) < 0) {
-        LOG(ERROR) << "avformat_alloc_output_context2";
+        LOG(ERROR) << "[   ENCODER] avformat_alloc_output_context2";
         return -1;
     }
 
     // new video stream @{
     AVStream* v_stream = avformat_new_stream(fmt_ctx_, nullptr);
     if (!v_stream) {
-        LOG(ERROR) << "avformat_new_stream";
+        LOG(ERROR) << "[   ENCODER] avformat_new_stream";
         return -1;
     }
     video_stream_idx_ = v_stream->index;
 
     auto video_encoder = avcodec_find_encoder_by_name(codec_name.c_str());
     if (!video_encoder) {
-        LOG(ERROR) << "avcodec_find_encoder_by_name";
+        LOG(ERROR) << "[   ENCODER] avcodec_find_encoder_by_name";
         return -1;
     }
 
     video_encoder_ctx_ = avcodec_alloc_context3(video_encoder);
     if (!video_encoder_ctx_) {
-        LOG(ERROR) << "avcodec_alloc_context3";
+        LOG(ERROR) << "[   ENCODER] avcodec_alloc_context3";
         return -1;
     }
 
@@ -76,17 +76,17 @@ int Encoder::open(const std::string& filename,
     }
 
     if (avcodec_open2(video_encoder_ctx_, video_encoder, &encoder_options) < 0) {
-        LOG(ERROR) << "avcodec_open2";
+        LOG(ERROR) << "[   ENCODER] avcodec_open2";
         return -1;
     }
 
     if (avcodec_parameters_from_context(fmt_ctx_->streams[video_stream_idx_]->codecpar, video_encoder_ctx_) < 0) {
-        LOG(ERROR) << "avcodec_parameters_from_context";
+        LOG(ERROR) << "[   ENCODER] avcodec_parameters_from_context";
         return -1;
     }
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[ENCODER->VIDEO] \"{}\", options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[   ENCODER] [V] [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
             codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den,
             video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
@@ -99,20 +99,20 @@ int Encoder::open(const std::string& filename,
     if (audio_enabled_) {
         AVStream* a_stream = avformat_new_stream(fmt_ctx_, nullptr);
         if (!a_stream) {
-            LOG(ERROR) << "avformat_new_stream";
+            LOG(ERROR) << "[   ENCODER] avformat_new_stream";
             return -1;
         }
         audio_stream_idx_ = a_stream->index;
 
         auto audio_encoder = avcodec_find_encoder_by_name("aac");
         if (!audio_encoder) {
-            LOG(ERROR) << "avcodec_find_encoder_by_name";
+            LOG(ERROR) << "[   ENCODER] avcodec_find_encoder_by_name";
             return -1;
         }
 
         audio_encoder_ctx_ = avcodec_alloc_context3(audio_encoder);
         if (!audio_encoder_ctx_) {
-            LOG(ERROR) << "avcodec_alloc_context3";
+            LOG(ERROR) << "[   ENCODER] avcodec_alloc_context3";
             return -1;
         }
 
@@ -131,24 +131,24 @@ int Encoder::open(const std::string& filename,
         }
 
         if (avcodec_open2(audio_encoder_ctx_, audio_encoder, nullptr) < 0) {
-            LOG(ERROR) << "avcodec_open2";
+            LOG(ERROR) << "[   ENCODER] avcodec_open2";
             return -1;
         }
 
         if (avcodec_parameters_from_context(fmt_ctx_->streams[audio_stream_idx_]->codecpar, audio_encoder_ctx_) < 0) {
-            LOG(ERROR) << "avcodec_parameters_from_context";
+            LOG(ERROR) << "[   ENCODER] avcodec_parameters_from_context";
             return -1;
         }
 
         audio_fifo_buffer_ = av_audio_fifo_alloc(audio_encoder_ctx_->sample_fmt, audio_encoder_ctx_->channels, 1);
         if (!audio_fifo_buffer_) {
-            LOG(ERROR) << "av_audio_fifo_alloc";
+            LOG(ERROR) << "[   ENCODER] av_audio_fifo_alloc";
             return -1;
         }
 
 
         if (audio_stream_idx_ >= 0) {
-            LOG(INFO) << fmt::format("[ENCODER->AUDIO] \"{}\", sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
+            LOG(INFO) << fmt::format("[   ENCODER] [A] [{}], sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
                 audio_encoder->name, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
                 av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
                 fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
@@ -161,13 +161,13 @@ int Encoder::open(const std::string& filename,
 
     if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
         if (avio_open(&fmt_ctx_->pb, filename.c_str(), AVIO_FLAG_WRITE) < 0) {
-            LOG(ERROR) << "avio_open";
+            LOG(ERROR) << "[   ENCODER] avio_open";
             return -1;
         }
     }
 
     if (avformat_write_header(fmt_ctx_, nullptr) < 0) {
-        LOG(ERROR) << "avformat_write_header";
+        LOG(ERROR) << "[   ENCODER] avformat_write_header";
         return -1;
     }
 
@@ -175,7 +175,7 @@ int Encoder::open(const std::string& filename,
     packet_ = av_packet_alloc();
     filtered_frame_ = av_frame_alloc();
     if (!packet_ || !filtered_frame_) {
-        LOG(ERROR) << "av_packet_alloc";
+        LOG(ERROR) << "[   ENCODER] av_packet_alloc";
         return -1;
     }
 
@@ -183,7 +183,7 @@ int Encoder::open(const std::string& filename,
 
     av_dump_format(fmt_ctx_, 0, filename.c_str(), 1);
 
-    LOG(INFO) << "[ENCODER] \"" << filename << "\" is opened";
+    LOG(INFO) << "[   ENCODER] [" << filename << "] is opened";
     return 0;
 }
 
@@ -222,7 +222,7 @@ int Encoder::run()
     std::lock_guard lock(mtx_);
 
     if (!ready_ || running_) {
-        LOG(INFO) << "[ENCODER] already running or not ready";
+        LOG(INFO) << "[   ENCODER] already running or not ready";
         return -1;
     }
 
@@ -234,7 +234,7 @@ int Encoder::run()
 
 int Encoder::run_f()
 {
-    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] STARTED";
+    LOG(INFO) << "[   ENCODER] STARTED";
 
     if (video_stream_idx_ < 0) eof_ |= V_ENCODING_EOF;
     if (audio_stream_idx_ < 0) eof_ |= (A_ENCODING_EOF | A_ENCODING_FIFO_EOF);
@@ -252,8 +252,8 @@ int Encoder::run_f()
         ret = process_audio_frames();
     } // running
 
-    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] " << "encoded frame = " << video_encoder_ctx_->frame_number;
-    LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] EXITED";
+    LOG(INFO) << "[   ENCODER] [V] encoded frame = " << video_encoder_ctx_->frame_number;
+    LOG(INFO) << "[   ENCODER] EXITED";
 
     return ret;
 }
@@ -279,30 +279,30 @@ int Encoder::process_video_frames()
             break;
         }
         else if (ret == AVERROR_EOF) {
-            LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] VIDEO EOF";
+            LOG(INFO) << "[   ENCODE] [V] EOF";
             eof_ |= V_ENCODING_EOF;
             break;
         }
         else if (ret < 0) {
-            LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
+            LOG(ERROR) << "[   ENCODER] [V] encode failed";
             return ret;
         }
 
         av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
         if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
-            LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP VIDEO FRAME: dts = " << packet_->dts;
+            LOG(WARNING) << "[    ENCODER@] [V] DORP FRAME: dts = " << packet_->dts;
             continue;
         }
         v_last_dts_ = packet_->dts;
 
-        DLOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-            << fmt::format("[V] frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
-                video_encoder_ctx_->frame_number, packet_->pts, packet_->size);
+        DLOG(INFO) << fmt::format("[   ENCODER] [V] frame = {:>5d}, pts = {:>9d}, size = {:>6d}, ts = {:>10.6f}", 
+           video_encoder_ctx_->frame_number, packet_->pts, packet_->size,
+           av_rescale_q(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
         packet_->stream_index = video_stream_idx_;
         if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-            LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
+            LOG(ERROR) << "[   ENCODER] [V] av_interleaved_write_frame";
             return -1;
         }
     }
@@ -329,7 +329,7 @@ int Encoder::process_audio_frames()
         );
 
         if (filtered_frame_->nb_samples == 0) {
-            LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO DRAINING";
+            LOG(INFO) << "[   ENCODER] [A] DRAINING";
             eof_ |= A_ENCODING_FIFO_EOF;
             break;
         }
@@ -363,7 +363,7 @@ int Encoder::process_audio_frames()
             ret = avcodec_send_frame(audio_encoder_ctx_, nullptr);
         }
         else {
-            LOG(ERROR) << "unknown error";
+            LOG(ERROR) << "[   ENCODER] [A] unknown error";
             break;
         }
 
@@ -374,30 +374,30 @@ int Encoder::process_audio_frames()
                 break;
             }
             else if (ret == AVERROR_EOF) {
-                LOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] AUDIO EOF";
+                LOG(INFO) << "[   ENCODER] [A] EOF";
                 eof_ |= A_ENCODING_EOF;
                 break;
             }
             else if (ret < 0) {
-                LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] encode failed";
+                LOG(ERROR) << "[   ENCODER] [A] encode failed";
                 return ret;
             }
 
             if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
-                LOG(WARNING) << "[ENCODER@" << std::this_thread::get_id() << "] " << "DORP AUDIO FRAME: dts = " << packet_->dts;
+                LOG(WARNING) << "[   ENCODER] [A] DORP FRAME: dts = " << packet_->dts;
                 continue;
             }
             a_last_dts_ = packet_->dts;
 
-            DLOG(INFO) << "[ENCODER@" << std::this_thread::get_id() << "] "
-                << fmt::format("[A] frame = {:>5d}, pts = {:>9d}, size = {:>6d}",
-                               audio_encoder_ctx_->frame_number, packet_->pts, packet_->size);
+            DLOG(INFO) << fmt::format("[   ENCODER] [A] frame = {:>5d}, pts = {:>9d}, size = {:>6d}, ts = {:>10.6f}", 
+               audio_encoder_ctx_->frame_number, packet_->pts, packet_->size,
+               av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
             packet_->stream_index = audio_stream_idx_;
             av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-                LOG(ERROR) << "[ENCODER@" << std::this_thread::get_id() << "] av_interleaved_write_frame";
+                LOG(ERROR) << "[   ENCODER] [A] av_interleaved_write_frame";
                 return -1;
             }
         }
@@ -409,7 +409,7 @@ int Encoder::process_audio_frames()
 void Encoder::reset()
 {
     destroy();
-    LOG(INFO) << "[ENCODER] RESET";
+    LOG(INFO) << "[   ENCODER] RESET";
 }
 
 void Encoder::destroy()
@@ -422,12 +422,12 @@ void Encoder::destroy()
     wait();
 
     if (fmt_ctx_ && ready_ && av_write_trailer(fmt_ctx_) != 0) {
-        LOG(ERROR) << "av_write_trailer";
+        LOG(ERROR) << "[   ENCODER] av_write_trailer";
     }
 
     if (fmt_ctx_ && !(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
         if (avio_close(fmt_ctx_->pb) < 0) {
-            LOG(ERROR) << "avio_close";
+            LOG(ERROR) << "[   ENCODER] avio_close";
         }
     }
 

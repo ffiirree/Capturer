@@ -28,7 +28,11 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     avdevice_register_all();
 
     // input format
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
     const AVInputFormat* input_fmt = nullptr;
+#else
+    AVInputFormat* input_fmt = nullptr;
+#endif
     if (!format.empty()) {
         input_fmt = av_find_input_format(format.c_str());
         if (!input_fmt) {
@@ -58,8 +62,13 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
 
     // find video & audio streams
-    const AVCodec* video_decoder{ nullptr };
-    const AVCodec* audio_decoder{ nullptr };
+#if LIBAVCODEC_VERSION_MAJOR >= 59
+    const AVCodec* video_decoder = nullptr;
+    const AVCodec* audio_decoder = nullptr;
+#else
+    AVCodec* video_decoder = nullptr;
+    AVCodec* audio_decoder = nullptr;
+#endif
     video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder, 0);
     audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder, 0);
     if (video_stream_idx_ < 0 && audio_stream_idx_ < 0) {
@@ -115,13 +124,14 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             return false;
         }
 
-        LOG(INFO) << fmt::format("[DECODER] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}",
+        LOG(INFO) << fmt::format("[    DECODER] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}/{}",
             name_,
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
             av_get_sample_fmt_name(audio_decoder_ctx_->sample_fmt),
             audio_decoder_ctx_->frame_size,
-            fmt_ctx_->streams[audio_stream_idx_]->start_time
+            fmt_ctx_->streams[audio_stream_idx_]->start_time,
+            fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
         );
     }
 
@@ -135,7 +145,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 
     ready_ = true;
 
-    LOG(INFO) << fmt::format("[    DECODER] {{{:>10}}} is opened", name_);
+    LOG(INFO) << fmt::format("[   DECODER] {{{:>10}}} is opened", name_);
     return 0;
 }
 
@@ -265,13 +275,13 @@ int Decoder::run_f()
         first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 
         // resume @{
-        if (packet_->pts - time_offset_ <= last_pts_) {
+        if (av_rescale_q(packet_->pts, fmt_ctx_->streams[packet_->stream_index]->time_base, av_get_time_base_q()) - time_offset_ <= last_pts_) {
             // drop the packet
             LOG(INFO) << fmt::format("[   DECODER] [{:>10}] DROP A PACKET", name_);
             continue;
         }
-        packet_->pts -= time_offset_;
-        last_pts_ = packet_->pts;
+        packet_->pts -= av_rescale_q(time_offset_, av_get_time_base_q(), fmt_ctx_->streams[packet_->stream_index]->time_base);
+        last_pts_ = av_gettime_relative() - first_pts_ - time_offset_;
         // @}
 
         // video decoding
@@ -296,8 +306,9 @@ int Decoder::run_f()
 
                 decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}",
-                                         name_, video_decoder_ctx_->frame_number, decoded_frame_->pts);
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}, ts = {:>10.6f}",
+                    name_, video_decoder_ctx_->frame_number, decoded_frame_->pts,
+                    av_rescale_q(decoded_frame_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {
@@ -330,8 +341,9 @@ int Decoder::run_f()
 
                 decoded_frame_->pts -= fmt_ctx_->streams[audio_stream_idx_]->start_time;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
-                        name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}, ts = {:>10.6f}",
+                    name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_,
+                    av_rescale_q(decoded_frame_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
                 if (muted_) {
                     av_samples_set_silence(
