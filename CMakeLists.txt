@@ -27,7 +27,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Widgets Gui Multimedia LinguistTools REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
 find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRED)
 
 if(WIN32)
@@ -68,7 +68,6 @@ target_link_libraries(${PROJECT_NAME}
         FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
-        $<$<PLATFORM_ID:Windows>:Qt5::Multimedia>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
         $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>

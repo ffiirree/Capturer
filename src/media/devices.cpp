@@ -7,8 +7,8 @@
 #include "linux-v4l2/linux-v4l2.h"
 
 #elif _WIN32
-#include <QCameraInfo>
-#include <QAudioDeviceInfo>
+#include "win-wasapi/enum-wasapi.h"
+#include "win-dshow/enum-devices.h"
 #endif
 
 QList<QString> Devices::cameras() {
@@ -19,8 +19,8 @@ QList<QString> Devices::cameras() {
         cameras.insert(QString::fromStdString(device.name_));
     }
 #elif _WIN32
-    for (const auto& info : QCameraInfo::availableCameras()) {
-        cameras.insert(info.description());
+    for (const auto& [name, id] : enum_video_devices()) {
+        cameras.insert(QString::fromStdWString(name));
     }
 #endif
 
@@ -38,8 +38,8 @@ QList<QString> Devices::microphones() {
     }
     pulse_unref();
 #elif _WIN32
-    for (const auto &info: QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
-        microphones.insert(info.deviceName());
+    for (const auto& [name, id] : enum_audio_endpoints(true)) {
+        microphones.insert(name);
     }
 #endif
     return microphones.values();
@@ -57,8 +57,8 @@ QList<QString> Devices::speakers() {
     }
     pulse_unref();
 #elif _WIN32
-    for (const auto &info: QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
-        speakers.insert(info.deviceName());
+    for (const auto& [name, id] : enum_audio_endpoints(false)) {
+        speakers.insert(name);
     }
 #endif
     return speakers.values();

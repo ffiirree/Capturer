@@ -16,21 +16,28 @@ extern "C" {
 class Dispatcher {
 public:
     explicit Dispatcher() = default;
-    explicit Dispatcher(const std::string_view& graph_desc) : graph_desc_(graph_desc) { }
+    explicit Dispatcher(const std::string_view& video_graph_desc, const std::string_view& audio_graph_desc) 
+        : video_graph_desc_(video_graph_desc), audio_graph_desc_(audio_graph_desc) { }
 
     ~Dispatcher() { reset(); }
 
-    decltype(auto) append(Producer<AVFrame>* decoder)
+    void append(Producer<AVFrame>* decoder)
     {
-        return decoders_.emplace_back(decoder);
+        if (decoder->has(AVMEDIA_TYPE_AUDIO)) {
+            audio_producers_.emplace_back(decoder);
+        }
+
+        if (decoder->has(AVMEDIA_TYPE_VIDEO)) {
+            video_producers_.emplace_back(decoder);
+        }
     }
 
-    decltype(auto) append(Consumer<AVFrame>* encoder)
+    void set_encoder(Consumer<AVFrame>* encoder)
     {
-        return encoders_.emplace_back(encoder);
+        consumer_ = encoder;
     }
 
-    int create_filter_graph(const std::string_view& filters);
+    int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
 
     int start();
     void pause();
@@ -59,6 +66,8 @@ private:
     int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
     int dispatch_thread_f();
 
+    int create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type);
+
     // clock @{
     int64_t first_pts_{ AV_NOPTS_VALUE };
     int64_t paused_pts_{ AV_NOPTS_VALUE };
@@ -70,13 +79,15 @@ private:
     std::atomic<bool> ready_{ false };
     std::atomic<bool> has_audio_in_{ false };
 
-    std::vector<Producer<AVFrame>*> decoders_;
-    std::vector<Consumer<AVFrame>*> encoders_;
+    std::vector<Producer<AVFrame>*> audio_producers_;
+    std::vector<Producer<AVFrame>*> video_producers_;
+    Consumer<AVFrame>* consumer_;
 
     std::vector<std::tuple<AVFilterContext*, Producer<AVFrame>*, bool>> i_streams_;
     std::vector<std::tuple<AVFilterContext*, Consumer<AVFrame>*, bool>> o_streams_;
 
-    std::string graph_desc_{ };
+    std::string video_graph_desc_{ };
+    std::string audio_graph_desc_{ };
 
     AVFilterGraph* filter_graph_{ nullptr };
 

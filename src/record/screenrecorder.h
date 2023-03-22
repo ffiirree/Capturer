@@ -11,6 +11,10 @@
 #include "dispatcher.h"
 #include "videoplayer.h"
 
+#if _WIN32
+#include "win-wasapi/wasapi-capturer.h"
+#endif
+
 class ScreenRecorder : public Selector
 {
     Q_OBJECT
@@ -37,13 +41,19 @@ public slots:
     void switchCamera();
 
     void mute(int type, bool v) 
-    { 
-        if(type) {
-            m_mute_ = v; 
+    {
+        switch (type)
+        {
+        case 1:
+            m_mute_ = v;
             microphone_decoder_->mute(v);
-        } else {
+            break;
+        case 2:
             s_mute_ = v;
-        } 
+            speaker_decoder_->mute(v);
+        default:
+            break;
+        }
     }
 
     void updateTheme()
@@ -71,10 +81,16 @@ private:
 
     RecordMenu* menu_{ nullptr };
     bool m_mute_{ false };
-    bool s_mute_{ true };
+    bool s_mute_{ false };
 
     std::unique_ptr<Decoder> desktop_decoder_{ nullptr };
+#ifdef _WIN32
+    std::unique_ptr<WasapiCapturer> microphone_decoder_{ nullptr };
+    std::unique_ptr<WasapiCapturer> speaker_decoder_{ nullptr };
+#else
     std::unique_ptr<Decoder> microphone_decoder_{ nullptr };
+    std::unique_ptr<Decoder> speaker_decoder_{ nullptr };
+#endif
     std::unique_ptr<Encoder> encoder_{ nullptr };
     std::unique_ptr<Dispatcher> dispatcher_{ nullptr };
 

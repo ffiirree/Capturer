@@ -22,9 +22,10 @@ extern "C" {
 
 #include "ringvector.h"
 #include "producer.h"
-
+#include "wasapi-rendering.h"
 
 enum class DeviceType {
+    DEVICE_UNKNOWN,
     DEVICE_SPEAKER,
     DEVICE_MICROPHONE
 };
@@ -60,17 +61,24 @@ public:
     }
     std::string format_str(int) const override;
 
+    void mute(bool v) { muted_ = v; }
+
 private:
     int run_f();
     int destroy();
     uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
 
-    RingVector<AVFrame*, 16> buffer_{
+    RingVector<AVFrame*, 32> buffer_{
             []() { return av_frame_alloc(); },
             [](AVFrame** frame) { av_frame_free(frame); }
     };
 
     int64_t start_time_{ AV_NOPTS_VALUE };
+    int64_t last_pts_{ 0 };
+
+    std::atomic<bool> muted_{ false };
+
+    DeviceType type_{ DeviceType::DEVICE_UNKNOWN };
 
     // audio params @{
     int sample_rate_{ 44100 };
@@ -78,7 +86,7 @@ private:
     int bit_rate_{ 0 };
     enum AVSampleFormat sample_fmt_ { AV_SAMPLE_FMT_FLT };
     uint64_t channel_layout_{ 0 };
-    AVRational time_base_{ 0, AV_TIME_BASE };
+    AVRational time_base_{ 1, AV_TIME_BASE };
     // @}
 
     // WASAPI @{
@@ -86,6 +94,9 @@ private:
     IAudioCaptureClient* capture_client_{ nullptr };
     UINT32 buffer_nb_frames_{ 0 };
     // @}
+
+    // 
+    WasapiRender silent_render_{};
 };
 #endif // _WIN32
 

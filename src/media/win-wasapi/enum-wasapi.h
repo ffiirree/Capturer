@@ -5,11 +5,11 @@
 
 #include <vector>
 #include <optional>
-#include <string>
+#include <QString>
 
 // all std::string is utf8
-std::vector<std::pair<std::string, std::string>> enum_audio_endpoints(bool is_input);
-std::optional<std::pair<std::string, std::string>> default_audio_endpoint(bool is_input);
+std::vector<std::pair<QString, QString>> enum_audio_endpoints(bool is_input);
+std::optional<std::pair<QString, QString>> default_audio_endpoint(bool is_input);
 
 #endif // _WIN32
 

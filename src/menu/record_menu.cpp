@@ -134,3 +134,10 @@ void RecordMenu::disable_mic(bool v)
         mic_->setDisabled(v);
     }
 }
+
+void RecordMenu::disable_speaker(bool v)
+{
+    if (speaker_) {
+        speaker_->setDisabled(v);
+    }
+}

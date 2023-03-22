@@ -23,8 +23,11 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
 {
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
-
+#ifdef _WIN32
+    menu_ = new RecordMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : (RecordMenu::MICROPHONE | RecordMenu::SPEAKER)) | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
+#else
     menu_ = new RecordMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordMenu::MICROPHONE) | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
+#endif
 
     prevent_transparent_ = true;
 
@@ -39,7 +42,12 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
 
     desktop_decoder_ = std::make_unique<Decoder>();
     if (recording_type_ != GIF) {
+#ifdef _WIN32
+        microphone_decoder_ = std::make_unique<WasapiCapturer>();
+        speaker_decoder_ = std::make_unique<WasapiCapturer>();
+#else
         microphone_decoder_ = std::make_unique<Decoder>();
+#endif
     }
     encoder_ = std::make_unique<Encoder>();
     dispatcher_ = std::make_unique<Dispatcher>();
@@ -104,6 +112,7 @@ void ScreenRecorder::setup()
     Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion() : hide();
 
     menu_->disable_mic(Devices::microphones().empty());
+    menu_->disable_speaker(Devices::speakers().empty());
     menu_->disable_cam(Devices::cameras().empty());
 
     auto root_dir = QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation : QStandardPaths::PicturesLocation).toStdString();
@@ -148,15 +157,30 @@ void ScreenRecorder::setup()
         return;
     }
 
-    if (recording_type_ != GIF && Devices::microphones().size() > 0) {
-        if (microphone_decoder_->open(
-            fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
-            "dshow"
-        ) < 0) {
-            LOG(WARNING) << "open microphone failed";
-            microphone_decoder_->reset();
-            menu_->disable_mic(true);
+    if (recording_type_ != GIF) {
+        if (!Devices::microphones().empty()) {
+            if (microphone_decoder_->open(DeviceType::DEVICE_MICROPHONE) < 0) {
+                LOG(WARNING) << "open microphone failed";
+                microphone_decoder_->reset();
+                menu_->disable_mic(true);
+            }
         }
+
+        if (!Devices::speakers().empty()) {
+            if (speaker_decoder_->open(DeviceType::DEVICE_SPEAKER) < 0) {
+                LOG(WARNING) << "open speaker failed";
+                speaker_decoder_->reset();
+                menu_->disable_speaker(true);
+            }
+        }
+        // if (microphone_decoder_->open(
+        //     fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
+        //     "dshow"
+        // ) < 0) {
+        //     LOG(WARNING) << "open microphone failed";
+        //     microphone_decoder_->reset();
+        //     menu_->disable_mic(true);
+        // }
     }
 #endif
 
@@ -165,11 +189,18 @@ void ScreenRecorder::setup()
         dispatcher_->append(microphone_decoder_.get());
     }
 
+    if (speaker_decoder_ && speaker_decoder_->ready()) {
+        dispatcher_->append(speaker_decoder_.get());
+    }
+
     encoder_->format(pix_fmt_);
     encoder_->enable(AVMEDIA_TYPE_AUDIO, (microphone_decoder_ && microphone_decoder_->ready()));
-    dispatcher_->append(encoder_.get());
+#ifdef _WIN32
+    encoder_->enable(AVMEDIA_TYPE_AUDIO, (speaker_decoder_ && speaker_decoder_->ready()));
+#endif
+    dispatcher_->set_encoder(encoder_.get());
 
-    if (dispatcher_->create_filter_graph(filters_) < 0) {
+    if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         exit();
         return;

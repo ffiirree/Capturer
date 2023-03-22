@@ -17,31 +17,8 @@
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
 
-size_t try_wchar_to_utf8_ptr(const wchar_t* in_ptr, size_t in_len, char* out_ptr, size_t out_len)
-{
-    return WideCharToMultiByte(CP_UTF8, 0,
-        in_ptr, (int)in_len,
-        out_ptr, (int)out_len,
-        nullptr, nullptr);
-}
-
-std::string wchar_to_utf8(const wchar_t* ptr, size_t len)
-{
-    if (!ptr) return { };
-    if (!len) len = wcslen(ptr);
-
-    size_t u8len = try_wchar_to_utf8_ptr(ptr, len, nullptr, 0);
-
-    char* buffer = new char[u8len + 1]{ 0 }; defer(delete[]buffer);
-
-    u8len = try_wchar_to_utf8_ptr(ptr, len, buffer, u8len + 1);
-    buffer[u8len] = 0;
-
-    return { buffer, u8len };
-}
-
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/device-properties
-std::vector<std::pair<std::string, std::string>> enum_audio_endpoints(bool is_input)
+std::vector<std::pair<QString, QString>> enum_audio_endpoints(bool is_input)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDeviceCollection* collection = nullptr;
@@ -49,10 +26,10 @@ std::vector<std::pair<std::string, std::string>> enum_audio_endpoints(bool is_in
     LPWSTR id = nullptr;
     IPropertyStore* props = nullptr;
     UINT count = 0;
-    std::vector<std::pair<std::string, std::string>> devices;
+    std::vector<std::pair<QString, QString>> devices;
 
-    RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-    defer(CoUninitialize());
+    // RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+    // defer(CoUninitialize());
 
     RETURN_NULL_ON_ERROR(CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
@@ -93,15 +70,15 @@ std::vector<std::pair<std::string, std::string>> enum_audio_endpoints(bool is_in
 
         // Print endpoint friendly name and endpoint ID.
         devices.emplace_back(
-            wchar_to_utf8(varName.pwszVal, wcslen(varName.pwszVal)),
-            wchar_to_utf8(id, wcslen(id))
+            QString::fromStdWString(varName.pwszVal),
+            QString::fromStdWString(id)
         );
     }
 
     return devices;
 }
 
-std::optional<std::pair<std::string, std::string>> default_audio_endpoint(bool is_input)
+std::optional<std::pair<QString, QString>> default_audio_endpoint(bool is_input)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDeviceCollection* collection = nullptr;
@@ -109,7 +86,7 @@ std::optional<std::pair<std::string, std::string>> default_audio_endpoint(bool i
     LPWSTR id = nullptr;
     IPropertyStore* props = nullptr;
 
-    RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+    RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
     defer(CoUninitialize());
 
     RETURN_NULL_ON_ERROR(CoCreateInstance(
@@ -144,8 +121,8 @@ std::optional<std::pair<std::string, std::string>> default_audio_endpoint(bool i
 
     // Print endpoint friendly name and endpoint ID.
     return std::pair{
-            wchar_to_utf8(varName.pwszVal, wcslen(varName.pwszVal)),
-            wchar_to_utf8(id, wcslen(id))
+        QString::fromStdWString(varName.pwszVal),
+        QString::fromStdWString(id)
     };
 }
 

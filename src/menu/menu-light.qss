@@ -18,6 +18,10 @@ RecordMenu QCheckBox#Speaker::indicator:checked {
     image: url(:/icon/res/speaker-mute-dark.png);
 }
 
+RecordMenu QCheckBox#Speaker::indicator:disabled {
+    image: url(:/icon/res/speaker-mute-light.png);
+}
+
 RecordMenu QCheckBox#Camera::indicator:checked {
     image: url(:/icon/res/camera-fill-dark.png);
 }

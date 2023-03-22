@@ -32,9 +32,9 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     }
 
     dispatcher_->append(decoder_);
-    dispatcher_->append(this);
+    dispatcher_->set_encoder(this);
 
-    if (dispatcher_->create_filter_graph(filters)) {
+    if (dispatcher_->create_filter_graph(filters, {})) {
         LOG(INFO) << "create filters failed";
         return false;
     }
