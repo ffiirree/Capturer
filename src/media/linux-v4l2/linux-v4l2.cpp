@@ -12,6 +12,10 @@ std::vector<V4l2Device> v4l2_device_list()
     std::vector<V4l2Device> list;
 
     DIR *v4l2_dir = opendir("/sys/class/video4linux");
+    if (nullptr == v4l2_dir) {
+        LOG(ERROR) << "failed to open '/sys/class/video4linux'";
+        return {};
+    }
     defer(closedir(v4l2_dir));
 
     struct dirent *next_dir_entry = nullptr;
