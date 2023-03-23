@@ -22,7 +22,7 @@ extern "C" {
 
 #include "ringvector.h"
 #include "producer.h"
-#include "wasapi-rendering.h"
+#include "clock.h"
 
 enum class DeviceType {
     DEVICE_UNKNOWN,
@@ -60,6 +60,7 @@ public:
         }
     }
     std::string format_str(int) const override;
+    AVRational time_base(int) const override;
 
     void mute(bool v) { muted_ = v; }
 
@@ -74,7 +75,6 @@ private:
     };
 
     int64_t start_time_{ AV_NOPTS_VALUE };
-    int64_t last_pts_{ 0 };
 
     std::atomic<bool> muted_{ false };
 
@@ -86,7 +86,7 @@ private:
     int bit_rate_{ 0 };
     enum AVSampleFormat sample_fmt_ { AV_SAMPLE_FMT_FLT };
     uint64_t channel_layout_{ 0 };
-    AVRational time_base_{ 1, AV_TIME_BASE };
+    AVRational time_base_{ 1, OS_TIME_BASE };
     // @}
 
     // WASAPI @{
@@ -94,9 +94,6 @@ private:
     IAudioCaptureClient* capture_client_{ nullptr };
     UINT32 buffer_nb_frames_{ 0 };
     // @}
-
-    // 
-    WasapiRender silent_render_{};
 };
 #endif // _WIN32
 

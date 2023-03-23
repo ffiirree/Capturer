@@ -42,16 +42,15 @@ public:
     int start();
     void pause();
     void resume();
+    int64_t paused_time();
     int reset();
     void stop() { reset(); }
 
     [[nodiscard]] bool running() const { return running_; }
 
-    [[nodiscard]] int64_t escaped_us() const;
+    [[nodiscard]] int64_t escaped_us();
 
-    [[nodiscard]] int64_t escaped_ms() const { return escaped_us() / 1000; }
-
-    [[nodiscard]] bool has_audio() const { return has_audio_in_; }
+    [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
     AVFilterContext* find_sink(Consumer<AVFrame>*, enum AVMediaType);
 
@@ -64,24 +63,30 @@ private:
     
     int create_filter_for_audio_input(const Producer<AVFrame>*, AVFilterContext**);
     int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
-    int dispatch_thread_f();
 
     int create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type);
 
+    int receive_thread_f();
+    int dispatch_thread_f();
+
+    // pts must in OS_TIME_BASE_Q
+    bool is_valid_pts(int64_t);
+
     // clock @{
-    int64_t first_pts_{ AV_NOPTS_VALUE };
-    int64_t paused_pts_{ AV_NOPTS_VALUE };
-    int64_t offset_pts_{ 0 };               // AV_TIME_BASE_Q unit
+    std::mutex pause_mtx_;
+
+    int64_t paused_pts_{ AV_NOPTS_VALUE };  // 
+    int64_t resumed_pts_{ AV_NOPTS_VALUE };
+    int64_t paused_time_{ 0 };              // do not include the time being paused, please use paused_time()
+    std::atomic<int64_t> start_time_{ 0 };
     //@}
 
     std::atomic<bool> running_{ false };
-    std::atomic<bool> paused_{ false };
     std::atomic<bool> ready_{ false };
-    std::atomic<bool> has_audio_in_{ false };
 
     std::vector<Producer<AVFrame>*> audio_producers_;
     std::vector<Producer<AVFrame>*> video_producers_;
-    Consumer<AVFrame>* consumer_;
+    Consumer<AVFrame>* consumer_{ nullptr };
 
     std::vector<std::tuple<AVFilterContext*, Producer<AVFrame>*, bool>> i_streams_;
     std::vector<std::tuple<AVFilterContext*, Consumer<AVFrame>*, bool>> o_streams_;
@@ -91,6 +96,7 @@ private:
 
     AVFilterGraph* filter_graph_{ nullptr };
 
+    std::thread receive_thread_;
     std::thread dispatch_thread_;
 };
 

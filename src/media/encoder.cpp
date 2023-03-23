@@ -2,14 +2,12 @@
 #include "logging.h"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
-#include <chrono>
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/time.h>
 }
-
-using namespace std::chrono_literals;
+#include "clock.h"
 
 int Encoder::open(const std::string& filename, 
                   const std::string& codec_name,
@@ -242,11 +240,9 @@ int Encoder::run_f()
     int ret = 0;
     while (running_ && !eof()) {
         if (video_buffer_.empty() && audio_buffer_.empty()) {
-            std::this_thread::sleep_for(20ms);
+            os_sleep(20ms);
             continue;
         }
-
-        first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
 
         ret = process_video_frames();
         ret = process_audio_frames();
@@ -291,7 +287,7 @@ int Encoder::process_video_frames()
         av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
         if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
-            LOG(WARNING) << "[    ENCODER@] [V] DORP FRAME: dts = " << packet_->dts;
+            LOG(WARNING) << fmt::format("[    ENCODER] [V] DORP FRAME: dts = {} <= {}", packet_->dts, v_last_dts_);
             continue;
         }
         v_last_dts_ = packet_->dts;
@@ -384,7 +380,7 @@ int Encoder::process_audio_frames()
             }
 
             if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
-                LOG(WARNING) << "[   ENCODER] [A] DORP FRAME: dts = " << packet_->dts;
+                LOG(WARNING) << fmt::format("[   ENCODER] [A] DORP FRAME: dts = {} <= {}", packet_->dts, a_last_dts_);
                 continue;
             }
             a_last_dts_ = packet_->dts;
@@ -417,7 +413,6 @@ void Encoder::destroy()
     std::lock_guard lock(mtx_);
 
     running_ = false;
-    paused_ = false;
 
     wait();
 
@@ -434,7 +429,6 @@ void Encoder::destroy()
     eof_ = 0x00;
     ready_ = false;     // after av_write_trailer()
 
-    first_pts_ = AV_NOPTS_VALUE;
     v_last_dts_ = AV_NOPTS_VALUE;
     a_last_dts_ = AV_NOPTS_VALUE;
     video_stream_idx_ = -1;

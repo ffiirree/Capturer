@@ -43,7 +43,8 @@ public:
 
     bool has(int) const override;
     std::string format_str(int) const override;
-    bool eof() override { return eof_ == DECODING_EOF; }
+    AVRational time_base(int) const override;
+    bool eof() override;
 
     void mute(bool v) { muted_ = v; }
 
@@ -61,9 +62,6 @@ private:
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
-
-    int64_t first_pts_{ AV_NOPTS_VALUE };
-    int64_t last_pts_{ AV_NOPTS_VALUE };
 
     AVPacket* packet_{ nullptr };
     AVFrame* decoded_frame_{ nullptr };

@@ -1,4 +1,3 @@
-#include <chrono>
 #include "dispatcher.h"
 #include "logging.h"
 #include "fmt/format.h"
@@ -11,7 +10,7 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 }
-using namespace std::chrono_literals;
+#include "clock.h"
 
 int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx, enum AVMediaType type)
 {
@@ -97,7 +96,6 @@ int Dispatcher::create_filter_for_audio_input(const Producer<AVFrame>* decoder, 
         return -1;
     }
 
-    has_audio_in_ = true;
     return 0;
 }
 
@@ -161,7 +159,7 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
 
     if (!audio_producers_.empty()) {
         if (audio_graph_desc_.empty() && audio_producers_.size() > 1) {
-            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=first", audio_producers_.size());
+            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=longest", audio_producers_.size());
         }
 
         create_filter_graph_for(audio_producers_, audio_graph_desc_, AVMEDIA_TYPE_AUDIO);
@@ -277,6 +275,10 @@ int Dispatcher::start()
         return -1;
     }
 
+    // 
+    start_time_ = os_gettime_ns();
+    resumed_pts_ = start_time_;
+
     for (auto& coder : video_producers_) {
         coder->run();
     }
@@ -286,166 +288,195 @@ int Dispatcher::start()
     }
 
     consumer_->run();
+    //
 
     running_ = true;
     dispatch_thread_ = std::thread([this]() { dispatch_thread_f(); });
+    receive_thread_ = std::thread([this]() { receive_thread_f(); });
+
+    return 0;
+}
+
+bool Dispatcher::is_valid_pts(int64_t pts)
+{
+    std::lock_guard<std::mutex> lock(pause_mtx_);
+
+    // [-, max(start_time_, resumed_pts_))
+    if (pts < resumed_pts_) {
+        return false;
+    }
+
+    // pausing:
+    //     [paused_pts_, +)
+    if (paused_pts_ != AV_NOPTS_VALUE) {
+        return pts <= paused_pts_;
+    }
+
+    return true;
+}
+
+int Dispatcher::receive_thread_f()
+{
+    AVFrame* frame = av_frame_alloc();
+    defer(av_frame_free(&frame));
+
+    LOG(INFO) << "[DISPATCHER] RECEIVE THREAD STARTED";
+    defer(LOG(INFO) << "[DISPATCHER] RECEIVE THREAD EXITED");
+
+    while (running_) {
+        bool sleepy = true;
+
+        // input streams
+        for (auto& [src_ctx, producer, _] : i_streams_) {
+            if (!producer->eof() && running_) {
+                auto mt = avfilter_pad_get_type(src_ctx->filter->outputs, 0);
+                // receive a frame
+                if (producer->produce(frame, mt) != 0) {
+                    continue;
+                }
+
+                if (!is_valid_pts(av_rescale_q(frame->pts, producer->time_base(mt), OS_TIME_BASE_Q))) {
+                    LOG(INFO) << fmt::format("[DISPATCHER] drop the frame {} ({} - {})", 
+                        av_rescale_q(frame->pts, producer->time_base(mt), OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
+                    continue;
+                }
+
+                frame->pts -= av_rescale_q(start_time_ + paused_time(), OS_TIME_BASE_Q, producer->time_base(mt));
+
+                // send the frame to graph
+                if (av_buffersrc_add_frame_flags(src_ctx, frame, AV_BUFFERSRC_FLAG_PUSH) < 0) {
+                    LOG(ERROR) << "av_buffersrc_add_frame_flags";
+                    running_ = false;
+                    break;
+                }
+
+                sleepy = false;
+            }
+        }
+
+        if (sleepy && running_) {
+            os_sleep(25ms);
+        }
+    }
 
     return 0;
 }
 
 int Dispatcher::dispatch_thread_f()
 {
-    AVFrame* frame_ = av_frame_alloc();
-    defer(av_frame_free(&frame_));
-    AVFrame* filtered_frame = av_frame_alloc();
-    defer(av_frame_free(&filtered_frame));
+    AVFrame* frame = av_frame_alloc();
+    defer(av_frame_unref(frame); av_frame_free(&frame));
 
-    LOG(INFO) << "[DISPATCHER] STARTED";
-    defer(LOG(INFO) << "[DISPATCHER] EXITED");
+    LOG(INFO) << "[DISPATCHER] DISPATCH THREAD STARTED";
+    defer(LOG(INFO) << "[DISPATCHER] DISPATCH THREAD EXITED");
 
-    int ret = 0;
     while (running_) {
-        bool need_dispatch = false;
-        // input streams
-        for (auto& [src_ctx, producer, eof] : i_streams_) {
-            if (!eof) {
-                ret = producer->produce(frame_, avfilter_pad_get_type(src_ctx->filter->outputs, 0));
-                if (ret == AVERROR_EOF) {
-                    eof = true;
-                    LOG(INFO) << fmt::format("[DISPATCHER] {} EOF", av_get_media_type_string(avfilter_pad_get_type(src_ctx->filter->outputs, 0)));
-                }
-                else if (ret < 0) {
-                    continue;
-                }
-
-                ret = av_buffersrc_add_frame_flags(src_ctx, (ret == AVERROR_EOF) ? nullptr : frame_, AV_BUFFERSRC_FLAG_PUSH);
-                if (ret < 0) {
-                    LOG(ERROR) << "av_buffersrc_add_frame_flags";
-                    running_ = false;
-                    break;
-                }
-
-                need_dispatch = true;
-            }
-        }
-
-        // pause @{
-        if (paused_) {
-            if (paused_pts_ != AV_NOPTS_VALUE) {
-                offset_pts_ += av_gettime_relative() - paused_pts_;
-            }
-
-            paused_pts_ = av_gettime_relative();
-        }
-        else if (paused_pts_ != AV_NOPTS_VALUE) {
-            offset_pts_ += av_gettime_relative() - paused_pts_;
-            paused_pts_ = AV_NOPTS_VALUE;
-        }
-        // @}
-
-        if (!need_dispatch) {
-            std::this_thread::sleep_for(10ms);
-            continue;
-        }
-
-        first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
+        bool sleepy = true;
 
         // output streams
-        for (auto& [sink_ctx, consumer, stream_eof] : o_streams_) {
-            enum AVMediaType media_type = av_buffersink_get_type(sink_ctx);
-            ret = 0;
-            while (ret >= 0 && !stream_eof && !consumer->full(media_type)) {
-                av_frame_unref(filtered_frame);
-                ret = av_buffersink_get_frame_flags(sink_ctx, filtered_frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+        for (auto& [sink_ctx, consumer, sink_eof] : o_streams_) {
+            auto media_type = av_buffersink_get_type(sink_ctx);
 
-                if (ret == AVERROR(EAGAIN)) {
-                    break;
-                }
-                else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << "[DISPATCHER] " << av_get_media_type_string(media_type) <<" EOF";
-                    stream_eof = true;
-                    // through and send null packet
-                    av_frame_unref(filtered_frame);
-                }
-                else if (ret < 0) {
-                    LOG(ERROR) << "av_buffersink_get_frame_flags()";
-                    running_ = false;
-                    break;
-                }
-
-                while (consumer->full(media_type) && running_) {
-                    LOG(WARNING) << "[DISPATCHER] better not be here";
-                    std::this_thread::sleep_for(20ms);
-                }
-                ret = consumer->consume(filtered_frame, media_type);
+            if (sink_eof || consumer->full(media_type)) {
+                continue;
             }
+
+            av_frame_unref(frame);
+            int ret = av_buffersink_get_frame_flags(sink_ctx, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+            if (ret == AVERROR(EAGAIN)) {
+                continue;
+            }
+            else if (ret == AVERROR_EOF) {
+                LOG(INFO) << "[DISPATCHER] " << av_get_media_type_string(media_type) << " EOF";
+                sink_eof = true;
+                // through and send null packet
+                av_frame_unref(frame);
+            }
+            else if (ret < 0) {
+                LOG(ERROR) << "av_buffersink_get_frame_flags()";
+                running_ = false;
+                break;
+            }
+            
+            if (consumer->consume(frame, media_type) < 0) {
+                LOG(ERROR) << "failed to consume a frame.";
+            }
+
+            sleepy = false;
+        }
+
+        if (sleepy && running_) {
+            os_sleep(25ms);
         }
     }
 
-    return ret;
+    return 0;
 }
 
 void Dispatcher::pause()
 {
-    for (auto& coder : video_producers_) {
-        coder->pause();
+    std::lock_guard<std::mutex> lock(pause_mtx_);
+
+    if (paused_pts_ == AV_NOPTS_VALUE) {
+        paused_pts_ = os_gettime_ns();
     }
-
-    for (auto& coder : audio_producers_) {
-        coder->pause();
-    }
-
-    consumer_->pause();
-
-    paused_ = true;
 }
 
 void Dispatcher::resume()
 {
-    paused_ = false;
+    std::lock_guard<std::mutex> lock(pause_mtx_);
 
-    consumer_->resume();
-
-    for (auto& coder : video_producers_) {
-        coder->time_offset(offset_pts_);
-        coder->resume();
+    if (paused_pts_ != AV_NOPTS_VALUE) {
+        auto now = os_gettime_ns();
+        paused_time_ += (now - paused_pts_);
+        paused_pts_ = AV_NOPTS_VALUE;
+        resumed_pts_ = now;
     }
+}
 
-    for (auto& coder : audio_producers_) {
-        coder->time_offset(offset_pts_);
-        coder->resume();
+int64_t Dispatcher::paused_time()
+{
+    std::lock_guard<std::mutex> lock(pause_mtx_);
+
+    if (paused_pts_ != AV_NOPTS_VALUE) {
+        return paused_time_ + (os_gettime_ns() - paused_pts_);
     }
+    return paused_time_;
 }
 
 int Dispatcher::reset()
 {
-    paused_ = false;
     ready_ = false;
 
-    for (auto& coder : video_producers_) {
+    // producers
+    for (const auto& [ctx, coder, _] : i_streams_) {
         coder->reset();
+        av_buffersrc_add_frame_flags(ctx, nullptr, AV_BUFFERSRC_FLAG_PUSH);
     }
 
-    for (auto& coder : audio_producers_) {
-        coder->reset();
-    }
-
-    // wait 0~3s
+    // consumer
     if (consumer_) {
-        for (int i = 0; i < 100; i++) {
+        // wait 0~3s
+        for (int i = 0; i < 200; i++) {
             if (!consumer_->ready() || consumer_->eof()) break;
 
-            std::this_thread::sleep_for(100ms);
+            os_sleep(50ms);
         }
         consumer_->reset();
     }
 
+    // dispatcher
     running_ = false;
+
+    if (receive_thread_.joinable()) {
+        receive_thread_.join();
+    }
 
     if (dispatch_thread_.joinable()) {
         dispatch_thread_.join();
     }
 
+    // clear
     video_producers_.clear();
     audio_producers_.clear();
     consumer_ = nullptr;
@@ -455,9 +486,10 @@ int Dispatcher::reset()
     video_graph_desc_ = {};
     audio_graph_desc_ = {};
 
-    first_pts_ = AV_NOPTS_VALUE;
     paused_pts_ = AV_NOPTS_VALUE;
-    offset_pts_ = 0;
+    paused_time_ = 0;
+    start_time_ = 0;
+    resumed_pts_ = 0;
 
     avfilter_graph_free(&filter_graph_);
 
@@ -465,6 +497,10 @@ int Dispatcher::reset()
     return 0;
 }
 
-int64_t Dispatcher::escaped_us() const {
-    return (first_pts_ == AV_NOPTS_VALUE) ? 0 : std::max<int64_t>(0, av_gettime_relative() - first_pts_ - offset_pts_);
+int64_t Dispatcher::escaped_us()
+{
+    if (!running()) {
+        return 0;
+    }
+    return std::max<int64_t>(0, (os_gettime_ns() - start_time_ - paused_time()) / 1000);
 }

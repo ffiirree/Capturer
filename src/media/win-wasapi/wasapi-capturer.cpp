@@ -1,17 +1,13 @@
 #ifdef _WIN32
 
-#include <thread>
-#include <chrono>
 #include "wasapi-capturer.h"
 #include "fmt/format.h"
 #include "utils.h"
 #include "logging.h"
 
-using namespace std::chrono_literals;
-
 // REFERENCE_TIME time units per second and per millisecond
-#define REFTIMES_PER_SEC  10000000
-#define REFTIMES_PER_MILLISEC  10000
+#define REFTIMES_PER_SEC        10000000
+#define REFTIMES_PER_MILLISEC   10000
 
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
@@ -32,12 +28,10 @@ uint64_t WasapiCapturer::to_ffmpeg_channel_layout(DWORD layout, int channels)
 int WasapiCapturer::open(DeviceType dt)
 {
     type_ = dt;
+    bool is_input = (type_ == DeviceType::DEVICE_MICROPHONE);
 
-    REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
-    IMMDeviceEnumerator* pEnumerator = nullptr;
-    IMMDevice* pDevice = nullptr;
-    WAVEFORMATEX* pwfx = nullptr;
-
+    IMMDeviceEnumerator* enumerator = nullptr;
+    
     //CHECK(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)));
 
     RETURN_ON_ERROR(CoCreateInstance(
@@ -45,11 +39,16 @@ int WasapiCapturer::open(DeviceType dt)
         nullptr,
         CLSCTX_ALL,
         __uuidof(IMMDeviceEnumerator),
-        (void**)&pEnumerator
+        (void**)&enumerator
     ));
-    defer(SAFE_RELEASE(pEnumerator));
+    defer(SAFE_RELEASE(enumerator));
 
-    RETURN_ON_ERROR(pEnumerator->GetDefaultAudioEndpoint((dt == DeviceType::DEVICE_MICROPHONE) ? eCapture : eRender, eConsole, &pDevice));
+    IMMDevice* pDevice = nullptr;
+    RETURN_ON_ERROR(enumerator->GetDefaultAudioEndpoint(
+        is_input ? eCapture : eRender,
+        eConsole, // is_input ? eCommunications : eConsole,
+        &pDevice
+    ));
     defer(SAFE_RELEASE(pDevice));
 
     RETURN_ON_ERROR(pDevice->Activate(
@@ -59,38 +58,30 @@ int WasapiCapturer::open(DeviceType dt)
         (void**)&audio_client_)
     );
 
-    RETURN_ON_ERROR(audio_client_->GetMixFormat(&pwfx));
-    defer(CoTaskMemFree(pwfx));
+    WAVEFORMATEX* wfex = nullptr;
+    RETURN_ON_ERROR(audio_client_->GetMixFormat(&wfex));
+    defer(CoTaskMemFree(wfex));
 
     RETURN_ON_ERROR(audio_client_->Initialize(
         AUDCLNT_SHAREMODE_SHARED,
-        (dt == DeviceType::DEVICE_MICROPHONE) ? 0 : AUDCLNT_STREAMFLAGS_LOOPBACK,
-        hnsRequestedDuration,
+        is_input ? 0 : AUDCLNT_STREAMFLAGS_LOOPBACK,
+        REFTIMES_PER_SEC,
         0,
-        pwfx,
+        wfex,
         nullptr
     ));
 
     DWORD layout = 0;
-    if (pwfx->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
-        auto pEx = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(pwfx);
-        //        if(IsEqualGUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, pEx->SubFormat)) {
-        //            LOG(INFO) << "here";
-        //            pEx->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
-        //            pEx->Samples.wValidBitsPerSample = 16;
-        //            pwfx->wBitsPerSample = 16;
-        //            pwfx->nBlockAlign = pwfx->nChannels * pwfx->wBitsPerSample / 8;
-        //            pwfx->nAvgBytesPerSec = pwfx->nBlockAlign * pwfx->nSamplesPerSec;
-        //        }
-        layout = pEx->dwChannelMask;
+    if (wfex->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+        auto ext = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(wfex);
+        layout = ext->dwChannelMask;
     }
 
-    sample_rate_ = pwfx->nSamplesPerSec;
-    channels_ = pwfx->nChannels;
-    bit_rate_ = pwfx->nAvgBytesPerSec;
+    sample_rate_ = wfex->nSamplesPerSec;
+    channels_ = wfex->nChannels;
+    bit_rate_ = wfex->nAvgBytesPerSec;
     sample_fmt_ = AV_SAMPLE_FMT_FLT;
     channel_layout_ = to_ffmpeg_channel_layout(layout, channels_);
-    time_base_ = { 1, sample_rate_ };
 
     LOG(INFO) << fmt::format("sample_rate = {}, channels = {}, sample_fmt = {}, channel_layout = {}, tbn = {}/{}",
         sample_rate_, channels_, av_get_sample_fmt_name(sample_fmt_), channel_layout_,
@@ -104,17 +95,9 @@ int WasapiCapturer::open(DeviceType dt)
         (void**)&capture_client_
     ));
 
-    // render bg @{
-    if (silent_render_.open() < 0) {
-        LOG(ERROR) << "failed to open silent_render_";
-        return -1;
-    }
-    // @}
-
     ready_ = true;
     return 0;
 }
-
 
 std::string WasapiCapturer::format_str(int type) const
 {
@@ -133,26 +116,38 @@ std::string WasapiCapturer::format_str(int type) const
     }
 }
 
+AVRational WasapiCapturer::time_base(int type) const
+{
+    switch (type)
+    {
+    case AVMEDIA_TYPE_AUDIO:
+    {
+        return time_base_;
+    }
+    default: 
+        LOG(ERROR) << "unknown media type.";
+        return OS_TIME_BASE_Q;
+    }
+}
+
 int WasapiCapturer::run()
 {
     std::lock_guard lock(mtx_);
 
     if (!ready_ || running_) {
+        LOG(ERROR) << "[  WASAPI] not ready or running.";
         return -1;
     }
 
-    RETURN_ON_ERROR(audio_client_->Start());
+    if (FAILED(audio_client_->Start())) {
+        LOG(ERROR) << "[  WASAPI] failed to start audio client.";
+        return -1;
+    }
 
-    start_time_ = av_rescale_q(av_gettime_relative(), time_base_, av_get_time_base_q());
     running_ = true;
     eof_ = 0x00;
 
-    silent_render_.run([](unsigned char** ptr, unsigned int samples, unsigned long* flags)->int {
-        LOG(INFO) << "[    RENDER] " << samples;
-        memset(*ptr, 0, samples);
-        return 0;
-    });
-
+    start_time_ = os_gettime_ns();
     thread_ = std::thread([this]() { run_f(); });
 
     return 0;
@@ -162,42 +157,35 @@ int WasapiCapturer::run_f()
 {
     UINT32 nb_samples;
     BYTE* data_ptr;
-    UINT32 packetLength = 0;
+    UINT32 packet_size = 0;
     DWORD flags;
     int frame_number = 0;
 
     buffer_.clear();
-    REFERENCE_TIME hnsActualDuration = (double)REFTIMES_PER_SEC * buffer_nb_frames_ / sample_rate_;
-
     AVFrame* frame = av_frame_alloc();
     while (running_) {
-        // Sleep for half the buffer duration.
-//        Sleep(hnsActualDuration / REFTIMES_PER_MILLISEC / 2);
 
-        if (paused() || buffer_.full()) {
-            std::this_thread::sleep_for(20ms);
+        if (buffer_.full()) {
+            LOG(WARNING) << "[  WASAPI] buffer is full, drop a packet";
+        }
+
+        RETURN_ON_ERROR(capture_client_->GetNextPacketSize(&packet_size));
+        if (packet_size == 0) {
+            os_sleep(5ms);
             continue;
         }
 
-        RETURN_ON_ERROR(capture_client_->GetNextPacketSize(&packetLength));
-
-        while (packetLength != 0)
+        while (packet_size != 0)
         {
             // Get the available data in the shared buffer.
-            if (FAILED(capture_client_->GetBuffer(
-                &data_ptr,
-                &nb_samples,
-                &flags,
-                nullptr,
-                nullptr
-            ))) {
+            if (FAILED(capture_client_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, nullptr))) {
                 running_ = false;
                 LOG(INFO) << "GetBuffer failed";
                 return -1;
             }
 
             // Copy the available capture data to the audio sink.
-            frame->pts = last_pts_;
+            frame->pts = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, sample_rate_);
             frame->nb_samples = nb_samples;
             frame->format = sample_fmt_;
             frame->sample_rate = sample_rate_;
@@ -221,7 +209,7 @@ int WasapiCapturer::run_f()
             }
 
             while (buffer_.full() && running_) {
-                av_usleep(10000); // 10ms
+                os_sleep(10ms);
             }
 
             if (muted_) {
@@ -234,11 +222,8 @@ int WasapiCapturer::run_f()
                 );
             }
 
-            last_pts_ = frame->pts + frame->nb_samples;
-
-            DLOG(INFO) << fmt::format("[    WASAPI] [{}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}, ts = {:>10.6f}",
-                int(type_), frame_number++, frame->pts, frame->nb_samples, muted_,
-                av_rescale_q(frame->pts, time_base_, av_get_time_base_q()) / (double)AV_TIME_BASE);
+            DLOG(INFO) << fmt::format("[    WASAPI] [{}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+                int(type_), frame_number++, frame->pts, frame->nb_samples, muted_);
 
             buffer_.push([frame](AVFrame* pushed) {
                 av_frame_unref(pushed);
@@ -246,7 +231,7 @@ int WasapiCapturer::run_f()
             });
 
             RETURN_ON_ERROR(capture_client_->ReleaseBuffer(nb_samples));
-            RETURN_ON_ERROR(capture_client_->GetNextPacketSize(&packetLength));
+            RETURN_ON_ERROR(capture_client_->GetNextPacketSize(&packet_size));
         }
     }
 
@@ -289,15 +274,11 @@ int WasapiCapturer::destroy()
 
     buffer_.clear();
     start_time_ = AV_NOPTS_VALUE;
-    last_pts_ = 0;
 
     SAFE_RELEASE(audio_client_);
     SAFE_RELEASE(capture_client_);
 
     //CoUninitialize();
-
-    // TODO: can not be stuck
-    silent_render_.reset();
 
     return 0;
 }

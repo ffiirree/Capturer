@@ -15,7 +15,6 @@ public:
         std::lock_guard lock(mtx_);
 
         running_ = false;
-        paused_ = false;
         eof_ = 0x00;
         ready_ = false;
 
@@ -27,8 +26,6 @@ public:
     virtual int run() = 0;
     virtual int consume(T*, int) = 0;
 
-    virtual void pause() { paused_ = true; }
-    virtual void resume() { paused_ = false; }
     virtual void stop() { running_ = false; reset(); }
     virtual void reset() = 0;
     virtual int wait()
@@ -46,12 +43,10 @@ public:
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
-    [[nodiscard]] bool paused() const { return paused_; }
     [[nodiscard]] virtual bool eof() const { return eof_; }
 
 protected:
     std::atomic<bool> running_{ false };
-    std::atomic<bool> paused_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };
     std::atomic<bool> ready_{ false };
     std::thread thread_;

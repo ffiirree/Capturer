@@ -6,6 +6,8 @@
 #include <atomic>
 #include <map>
 
+class AVRational;
+
 template<class T>
 class Producer {
 public:
@@ -17,7 +19,6 @@ public:
         std::lock_guard lock(mtx_);
 
         running_ = false;
-        paused_ = false;
         eof_ = 0x00;
         ready_ = false;
         enabled_.clear();
@@ -36,11 +37,10 @@ public:
 
     [[nodiscard]] virtual bool has(int) const = 0;
     [[nodiscard]] virtual std::string format_str(int) const = 0;
+    [[nodiscard]] virtual AVRational time_base(int) const = 0;
     virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
     virtual void enable(int t) { enabled_[t] = true; }
-    virtual void pause() { paused_ = true; }
-    virtual void resume() { paused_ = false; }
     virtual void stop() { running_ = false; }
     virtual bool eof() { return eof_ != 0; }
 
@@ -54,18 +54,13 @@ public:
     
     [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
-    [[nodiscard]] bool paused() const { return paused_; }
-
-    void time_offset(int64_t offset) { time_offset_ = offset; }
     
 protected:
     std::atomic<bool> running_{ false };
-    std::atomic<bool> paused_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };
     std::atomic<bool> ready_{ false };
     std::thread thread_;
     std::mutex mtx_;
-    std::atomic<int64_t> time_offset_{ 0 };
     std::map<int, bool> enabled_;
 };
 

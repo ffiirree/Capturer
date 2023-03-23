@@ -1,4 +1,3 @@
-#include <chrono>
 #include "decoder.h"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
@@ -8,8 +7,7 @@ extern "C" {
 #include <libavdevice/avdevice.h>
 #include <libavutil/time.h>
 }
-
-using namespace std::chrono_literals;
+#include "clock.h"
 
 int Decoder::open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
 {
@@ -165,6 +163,8 @@ std::string Decoder::format_str(int type) const
     {
     case AVMEDIA_TYPE_VIDEO:
     {
+        if (video_stream_idx_ < 0) return {};
+
         auto video_stream = fmt_ctx_->streams[video_stream_idx_];
         auto fr = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
         return fmt::format(
@@ -190,6 +190,40 @@ std::string Decoder::format_str(int type) const
     }
     default: return {};
     }
+}
+
+
+AVRational Decoder::time_base(int type) const
+{
+    switch (type)
+    {
+    case AVMEDIA_TYPE_AUDIO:
+    {
+        if (audio_stream_idx_ < 0) {
+            LOG(WARNING) << "no audio stream";
+            return OS_TIME_BASE_Q;
+        }
+
+        return fmt_ctx_->streams[audio_stream_idx_]->time_base;
+    }
+    case AVMEDIA_TYPE_VIDEO:
+    {
+        if (video_stream_idx_ < 0) {
+            LOG(WARNING) << "no video stream";
+            return OS_TIME_BASE_Q;
+        }
+
+        return fmt_ctx_->streams[video_stream_idx_]->time_base;
+    }
+    default: 
+        LOG(ERROR) << "unknown meida type.";
+        return OS_TIME_BASE_Q;
+    }
+}
+
+bool Decoder::eof()
+{ 
+    return (eof_ == DECODING_EOF) && video_buffer_.empty() && audio_buffer_.empty(); 
 }
 
 int Decoder::produce(AVFrame* frame, int type)
@@ -249,10 +283,16 @@ int Decoder::run_f()
     eof_ |= audio_stream_idx_ < 0 ? ADECODING_EOF : 0x00;
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
+    int64_t VIDEO_OFFSET_T = video_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[video_stream_idx_]->time_base) - fmt_ctx_->streams[video_stream_idx_]->start_time;
+    int64_t AUDIO_OFFSET_T = audio_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[audio_stream_idx_]->time_base) - fmt_ctx_->streams[audio_stream_idx_]->start_time;
+
     while (running_) {
-        if (paused() || video_buffer_.full() || audio_buffer_.full()) {
-            std::this_thread::sleep_for(20ms);
-            continue;
+        if (video_buffer_.full()) {
+            LOG(WARNING) << "[   DECODER] [V] buffer is full, drop a packet";
+        }
+
+        if (audio_buffer_.full()) {
+            LOG(WARNING) << "[   DECODER] [A] buffer is full, drop a packet";
         }
 
         // read
@@ -271,18 +311,6 @@ int Decoder::run_f()
             running_ = false;
             break;
         }
-
-        first_pts_ = (first_pts_ == AV_NOPTS_VALUE) ? av_gettime_relative() : first_pts_;
-
-        // resume @{
-        if (av_rescale_q(packet_->pts, fmt_ctx_->streams[packet_->stream_index]->time_base, av_get_time_base_q()) - time_offset_ <= last_pts_) {
-            // drop the packet
-            LOG(INFO) << fmt::format("[   DECODER] [{:>10}] DROP A PACKET", name_);
-            continue;
-        }
-        packet_->pts -= av_rescale_q(time_offset_, av_get_time_base_q(), fmt_ctx_->streams[packet_->stream_index]->time_base);
-        last_pts_ = av_gettime_relative() - first_pts_ - time_offset_;
-        // @}
 
         // video decoding
         if (packet_->stream_index == video_stream_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
@@ -304,11 +332,10 @@ int Decoder::run_f()
                     return ret;
                 }
 
-                decoded_frame_->pts -= fmt_ctx_->streams[video_stream_idx_]->start_time;
+                decoded_frame_->pts += VIDEO_OFFSET_T;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}, ts = {:>10.6f}",
-                    name_, video_decoder_ctx_->frame_number, decoded_frame_->pts,
-                    av_rescale_q(decoded_frame_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}",
+                    name_, video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {
@@ -339,11 +366,10 @@ int Decoder::run_f()
                     return ret;
                 }
 
-                decoded_frame_->pts -= fmt_ctx_->streams[audio_stream_idx_]->start_time;
+                decoded_frame_->pts += AUDIO_OFFSET_T;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}, ts = {:>10.6f}",
-                    name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_,
-                    av_rescale_q(decoded_frame_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
+                DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+                    name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
 
                 if (muted_) {
                     av_samples_set_silence(
@@ -366,9 +392,8 @@ int Decoder::run_f()
     } // while(running_)
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frames = {:>5d}, fps = {:>6.2f}",
-            name_, video_decoder_ctx_->frame_number,
-            (video_decoder_ctx_->frame_number * 1000000.0) / (av_gettime_relative() - first_pts_ - time_offset_));
+        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frames = {:>5d}",
+            name_, video_decoder_ctx_->frame_number);
     }
     LOG(INFO) << fmt::format("[   DECODER] [{:>10}] EXITED", name_);
 
@@ -386,16 +411,15 @@ void Decoder::destroy()
     std::lock_guard lock(mtx_);
 
     running_ = false;
-    paused_ = false;
     ready_ = false;
 
     eof_ = DECODING_EOF;
 
     wait();
 
-    first_pts_ = AV_NOPTS_VALUE;
-    last_pts_ = AV_NOPTS_VALUE;
-    time_offset_ = 0;
+    name_ = {};
+    muted_ = false;
+
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 
@@ -407,9 +431,4 @@ void Decoder::destroy()
     avcodec_free_context(&video_decoder_ctx_);
     avcodec_free_context(&audio_decoder_ctx_);
     avformat_close_input(&fmt_ctx_);
-
-    // clear before starting the decoding stream since the buffers may be not empty here
-    //LOG(INFO) << "[DECODER] VIDEO BUFFER = " << video_buffer_.size();
-    //video_buffer_.clear();
-    //audio_buffer_.clear();
 }
