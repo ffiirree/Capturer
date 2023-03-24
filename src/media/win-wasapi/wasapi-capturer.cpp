@@ -160,6 +160,7 @@ int WasapiCapturer::run_f()
     UINT32 packet_size = 0;
     DWORD flags;
     int frame_number = 0;
+    UINT64 ts = 0;
 
     buffer_.clear();
     AVFrame* frame = av_frame_alloc();
@@ -178,7 +179,7 @@ int WasapiCapturer::run_f()
         while (packet_size != 0)
         {
             // Get the available data in the shared buffer.
-            if (FAILED(capture_client_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, nullptr))) {
+            if (FAILED(capture_client_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
                 running_ = false;
                 LOG(INFO) << "GetBuffer failed";
                 return -1;

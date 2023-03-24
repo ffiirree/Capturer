@@ -93,6 +93,8 @@ void ScreenRecorder::start()
         codec_name_ = Config::instance()["record"]["encoder"];
         filters_ = "";
         options_ = { {"crf", video_qualities_[Config::instance()["record"]["quality"]]} };
+
+        open_audio_sources();
     }
     else {
         pix_fmt_ = AV_PIX_FMT_PAL8;
@@ -102,6 +104,35 @@ void ScreenRecorder::start()
     }
 
     Selector::start();
+}
+
+void ScreenRecorder::open_audio_sources()
+{
+#ifdef __linux__
+    if (!Devices::microphones().empty()) {
+        if (microphone_decoder_ && microphone_decoder_->open(Devices::microphones()[0].toStdString(), "pulse") < 0) {
+            microphone_decoder_->reset();
+            menu_->disable_mic(true);
+        }
+    }
+
+#elif _WIN32
+    if (!Devices::microphones().empty()) {
+        if (microphone_decoder_ && microphone_decoder_->open(DeviceType::DEVICE_MICROPHONE) < 0) {
+            LOG(WARNING) << "open microphone failed";
+            microphone_decoder_->reset();
+            menu_->disable_mic(true);
+        }
+    }
+
+    if (!Devices::speakers().empty()) {
+        if (speaker_decoder_ && speaker_decoder_->open(DeviceType::DEVICE_SPEAKER) < 0) {
+            LOG(WARNING) << "open speaker failed";
+            speaker_decoder_->reset();
+            menu_->disable_speaker(true);
+        }
+    }
+#endif
 }
 
 void ScreenRecorder::setup()
@@ -119,15 +150,9 @@ void ScreenRecorder::setup()
     auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
-#ifdef __linux__
-    if (recording_type_ != GIF && !Devices::microphones().empty()) {
-        if (microphone_decoder_ && microphone_decoder_->open(Devices::microphones()[0].toStdString(), "pulse") < 0) {
-            microphone_decoder_->reset();
-            menu_->disable_mic(true);
-        }
-    }
 
     if (desktop_decoder_->open(
+#ifdef __linux__
         // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
         // echo $DISPLAY
         fmt::format("{}.0+{},{}", getenv("DISPLAY"), selected_area.x(), selected_area.y()),
@@ -136,13 +161,7 @@ void ScreenRecorder::setup()
             {"framerate", std::to_string(framerate_)},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
-    ) < 0) {
-        desktop_decoder_->reset();
-        exit();
-        return;
-    }
 #elif _WIN32
-    if (desktop_decoder_->open(
         "desktop",
         "gdigrab",
         {
@@ -151,39 +170,14 @@ void ScreenRecorder::setup()
             {"offset_y", std::to_string(selected_area.y())},
             {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
         }
+#endif
     ) < 0) {
         desktop_decoder_->reset();
         exit();
         return;
     }
 
-    if (recording_type_ != GIF) {
-        if (!Devices::microphones().empty()) {
-            if (microphone_decoder_->open(DeviceType::DEVICE_MICROPHONE) < 0) {
-                LOG(WARNING) << "open microphone failed";
-                microphone_decoder_->reset();
-                menu_->disable_mic(true);
-            }
-        }
-
-        if (!Devices::speakers().empty()) {
-            if (speaker_decoder_->open(DeviceType::DEVICE_SPEAKER) < 0) {
-                LOG(WARNING) << "open speaker failed";
-                speaker_decoder_->reset();
-                menu_->disable_speaker(true);
-            }
-        }
-        // if (microphone_decoder_->open(
-        //     fmt::format("audio={}", Config::instance()["devices"]["microphones"].get<std::string>()),
-        //     "dshow"
-        // ) < 0) {
-        //     LOG(WARNING) << "open microphone failed";
-        //     microphone_decoder_->reset();
-        //     menu_->disable_mic(true);
-        // }
-    }
-#endif
-
+    // sources
     dispatcher_->append(desktop_decoder_.get());
     if (microphone_decoder_ && microphone_decoder_->ready()) {
         dispatcher_->append(microphone_decoder_.get());
@@ -193,37 +187,15 @@ void ScreenRecorder::setup()
         dispatcher_->append(speaker_decoder_.get());
     }
 
+    // outputs
     encoder_->format(pix_fmt_);
-    encoder_->enable(AVMEDIA_TYPE_AUDIO, (microphone_decoder_ && microphone_decoder_->ready()));
-#ifdef _WIN32
-    encoder_->enable(AVMEDIA_TYPE_AUDIO, (speaker_decoder_ && speaker_decoder_->ready()));
-#endif
     dispatcher_->set_encoder(encoder_.get());
 
+    // prepare
     if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         exit();
         return;
-    }
-    
-    auto v_sink = dispatcher_->find_sink(encoder_.get(), AVMEDIA_TYPE_VIDEO);
-    auto a_sink = dispatcher_->find_sink(encoder_.get(), AVMEDIA_TYPE_AUDIO);
-    if (v_sink == nullptr) {
-        LOG(INFO) << "not found the sink context";
-        exit();
-        return;
-    }
-
-    encoder_->width(av_buffersink_get_w(v_sink));
-    encoder_->height(av_buffersink_get_h(v_sink));
-    encoder_->framerate(av_buffersink_get_frame_rate(v_sink));
-    encoder_->sample_aspect_ratio(av_buffersink_get_sample_aspect_ratio(v_sink));
-    encoder_->v_stream_tb(av_buffersink_get_time_base(v_sink));
-    if (a_sink) {
-        encoder_->channels(av_buffersink_get_channels(a_sink));
-        encoder_->channel_layout(av_buffersink_get_channel_layout(a_sink));
-        encoder_->sample_rate(av_buffersink_get_sample_rate(a_sink));
-        encoder_->a_stream_tb(av_buffersink_get_time_base(a_sink));
     }
 
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
@@ -233,6 +205,7 @@ void ScreenRecorder::setup()
         return;
     }
 
+    // start
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECORDING!! Please exit first.";
         dispatcher_->reset();

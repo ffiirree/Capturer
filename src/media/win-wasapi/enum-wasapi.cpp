@@ -5,10 +5,6 @@
 #include <mmdeviceapi.h>
 #include <propsys.h>
 #include <functiondiscoverykeys.h>
-#include <atomic>
-#include <thread>
-#include <mutex>
-#include <optional>
 #include <Audioclient.h>
 #include "utils.h"
 #include "logging.h"
@@ -18,7 +14,7 @@
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/device-properties
-std::vector<std::pair<QString, QString>> enum_audio_endpoints(bool is_input)
+std::vector<std::pair<std::wstring, std::wstring>> enum_audio_endpoints(bool is_input)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDeviceCollection* collection = nullptr;
@@ -26,7 +22,7 @@ std::vector<std::pair<QString, QString>> enum_audio_endpoints(bool is_input)
     LPWSTR id = nullptr;
     IPropertyStore* props = nullptr;
     UINT count = 0;
-    std::vector<std::pair<QString, QString>> devices;
+    std::vector<std::pair<std::wstring, std::wstring>> devices;
 
     // RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     // defer(CoUninitialize());
@@ -69,16 +65,13 @@ std::vector<std::pair<QString, QString>> enum_audio_endpoints(bool is_input)
         RETURN_NULL_ON_ERROR(props->GetValue(PKEY_Device_FriendlyName, &varName));
 
         // Print endpoint friendly name and endpoint ID.
-        devices.emplace_back(
-            QString::fromStdWString(varName.pwszVal),
-            QString::fromStdWString(id)
-        );
+        devices.emplace_back(varName.pwszVal, id);
     }
 
     return devices;
 }
 
-std::optional<std::pair<QString, QString>> default_audio_endpoint(bool is_input)
+std::optional<std::pair<std::wstring, std::wstring>> default_audio_endpoint(bool is_input)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDeviceCollection* collection = nullptr;
@@ -120,10 +113,7 @@ std::optional<std::pair<QString, QString>> default_audio_endpoint(bool is_input)
     RETURN_NULL_ON_ERROR(props->GetValue(PKEY_Device_FriendlyName, &varName));
 
     // Print endpoint friendly name and endpoint ID.
-    return std::pair{
-        QString::fromStdWString(varName.pwszVal),
-        QString::fromStdWString(id)
-    };
+    return std::pair{ varName.pwszVal,  id };
 }
 
 #endif // _WIN32

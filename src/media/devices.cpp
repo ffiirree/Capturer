@@ -39,7 +39,7 @@ QList<QString> Devices::microphones() {
     pulse_unref();
 #elif _WIN32
     for (const auto& [name, id] : enum_audio_endpoints(true)) {
-        microphones.insert(name);
+        microphones.insert(QString::fromStdWString(name));
     }
 #endif
     return microphones.values();
@@ -58,7 +58,7 @@ QList<QString> Devices::speakers() {
     pulse_unref();
 #elif _WIN32
     for (const auto& [name, id] : enum_audio_endpoints(false)) {
-        speakers.insert(name);
+        speakers.insert(QString::fromStdWString(name));
     }
 #endif
     return speakers.values();

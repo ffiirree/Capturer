@@ -6,7 +6,7 @@
 #include <atomic>
 #include <map>
 
-class AVRational;
+struct AVRational;
 
 template<class T>
 class Producer {

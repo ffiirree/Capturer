@@ -63,25 +63,13 @@ public:
     { 
         switch (type)
         {
-        case AVMEDIA_TYPE_VIDEO: return pix_fmt_;
-        case AVMEDIA_TYPE_AUDIO: return sample_fmt_;
+        case AVMEDIA_TYPE_VIDEO: return vfmt_.format;
+        case AVMEDIA_TYPE_AUDIO: return afmt_.format;
         default: return -1;
         }
     }
 
     bool eof() const override { return eof_ == ENCODING_EOF; }
-
-    void width(int w) { width_ = w; }
-    void height(int h) { height_ = h; }
-    void format(enum AVPixelFormat pix_fmt) { pix_fmt_ = pix_fmt; }
-    void framerate(const AVRational& f) { framerate_ = f; }
-    void sample_aspect_ratio(const AVRational& sar) { sample_aspect_ratio_ = sar; }
-    void v_stream_tb(const AVRational& tb) { v_stream_time_base_ = tb; }
-
-    void channels(int n) { channels_ = n; }
-    void channel_layout(uint64_t cl) { channel_layout_ = cl; }
-    void sample_rate(int sample_rate) { sample_rate_ = sample_rate; }
-    void a_stream_tb(const AVRational& tb) { a_stream_time_base_ = tb; }
 
 private:
     int run_f();
@@ -92,25 +80,6 @@ private:
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
     std::atomic<bool> audio_enabled_{ false };
-
-    // video params @{
-    int width_{ 0 };
-    int height_{ 0 };
-
-    bool is_cfr_{ false };
-    enum AVPixelFormat pix_fmt_ { AV_PIX_FMT_YUV420P };
-    AVRational framerate_{ 24, 1 };
-    AVRational sample_aspect_ratio_{ 1,1 };
-    AVRational v_stream_time_base_{ 1, AV_TIME_BASE };
-    AVRational a_stream_time_base_{ 1, AV_TIME_BASE };
-    //@}
-
-    // audio params @{
-    int sample_rate_{ 44100 };
-    int channels_{ 2 };
-    enum AVSampleFormat sample_fmt_ { AV_SAMPLE_FMT_FLTP };
-    uint64_t channel_layout_{ 0 };
-    //@}
 
     AVFormatContext* fmt_ctx_{ nullptr };
     AVCodecContext* video_encoder_ctx_{ nullptr };

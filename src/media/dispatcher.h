@@ -23,11 +23,11 @@ public:
 
     void append(Producer<AVFrame>* decoder)
     {
-        if (decoder->has(AVMEDIA_TYPE_AUDIO)) {
+        if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
             audio_producers_.emplace_back(decoder);
         }
 
-        if (decoder->has(AVMEDIA_TYPE_VIDEO)) {
+        if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
             video_producers_.emplace_back(decoder);
         }
     }
@@ -52,8 +52,6 @@ public:
 
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
-    AVFilterContext* find_sink(Consumer<AVFrame>*, enum AVMediaType);
-
 private:
     int create_filter_for_input(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
     int create_filter_for_output(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
@@ -64,7 +62,9 @@ private:
     int create_filter_for_audio_input(const Producer<AVFrame>*, AVFilterContext**);
     int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
 
-    int create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type);
+    [[nodiscard]] int create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type);
+
+    int set_encoder_format_by_sinks();
 
     int receive_thread_f();
     int dispatch_thread_f();

@@ -62,6 +62,7 @@ public slots:
     }
 
 private:
+    void open_audio_sources();
     void setup();
 
     void keyPressEvent(QKeyEvent*) override;

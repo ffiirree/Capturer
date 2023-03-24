@@ -90,7 +90,7 @@ private:
     // @}
 
     // WASAPI @{
-    IAudioClient* audio_client_{ nullptr };
+    IAudioClient3* audio_client_{ nullptr };
     IAudioCaptureClient* capture_client_{ nullptr };
     UINT32 buffer_nb_frames_{ 0 };
     // @}

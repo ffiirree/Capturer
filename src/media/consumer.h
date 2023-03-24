@@ -4,6 +4,12 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include "clock.h"
+extern "C" {
+#include <libavutil/rational.h>
+#include <libavutil/pixfmt.h>
+#include <libavutil/samplefmt.h>
+}
 
 template<class T>
 class Consumer {
@@ -44,6 +50,26 @@ public:
     [[nodiscard]] virtual bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
     [[nodiscard]] virtual bool eof() const { return eof_; }
+
+    struct VideoFormat {
+        int width{ 0 };
+        int height{ 0 };
+
+        bool is_cfr{ false };
+        enum AVPixelFormat format { AV_PIX_FMT_YUV420P };
+        AVRational framerate{ 24, 1 };
+        AVRational sample_aspect_ratio{ 1,1 };
+        AVRational time_base{ 1, OS_TIME_BASE };
+    } vfmt_;
+
+    struct AudioFormat {
+        int sample_rate{ 48000 };
+        int channels{ 2 };
+        enum AVSampleFormat format { AV_SAMPLE_FMT_FLTP };
+        uint64_t channel_layout{ 0 };
+
+        AVRational time_base{ 1, OS_TIME_BASE };
+    } afmt_;
 
 protected:
     std::atomic<bool> running_{ false };

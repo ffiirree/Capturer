@@ -39,20 +39,11 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
         return false;
     }
 
-    auto sink = dispatcher_->find_sink(this, AVMEDIA_TYPE_VIDEO);
-    if (sink == nullptr) {
-        LOG(INFO) << "not found the sink filter";
-        return false;
-    }
-
-    int width = av_buffersink_get_w(sink);
-    int height = av_buffersink_get_h(sink);
-
-    if (width > 1440 || height > 810) {
-        resize(QSize(width, height).scaled(1440, 810, Qt::KeepAspectRatio));
+    if (vfmt_.width > 1440 || vfmt_.height > 810) {
+        resize(QSize(vfmt_.width, vfmt_.height).scaled(1440, 810, Qt::KeepAspectRatio));
     }
     else {
-        resize(width, height);
+        resize(vfmt_.width, vfmt_.height);
     }
 
     eof_ = 0x00;

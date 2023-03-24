@@ -16,11 +16,12 @@ int Encoder::open(const std::string& filename,
 {
     std::lock_guard lock(mtx_);
 
-    is_cfr_ = is_cfr;
+    vfmt_.is_cfr = is_cfr;
 
     LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
-        codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den, v_stream_time_base_.num, v_stream_time_base_.den);
-    LOG(INFO) << fmt::format("[   ENCODER] [A] <<< tbn = {}/{}", a_stream_time_base_.num, a_stream_time_base_.den);
+        codec_name, options, is_cfr, vfmt_.width, vfmt_.height, vfmt_.format, 
+        vfmt_.framerate.num, vfmt_.framerate.den, vfmt_.time_base.num, vfmt_.time_base.den);
+    LOG(INFO) << fmt::format("[   ENCODER] [A] <<< tbn = {}/{}", afmt_.time_base.num, afmt_.time_base.den);
 
     // format context
     if (fmt_ctx_) destroy();
@@ -60,14 +61,14 @@ int Encoder::open(const std::string& filename,
         av_dict_set(&encoder_options, "threads", "auto", AV_DICT_DONT_OVERWRITE);
     }
 
-    video_encoder_ctx_->height = height_;
-    video_encoder_ctx_->width = width_;
-    video_encoder_ctx_->pix_fmt = pix_fmt_;
-    video_encoder_ctx_->sample_aspect_ratio = sample_aspect_ratio_;
-    video_encoder_ctx_->framerate = framerate_;
+    video_encoder_ctx_->height = vfmt_.height;
+    video_encoder_ctx_->width = vfmt_.width;
+    video_encoder_ctx_->pix_fmt = vfmt_.format;
+    video_encoder_ctx_->sample_aspect_ratio = vfmt_.sample_aspect_ratio;
+    video_encoder_ctx_->framerate = vfmt_.framerate;
 
-    video_encoder_ctx_->time_base = is_cfr ? av_inv_q(framerate_) : v_stream_time_base_;
-    fmt_ctx_->streams[video_stream_idx_]->time_base = v_stream_time_base_;
+    video_encoder_ctx_->time_base = is_cfr ? av_inv_q(vfmt_.framerate) : vfmt_.time_base;
+    fmt_ctx_->streams[video_stream_idx_]->time_base = vfmt_.time_base;
 
     if (fmt_ctx_->oformat->flags & AVFMT_GLOBALHEADER) {
         video_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -85,7 +86,7 @@ int Encoder::open(const std::string& filename,
 
     if (video_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format("[   ENCODER] [V] [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
-            codec_name, options, is_cfr, width_, height_, pix_fmt_, framerate_.num, framerate_.den,
+            codec_name, options, is_cfr, vfmt_.width, vfmt_.height, vfmt_.format, vfmt_.framerate.num, vfmt_.framerate.den,
             video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
         );
@@ -114,15 +115,15 @@ int Encoder::open(const std::string& filename,
             return -1;
         }
 
-        channel_layout_ = av_get_default_channel_layout(channels_);
+        afmt_.channel_layout = av_get_default_channel_layout(afmt_.channels);
 
-        audio_encoder_ctx_->sample_rate = sample_rate_;
-        audio_encoder_ctx_->channels = channels_;
-        audio_encoder_ctx_->channel_layout = channel_layout_;
-        audio_encoder_ctx_->sample_fmt = sample_fmt_;
+        audio_encoder_ctx_->sample_rate = afmt_.sample_rate;
+        audio_encoder_ctx_->channels = afmt_.channels;
+        audio_encoder_ctx_->channel_layout = afmt_.channel_layout;
+        audio_encoder_ctx_->sample_fmt = afmt_.format;
 
         audio_encoder_ctx_->time_base = { 1, audio_encoder_ctx_->sample_rate };
-        fmt_ctx_->streams[audio_stream_idx_]->time_base = a_stream_time_base_;
+        fmt_ctx_->streams[audio_stream_idx_]->time_base = afmt_.time_base;
 
         if (fmt_ctx_->oformat->flags & AVFMT_GLOBALHEADER) {
             audio_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -284,7 +285,7 @@ int Encoder::process_video_frames()
             return ret;
         }
 
-        av_packet_rescale_ts(packet_, v_stream_time_base_, fmt_ctx_->streams[video_stream_idx_]->time_base);
+        av_packet_rescale_ts(packet_, vfmt_.time_base, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
         if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
             LOG(WARNING) << fmt::format("[    ENCODER] [V] DORP FRAME: dts = {} <= {}", packet_->dts, v_last_dts_);
@@ -390,7 +391,7 @@ int Encoder::process_audio_frames()
                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
             packet_->stream_index = audio_stream_idx_;
-            av_packet_rescale_ts(packet_, a_stream_time_base_, fmt_ctx_->streams[audio_stream_idx_]->time_base);
+            av_packet_rescale_ts(packet_, afmt_.time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
                 LOG(ERROR) << "[   ENCODER] [A] av_interleaved_write_frame";
