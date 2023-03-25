@@ -196,7 +196,6 @@ void ScreenRecorder::setup()
     }
 
     // outputs
-    encoder_->format(pix_fmt_);
     dispatcher_->set_encoder(encoder_.get());
 
     // prepare
@@ -206,6 +205,7 @@ void ScreenRecorder::setup()
         return;
     }
 
+    encoder_->vfmt_.format = pix_fmt_;
     if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();

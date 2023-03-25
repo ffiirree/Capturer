@@ -80,7 +80,10 @@ QString Devices::default_audio_sink()
     }
     return QString::fromStdString(info.default_sink_ + ".monitor");
 #elif _WIN32
-    LOG(FATAL) << "unsupport";
+    auto dft = default_audio_endpoint(false);
+    if (dft.has_value())
+        return QString::fromStdWString(dft.value().first);
+
     return {};
 #endif
 }
@@ -99,7 +102,10 @@ QString Devices::default_audio_source()
     }
     return QString::fromStdString(info.default_source_);
 #elif _WIN32
-    LOG(FATAL) << "unsupport";
+    auto dft = default_audio_endpoint(true);
+    if (dft.has_value())
+        return QString::fromStdWString(dft.value().first);
+        
     return {};
 #endif
 }
