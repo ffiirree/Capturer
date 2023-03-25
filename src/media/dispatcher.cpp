@@ -162,7 +162,8 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
 
     if (!audio_producers_.empty()) {
         if (audio_graph_desc_.empty() && audio_producers_.size() > 1) {
-            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=first:dropout_transition=0", audio_producers_.size());
+            // TODO: the amix may not be closed with duration=longest
+            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=first", audio_producers_.size());
         }
 
         if (create_filter_graph_for(audio_producers_, audio_graph_desc_, AVMEDIA_TYPE_AUDIO) < 0) {
@@ -487,6 +488,7 @@ int Dispatcher::reset()
     for (const auto& [ctx, coder, _] : i_streams_) {
         coder->reset();
 
+        // push nullptr frame to close the buffersrc
         if (running_ && av_buffersrc_add_frame_flags(ctx, nullptr, AV_BUFFERSRC_FLAG_PUSH) < 0) {
             LOG(ERROR) << "failed to close buffersrc";
         }
@@ -495,10 +497,10 @@ int Dispatcher::reset()
     // consumer
     if (consumer_) {
         // wait 0~3s
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 100; i++) {
             if (!consumer_->ready() || consumer_->eof()) break;
 
-            os_sleep(50ms);
+            os_sleep(30ms);
         }
         consumer_->reset();
     }

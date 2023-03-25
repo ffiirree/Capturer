@@ -67,7 +67,16 @@ public:
 private:
     int run_f();
     int destroy();
+
     uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
+
+    void init_format(WAVEFORMATEX*);
+
+    int init_capturer(IMMDevice*);
+    // play a silent to fix silent loopback
+    int init_silent_render(IMMDevice*);
+
+    int process_received_data(BYTE*, UINT32, UINT64);
 
     RingVector<AVFrame*, 32> buffer_{
             []() { return av_frame_alloc(); },
@@ -80,6 +89,9 @@ private:
 
     DeviceType type_{ DeviceType::DEVICE_UNKNOWN };
 
+    AVFrame* frame_{ nullptr };
+    uint32_t frame_number_{ 0 };
+
     // audio params @{
     int sample_rate_{ 44100 };
     int channels_{ 2 };
@@ -89,11 +101,19 @@ private:
     AVRational time_base_{ 1, OS_TIME_BASE };
     // @}
 
-    // WASAPI @{
-    IAudioClient3* audio_client_{ nullptr };
-    IAudioCaptureClient* capture_client_{ nullptr };
-    UINT32 buffer_nb_frames_{ 0 };
+    // WASAPI Capturer@{
+    IAudioClient* capturer_audio_client_{ nullptr };
+    IAudioCaptureClient* capturer_{ nullptr };
     // @}
+
+    // WASAPI Render@{
+    IAudioClient* render_audio_client_{ nullptr };
+    IAudioRenderClient* render_{ nullptr };
+    // @}
+
+    // events
+    HANDLE AUDIO_SAMPLES_READY_EVENT{ nullptr };
+    HANDLE STOP_EVENT{ nullptr };
 };
 #endif // _WIN32
 
