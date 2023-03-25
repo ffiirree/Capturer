@@ -94,12 +94,12 @@ private:
 
     AVAudioFifo* audio_fifo_buffer_{ nullptr };
 
-    RingVector<AVFrame*, 4> video_buffer_{
+    RingVector<AVFrame*, 8> video_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };
 
-    RingVector<AVFrame*, 4> audio_buffer_{
+    RingVector<AVFrame*, 32> audio_buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame** frame) { av_frame_free(frame); }
     };

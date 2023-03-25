@@ -306,7 +306,7 @@ int Dispatcher::start()
         return -1;
     }
 
-    // 
+    //
     start_time_ = os_gettime_ns();
     resumed_pts_ = start_time_;
 

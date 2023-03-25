@@ -10,7 +10,8 @@ static std::mutex pulse_mtx;
 static pa_threaded_mainloop *pulse_loop = nullptr;
 static pa_context *pulse_ctx = nullptr;
 
-static void pulse_context_state_callback(pa_context *ctx, void *userdata) {
+static void pulse_context_state_callback(pa_context *ctx, void *userdata)
+{
     switch (pa_context_get_state(ctx)) {
         // There are just here for reference
         case PA_CONTEXT_UNCONNECTED:
@@ -31,7 +32,8 @@ static void pulse_context_state_callback(pa_context *ctx, void *userdata) {
     pulse_signal(0);
 }
 
-static const char *pulse_source_state_to_string(int state) {
+static const char *pulse_source_state_to_string(int state)
+{
     switch (state) {
         case PA_SOURCE_INVALID_STATE:
         default:
@@ -50,9 +52,12 @@ static const char *pulse_source_state_to_string(int state) {
     }
 }
 
-static void pulse_source_info_callback(pa_context *ctx, const pa_source_info *i, int eol, void *userdata) {
+static void pulse_source_info_callback(pa_context *ctx, const pa_source_info *i, int eol, void *userdata)
+{
     if (eol == 0) {
-        LOG(INFO) << "Audio source: " << i->name << ", " << i->description;
+        LOG(INFO) << fmt::format("Audio source: {} ({}), rate = {}, channels = {}, state = {}",
+                                 i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
+                                 pulse_source_state_to_string(i->state));
         reinterpret_cast<std::vector<PulseInfo> *>(userdata)->emplace_back(
                 i->name,
                 i->description,
@@ -67,9 +72,12 @@ static void pulse_source_info_callback(pa_context *ctx, const pa_source_info *i,
     pulse_signal(0);
 }
 
-static void pulse_sink_info_callback(pa_context *ctx, const pa_sink_info *i, int eol, void *userdata) {
+static void pulse_sink_info_callback(pa_context *ctx, const pa_sink_info *i, int eol, void *userdata)
+{
     if (eol == 0) {
-        LOG(INFO) << "Audio sink: " << i->name << ", " << i->description;
+        LOG(INFO) << fmt::format("Audio sink: {} ({}), rate = {}, channels = {}, state = {}",
+                                 i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
+                                 pulse_source_state_to_string(i->state));
         reinterpret_cast<std::vector<PulseInfo> *>(userdata)->emplace_back(
                 i->name,
                 i->description,
@@ -84,7 +92,23 @@ static void pulse_sink_info_callback(pa_context *ctx, const pa_sink_info *i, int
     pulse_signal(0);
 }
 
-void pulse_init() {
+static void pulse_server_info_callback(pa_context *ctx, const pa_server_info*i, void *userdata)
+{
+    auto info = reinterpret_cast<PulseServerInfo *>(userdata);
+
+    info->name_ = i->server_name;
+    info->version_ = i->server_version;
+    info->default_sink_ = i->default_sink_name;
+    info->default_source_ = i->default_source_name;
+
+    LOG(INFO) << fmt::format("Pulse server: {} ({}), default sink = {}, default source = {}",
+                             info->name_, info->version_, info->default_sink_, info->default_source_);
+
+    pulse_signal(0);
+}
+
+void pulse_init()
+{
     std::lock_guard lock(pulse_mtx);
 
     if (pulse_loop == nullptr) {
@@ -100,11 +124,12 @@ void pulse_init() {
 
         // A context must be connected to a server before any operation can be issued.
         // Calling pa_context_connect() will initiate the connection procedure.
-        pa_context_connect(pulse_ctx, NULL, PA_CONTEXT_NOAUTOSPAWN, NULL);
+        pa_context_connect(pulse_ctx, nullptr, PA_CONTEXT_NOAUTOSPAWN, nullptr);
     }
 }
 
-void pulse_unref() {
+void pulse_unref()
+{
     std::lock_guard lock(pulse_mtx);
 
     pulse_loop_lock();
@@ -126,15 +151,18 @@ void pulse_unref() {
     }
 }
 
-void pulse_loop_lock() {
+void pulse_loop_lock()
+{
     pa_threaded_mainloop_lock(pulse_loop);
 }
 
-void pulse_loop_unlock() {
+void pulse_loop_unlock()
+{
     pa_threaded_mainloop_unlock(pulse_loop);
 }
 
-bool pulse_context_is_ready() {
+bool pulse_context_is_ready()
+{
     pulse_loop_lock();
     defer(pulse_loop_unlock());
 
@@ -149,11 +177,13 @@ bool pulse_context_is_ready() {
     return true;
 }
 
-void pulse_signal(int wait_for_accept) {
+void pulse_signal(int wait_for_accept)
+{
     pa_threaded_mainloop_signal(pulse_loop, wait_for_accept);
 }
 
-std::vector<PulseInfo> pulse_get_source_info_list() {
+std::vector<PulseInfo> pulse_get_source_info_list()
+{
     if (!pulse_context_is_ready()) {
         return {};
     }
@@ -179,7 +209,8 @@ std::vector<PulseInfo> pulse_get_source_info_list() {
     return list;
 }
 
-std::vector<PulseInfo> pulse_get_sink_info_list() {
+std::vector<PulseInfo> pulse_get_sink_info_list()
+{
     if (!pulse_context_is_ready()) {
         return {};
     }
@@ -204,6 +235,30 @@ std::vector<PulseInfo> pulse_get_sink_info_list() {
     pa_operation_unref(op);
 
     return list;
+}
+
+int pulse_get_server_info(PulseServerInfo& info)
+{
+    if (!pulse_context_is_ready()) {
+        return -1;
+    }
+
+    pulse_loop_lock();
+    defer(pulse_loop_unlock());
+
+    auto op = pa_context_get_server_info(
+            pulse_ctx,
+            pulse_server_info_callback,
+            &info);
+    if(!op) {
+        return -1;
+    }
+
+    while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+        pa_threaded_mainloop_wait(pulse_loop);
+    pa_operation_unref(op);
+
+    return 0;
 }
 
 #endif // !__linux__

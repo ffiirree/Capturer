@@ -48,7 +48,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 
     // open input
     if (avformat_open_input(&fmt_ctx_, name.c_str(), input_fmt, &input_options) < 0) {
-        LOG(ERROR) << "[   DECODER] avformat_open_input";
+        LOG(ERROR) << "[   DECODER] failed to open " << name_;
         return -1;
     }
 
@@ -73,6 +73,9 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         LOG(ERROR) << "[   DECODER] not found any stream";
         return -1;
     }
+
+    VIDEO_OFFSET_TIME = video_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[video_stream_idx_]->time_base) - fmt_ctx_->streams[video_stream_idx_]->start_time;
+    AUDIO_OFFSET_TIME = audio_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[audio_stream_idx_]->time_base) - fmt_ctx_->streams[audio_stream_idx_]->start_time;
 
     if (video_stream_idx_ >= 0) {
         // decoder context
@@ -283,16 +286,13 @@ int Decoder::run_f()
     eof_ |= audio_stream_idx_ < 0 ? ADECODING_EOF : 0x00;
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
-    int64_t VIDEO_OFFSET_T = video_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[video_stream_idx_]->time_base) - fmt_ctx_->streams[video_stream_idx_]->start_time;
-    int64_t AUDIO_OFFSET_T = audio_stream_idx_ < 0 ? 0 : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, fmt_ctx_->streams[audio_stream_idx_]->time_base) - fmt_ctx_->streams[audio_stream_idx_]->start_time;
-
     while (running_) {
         if (video_buffer_.full()) {
-            LOG(WARNING) << "[   DECODER] [V] buffer is full, drop a packet";
+            LOG(WARNING) << fmt::format("[   DECODER] [V] [{}] buffer is full, drop a packet", name_);
         }
 
         if (audio_buffer_.full()) {
-            LOG(WARNING) << "[   DECODER] [A] buffer is full, drop a packet";
+            LOG(WARNING) << fmt::format("[   DECODER] [A] [{}] buffer is full, drop a packet", name_);
         }
 
         // read
@@ -332,7 +332,7 @@ int Decoder::run_f()
                     return ret;
                 }
 
-                decoded_frame_->pts += VIDEO_OFFSET_T;
+                decoded_frame_->pts += VIDEO_OFFSET_TIME;
 
                 DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [V] frame = {:>5d}, pts = {:>9d}",
                     name_, video_decoder_ctx_->frame_number, decoded_frame_->pts);
@@ -366,7 +366,7 @@ int Decoder::run_f()
                     return ret;
                 }
 
-                decoded_frame_->pts += AUDIO_OFFSET_T;
+                decoded_frame_->pts += AUDIO_OFFSET_TIME;
 
                 DLOG(INFO) << fmt::format("[   DECODER] [{:>10}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
                     name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
@@ -402,8 +402,9 @@ int Decoder::run_f()
 
 void Decoder::reset()
 {
-    destroy();
     LOG(INFO) << fmt::format("[   DECODER] [{:>10}] RESET", name_);
+
+    destroy();
 }
 
 void Decoder::destroy()

@@ -1,4 +1,6 @@
 #include "devices.h"
+#include "logging.h"
+#include "utils.h"
 #include <QSet>
 
 #ifdef __linux__
@@ -64,3 +66,40 @@ QList<QString> Devices::speakers() {
     return speakers.values();
 }
 
+QString Devices::default_audio_sink()
+{
+#ifdef __linux__
+    PulseServerInfo info;
+
+    pulse_init();
+    defer(pulse_unref());
+
+    if (pulse_get_server_info(info) < 0) {
+        LOG(ERROR) << "failed to get pulse server";
+        return {};
+    }
+    return QString::fromStdString(info.default_sink_ + ".monitor");
+#elif _WIN32
+    LOG(FATAL) << "unsupport";
+    return {};
+#endif
+}
+
+QString Devices::default_audio_source()
+{
+#ifdef __linux__
+    PulseServerInfo info;
+
+    pulse_init();
+    defer(pulse_unref());
+
+    if (pulse_get_server_info(info) < 0) {
+        LOG(ERROR) << "failed to get pulse server";
+        return {};
+    }
+    return QString::fromStdString(info.default_source_);
+#elif _WIN32
+    LOG(FATAL) << "unsupport";
+    return {};
+#endif
+}

@@ -3,6 +3,7 @@
 
 #ifdef __linux__
 
+#include <string>
 extern "C" {
     #include <pulse/pulseaudio.h>
 }
@@ -29,6 +30,14 @@ struct PulseInfo
     bool is_monitor_{false};
 };
 
+struct PulseServerInfo
+{
+    std::string version_;
+    std::string name_;
+    std::string default_sink_;
+    std::string default_source_;
+};
+
 void pulse_init();
 void pulse_unref();
 
@@ -44,6 +53,8 @@ std::vector<PulseInfo> pulse_get_sink_info_list();
 
 void pulse_get_source_info();
 void pulse_get_sink_info();
+
+int pulse_get_server_info(PulseServerInfo& info);
 
 #endif // !__linux__
 

@@ -10,6 +10,9 @@ public:
     static QList<QString> microphones();
 
     static QList<QString> speakers();
+
+    static QString default_audio_sink();
+    static QString default_audio_source();
 };
 
 #endif // DEVICES_H

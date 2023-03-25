@@ -23,11 +23,8 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
 {
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
-#ifdef _WIN32
+
     menu_ = new RecordMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : (RecordMenu::MICROPHONE | RecordMenu::SPEAKER)) | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
-#else
-    menu_ = new RecordMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordMenu::MICROPHONE) | RecordMenu::CAMERA | RecordMenu::PAUSE, this);
-#endif
 
     prevent_transparent_ = true;
 
@@ -47,6 +44,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
         speaker_decoder_ = std::make_unique<WasapiCapturer>();
 #else
         microphone_decoder_ = std::make_unique<Decoder>();
+        speaker_decoder_ = std::make_unique<Decoder>();
 #endif
     }
     encoder_ = std::make_unique<Encoder>();
@@ -93,8 +91,6 @@ void ScreenRecorder::start()
         codec_name_ = Config::instance()["record"]["encoder"];
         filters_ = "";
         options_ = { {"crf", video_qualities_[Config::instance()["record"]["quality"]]} };
-
-        open_audio_sources();
     }
     else {
         pix_fmt_ = AV_PIX_FMT_PAL8;
@@ -110,12 +106,20 @@ void ScreenRecorder::open_audio_sources()
 {
 #ifdef __linux__
     if (!Devices::microphones().empty()) {
-        if (microphone_decoder_ && microphone_decoder_->open(Devices::microphones()[0].toStdString(), "pulse") < 0) {
+        if (microphone_decoder_ && microphone_decoder_->open(Devices::default_audio_source().toStdString(), "pulse", { {"fragment_size", "19200"} }) < 0) {
+            LOG(WARNING) << "open microphone failed";
             microphone_decoder_->reset();
             menu_->disable_mic(true);
         }
     }
 
+    if (!Devices::speakers().empty()) {
+        if (speaker_decoder_ && speaker_decoder_->open(Devices::default_audio_sink().toStdString(), "pulse", { {"fragment_size", "19200"} }) < 0) {
+            LOG(WARNING) << "open speaker failed";
+            speaker_decoder_->reset();
+            menu_->disable_speaker(true);
+        }
+    }
 #elif _WIN32
     if (!Devices::microphones().empty()) {
         if (microphone_decoder_ && microphone_decoder_->open(DeviceType::DEVICE_MICROPHONE) < 0) {
@@ -175,6 +179,10 @@ void ScreenRecorder::setup()
         desktop_decoder_->reset();
         exit();
         return;
+    }
+    
+    if (recording_type_ == VIDEO) {
+        open_audio_sources();
     }
 
     // sources
