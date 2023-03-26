@@ -1,7 +1,7 @@
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
     border-radius: 3px;
-    height: 32px;
+    height: 1.5em;
     padding-left: 10px;
     margin: 1px 0px;
 }
@@ -50,7 +50,7 @@ QComboBox QAbstractItemView::item:checked {
 QLineEdit {
     border: 1px solid #dcdfe6;
     border-radius: 3px;
-    height: 32px;
+    height: 1.5em;
     padding: 0 10px;
     margin: 1px 0px;
     color: #50505f;
@@ -74,7 +74,7 @@ QSpinBox {
     border: 1px solid #dcdfe6;
     border-radius: 3px;
     background-color: white;
-    height: 32px;
+    height: 1.5em;
     padding: 0 10px;
     margin: 1px 0px;
     color: #50505f;
@@ -137,24 +137,28 @@ QSpinBox::down-arrow {
 }
 
 /*///////////////////////////////////////////////////////////////*/
+
 QMenu {
     border-radius: 5px;
-    padding: 5px;
+    padding: 0.5em;
 }
 
 QMenu::icon {
     position: absolute;
-    left: 10px;
+    left: 1em;
 }
 
 QMenu::item {
     background-color: transparent;
     border-radius: 5px;
-    height: 27px;
-    padding-left: 20px;
-    padding-right: 25px;
+
     font-family: "Microsoft YaHei";
-    font-size: 13px;
+    font-size: 9pt;
+
+    height: 2em;
+
+    padding-left: 0.75em;
+    padding-right: 0.75em;
 }
 
 QMenu::item::selected {
@@ -165,15 +169,28 @@ QMenu::separator {
     margin: 3px;
 }
 
+/*///////////////////////////////////////////////////////////////*/
+
+QMenu#tray-menu::item {
+    padding-left: 1.5em;
+    padding-right: 3em;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+
 QLabel#size_info {
     background-color: rgba(0, 0, 0, 200);;
     color: white;
+    font-size: 9pt;
+    font-family: "Microsoft YaHei";
+
+    padding: 0.25em 0.75em 0.25em 0.75em;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QColorDialog QPushButton {
-    height: 25px;
+    height: 2em;
     border-radius: 5px;
-    padding: 0px 15px;
+    padding: 0px 1em;
 }
 

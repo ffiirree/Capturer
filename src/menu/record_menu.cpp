@@ -12,52 +12,52 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     setAttribute(Qt::WA_TranslucentBackground);
 
     window_ = new QWidget(this);
-    window_->setObjectName("Window");
+    window_->setObjectName("menu");
 
     auto *layout_ = new QHBoxLayout();
     layout_->setSpacing(0);
     layout_->setContentsMargins({});
 
     if (buttons & RecordMenu::MICROPHONE) {
-        mic_ = new QCheckBox();
-        mic_->setChecked(mm);
-        mic_->setObjectName("MicrophoneButton");
-        connect(mic_, &QCheckBox::clicked, [this](bool checked) {emit muted(1, checked); });
-        layout_->addWidget(mic_);
+        mic_btn_ = new QCheckBox();
+        mic_btn_->setChecked(mm);
+        mic_btn_->setObjectName("mic-btn");
+        connect(mic_btn_, &QCheckBox::clicked, [this](bool checked) {emit muted(1, checked); });
+        layout_->addWidget(mic_btn_);
     }
 
     if (buttons & RecordMenu::SPEAKER) {
-        speaker_ = new QCheckBox();
-        speaker_->setChecked(sm);
-        speaker_->setObjectName("Speaker");
-        connect(speaker_, &QCheckBox::clicked, [this](bool checked) { emit muted(2, checked); });
-        layout_->addWidget(speaker_);
+        speaker_btn_ = new QCheckBox();
+        speaker_btn_->setChecked(sm);
+        speaker_btn_->setObjectName("speaker-btn");
+        connect(speaker_btn_, &QCheckBox::clicked, [this](bool checked) { emit muted(2, checked); });
+        layout_->addWidget(speaker_btn_);
     }
 
     if (buttons & RecordMenu::CAMERA) {
-        camera_ = new QCheckBox();
-        camera_->setChecked(false);
-        camera_->setObjectName("Camera");
-        connect(camera_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
-        layout_->addWidget(camera_);
+        camera_btn_ = new QCheckBox();
+        camera_btn_->setChecked(false);
+        camera_btn_->setObjectName("camera-btn");
+        connect(camera_btn_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
+        layout_->addWidget(camera_btn_);
     }
 
     time_label_ = new QLabel("--:--:--");
-    time_label_->setFixedSize(85, 40);
+    time_label_->setObjectName("time");
     time_label_->setAlignment(Qt::AlignCenter);
     layout_->addWidget(time_label_);
     
 
     if (buttons & RecordMenu::PAUSE) {
-        pause_ = new QCheckBox();
-        pause_->setObjectName("PauseButton");
-        connect(pause_, &QPushButton::clicked, [this](bool checked) { checked ? emit paused() : emit resumed(); });
-        layout_->addWidget(pause_);
+        pause_btn_ = new QCheckBox();
+        pause_btn_->setObjectName("pause-btn");
+        connect(pause_btn_, &QCheckBox::clicked, [this](bool checked) { checked ? emit paused() : emit resumed(); });
+        layout_->addWidget(pause_btn_);
     }
 
-    close_btn_ = new QPushButton();
-    close_btn_->setObjectName("RecordStopButton");
-    connect(close_btn_, &QPushButton::clicked, [this]() { emit stopped(); close(); });
+    close_btn_ = new QCheckBox();
+    close_btn_->setObjectName("stop-btn");
+    connect(close_btn_, &QCheckBox::clicked, [this]() { emit stopped(); close(); });
     layout_->addWidget(close_btn_);
     
     window_->setLayout(layout_);
@@ -78,7 +78,7 @@ void RecordMenu::time(int64_t time)
 void RecordMenu::start()
 {
     time_label_->setText("00:00:00");
-    if (pause_) pause_->setChecked(false);
+    if (pause_btn_) pause_btn_->setChecked(false);
 
     emit started();
 
@@ -107,37 +107,37 @@ void RecordMenu::mouseReleaseEvent(QMouseEvent* event)
 
 void RecordMenu::mute(int type, bool muted)
 {
-    if (type == 0 && mic_) {
-        mic_->setChecked(muted);
+    if (type == 0 && mic_btn_) {
+        mic_btn_->setChecked(muted);
     }
-    else if (speaker_) {
-        speaker_->setChecked(muted);
+    else if (speaker_btn_) {
+        speaker_btn_->setChecked(muted);
     }
 }
 
 void RecordMenu::camera_checked(bool v)
 {
-    if (camera_) 
-        camera_->setChecked(v);
+    if (camera_btn_)
+        camera_btn_->setChecked(v);
 }
 
 void RecordMenu::disable_cam(bool v) 
 {
-    if (camera_) {
-        camera_->setDisabled(v);
+    if (camera_btn_) {
+        camera_btn_->setDisabled(v);
     }
 }
 
 void RecordMenu::disable_mic(bool v)
 {
-    if (mic_) {
-        mic_->setDisabled(v);
+    if (mic_btn_) {
+        mic_btn_->setDisabled(v);
     }
 }
 
 void RecordMenu::disable_speaker(bool v)
 {
-    if (speaker_) {
-        speaker_->setDisabled(v);
+    if (speaker_btn_) {
+        speaker_btn_->setDisabled(v);
     }
 }

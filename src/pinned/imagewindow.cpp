@@ -476,7 +476,7 @@ void ImageWindow::registerShortcuts()
     connect(new QShortcut(Qt::Key_D, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(1, 0, 0, 0)); });
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { if (!editing_) setGeometry(geometry().adjusted(1, 0, 0, 0)); });
 
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
-    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, canvas_, &Canvas::remove);
 }

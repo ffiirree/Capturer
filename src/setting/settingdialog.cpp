@@ -25,7 +25,7 @@ SettingWindow::SettingWindow(QWidget * parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setMouseTracking(true);
 
-    setFixedSize(850, 600);
+    setMinimumSize(850, 600);
 
     setContentsMargins(20, 20, 20, 20);
 

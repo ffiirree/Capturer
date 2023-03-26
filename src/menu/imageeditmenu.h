@@ -1,6 +1,7 @@
 #ifndef IMAGE_EDIT_MENU_H
 #define IMAGE_EDIT_MENU_H
 
+#include <QCheckBox>
 #include "utils.h"
 #include "stylemenu.h"
 #include "iconbutton.h"
@@ -59,13 +60,13 @@ public slots:
     void paintGraph(Graph graph) { graph_ = graph; btn_menus_[graph].first->setChecked(true); }
 
 private:
-    IconButton* undo_btn_{ nullptr };
-    IconButton* redo_btn_{ nullptr };
+    QCheckBox* undo_btn_{ nullptr };
+    QCheckBox* redo_btn_{ nullptr };
 
     ButtonGroup* group_{ nullptr };
 
     Graph graph_{ Graph::NONE };
-    map<Graph, std::pair<IconButton*, EditMenu*>> btn_menus_; // bind graph with buttons
+    map<Graph, std::pair<QAbstractButton*, EditMenu*>> btn_menus_; // bind graph with buttons
 
     bool sub_menu_show_pos_{ false };
 };

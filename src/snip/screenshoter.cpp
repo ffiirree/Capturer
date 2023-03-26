@@ -272,8 +272,8 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
-    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=](){
         if(history_idx_ < history_.size()) {

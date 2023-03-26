@@ -2,23 +2,49 @@
     <qresource prefix="/icon">
         <file>res/close.png</file>
         <file>res/save.png</file>
-        <file>res/circle.png</file>
-        <file>res/eraser.png</file>
+		<file>res/save-light.png</file>
+		<file>res/save-dark.png</file>
+		<file>res/circle.png</file>
+		<file>res/circle-light.png</file>
+		<file>res/circle-dark.png</file>
+		<file>res/eraser.png</file>
+		<file>res/eraser-light.png</file>
+		<file>res/eraser-dark.png</file>
         <file>res/feather.png</file>
+		<file>res/feather-light.png</file>
+		<file>res/feather-dark.png</file>
         <file>res/text.png</file>
+		<file>res/text-light.png</file>
+		<file>res/text-dark.png</file>
         <file>res/line.png</file>
+		<file>res/line-dark.png</file>
+		<file>res/line-light.png</file>
         <file>res/redo.png</file>
         <file>res/undo.png</file>
+		<file>res/redo-light.png</file>
+		<file>res/undo-light.png</file>
+		<file>res/redo-dark.png</file>
+		<file>res/undo-dark.png</file>
         <file>res/rectangle.png</file>
+		<file>res/rectangle-light.png</file>
+		<file>res/rectangle-dark.png</file>
         <file>res/icon.png</file>
         <file>res/mosaic.png</file>
+		<file>res/mosaic-light.png</file>
+		<file>res/mosaic-dark.png</file>
         <file>res/stop.png</file>
         <file>res/wrong.png</file>
         <file>res/right.png</file>
         <file>res/arrow.png</file>
+		<file>res/arrow-light.png</file>
+		<file>res/arrow-dark.png</file>
         <file>res/fill.png</file>
-        <file>res/pin.png</file>
-        <file>res/rotate.png</file>
+		<file>res/fill-light.png</file>
+		<file>res/fill-dark.png</file>
+		<file>res/pin.png</file>
+		<file>res/pin-light.png</file>
+		<file>res/pin-dark.png</file>
+		<file>res/rotate.png</file>
         <file>res/arrow_down.png</file>
         <file>res/arrow_up.png</file>
         <file>res/arrow_down-light.png</file>

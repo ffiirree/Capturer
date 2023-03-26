@@ -31,12 +31,9 @@ signals:
 protected:
     void moveEvent(QMoveEvent*) override;
 
-    void addButton(CustomButton *);
+    void addButton(CustomButton*);
     void addSeparator();
     void addWidget(QWidget *);
-
-    const int HEIGHT = 35;
-    const int ICON_W = 21;
 
     QColor color_{ Qt::red };
     int width_{ 3 };

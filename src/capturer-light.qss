@@ -50,7 +50,7 @@ QMenu {
 }
 
 QMenu::item::selected {
-    background-color: #efefef;
+    background-color: #e6e6e6;
 }
 
 QMenu::separator {

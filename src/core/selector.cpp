@@ -14,7 +14,8 @@ Selector::Selector(QWidget * parent)
     : QWidget(parent)
 {
     info_ = new QLabel(this);
-    info_->setFixedSize(100, 24);
+    info_->setMinimumHeight(24);
+    info_->setMinimumWidth(100);
     info_->setAlignment(Qt::AlignCenter);
     info_->setObjectName("size_info");
     info_->setVisible(false);
@@ -238,6 +239,7 @@ void Selector::paintEvent(QPaintEvent *)
         if (use_detect_ || status_ > SelectorStatus::NORMAL) {
             // info
             info_->setText(isValid() ? fmt::format("{} x {}", selected().width(), selected().height()).c_str() : "-- x --");
+            info_->adjustSize();
             auto info_y = box_.top() - info_->geometry().height() - 1;
             info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
 

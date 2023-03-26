@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="94"/>
+        <location filename="../src/capturer.cpp" line="95"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="95"/>
+        <location filename="../src/capturer.cpp" line="96"/>
         <source>Record Video</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="96"/>
+        <location filename="../src/capturer.cpp" line="97"/>
         <source>Record GIF</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="98"/>
+        <location filename="../src/capturer.cpp" line="99"/>
         <source>Open Camera</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="100"/>
+        <location filename="../src/capturer.cpp" line="101"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="102"/>
+        <location filename="../src/capturer.cpp" line="103"/>
         <source>Quit</source>
         <translation></translation>
     </message>
@@ -37,42 +37,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="17"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="18"/>
         <source>Rectangle</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="21"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="23"/>
         <source>Ellipse</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="25"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="28"/>
         <source>Arrow</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="30"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
         <source>Line</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="39"/>
         <source>Pencil</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="38"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="44"/>
         <source>Text</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="42"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="49"/>
         <source>Mosaic</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="47"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="55"/>
         <source>Eraser</source>
         <translation></translation>
     </message>

@@ -64,7 +64,7 @@ int WasapiCapturer::open(DeviceType dt)
     IMMDevice* device = nullptr;
     RETURN_ON_ERROR(enumerator->GetDefaultAudioEndpoint(
         is_input ? eCapture : eRender,
-        eConsole, // is_input ? eCommunications : eConsole,
+        is_input ? eCommunications : eConsole,
         &device
     ));
     defer(SAFE_RELEASE(device));

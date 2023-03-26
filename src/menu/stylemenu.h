@@ -2,6 +2,7 @@
 #define CAPTURER_STYLE_MENU_H
 
 #include <QComboBox>
+#include <QCheckBox>
 #include "editmenu.h"
 #include "colorpanel.h"
 #include "linewidthwidget.h"
@@ -61,11 +62,14 @@ public:
 
 private:
     WidthButton* width_btn_{ nullptr };
-    IconButton* fill_btn_{ nullptr };
+    QCheckBox* fill_btn_{ nullptr };
     QComboBox* font_family_{ nullptr };
     QComboBox* font_size_{ nullptr };
     QComboBox* font_style_{ nullptr };
     ColorPanel* color_panel_{ nullptr };
+
+    const int HEIGHT = 35;
+    const int ICON_W = 21;
 };
 
 #endif // !CAPTURER_STYLE_MENU_H

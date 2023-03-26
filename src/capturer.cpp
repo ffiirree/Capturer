@@ -85,6 +85,7 @@ void Capturer::setupSystemTrayIcon()
 {
     // SystemTrayIcon
     auto menu = new QMenu(this);
+    menu->setObjectName("tray-menu");
     menu->setWindowFlag(Qt::FramelessWindowHint);
     menu->setWindowFlag(Qt::NoDropShadowWindowHint);
     menu->setAttribute(Qt::WA_TranslucentBackground);

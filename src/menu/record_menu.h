@@ -2,7 +2,6 @@
 #define RECORD_MENU_H
 
 #include <QWidget>
-#include <QPushButton>
 #include <QCheckBox>
 #include <QLabel>
 
@@ -48,11 +47,12 @@ private:
 private:
     QWidget* window_{ nullptr };
 
-    QPushButton* close_btn_{ nullptr };
-    QCheckBox* mic_{ nullptr };
-    QCheckBox* speaker_{ nullptr };
-    QCheckBox* camera_{ nullptr };
-    QCheckBox* pause_{ nullptr };
+    QCheckBox* mic_btn_{ nullptr };
+    QCheckBox* speaker_btn_{ nullptr };
+    QCheckBox* camera_btn_{ nullptr };
+    QCheckBox* pause_btn_{ nullptr };
+    QCheckBox* close_btn_{ nullptr };
+
     QLabel* time_label_{ nullptr };
 
     QPoint begin_pos_{ 0, 0 };

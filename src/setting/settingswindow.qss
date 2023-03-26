@@ -1,5 +1,5 @@
 #settings-mainwindow QWidget {
-    font-size: 14px;
+    font-size: 10pt;
     font-family: "Microsoft Yahei";
 }
 
@@ -10,9 +10,9 @@ TitleBar {
 
 QLabel#title {
     height: 50px;
-    padding-left； 15px;
+    padding-left: 15px;
 
-    font-size: 24px;
+    font-size: 16pt;
     font-family: "华文新魏";
 }
 
@@ -27,7 +27,7 @@ QTabWidget#firstmenu::tab-bar {
 QTabBar#fristtab::tab {
     margin: 0;
     padding: 0;
-    font-size: 16px;
+    font-size: 11pt;
     font-family: "Microsoft Yahei";
     background-color: transparent;
     margin: 2px 7px;
@@ -44,10 +44,12 @@ ColorDialogButton {
     border-radius: 3px;
     margin: 1px 0px;
 }
+
 #sub-title {
     font-weight: bold;
 }
+
 #copyright-label {
     color: #888888;
-    font-size: 15px;
+    font-size: 12pt;
 }

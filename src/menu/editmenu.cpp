@@ -7,7 +7,6 @@ EditMenu::EditMenu(QWidget *parent)
     : QWidget(parent)
 {
     setCursor(Qt::ArrowCursor);
-    setFixedHeight(HEIGHT);
 
     setAttribute(Qt::WA_ShowWithoutActivating);
     setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
@@ -17,7 +16,7 @@ EditMenu::EditMenu(QWidget *parent)
     layout()->setContentsMargins({});
 }
 
-void EditMenu::addButton(CustomButton * btn)
+void EditMenu::addButton(CustomButton* btn)
 {
     if (Config::instance()["theme"].get<QString>() == "dark") {
         btn->normal(QColor("#e6e6e6"), QColor("#232323"));

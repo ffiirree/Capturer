@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="94"/>
+        <location filename="../src/capturer.cpp" line="95"/>
         <source>Screenshot</source>
         <translation>截图</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="95"/>
+        <location filename="../src/capturer.cpp" line="96"/>
         <source>Record Video</source>
         <translation>录屏</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="96"/>
+        <location filename="../src/capturer.cpp" line="97"/>
         <source>Record GIF</source>
         <translation>录GIF</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="98"/>
+        <location filename="../src/capturer.cpp" line="99"/>
         <source>Open Camera</source>
         <translation>打开摄像头</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="100"/>
+        <location filename="../src/capturer.cpp" line="101"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="102"/>
+        <location filename="../src/capturer.cpp" line="103"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
@@ -37,42 +37,42 @@
 <context>
     <name>ImageEditMenu</name>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="17"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="18"/>
         <source>Rectangle</source>
         <translation>矩形</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="21"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="23"/>
         <source>Ellipse</source>
         <translation>椭圆</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="25"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="28"/>
         <source>Arrow</source>
         <translation>箭头</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="30"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
         <source>Line</source>
         <translation>直线</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="34"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="39"/>
         <source>Pencil</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="38"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="44"/>
         <source>Text</source>
         <translation>文本</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="42"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="49"/>
         <source>Mosaic</source>
         <translation>马赛克</translation>
     </message>
     <message>
-        <location filename="../src/menu/imageeditmenu.cpp" line="47"/>
+        <location filename="../src/menu/imageeditmenu.cpp" line="55"/>
         <source>Eraser</source>
         <translation>橡皮擦</translation>
     </message>
