@@ -20,6 +20,10 @@ QLabel#title {
     background-color: #f5f7fa;
 }
 
+TitleBar QCheckBox#close-btn::indicator {
+    image: url(:/icon/res/close-dark)
+}
+
 /*///////////////////////////////////////////////////////////////*/
 QTabWidget#firstmenu::pane {
     background: #fcfdfe;

@@ -4,7 +4,6 @@
 #include <QCheckBox>
 #include "utils.h"
 #include "stylemenu.h"
-#include "iconbutton.h"
 #include "buttongroup.h"
 
 class ImageEditMenu : public EditMenu

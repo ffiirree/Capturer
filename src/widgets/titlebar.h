@@ -3,7 +3,6 @@
 
 #include <QWidget>
 #include <QLabel>
-#include "iconbutton.h"
 
 class TitleBar : public QWidget {
     Q_OBJECT

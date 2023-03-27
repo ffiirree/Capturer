@@ -1,6 +1,8 @@
 <RCC>
     <qresource prefix="/icon">
         <file>res/close.png</file>
+        <file>res/close-light.png</file>
+        <file>res/close-dark.png</file>
         <file>res/save.png</file>
 		<file>res/save-light.png</file>
 		<file>res/save-dark.png</file>

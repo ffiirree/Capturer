@@ -21,7 +21,7 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
         if (buttons & FILL_BTN) {
             fill_btn_ = new QCheckBox(this);
             fill_btn_->setObjectName("fill-btn");
-            connect(fill_btn_, &IconButton::toggled, [this](bool checked) { fill_ = checked; emit changed(); });
+            connect(fill_btn_, &QCheckBox::toggled, [this](bool checked) { fill_ = checked; emit changed(); });
 
             addWidget(fill_btn_);
             group->addButton(fill_btn_);

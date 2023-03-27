@@ -2,9 +2,8 @@
 
 ![image](/capturer.png)
 
-
-`Capturer`是使用`Qt`开发的一款**截图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
-> `录屏`和`录制GIF`依赖于`FFmpeg`，请[安装FFmpeg](#安装FFmpeg).
+`Capturer`是使用`Qt`开发的一款**截图**、**贴图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
+配合快捷键可以快速选择`桌面区域`或`窗口`进行快速截图/录制。
 
 ## 快捷键
 
@@ -90,7 +89,7 @@ git clone https://github.com/ffiirree/Capturer.git --recursive
 git submodule update --init --recursive
 ```
 
-> 本项目开发使用的`Qt`版本为`Qt 5.12.12`, `FFmpeg`版本为4.4.1
+> 本项目开发使用的`Qt`版本为`Qt 5.12.x / 5.15.x`, `FFmpeg`版本为`4.4.x` / `5.1.2`
 
 ### Windows
 

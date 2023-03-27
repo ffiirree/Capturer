@@ -1,5 +1,5 @@
-#ifndef LINE_WIDTH_WIDGET_H
-#define LINE_WIDTH_WIDGET_H
+#ifndef LINE_WIDTH_BUTTON_H
+#define LINE_WIDTH_BUTTON_H
 
 #include "custombutton.h"
 
@@ -46,4 +46,4 @@ private:
     int min_{ 1 };
 };
 
-#endif // LINE_WIDTH_WIDGET_H
+#endif // !LINE_WIDTH_BUTTON_H

@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QPen>
-#include "iconbutton.h"
+#include "custombutton.h"
 
 class EditMenu : public QWidget
 {

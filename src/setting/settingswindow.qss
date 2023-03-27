@@ -16,7 +16,26 @@ QLabel#title {
     font-family: "华文新魏";
 }
 
+TitleBar QCheckBox {
+    spacing: 0px;
+}
+
+TitleBar QCheckBox#close-btn::indicator {
+    font-size: 9pt;
+
+    height: 1.25em;
+    width: 1.25em;
+
+    padding: 0.75em 1.25em 0.75em 1.25em;
+}
+
+TitleBar QCheckBox#close-btn::indicator:hover {
+    background-color: #e81123;
+    image: url(:/icon/res/close-light)
+}
+
 /*///////////////////////////////////////////////////////////////*/
+
 QTabWidget#firstmenu::pane {
     border: none;
 }

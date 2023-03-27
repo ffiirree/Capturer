@@ -1,6 +1,6 @@
-#include "linewidthwidget.h"
 #include <QPainter>
 #include <QWheelEvent>
+#include "linewidthbutton.h"
 
 void WidthButton::wheelEvent(QWheelEvent *event)
 {

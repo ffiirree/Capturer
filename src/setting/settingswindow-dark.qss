@@ -19,7 +19,12 @@ QLabel#title {
     background-color: #202021;
 }
 
+TitleBar QCheckBox#close-btn::indicator {
+    image: url(:/icon/res/close-light)
+}
+
 /*///////////////////////////////////////////////////////////////*/
+
 QTabWidget#firstmenu::pane {
     background: #272728;
 }

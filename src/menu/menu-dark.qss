@@ -63,10 +63,6 @@ EditMenu {
     background-color: #232323;
 }
 
-ImageEditMenu QPushButton {
-    background-color: #232323;
-}
-
 ImageEditMenu QCheckBox::indicator:unchecked:hover {
     background-color: #323232;
 }

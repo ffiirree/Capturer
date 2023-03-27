@@ -140,7 +140,7 @@ QSpinBox::down-arrow {
 
 QMenu {
     border-radius: 5px;
-    padding: 0.5em;
+    padding: 0.35em;
 }
 
 QMenu::icon {
@@ -179,7 +179,7 @@ QMenu#tray-menu::item {
 /*///////////////////////////////////////////////////////////////*/
 
 QLabel#size_info {
-    background-color: rgba(0, 0, 0, 200);;
+    background-color: rgba(0, 0, 0, 200);
     color: white;
     font-size: 9pt;
     font-family: "Microsoft YaHei";

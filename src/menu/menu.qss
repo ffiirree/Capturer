@@ -9,9 +9,11 @@ RecordMenu QCheckBox {
 }
 
 RecordMenu QCheckBox::indicator {
-    height: 1.5em;
-    width: 1.5em;
-    padding: 0.75em;
+    font-size: 9pt;
+
+    height: 1.35em;
+    width: 1.35em;
+    padding: 0.6em;
     border-radius: 5px;
 }
 
@@ -29,19 +31,15 @@ RecordMenu QCheckBox#stop-btn::indicator {
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
-ImageEditMenu QPushButton {
-    width: 35px;
-    height: 35px;
-    border: none;
-}
-
 ImageEditMenu QCheckBox {
     spacing: 0px;
 }
 
 ImageEditMenu QCheckBox::indicator {
-    height: 1.75em;
-    width: 1.75em;
+    font-size: 9pt;
+    
+    height: 1.5em;
+    width: 1.5em;
     padding: 0.5em;
 }
 
@@ -102,8 +100,10 @@ StyleMenu QCheckBox {
 }
 
 StyleMenu QCheckBox::indicator {
-    height: 1.75em;
-    width: 1.75em;
+    font-size: 9pt;
+
+    height: 1.5em;
+    width: 1.5em;
     padding: 0.5em;
 }
 
@@ -112,5 +112,6 @@ StyleMenu QCheckBox#fill-btn::indicator:checked {
 }
 
 StyleMenu ColorPanel {
-    min-height: 2.75em;
+    font-size: 9pt;
+    min-height: 2.45em;
 }
