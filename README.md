@@ -3,7 +3,24 @@
 ![image](/capturer.png)
 
 `Capturer`是使用`Qt`开发的一款**截图**、**贴图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
-配合快捷键可以快速选择`桌面区域`或`窗口`进行快速截图/录制。
+配合快捷键可以快速选择`桌面区域`或`窗口`进行快速截图/录制，并将截图快速钉在桌面上，你也可以将剪切板中的文字、图片等以图片形式钉在桌面上。
+
+## 下载 & 安装
+
+从 [Releases](https://github.com/ffiirree/Capturer/releases) 下载系统对应的版本。
+
+### Windows
+
+下载后解压，双击 `capturer.exe` 运行，并用快捷键进行后续使用。
+
+### Ubuntu
+
+下载后安装并运行：
+
+```bash
+sudo dpkg -i capturer-1.4.1-ubuntu_xx.04-amd64.deb
+sudo apt install -f
+```
 
 ## 快捷键
 
@@ -99,23 +116,26 @@ git submodule update --init --recursive
 
 #### 编译
 
-使用`Visual Studio 2022`打开(CMake工程)编译 或 直接使用命令编译
+- 方法一. 使用`Visual Studio 2022`打开(CMake工程)编译；
+- 方法二. 使用命令编译：
 
 ```bash
 cd Capturer
+
 mdkir build
 cd build
+
 cmake -A x64 .. -DCMAKE_INSTALL_PREFIX=D:\\"Program Files (x86)"\\Capturer
 cmake --build . --config Release --target install
 ```
 
-### Linux (Ubuntu 20.04)
+### Linux (Ubuntu)
 
 ```bash
-sudo apt install build-essential gcc g++ cmake 
+sudo apt install build-essential cmake
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
-# Ubuntu 20.04 
+# Ubuntu 18.04 / 20.04 
 sudo apt install qt5-default  
 # Ubuntu 22.04
 sudo apt install qtbase5-dev
@@ -127,14 +147,37 @@ sudo apt install libpulse-dev
 
 # v4l2
 sudo apt install libv4l-dev v4l-utils
+```
 
+```bash
 cd Capturer
+
 mkdir build && cd build
+
+# Ubuntu 18.4 上的CMake 版本过低，请先安装更高版本的CMake, 参见下一小节
 cmake ..
 make -j8
 
 # package 'xx.deb'
 make package
+```
+
+### Install CMake from Source
+
+> 如果你的CMake版本过低，从源代码安装CMake
+> 
+> 以CMake 3.26.1 为例
+
+```bash
+wget https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1.tar.gz
+tar -zxvf cmake-3.26.1.tar.gz
+cd cmake-3.26.1
+
+sudo apt install libssl-dev
+
+./bootstrap
+make -j8
+sudo make install
 ```
 
 ## FFmpeg代码示例

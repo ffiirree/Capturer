@@ -10,9 +10,9 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 endif()
 
-########################################################################################################################
+# #######################################################################################################################
 # dependencies
-########################################################################################################################
+# #######################################################################################################################
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
 
 # 3rdparty: QHotkey glog
@@ -33,7 +33,7 @@ find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRE
 if(WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE ON)
-    
+
     # Windows API
     add_definitions(-DUNICODE -DNOMINMAX)
 elseif(UNIX AND NOT APPLE)
@@ -42,9 +42,9 @@ elseif(UNIX AND NOT APPLE)
     find_package(Libv4l2 REQUIRED)
 endif()
 
-########################################################################################################################
+# #######################################################################################################################
 # Create the executable
-########################################################################################################################
+# #######################################################################################################################
 configure_file(src/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
@@ -53,76 +53,109 @@ set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
 qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
 
 add_executable(${PROJECT_NAME}
-        ${SOURCES}
-        src/capturer.qrc
-        ${QM_FILES}
-        $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
+    ${SOURCES}
+    src/capturer.qrc
+    ${QM_FILES}
+    $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        QHotkey::QHotkey 
-        Qt5::Widgets Qt5::Gui
-        glog::glog
-        fmt::fmt
-        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
-        $<$<PLATFORM_ID:Windows>:dwmapi>
-        $<$<PLATFORM_ID:Windows>:strmiids>
-        $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
-        $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
-        $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
+    QHotkey::QHotkey
+    Qt5::Widgets Qt5::Gui
+    glog::glog
+    fmt::fmt
+    FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
+    $<$<PLATFORM_ID:Windows>:dwmapi>
+    $<$<PLATFORM_ID:Windows>:strmiids>
+    $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+    $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
+    $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
-        3rdparty
-        src/core
-        src/media
-        src/widgets
-        src/menu
-        src/pinned
-        src/snip
-        src/record
-        src/setting
-        ${PULSEAUDIO_INCLUDE_DIR}
-        ${PROJECT_BINARY_DIR} # Generated header files
+    3rdparty
+    src/core
+    src/media
+    src/widgets
+    src/menu
+    src/pinned
+    src/snip
+    src/record
+    src/setting
+    ${PULSEAUDIO_INCLUDE_DIR}
+    ${PROJECT_BINARY_DIR} # Generated header files
 )
 
-########################################################################################################################
+# #######################################################################################################################
 # Install
-########################################################################################################################
-
+# #######################################################################################################################
 message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 
 # Binaries
 if(WIN32)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
-else(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE)
     install(TARGETS ${PROJECT_NAME} DESTINATION bin)
     install(FILES ${QM_FILES} DESTINATION "/etc/capturer/translations")
 endif()
 
-########################################################################################################################
+# #######################################################################################################################
 # Create DEB
-########################################################################################################################
+# #######################################################################################################################
+if(UNIX)
+    set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 
-# Tell CPack to generate a .deb package
-set(CPACK_GENERATOR "DEB")
+    # Set a Package Version
+    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 
-# Set a Package Version
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+    set(CPACK_PACKAGE_DESCRIPTION "Screen snipping and recording")
 
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "ffmpeg")
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
 
-# Set a Package Maintainer.
-# This is required
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liangqi Zhang(zhliangqi@gmail.com)")
+    # Tell CPack to generate a .deb package
+    set(CPACK_GENERATOR "DEB")
 
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Capturer")
-set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Screenshots and recording screens.")
+    # Set a Package Maintainer.
+    # This is required
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liangqi Zhang(zhliangqi@gmail.com)")
 
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
 
-include(CPack)
+    if(EXISTS "/etc/lsb-release")
+        file(STRINGS "/etc/lsb-release" SYSTEM_NAME)
+        execute_process(
+            COMMAND echo "${SYSTEM_NAME}"
+            COMMAND cut -d ";" -f 1
+            COMMAND cut -d "=" -f 2
+            OUTPUT_VARIABLE HOST_SYSTEM_NAME
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND echo "${SYSTEM_NAME}"
+            COMMAND cut -d ";" -f 2
+            COMMAND cut -d "=" -f 2
+            OUTPUT_VARIABLE HOST_SYSTEM_VER
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        if(${HOST_SYSTEM_NAME} MATCHES "Ubuntu")
+            string(CONCAT HOST_SYSTEM_VER "ubuntu_" ${HOST_SYSTEM_VER})
+
+            # the ubuntu need to modify the architecture name
+            if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+                set(CMAKE_HOST_SYSTEM_PROCESSOR "amd64")
+            endif()
+        endif()
+
+        set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${HOST_SYSTEM_VER}-${CMAKE_HOST_SYSTEM_PROCESSOR})
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${CMAKE_HOST_SYSTEM_PROCESSOR})
+    else()
+        set(HOST_SYSTEM_VER "Unknown")
+    endif()
+
+    include(CPack)
+endif()
