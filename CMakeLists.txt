@@ -68,6 +68,7 @@ target_link_libraries(${PROJECT_NAME}
     FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
     $<$<PLATFORM_ID:Windows>:dwmapi>
     $<$<PLATFORM_ID:Windows>:strmiids>
+    $<$<PLATFORM_ID:Windows>:ntdll>
     $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
     $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
     $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
