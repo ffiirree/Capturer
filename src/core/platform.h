@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <optional>
 
 #ifdef _WIN32
@@ -123,6 +124,30 @@ namespace platform {
         };
 
         gpu_info_t info();
+    }
+
+    namespace display {
+        struct geometry_t
+        {
+            int32_t x;
+            int32_t y;
+            uint32_t width;
+            uint32_t height;
+        };
+
+        struct display_t
+        {
+            std::string name;
+            std::string id;
+            geometry_t geometry;
+            uint32_t bpp;
+            uint32_t frequency;     // Hz
+            uint32_t dpi;
+        };
+
+        std::vector<display_t> displays();
+
+        geometry_t virtual_screen_geometry();
     }
 }
 

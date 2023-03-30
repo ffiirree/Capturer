@@ -41,7 +41,6 @@ static std::vector<std::pair<std::wstring, std::wstring>> DisplayDeviceInformati
         }
         if (SUCCEEDED(hr))
         {
-            printf("FriendlyName: %S\n", var.bstrVal);
             name = var.bstrVal;
             VariantClear(&var);
         }
@@ -52,7 +51,6 @@ static std::vector<std::pair<std::wstring, std::wstring>> DisplayDeviceInformati
         hr = pPropBag->Read(L"WaveInID", &var, 0);
         if (SUCCEEDED(hr))
         {
-            printf("WaveIn ID: %d\n", var.lVal);
             id = std::to_wstring(var.lVal);
             VariantClear(&var);
         }
@@ -61,7 +59,6 @@ static std::vector<std::pair<std::wstring, std::wstring>> DisplayDeviceInformati
         if (SUCCEEDED(hr))
         {
             // The device path is not intended for display.
-            printf("Device path: %S\n", var.bstrVal);
             id = var.bstrVal;
             VariantClear(&var);
         }

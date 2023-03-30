@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     LOG(INFO) << "Application Dir: " << QCoreApplication::applicationDirPath();
 
     // displays
-    DisplayInfo::instance();
+    LOG(INFO) << "VIRTUAL SCREEN: " << DisplayInfo::virutal_geometry();
 
     LOAD_QSS(qApp,
         {

@@ -40,7 +40,7 @@ public slots:
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
     void showRegion() { info_->hide(); mask_hidded_ = true; repaint(); }
-    void resetSelected() { box_.reset({ 0, 0, use_detect_ ? DisplayInfo::maxSize().width() : 0, use_detect_ ? DisplayInfo::maxSize().height() : 0 }); }
+    void resetSelected() { box_.reset(use_detect_ ? DisplayInfo::virutal_geometry() : QRect{}); }
 
     // hiding
     void hide() { info_->hide(); resetSelected(); repaint();  QWidget::hide(); }

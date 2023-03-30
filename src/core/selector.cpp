@@ -23,9 +23,6 @@ Selector::Selector(QWidget * parent)
     setAttribute(Qt::WA_TranslucentBackground);
 
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint);
-    setFixedSize(DisplayInfo::maxSize());
-
-    connect(&DisplayInfo::instance(), &DisplayInfo::changed, [this](){ setFixedSize(DisplayInfo::maxSize()); });
 
     connect(this, SIGNAL(moved()), this, SLOT(update()));
     connect(this, SIGNAL(resized()), this, SLOT(update()));
@@ -45,6 +42,7 @@ void Selector::start()
             info_->show();
         }
 
+        setGeometry(DisplayInfo::virutal_geometry());
         show();
         activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     }
@@ -61,7 +59,7 @@ void Selector::exit()
 
 void Selector::mousePressEvent(QMouseEvent *event)
 {
-    auto pos = event->pos();
+    auto pos = event->globalPos();
 
     if(event->button() == Qt::LeftButton && status_ != SelectorStatus::LOCKED) {
         cursor_pos_ = box_.absolutePos(pos);
@@ -93,7 +91,7 @@ void Selector::mousePressEvent(QMouseEvent *event)
 
 void Selector::mouseMoveEvent(QMouseEvent* event)
 {
-    auto mouse_pos = event->pos();
+    auto mouse_pos = event->globalPos();
 
     switch (status_) {
     case SelectorStatus::NORMAL:
@@ -146,8 +144,19 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
         break;
 
     case SelectorStatus::MOVING:
+    {
         mend_ = mouse_pos;
-        box_.move(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
+
+        auto dx = mend_.x() - mbegin_.x();
+        auto dy = mend_.y() - mbegin_.y();
+
+        dx = std::max(geometry().left() - box_.left(), dx);
+        dx = std::min(geometry().right() - box_.right(), dx);
+
+        dy = std::max(geometry().top() - box_.top(), dy);
+        dy = std::min(geometry().bottom() - box_.bottom(), dy);
+
+        box_.move(dx, dy);
         mbegin_ = mouse_pos;
 
         update();
@@ -155,6 +164,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
 
         setCursor(Qt::SizeAllCursor);
         break;
+    }
 
     case SelectorStatus::RESIZING:
         switch (cursor_pos_) {
@@ -223,6 +233,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
 void Selector::paintEvent(QPaintEvent *)
 {
     painter_.begin(this);
+    painter_.translate(-geometry().topLeft()); // (0, 0) at primary screen (0, 0)
     auto srect = selected();
 
     if (!mask_hidded_) {
@@ -230,8 +241,8 @@ void Selector::paintEvent(QPaintEvent *)
 
         painter_.setBrush(mask_color_);
         painter_.setClipping(true);
-        painter_.setClipRegion(QRegion(rect()).subtracted(QRegion(srect)));
-        painter_.drawRect(rect());
+        painter_.setClipRegion(QRegion(geometry()).subtracted(QRegion(srect)));
+        painter_.drawRect(geometry());
         painter_.setClipping(false);
 
         painter_.restore();
@@ -347,7 +358,7 @@ void Selector::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
-            box_.reset(rect());
+            box_.reset(geometry());
             emit resized();
             CAPTURED();
         }

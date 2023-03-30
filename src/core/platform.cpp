@@ -1,4 +1,5 @@
 #include "platform.h"
+#include <limits>
 
 #ifdef  _WIN32
 #include <windows.h>
@@ -53,4 +54,24 @@ platform::cpu::endianness_t platform::cpu::endianness()
         return endianness_t::big;
     else
         return endianness_t::little;
+}
+
+platform::display::geometry_t platform::display::virtual_screen_geometry()
+{
+    int32_t l = std::numeric_limits<int32_t>::max(), t = std::numeric_limits<int32_t>::max();
+    int32_t r = std::numeric_limits<int32_t>::min(), b = std::numeric_limits<int32_t>::min();
+
+    for (auto& display : displays()) {
+        if (l > display.geometry.x) l = display.geometry.x;
+
+        if (t > display.geometry.y) t = display.geometry.y;
+
+        int32_t this_r = display.geometry.x + display.geometry.width - 1;
+        if (r < this_r) r = this_r;
+
+        int32_t this_b = display.geometry.y + display.geometry.height - 1;
+        if (b < this_b) b = this_b;
+    }
+
+    return platform::display::geometry_t{ l, t, static_cast<uint32_t>(r - l + 1), static_cast<uint32_t>(b - t + 1) };
 }

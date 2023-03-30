@@ -46,7 +46,7 @@ void WidgetsDetector::refresh()
 
 std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
-    QRect fullscreen({ 0, 0 }, DisplayInfo::instance().maxSize());
+    QRect fullscreen(DisplayInfo::virutal_geometry());
     auto cpos = QCursor::pos();
 
     // listed in current stacking order, from bottommost (first) to topmost (last).

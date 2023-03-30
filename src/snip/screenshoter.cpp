@@ -139,9 +139,9 @@ void ScreenShoter::moveMenu()
 {
     auto area = selected();
     auto right = area.right() - menu_->width() + 1;
-    if(right < 0) right = 0;
+    if(right < geometry().left()) right = geometry().left();
 
-    if(area.bottom() + (menu_->height() * 2 + 8/*margin*/) < rect().height()) {
+    if(area.bottom() + (menu_->height() * 2 + 8/*margin*/) < geometry().bottom()) {
         menu_->move(right, area.bottom() + 6);
         menu_->setSubMenuShowBelow();
     }
@@ -163,9 +163,9 @@ void ScreenShoter::moveMagnifier()
 
         auto cx = QCursor::pos().x(), cy = QCursor::pos().y();
 
-        int mx = rect().right() - cx > magnifier_->width() ? cx + 10 : cx - magnifier_->width() - 10;
-        int my = rect().bottom() - cy > magnifier_->height() ? cy + 10 : cy - magnifier_->height() - 10;
-        magnifier_->move(mx, my);
+        int mx = (geometry().right() - cx > magnifier_->width()) ? cx + 10 : cx - magnifier_->width() - 10;
+        int my = (geometry().bottom() - cy > magnifier_->height()) ? cy + 10 : cy - magnifier_->height() - 10;
+        magnifier_->move(mx - geometry().left(), my - geometry().top());
     } else if (magnifier_->isVisible()) {
         magnifier_->hide();
     }
@@ -190,7 +190,7 @@ QPixmap ScreenShoter::snip()
     history_.push_back(selected());
     history_idx_ = history_.size() - 1;
 
-    return canvas_->pixmap().copy(selected());
+    return canvas_->pixmap().copy(selected().translated(-DisplayInfo::virutal_geometry().topLeft()));
 }
 
 void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)

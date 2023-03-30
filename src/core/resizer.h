@@ -46,7 +46,7 @@ public:
 
     Resizer(int x1, int y1, int x2, int y2, int resize_border_width = 5)
         : x1_(x1), y1_(y1), x2_(x2), y2_(y2), ADJUST_BORDER_W_(resize_border_width) {
-        range({{0, 0}, DisplayInfo::maxSize()});
+        range(DisplayInfo::virutal_geometry());
     }
 
     Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
@@ -81,9 +81,6 @@ public:
     void ajust(int x1, int y1, int x2, int y2) { x1_ += x1; y1_ += y1; x2_ += x2; y2_ += y2; }
     void move(int x, int y)
     {
-        x = (x < 0) ? std::max(x, -left()) : std::min(x, range_.right() - right());
-        y = (y < 0) ? std::max(y, -top())  : std::min(y, range_.bottom() - bottom());
-
         x1_ += x; x2_ += x; y1_ += y; y2_ += y;
     }
 
