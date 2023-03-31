@@ -4,7 +4,7 @@
 
 namespace platform::gpu
 {
-    gpu_info_t info()
+    std::vector<gpu_info_t> info()
     {
         return {};
     }

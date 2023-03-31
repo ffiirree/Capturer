@@ -66,6 +66,37 @@ namespace platform::linux {
 
 #endif //  _WIN32
 
+platform::vendor_t platform::vendor_cast(uint32_t id)
+{
+    switch (id)
+    {
+    case static_cast<uint32_t>(platform::vendor_t::NVIDIA):
+    case static_cast<uint32_t>(platform::vendor_t::Intel):
+    case static_cast<uint32_t>(platform::vendor_t::Microsoft):
+    case static_cast<uint32_t>(platform::vendor_t::Qualcomm):
+    case static_cast<uint32_t>(platform::vendor_t::AMD):
+    case static_cast<uint32_t>(platform::vendor_t::Apple):
+        return static_cast<vendor_t>(id);
+
+    default: return platform::vendor_t::unknown;
+    }
+}
+
+std::string platform::vendor_get_name(platform::vendor_t vendor)
+{
+    switch (vendor)
+    {
+    case platform::vendor_t::NVIDIA:        return "NVIDIA Corporation";
+    case platform::vendor_t::Intel:         return "Intel Corporation";
+    case platform::vendor_t::Microsoft:     return "Microsoft Corporation";
+    case platform::vendor_t::Qualcomm:      return "Qualcomm Technologies";
+    case platform::vendor_t::AMD:           return "Advanced Micro Devices, Inc.";
+    case platform::vendor_t::Apple:         return "Apple Inc.";
+    case platform::vendor_t::unknown:
+    default:                                return "unknown";
+    }
+}
+
 platform::cpu::endianness_t platform::cpu::endianness()
 {
     const uint16_t test = 0xFF00;

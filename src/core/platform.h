@@ -14,7 +14,8 @@
 
 namespace platform {
 
-    struct version_t {
+    struct version_t 
+    {
         uint32_t major;
         uint32_t minor;
         uint32_t patch;
@@ -33,6 +34,20 @@ namespace platform {
         std::optional<std::string> exec(const char *);
     }
 #endif // _WIN32
+
+    enum class vendor_t
+    {
+        unknown = 0x00,
+        NVIDIA = 0x10de,
+        Intel = 0x8086,
+        Microsoft = 0x1414,
+        Qualcomm = 0x17cb,
+        AMD = 0x1002,
+        Apple = 0x106b,
+    };
+
+    vendor_t vendor_cast(uint32_t);
+    std::string vendor_get_name(vendor_t);
 
     namespace system {
 
@@ -120,14 +135,20 @@ namespace platform {
     namespace gpu {
         struct gpu_info_t
         {
+#ifdef _WIN32
+            std::wstring name;
+#elif __linux__
             std::string name;
-            std::string vendor;
+#endif // _WIN32
 
-            size_t memory_size;
+            vendor_t vendor;
+
+            size_t dedicated_memory;   // B
+            size_t shared_memory;      // B
             size_t frequency;
         };
 
-        gpu_info_t info();
+        std::vector<gpu_info_t> info();
     }
 
     namespace display {

@@ -73,6 +73,7 @@ target_link_libraries(${PROJECT_NAME}
     $<$<PLATFORM_ID:Windows>:dwmapi>
     $<$<PLATFORM_ID:Windows>:strmiids>
     $<$<PLATFORM_ID:Windows>:ntdll>
+    $<$<PLATFORM_ID:Windows>:DXGI>
     $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
     $<$<PLATFORM_ID:Linux>:X11::Xrandr>
     $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
