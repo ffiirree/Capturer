@@ -192,7 +192,7 @@ void Capturer::pin()
                 data,
                 std::make_shared<ImageWindow>(
                     pixmap,
-                    DisplayInfo::screens()[0]->geometry().center() - QPoint{ pixmap.width(), pixmap.height() } / 2
+                    QRect(platform::display::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
                 )
             });
             pin_idx_ = history_.size() - 1;

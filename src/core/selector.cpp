@@ -42,7 +42,7 @@ void Selector::start()
             info_->show();
         }
 
-        setGeometry(DisplayInfo::virtual_geometry());
+        setGeometry(platform::display::virtual_screen_geometry());
         show();
         activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     }

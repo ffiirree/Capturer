@@ -4,9 +4,9 @@
 #include <QTranslator>
 #include "version.h"
 #include "utils.h"
-#include "displayinfo.h"
 #include "capturer.h"
 #include "logging.h"
+#include "platform.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     LOG(INFO) << "Application Dir: " << QCoreApplication::applicationDirPath();
 
     // displays
-    LOG(INFO) << "VIRTUAL SCREEN: " << DisplayInfo::virtual_geometry();
+    LOG(INFO) << "VIRTUAL SCREEN: " << platform::display::virtual_screen_geometry();
 
     LOAD_QSS(qApp,
         {

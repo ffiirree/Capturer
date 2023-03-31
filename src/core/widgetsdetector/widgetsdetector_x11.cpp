@@ -2,7 +2,7 @@
 
 #include "widgetsdetector.h"
 #include <QCursor>
-#include "displayinfo.h"
+#include "platform.h"
 #include <X11/Xlib.h>
 
 std::vector<std::tuple<QString, QRect, uint64_t>> WidgetsDetector::windows_;
@@ -46,7 +46,7 @@ void WidgetsDetector::refresh()
 
 std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
-    QRect fullscreen(DisplayInfo::virtual_geometry());
+    QRect fullscreen(platform::display::virtual_screen_geometry());
     auto cpos = QCursor::pos();
 
     // listed in current stacking order, from bottommost (first) to topmost (last).

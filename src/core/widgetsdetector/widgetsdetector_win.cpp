@@ -5,7 +5,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include "dwmapi.h"
-#include "displayinfo.h"
+#include "platform.h"
 
 std::vector<std::tuple<QString, QRect, uint64_t>> WidgetsDetector::windows_;
 
@@ -44,7 +44,7 @@ void WidgetsDetector::refresh()
 
 std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
-    QRect fullscreen(DisplayInfo::virtual_geometry());
+    QRect fullscreen(platform::display::virtual_screen_geometry());
     auto cpos = QCursor::pos();
 
     for (const auto& [wname, wrect, wid] : windows_) {

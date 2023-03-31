@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <QRect>
 
 #ifdef _WIN32
 
@@ -158,6 +159,8 @@ namespace platform {
             int32_t y;
             uint32_t width;
             uint32_t height;
+
+            operator QRect() { return QRect{ x, y, static_cast<int>(width), static_cast<int>(height) }; }
         };
 
         enum class orientation_t

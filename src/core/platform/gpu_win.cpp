@@ -3,6 +3,7 @@
 #include "platform.h"
 #include <windows.h>
 #include <DXGI.h>
+#include "defer.h"
 
 namespace platform::gpu
 {
@@ -12,6 +13,7 @@ namespace platform::gpu
         if (FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&factory)))) {
             return {};
         }
+        defer(if (factory != nullptr) { factory->Release(); factory = nullptr; });
 
         std::vector<gpu_info_t> cards;
 
@@ -31,6 +33,7 @@ namespace platform::gpu
             });
 
             ++idx;
+            adapter->Release();
         }
         return cards;
     }

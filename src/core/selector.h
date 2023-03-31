@@ -7,7 +7,7 @@
 #include "json.h"
 #include "utils.h"
 #include "resizer.h"
-#include "displayinfo.h"
+#include "platform.h"
 
 #define LOCKED()            do{ status_ = SelectorStatus::LOCKED; emit locked(); } while(0)
 #define CAPTURED()          do{ status_ = SelectorStatus::CAPTURED; emit captured(); update(); } while(0)
@@ -40,7 +40,7 @@ public slots:
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
     void showRegion() { info_->hide(); mask_hidden_ = true; repaint(); }
-    void resetSelected() { box_.reset(use_detect_ ? DisplayInfo::virtual_geometry() : QRect{}); }
+    void resetSelected() { box_.reset(use_detect_ ? platform::display::virtual_screen_geometry() : QRect{}); }
 
     // hiding
     void hide() { info_->hide(); resetSelected(); repaint();  QWidget::hide(); }
