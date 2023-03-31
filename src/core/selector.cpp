@@ -42,7 +42,7 @@ void Selector::start()
             info_->show();
         }
 
-        setGeometry(DisplayInfo::virutal_geometry());
+        setGeometry(DisplayInfo::virtual_geometry());
         show();
         activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     }
@@ -53,7 +53,7 @@ void Selector::exit()
     status_ = SelectorStatus::INITIAL;
     setMouseTracking(false);
 
-    mask_hidded_ = false;
+    mask_hidden_ = false;
     hide();
 }
 
@@ -236,7 +236,7 @@ void Selector::paintEvent(QPaintEvent *)
     painter_.translate(-geometry().topLeft()); // (0, 0) at primary screen (0, 0)
     auto srect = selected();
 
-    if (!mask_hidded_) {
+    if (!mask_hidden_) {
         painter_.save();
 
         painter_.setBrush(mask_color_);

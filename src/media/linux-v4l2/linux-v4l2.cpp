@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include "logging.h"
 #include "linux-v4l2.h"
-#include "utils.h"
+#include "defer.h"
 
 std::vector<V4l2Device> v4l2_device_list()
 {

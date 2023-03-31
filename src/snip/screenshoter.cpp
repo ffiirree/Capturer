@@ -190,7 +190,7 @@ QPixmap ScreenShoter::snip()
     history_.push_back(selected());
     history_idx_ = history_.size() - 1;
 
-    return canvas_->pixmap().copy(selected().translated(-DisplayInfo::virutal_geometry().topLeft()));
+    return canvas_->pixmap().copy(selected().translated(-DisplayInfo::virtual_geometry().topLeft()));
 }
 
 void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)

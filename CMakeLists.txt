@@ -40,6 +40,10 @@ elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
+    find_package(X11 REQUIRED)
+    if(NOT X11_Xrandr_FOUND)
+        message(FATAL_ERROR "Xrandr is required")
+    endif()
 endif()
 
 # #######################################################################################################################
@@ -70,6 +74,7 @@ target_link_libraries(${PROJECT_NAME}
     $<$<PLATFORM_ID:Windows>:strmiids>
     $<$<PLATFORM_ID:Windows>:ntdll>
     $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+    $<$<PLATFORM_ID:Linux>:X11::Xrandr>
     $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
     $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
 )

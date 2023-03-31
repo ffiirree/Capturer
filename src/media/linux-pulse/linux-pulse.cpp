@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 #include <logging.h>
 #include "utils.h"
+#include "defer.h"
 #include "linux-pulse.h"
 
 static std::mutex pulse_mtx;

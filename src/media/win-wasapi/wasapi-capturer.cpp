@@ -3,6 +3,7 @@
 #include "wasapi-capturer.h"
 #include "fmt/format.h"
 #include "utils.h"
+#include "defer.h"
 #include "logging.h"
 
 // REFERENCE_TIME time units per second and per millisecond

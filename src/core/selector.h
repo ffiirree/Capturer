@@ -39,8 +39,8 @@ public slots:
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
-    void showRegion() { info_->hide(); mask_hidded_ = true; repaint(); }
-    void resetSelected() { box_.reset(use_detect_ ? DisplayInfo::virutal_geometry() : QRect{}); }
+    void showRegion() { info_->hide(); mask_hidden_ = true; repaint(); }
+    void resetSelected() { box_.reset(use_detect_ ? DisplayInfo::virtual_geometry() : QRect{}); }
 
     // hiding
     void hide() { info_->hide(); resetSelected(); repaint();  QWidget::hide(); }
@@ -65,7 +65,7 @@ protected:
     void paintEvent(QPaintEvent *) override;
 
     // selected area
-    inline QRect selected() const { return box_.rect(); }
+    [[nodiscard]] inline QRect selected() const { return box_.rect(); }
 
     QPainter painter_;
     SelectorStatus status_ = SelectorStatus::INITIAL;
@@ -77,7 +77,10 @@ protected:
     // selecting
     QPoint sbegin_{ 0,0 };
 
+    // selected area @{
     Resizer box_;
+    // @}
+
     bool prevent_transparent_ = false;
 
 private:
@@ -89,9 +92,9 @@ private:
     QPen pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
     QColor mask_color_{ 0, 0, 0, 100 };
     bool use_detect_{ true };
-    bool mask_hidded_{ false };
+    bool mask_hidden_{ false };
 
     QSize min_size_{ 2, 2 };
 };
 
-#endif //! CAPTURER_SELECTOR_H
+#endif // !SELECTOR_H

@@ -11,6 +11,7 @@ extern "C" {
 #include <libavfilter/buffersrc.h>
 }
 #include "clock.h"
+#include "defer.h"
 
 int Dispatcher::create_filter_for_input(const Producer<AVFrame>* decoder, AVFilterContext** ctx, enum AVMediaType type)
 {

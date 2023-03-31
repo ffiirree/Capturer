@@ -44,7 +44,7 @@ void WidgetsDetector::refresh()
 
 std::tuple<QString, QRect, uint64_t> WidgetsDetector::window()
 {
-    QRect fullscreen(DisplayInfo::virutal_geometry());
+    QRect fullscreen(DisplayInfo::virtual_geometry());
     auto cpos = QCursor::pos();
 
     for (const auto& [wname, wrect, wid] : windows_) {

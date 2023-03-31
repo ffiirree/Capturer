@@ -9,8 +9,32 @@
 
 namespace platform::system
 {
+    static version_t parse_version(const std::string& str)
+    {
+            version_t version{};
+
+            char* marker = const_cast<char*>(&str[0]);
+            version.major = std::strtoul(marker, &marker, 10);
+            version.minor = std::strtoul(marker + 1, &marker, 10);
+            version.patch = std::strtoul(marker + 1, &marker, 10);
+            version.build = std::strtoul(marker + 1, nullptr, 10);
+            return version;
+    }
+
     theme_t theme()
     {
+        const char * de = std::getenv("XDG_CURRENT_DESKTOP");
+        // GNOME
+        if (std::string_view(de).find("GNOME") != std::string::npos) {
+            auto result = platform::linux::exec("gsettings get org.gnome.desktop.interface color-scheme").value_or("");
+            if (result.find("dark") != std::string::npos) {
+                return theme_t::dark;
+            }
+            if (result.find("light") != std::string::npos) {
+                return theme_t::light;
+            }
+        }
+        // TODO : other desktop env
         return theme_t::dark;
     }
 
@@ -26,13 +50,7 @@ namespace platform::system
             return {};
         }
 
-        char* marker         = uts.release;
-        const uint32_t major = std::strtoul(marker, &marker, 10);
-        const uint32_t minor = std::strtoul(marker + 1, &marker, 10);
-        const uint32_t patch = std::strtoul(marker + 1, &marker, 10);
-        const uint32_t build = std::strtoul(marker + 1, nullptr, 10);
-
-        return { major, minor, patch, build };
+        return parse_version(uts.release);
     }
 
     kernel_info_t kernel_info()
@@ -69,17 +87,6 @@ namespace platform::system
     // https://gist.github.com/natefoo/814c5bf936922dad97ff
     version_t os_version()
     {
-        auto parse_version = [](std::string& str) {
-            version_t version{};
-
-            char* marker = &str[0];
-            version.major = std::strtoul(marker, &marker, 10);
-            version.minor = std::strtoul(marker + 1, &marker, 10);
-            version.patch = std::strtoul(marker + 1, &marker, 10);
-            version.build = std::strtoul(marker + 1, nullptr, 10);
-            return version;
-        };
-
         version_t ver{};
         if (file_exists("/etc/os-release")) {
             std::ifstream release("/etc/os-release");

@@ -41,7 +41,28 @@ namespace platform::windows {
 
         return value;
     }
-}
+} // namespace platform::windows
+
+#elif __linux__
+
+namespace platform::linux {
+    std::optional<std::string> exec(const char * cmd)
+    {
+        char buffer[128];
+        std::string result{};
+
+        FILE* pipe = popen(cmd, "r");
+
+        if (!pipe) return std::nullopt;
+
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            result += buffer;
+        }
+
+        pclose(pipe);
+        return result;
+    }    
+} // namespace platform::linux
 
 #endif //  _WIN32
 
@@ -73,5 +94,8 @@ platform::display::geometry_t platform::display::virtual_screen_geometry()
         if (b < this_b) b = this_b;
     }
 
-    return platform::display::geometry_t{ l, t, static_cast<uint32_t>(r - l + 1), static_cast<uint32_t>(b - t + 1) };
+    return platform::display::geometry_t{
+        l, t,
+        static_cast<uint32_t>(r - l + 1), static_cast<uint32_t>(b - t + 1)
+    };
 }

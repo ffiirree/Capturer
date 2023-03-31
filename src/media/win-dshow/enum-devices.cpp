@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 #include "logging.h"
 #include "utils.h"
+#include "defer.h"
 
 #define RETURN_NULL_ON_ERROR(hres) if (FAILED(hres)) { return {}; }
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }

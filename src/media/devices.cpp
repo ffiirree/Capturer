@@ -1,6 +1,7 @@
 #include "devices.h"
 #include "logging.h"
 #include "utils.h"
+#include "defer.h"
 #include <QSet>
 
 #ifdef __linux__

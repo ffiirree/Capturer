@@ -7,6 +7,7 @@
 #include <functiondiscoverykeys.h>
 #include <Audioclient.h>
 #include "utils.h"
+#include "defer.h"
 #include "logging.h"
 
 #define RETURN_NULL_ON_ERROR(hres) if (FAILED(hres)) { return {}; }

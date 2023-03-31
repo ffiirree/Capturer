@@ -8,6 +8,7 @@ extern "C" {
 #include <libavutil/time.h>
 }
 #include "clock.h"
+#include "defer.h"
 
 int Decoder::open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
 {

@@ -11,7 +11,7 @@ public:
     DisplayInfo& operator=(const DisplayInfo&) = delete;
     DisplayInfo(DisplayInfo&&) = delete;
 
-    static QRect virutal_geometry();
+    static QRect virtual_geometry();
 
     static QList<QScreen*> screens();
 };

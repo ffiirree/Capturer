@@ -28,6 +28,10 @@ namespace platform {
         std::optional<DWORD> reg_read_dword(HKEY key, const char*, const char*);
         std::optional<std::string> reg_read_string(HKEY key, const char*, const char*);
     }
+#elif __linux__
+    namespace linux {
+        std::optional<std::string> exec(const char *);
+    }
 #endif // _WIN32
 
     namespace system {
@@ -135,14 +139,35 @@ namespace platform {
             uint32_t height;
         };
 
+        enum class orientation_t
+        {
+            landscape = 0x01,
+            portrait = 0x02,
+
+            rotate_0 = landscape, rotate_90 = portrait, rotate_180 = 0x04, rotate_270=0x08,
+#ifdef _WIN32
+            landscape_flipped = rotate_180,
+            portrait_flipped = rotate_270
+#elif __linux__
+            flipped = 0x10,
+
+            landscape_flipped = flipped,
+            portrait_flipped = rotate_90 | flipped
+#endif
+        };
+
         struct display_t
         {
             std::string name;
             std::string id;
+
             geometry_t geometry;
+            double frequency;           // Hz
+
             uint32_t bpp;
-            uint32_t frequency;     // Hz
-            uint32_t dpi;
+            uint32_t dpi{ 96 };         // logical dot per inch
+            orientation_t orientation{ orientation_t::landscape };
+            bool primary{ false };
         };
 
         std::vector<display_t> displays();

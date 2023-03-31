@@ -54,7 +54,6 @@ namespace platform::display {
             int monitor_idx = 0;
             while (EnumDisplayDevicesA(adapter_name, monitor_idx, &device, 0))
             {
-                // 
                 if (device.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) {
                     DEVMODEA settings{};
                     settings.dmSize = sizeof(DEVMODEA);
@@ -70,8 +69,10 @@ namespace platform::display {
                             settings.dmPelsWidth,
                             settings.dmPelsHeight,
                         },
+                        static_cast<double>(settings.dmDisplayFrequency),
                         settings.dmBitsPerPel,
-                        settings.dmDisplayFrequency
+                        96,             // TODO: 
+                        static_cast<orientation_t>(0x01 << settings.dmDisplayOrientation)
                     });
 
                     ++monitor_idx;

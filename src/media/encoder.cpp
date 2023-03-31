@@ -8,6 +8,7 @@ extern "C" {
 #include <libavutil/time.h>
 }
 #include "clock.h"
+#include "defer.h"
 
 int Encoder::open(const std::string& filename, 
                   const std::string& codec_name,
