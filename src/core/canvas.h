@@ -8,13 +8,13 @@
 #include "command.h"
 #include "circlecursor.h"
 
-#define HIDE_AND_COPY_CMD(CMD)                           \
-        st(                                              \
-            auto pre_cmd = CMD;                          \
-            pre_cmd->visible(false);                     \
-            CMD = make_shared<PaintCommand>(*pre_cmd);   \
-            CMD->previous(pre_cmd);                      \
-            CMD->visible(true);                          \
+#define HIDE_AND_COPY_CMD(CMD)                                  \
+        st(                                                     \
+            auto pre_cmd = CMD;                                 \
+            pre_cmd->visible(false);                            \
+            CMD = std::make_shared<PaintCommand>(*pre_cmd);     \
+            CMD->previous(pre_cmd);                             \
+            CMD->visible(true);                                 \
         )
 
 class Canvas : public QObject
@@ -100,7 +100,7 @@ public slots:
 
 private:
     bool eventFilter(QObject*, QEvent*);
-    void focusOn(shared_ptr<PaintCommand>);
+    void focusOn(std::shared_ptr<PaintCommand>);
 
     void updateHoverPos(const QPoint&);
     QImage mosaic(const QImage&);
@@ -113,9 +113,9 @@ private:
     CommandStack commands_;
     CommandStack redo_stack_;
 
-    shared_ptr<PaintCommand> hover_cmd_{ nullptr };    // hover
-    shared_ptr<PaintCommand> focus_cmd_{ nullptr };    // focus
-    shared_ptr<PaintCommand> copied_cmd_{ nullptr };   // copied
+    std::shared_ptr<PaintCommand> hover_cmd_{ nullptr };    // hover
+    std::shared_ptr<PaintCommand> focus_cmd_{ nullptr };    // focus
+    std::shared_ptr<PaintCommand> copied_cmd_{ nullptr };   // copied
 
     PaintType modified_{ PaintType::UNMODIFIED };
 

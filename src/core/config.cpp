@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QTextStream>
 #include "utils.h"
+#include "platform.h"
 #include "devices.h"
 #include "logging.h"
 
@@ -31,10 +32,10 @@ Config::Config()
     }
 
     // default
-    IF_NULL_SET(settings_["autorun"], true);
-    IF_NULL_SET(settings_["language"], "zh_CN");
-    IF_NULL_SET(settings_["detectwindow"], true);
-    IF_NULL_SET(settings_["theme"], "dark");
+    IF_NULL_SET(settings_["autorun"],                               true);
+    IF_NULL_SET(settings_["language"],                              "zh_CN");
+    IF_NULL_SET(settings_["detectwindow"],                          true);
+    IF_NULL_SET(settings_["theme"],                                 "auto");
 
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   2);
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#409EFF");
@@ -88,4 +89,14 @@ void Config::save()
     out << settings_.dump(4).c_str();
 
     file.close();
+}
+
+QString Config::theme()
+{
+    auto theme = Config::instance()["theme"].get<QString>();
+    if (theme == "auto") {
+        return QString::fromStdString(platform::system::theme_name(platform::system::theme()));
+    }
+
+    return (theme == "dark") ? "dark" : "light";
 }

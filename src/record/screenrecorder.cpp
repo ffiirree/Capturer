@@ -71,7 +71,7 @@ void ScreenRecorder::switchCamera()
     }
 
 #ifdef _WIN32
-    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<string>(), "dshow", "hflip")) {
+    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<std::string>(), "dshow", "hflip")) {
 #elif __linux__
     if (!player_->play(Devices::cameras()[0].toStdString(), "v4l2", "hflip")) {
 #endif

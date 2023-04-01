@@ -14,6 +14,7 @@
 #include "devices.h"
 #include "logging.h"
 #include "version.h"
+#include "media.h"
 #ifdef __linux__
 #include <QTextStream>
 #endif
@@ -92,17 +93,11 @@ void SettingWindow::setupGeneralWidget()
     _1_2->setView(new QListView());
     _1_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _1_2->addItem("English");
-    _1_2->addItem("简体中文");
-    auto language = config["language"].get<QString>();
-    if (language == "en_US") {
-        _1_2->setCurrentIndex(0);
-    }
-    else if (language == "zh_CN") {
-        _1_2->setCurrentIndex(1);
-    }
-    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this](int i){
-        config.set(config["language"], i ? "zh_CN" : "en_US");
+    _1_2->addItem("English", "en_US");
+    _1_2->addItem("简体中文", "zh_CN");
+    _1_2->setCurrentIndex(std::max(0, _1_2->findData(config["language"].get<QString>())));
+    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _1_2](int i){
+        config.set(config["language"], _1_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
     layout->addWidget(_1_2, 1, 1, 1, 2);
@@ -119,17 +114,12 @@ void SettingWindow::setupGeneralWidget()
     _3_2->setView(new QListView());
     _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _3_2->addItem(tr("Dark"));
-    _3_2->addItem(tr("Light"));
-    auto theme = config["theme"].get<QString>();
-    if (theme == "dark") {
-        _3_2->setCurrentIndex(0);
-    }
-    else {
-        _3_2->setCurrentIndex(1);
-    }
-    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this](int i) {
-        config.set(config["theme"], i ? "light" : "dark");
+    _3_2->addItem(tr("Auto"), "auto");
+    _3_2->addItem(tr("Dark"), "dark");
+    _3_2->addItem(tr("Light"), "light");
+    _3_2->setCurrentIndex(std::max(0, _3_2->findData(config["theme"].get<QString>())));
+    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _3_2](int i) {
+        config.set(config["theme"], _3_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
     layout->addWidget(_3_2, 3, 1, 1, 2);
@@ -258,24 +248,30 @@ void SettingWindow::setupRecordWidget()
     _7_2->setView(new QListView());
     _7_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     _7_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _7_2->addItems({ "libx264 [H.264 / AVC / MPEG-4 part 10]", "libx265 [H.265 / HEVC]" });
-    _7_2->setCurrentIndex(config["record"]["encoder"].get<QString>() != "libx265" ? 0 : 1);
-    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
-        config.set(config["record"]["encoder"], s == 0 ? "libx264" : "libx265");
+    _7_2->addItem("Software x264 [H.264 / AVC]", "libx264");
+    _7_2->addItem("Software x265 [H.265 / HEVC]", "libx265");
+    //if (is_support_hwdevice(AV_HWDEVICE_TYPE_CUDA)) {
+    //    _7_2->addItem("Hardware NVENC [H.264 / AVC]", "h264_nvenc");
+    //    _7_2->addItem("Hardware NVENC [H.265 / HEVC]", "hevc_nvenc");
+    //}
+    _7_2->setCurrentIndex(std::max(0, _7_2->findData(config["record"]["encoder"].get<QString>())));
+    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _7_2](int s) {
+        config.set(config["record"]["encoder"], _7_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Encoder")), 9, 1, 1, 1);
     layout->addWidget(_7_2, 9, 2, 1, 2);
 
     auto _8_2 = new QComboBox();
-    auto quality = config["record"]["quality"].get<QString>();
     _8_2->setView(new QListView());
     _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
-    _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
-    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
-        config.set(config["record"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
-        });
+    _8_2->addItem(tr("High"), "high");
+    _8_2->addItem(tr("Medium"), "medium");
+    _8_2->addItem(tr("Low"), "low");
+    _8_2->setCurrentIndex(std::max(0, _8_2->findData(config["record"]["quality"].get<QString>())));
+    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _8_2](int) {
+        config.set(config["record"]["quality"], _8_2->currentData().toString());
+    });
     layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
     layout->addWidget(_8_2, 10, 2, 1, 2);
 
@@ -331,7 +327,7 @@ void SettingWindow::setupGIFWidget()
     _5_2->setChecked(config["gif"]["box"].get<bool>());
     connect(_5_2, &QCheckBox::stateChanged, [this](int state) {
         config.set(config["gif"]["box"], state == Qt::Checked);
-        });
+    });
     layout->addWidget(new QLabel(tr("Show Region")), 5, 1, 1, 1);
     layout->addWidget(_5_2, 5, 2, 1, 2);
 
@@ -351,14 +347,15 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(_7_2, 8, 2, 1, 2);
 
     auto _8_2 = new QComboBox();
-    auto quality = config["gif"]["quality"].get<QString>();
     _8_2->setView(new QListView());
     _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _8_2->addItems({ tr("High"), tr("Medium"), tr("Low") });
-    _8_2->setCurrentIndex(quality == "high" ? 0 : quality == "medium" ? 1 : 2);
-    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s) {
-        config.set(config["gif"]["quality"], s == 0 ? "high" : s == 1 ? "medium" : "low");
+    _8_2->addItem(tr("High"), "high");
+    _8_2->addItem(tr("Medium"), "medium");
+    _8_2->addItem(tr("Low"), "low");
+    _8_2->setCurrentIndex(std::max(0, _8_2->findData(config["gif"]["quality"].get<QString>())));
+    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _8_2](int) {
+        config.set(config["gif"]["quality"], _8_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
     layout->addWidget(_8_2, 9, 2, 1, 2);

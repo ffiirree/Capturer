@@ -5,7 +5,6 @@
 #include <memory>
 #include <utility>
 #include <QFile>
-#include <map>
 
 #ifndef st
 #define st(X) do{X}while(0)
@@ -33,16 +32,8 @@ enum PaintType : uint32_t {
     REPAINT_ALL     = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
 };
 
-using std::string;
-using std::shared_ptr;
-using std::make_shared;
-using std::vector;
-using std::pair;
-using std::make_pair;
-using std::map;
-
 template<typename T>
-inline void LOAD_QSS(T* obj, vector<QString> files)
+inline void LOAD_QSS(T* obj, std::vector<QString> files)
 {
     QString style = "";
     for (auto& qss : files) {

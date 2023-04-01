@@ -90,7 +90,7 @@ void Capturer::setupSystemTrayIcon()
     menu->setWindowFlag(Qt::NoDropShadowWindowHint);
     menu->setAttribute(Qt::WA_TranslucentBackground);
 
-    QString theme = Config::instance()["theme"].get<QString>() == "dark" ? "light" : "dark";
+    QString theme = (Config::theme() == "dark") ? "light" : "dark";
 
     menu->addAction(QIcon(":/icon/res/screenshot-" + theme), tr("Screenshot"), sniper_, &ScreenShoter::start);
     menu->addAction(QIcon(":/icon/res/capture-" + theme),    tr("Record Video"), recorder_, &ScreenRecorder::record);

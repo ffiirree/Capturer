@@ -37,11 +37,11 @@ int main(int argc, char *argv[])
     LOAD_QSS(qApp,
         {
             ":/qss/capturer.qss",
-            ":/qss/capturer-" + Config::instance()["theme"].get<QString>() + ".qss",
+            ":/qss/capturer-" + Config::theme() + ".qss",
             ":/qss/menu/menu.qss",
-            ":/qss/menu/menu-" + Config::instance()["theme"].get<QString>() + ".qss",
+            ":/qss/menu/menu-" + Config::theme() + ".qss",
             ":/qss/setting/settingswindow.qss",
-            ":/qss/setting/settingswindow-" + Config::instance()["theme"].get<QString>() + ".qss"
+            ":/qss/setting/settingswindow-" + Config::theme() + ".qss"
         }
     );
 

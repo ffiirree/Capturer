@@ -72,7 +72,8 @@ namespace platform::display {
                         static_cast<double>(settings.dmDisplayFrequency),
                         settings.dmBitsPerPel,
                         96,             // TODO: 
-                        static_cast<orientation_t>(0x01 << settings.dmDisplayOrientation)
+                        static_cast<orientation_t>(0x01 << settings.dmDisplayOrientation),
+                        (settings.dmPosition.x == 0) && (settings.dmPosition.y == 0)
                     });
 
                     ++monitor_idx;

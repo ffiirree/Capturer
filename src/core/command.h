@@ -82,8 +82,8 @@ public:
     }
     [[nodiscard]] bool visible() const { return visible_; }
 
-    void previous(shared_ptr<PaintCommand> pre) { pre_ = std::move(pre); }
-    [[nodiscard]] shared_ptr<PaintCommand> previous() const { return pre_; }
+    void previous(std::shared_ptr<PaintCommand> pre) { pre_ = std::move(pre); }
+    [[nodiscard]] std::shared_ptr<PaintCommand> previous() const { return pre_; }
 
     [[nodiscard]] bool adjusted() const { return adjusted_; }
 signals:
@@ -101,12 +101,12 @@ private:
     bool is_fill_{ false };
     QVector<QPoint> points_;
     QVector<QPoint> points_buff_;
-    shared_ptr<TextEdit> widget_{ nullptr };
+    std::shared_ptr<TextEdit> widget_{ nullptr };
 
     Resizer resizer_{};
 
     bool visible_{ true };
-    shared_ptr<PaintCommand> pre_{ nullptr };
+    std::shared_ptr<PaintCommand> pre_{ nullptr };
 
     bool adjusted_ = false;
     QPoint offset_{ 0,0 };
@@ -132,7 +132,7 @@ public:
         return *this;
     }
 
-    inline void push(const shared_ptr<PaintCommand>& command)
+    inline void push(const std::shared_ptr<PaintCommand>& command)
     {
         if(stack_.empty())
             emit emptied(false);
@@ -156,7 +156,7 @@ public:
         emit decreased();
     }
 
-    inline void remove(const shared_ptr<PaintCommand>& cmd)
+    inline void remove(const std::shared_ptr<PaintCommand>& cmd)
     {
         stack_.erase(std::remove(stack_.begin(), stack_.end(), cmd), stack_.end());
 
@@ -170,9 +170,9 @@ public:
 
     [[nodiscard]] inline size_t size() const { return stack_.size(); }
 
-    [[nodiscard]] inline shared_ptr<PaintCommand> back() const { return stack_.back(); }
+    [[nodiscard]] inline std::shared_ptr<PaintCommand> back() const { return stack_.back(); }
 
-    [[nodiscard]] inline vector<shared_ptr<PaintCommand>> commands() const { return stack_; }
+    [[nodiscard]] inline std::vector<std::shared_ptr<PaintCommand>> commands() const { return stack_; }
 
     [[nodiscard]] inline bool empty() const { return stack_.empty(); }
 
@@ -199,7 +199,7 @@ public slots:
     }
 
 private:
-    vector<shared_ptr<PaintCommand>> stack_;
+    std::vector<std::shared_ptr<PaintCommand>> stack_;
 };
 
 

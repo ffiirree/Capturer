@@ -23,6 +23,8 @@ public:
 
     QString getFilePath() const { return filepath_; }
 
+    static QString theme();
+
     template <typename T> void set(json& key, T value)
     { 
         key = value; 

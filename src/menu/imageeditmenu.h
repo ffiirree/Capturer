@@ -65,7 +65,7 @@ private:
     ButtonGroup* group_{ nullptr };
 
     Graph graph_{ Graph::NONE };
-    map<Graph, std::pair<QAbstractButton*, EditMenu*>> btn_menus_; // bind graph with buttons
+    std::map<Graph, std::pair<QAbstractButton*, EditMenu*>> btn_menus_; // bind graph with buttons
 
     bool sub_menu_show_pos_{ false };
 };

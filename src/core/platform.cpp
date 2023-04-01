@@ -132,6 +132,11 @@ namespace platform {
         return vendor_t::unknown;
     }
 
+    std::string system::theme_name(system::theme_t t)
+    {
+        return (t == system::theme_t::dark) ? "dark" : "light";
+    }
+
     cpu::endianness_t cpu::endianness()
     {
         const uint16_t test = 0xFF00;

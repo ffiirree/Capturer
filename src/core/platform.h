@@ -98,7 +98,7 @@ namespace platform {
 
         enum class theme_t
         {
-            unknown, dark, light
+            dark, light
         };
 
         struct os_info_t
@@ -116,6 +116,7 @@ namespace platform {
         };
 
         theme_t theme();
+        std::string theme_name(theme_t);
 
         std::string os_name();
         std::string kernel_name();

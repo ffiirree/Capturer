@@ -21,7 +21,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
 
     // 3. movable with a widget
     case Graph::TEXT:
-        widget_ = make_shared<TextEdit>();
+        widget_ = std::make_shared<TextEdit>();
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN }); // padding 5
             modified(PaintType::REPAINT_ALL); 
@@ -53,7 +53,7 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
     resizer_ = other.resizer_;
 
     if(other.widget_ != nullptr) {
-        widget_ = make_shared<TextEdit>();
+        widget_ = std::make_shared<TextEdit>();
 
         widget_->setFont(other.widget_->font());
         widget_->setText(other.widget_->toPlainText());

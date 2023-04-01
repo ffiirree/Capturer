@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QHBoxLayout>
 #include <QTime>
+#include "platform.h"
 
 RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     : QWidget(parent)
@@ -83,7 +84,8 @@ void RecordMenu::start()
     emit started();
 
     show();
-    move(QGuiApplication::screens().back()->geometry().right() - rect().width() - 5, 100);
+    // global position, primary display monitor
+    move(platform::display::displays()[0].geometry.width - width() - 5, 100);
 }
 
 void RecordMenu::mousePressEvent(QMouseEvent* event)

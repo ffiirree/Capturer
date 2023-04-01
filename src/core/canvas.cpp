@@ -114,7 +114,7 @@ bool Canvas::editing()
     return (edit_status_ & GRAPH_MASK) != 0 || commands_.size() || redo_stack_.size();
 } 
 
-void Canvas::focusOn(shared_ptr<PaintCommand> cmd)
+void Canvas::focusOn(std::shared_ptr<PaintCommand> cmd)
 {
     if (focus_cmd_ == cmd) {
         if (focus_cmd_ && focus_cmd_->graph() == TEXT) {
@@ -197,7 +197,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
             pen.setBrush(QBrush(backup_));
         }
 
-        hover_cmd_ = make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos(), global_offset_);
+        hover_cmd_ = std::make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos(), global_offset_);
         edit_status_ |= GRAPH_CREATING;
     }
 
@@ -412,7 +412,7 @@ void Canvas::copy()
 void Canvas::paste()
 {
     if (enabled_ && copied_cmd_) {
-        hover_cmd_ = make_shared<PaintCommand>(*copied_cmd_);
+        hover_cmd_ = std::make_shared<PaintCommand>(*copied_cmd_);
         connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified);
         hover_cmd_->move({ 16, 16 });
 
