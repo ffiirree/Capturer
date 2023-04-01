@@ -252,7 +252,7 @@ void Selector::paintEvent(QPaintEvent *)
             info_->setText(isValid() ? fmt::format("{} x {}", selected().width(), selected().height()).c_str() : "-- x --");
             info_->adjustSize();
             auto info_y = box_.top() - info_->geometry().height() - 1;
-            info_->move(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1));
+            info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) - QRect(platform::display::virtual_screen_geometry()).topLeft());
 
             // draw border
             painter_.setPen(pen_);
@@ -358,7 +358,15 @@ void Selector::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
-            box_.reset(geometry());
+            auto selected = platform::display::virtual_screen_geometry();
+
+            for (auto display : platform::display::displays()) {
+                if (QRect(display.geometry).contains(box_.rect(), true)) {
+                    selected = display.geometry;
+                }
+            }
+
+            box_.reset(selected);
             emit resized();
             CAPTURED();
         }

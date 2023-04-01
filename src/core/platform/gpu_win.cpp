@@ -26,7 +26,7 @@ namespace platform::gpu
 
             cards.emplace_back(gpu_info_t{ 
                 desc.Description, 
-                vendor_cast(desc.VendorId),
+                vendor_cast<vendor_t>(desc.VendorId),
                 desc.DedicatedVideoMemory, 
                 desc.SharedSystemMemory, 
                 0                           // TODO:

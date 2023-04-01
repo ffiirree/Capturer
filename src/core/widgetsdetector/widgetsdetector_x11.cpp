@@ -1,6 +1,7 @@
 #ifdef __linux__
 
 #include "widgetsdetector.h"
+#include <QString>
 #include <QCursor>
 #include "platform.h"
 #include <X11/Xlib.h>

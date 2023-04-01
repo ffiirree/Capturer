@@ -1,9 +1,9 @@
 #ifdef _WIN32
+
 #include "widgetsdetector.h"
 #include <Windows.h>
+#include <QString>
 #include <QCursor>
-#include <QGuiApplication>
-#include <QScreen>
 #include "dwmapi.h"
 #include "platform.h"
 
@@ -59,4 +59,5 @@ QRect WidgetsDetector::window_rect()
 {
     return std::get<1>(window());
 }
-#endif
+
+#endif // _WIN32

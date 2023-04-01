@@ -8,7 +8,17 @@ namespace platform::system
 
     theme_t theme()
     {
-        return theme_t::dark;
+        if (os_version() >= platform::windows::WIN_10_1ST) {
+            if (platform::windows::reg_read_dword(
+                HKEY_CURRENT_USER,
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                "AppsUseLightTheme"
+            ).value_or(1) == 0) {
+                return theme_t::dark;
+            }
+        }
+
+        return theme_t::light;
     }
 
     kernel_info_t kernel_info()

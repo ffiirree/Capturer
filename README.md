@@ -11,11 +11,11 @@
 
 ### Windows
 
-下载后解压，双击 `capturer.exe` 运行，并用快捷键进行后续使用。
+下载后解压，双击 `capturer.exe` 运行。
 
 ### Ubuntu
 
-下载后安装并运行：
+下载后安装：
 
 ```bash
 sudo dpkg -i capturer-1.4.1-ubuntu_xx.04-amd64.deb
@@ -133,20 +133,23 @@ cmake --build . --config Release --target install
 
 ```bash
 sudo apt install build-essential cmake
+
+# ffmpeg: video / audio
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
 # Ubuntu 18.04 / 20.04 
-sudo apt install qt5-default  
+sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 # Ubuntu 22.04
-sudo apt install qtbase5-dev
+sudo apt install qtbase5-dev libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 
-sudo apt install libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
-
-# pulse
+# pulse: audio
 sudo apt install libpulse-dev
 
-# v4l2
+# v4l2: camera
 sudo apt install libv4l-dev v4l-utils
+
+# xrandr: display monitors
+sudo apt install libxrandr-dev
 ```
 
 ```bash
