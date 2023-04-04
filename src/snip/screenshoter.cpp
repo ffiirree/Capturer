@@ -61,9 +61,9 @@ void ScreenShoter::start()
                                                                     virtual_geometry.width(),
                                                                     virtual_geometry.height());
     canvas_->pixmap(captured_screen_);
-    moveMagnifier();
-
     Selector::start();
+
+    moveMagnifier();
 }
 
 void ScreenShoter::exit()

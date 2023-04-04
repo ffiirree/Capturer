@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QScreen>
 #include <QDesktopWidget>
+#include "platform.h"
 
 Magnifier::Magnifier(QWidget *parent)
     :QWidget(parent)
@@ -34,7 +35,7 @@ Magnifier::Magnifier(QWidget *parent)
 
 QRect Magnifier::mrect()
 {
-    auto mouse_pos = QCursor::pos();
+    auto mouse_pos = QCursor::pos() - QRect(platform::display::virtual_screen_geometry()).topLeft();
     return { mouse_pos.x() - msize_.width()/2, mouse_pos.y() - msize_.height()/2, msize_.width(), msize_.height() };
 }
 

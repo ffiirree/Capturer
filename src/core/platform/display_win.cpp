@@ -3,9 +3,35 @@
 #include "platform.h"
 #include "defer.h"
 #include <utility >
+#include <thread>
+#include <ShellScalingApi.h>
 #include "logging.h"
 
 namespace platform::display {
+    static UINT retrieve_dpi_for_monitor(HMONITOR monitor)
+    {
+        UINT dpi = 96;      // default value without scaling
+
+        if (platform::system::kernel_version() >= platform::windows::WIN_10_1607) {
+            // per monitor
+            std::thread dpi_thread([&dpi, monitor]() {
+                ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+                UINT _;
+                ::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi, &_);
+            });
+
+            dpi_thread.join();
+        }
+        else {
+            // system (primary monitor) DPI
+            auto hdc = ::GetDC(nullptr);
+            dpi = ::GetDeviceCaps(hdc, LOGPIXELSX);
+            ::ReleaseDC(nullptr, hdc);
+        }
+
+        return dpi;
+    }
+
     // https://learn.microsoft.com/en-us/windows/win32/gdi/multiple-display-monitors
     // 
     // The bounding rectangle of all the monitors is the `virtual screen`.
@@ -35,34 +61,24 @@ namespace platform::display {
     // When using multiple monitors as independent displays, the desktop contains one display or set of displays.
     std::vector<display_t> displays()
     {
-        std::vector<display_t> _displays{};
+        std::vector<display_t> ret{};
 
-        DWORD           adapter_idx = 0;        // display adapter
-        DISPLAY_DEVICEA device = {};
-        CHAR            adapter_name[33];  // 32 + 1 for the null-terminator 
+        // retrieve all monitors
+        ::EnumDisplayMonitors(nullptr, nullptr, [](auto monitor, auto, auto, auto userdata)->BOOL {
+            auto ret = reinterpret_cast<std::vector<display_t> *>(userdata);
 
-        device.cb = sizeof(DISPLAY_DEVICEA);
+            MONITORINFOEXA info = { sizeof(MONITORINFOEXA) };
+            if (::GetMonitorInfoA(monitor, &info)) {
+                DEVMODEA settings = {};
+                settings.dmSize = sizeof(DEVMODEA);
 
-        // Display Adapter
-        while (EnumDisplayDevicesA(NULL, adapter_idx, &device, 0))
-        {
-            memset(adapter_name, 0, sizeof(adapter_name));
-            memcpy(adapter_name, device.DeviceName, sizeof(device.DeviceName));
-            memset(device.DeviceName, 0, sizeof(device.DeviceName));
-
-            // Display Monitor
-            int monitor_idx = 0;
-            while (EnumDisplayDevicesA(adapter_name, monitor_idx, &device, 0))
-            {
-                if (device.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) {
-                    DEVMODEA settings{};
-                    settings.dmSize = sizeof(DEVMODEA);
-                    if (!EnumDisplaySettingsA(adapter_name, ENUM_CURRENT_SETTINGS, &settings))
-                        LOG(ERROR) << "Store default failed";
-
-                    _displays.push_back({
-                        adapter_name,
-                        device.DeviceID,
+                if (::EnumDisplaySettingsA(info.szDevice, ENUM_CURRENT_SETTINGS, &settings)) {
+                    // https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
+                    // <  Windows 8.1       : GetDeviceCaps(hdc, LOGPIXELSX)
+                    // >= Windows 8.1       : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE), but can lead to unexpected application behavior.
+                    // >= Windows 10, 1607  : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) in an irrelevant thread
+                    ret->push_back(display_t{
+                        info.szDevice,
                         geometry_t{
                             settings.dmPosition.x,
                             settings.dmPosition.y,
@@ -71,19 +87,18 @@ namespace platform::display {
                         },
                         static_cast<double>(settings.dmDisplayFrequency),
                         settings.dmBitsPerPel,
-                        96,             // TODO: 
+                        retrieve_dpi_for_monitor(monitor),
                         static_cast<orientation_t>(0x01 << settings.dmDisplayOrientation),
-                        (settings.dmPosition.x == 0) && (settings.dmPosition.y == 0)
+                        (settings.dmPosition.x == 0) && (settings.dmPosition.y == 0),
+                        static_cast<float>(settings.dmPelsWidth) / (info.rcMonitor.right - info.rcMonitor.left)
                     });
-
-                    ++monitor_idx;
                 }
             }
 
-            ++adapter_idx;
-        } // end while for all display devices
+            return TRUE;
+        }, reinterpret_cast<LPARAM>(&ret));
 
-        return _displays;
+        return ret;
     }
 }
 

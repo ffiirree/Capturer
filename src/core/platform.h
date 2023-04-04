@@ -228,7 +228,6 @@ namespace platform {
         struct display_t
         {
             std::string name;
-            std::string id;
 
             geometry_t geometry;
             double frequency;           // Hz
@@ -237,6 +236,7 @@ namespace platform {
             uint32_t dpi{ 96 };         // logical dot per inch
             orientation_t orientation{ orientation_t::landscape };
             bool primary{ false };
+            double scale;
         };
 
         std::vector<display_t> displays();
