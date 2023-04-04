@@ -2,49 +2,41 @@
 
 #include "platform.h"
 #include "defer.h"
-#include <utility >
-#include <thread>
+#include <utility>
 #include <ShellScalingApi.h>
 #include "logging.h"
 
 namespace platform::display {
+    // https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
+    // <  Windows 8.1       : GetDeviceCaps(hdc, LOGPIXELSX)
+    // >= Windows 8.1       : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE), but can lead to unexpected application behavior.
+    // >= Windows 10, 1607  : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+    //
+    // Just for >= 1607
     static UINT retrieve_dpi_for_monitor(HMONITOR monitor)
     {
-        UINT dpi = 96;      // default value without scaling
+        UINT dpi = 96, _;      // default value without scaling
 
-        if (platform::system::kernel_version() >= platform::windows::WIN_10_1607) {
-            // per monitor
-            std::thread dpi_thread([&dpi, monitor]() {
-                ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-                UINT _;
-                ::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi, &_);
-            });
-
-            dpi_thread.join();
-        }
-        else {
-            // system (primary monitor) DPI
-            auto hdc = ::GetDC(nullptr);
-            dpi = ::GetDeviceCaps(hdc, LOGPIXELSX);
-            ::ReleaseDC(nullptr, hdc);
-        }
+        const auto PRE_DAC = ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        ::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi, &_);
+        ::SetThreadDpiAwarenessContext(PRE_DAC);
 
         return dpi;
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/gdi/multiple-display-monitors
-    // 
+    //
     // The bounding rectangle of all the monitors is the `virtual screen`.
     // The `desktop` covers the virtual screen instead of a single monitor. 
     // The `primary monitor` contains the origin (0,0) for compatibility.
-    // 
+    //
     // Each `physical display` is represented by a monitor handle of type HMONITOR. 
     // A valid HMONITOR is guaranteed to be non-NULL.
     // A physical display has the same HMONITOR as long as it is part of the desktop. 
     // When a WM_DISPLAYCHANGE message is sent, any monitor may be removed from the desktop 
     // and thus its HMONITOR becomes invalid or has its settings changed. 
     // Therefore, an application should check whether all HMONITORS are valid when this message is sent.
-    // 
+    //
     // Any function that returns a display device context(DC) normally returns a DC for the primary monitor.
     // To obtain the DC for another monitor, use the EnumDisplayMonitors function.
     // Or, you can use the device name from the GetMonitorInfo function to create a DC with CreateDC.
@@ -53,7 +45,7 @@ namespace platform::display {
     //
     // To enumerate all the devices on the computer, call the EnumDisplayDevices function. 
     // The information that is returned also indicates which monitor is part of the desktop.
-    // 
+    //
     // To enumerate the devices on the desktop that intersect a clipping region, call EnumDisplayMonitors. 
     // This returns the HMONITOR handle to each monitor, which is used with GetMonitorInfo. 
     // To enumerate all the devices in the virtual screen, use EnumDisplayMonitors.
@@ -63,20 +55,21 @@ namespace platform::display {
     {
         std::vector<display_t> ret{};
 
+        // prevent the GetMonitorInfoA from being affected by the process dpi awareness 
+        auto PRE_DAC = ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
+
         // retrieve all monitors
         ::EnumDisplayMonitors(nullptr, nullptr, [](auto monitor, auto, auto, auto userdata)->BOOL {
             auto ret = reinterpret_cast<std::vector<display_t> *>(userdata);
 
             MONITORINFOEXA info = { sizeof(MONITORINFOEXA) };
             if (::GetMonitorInfoA(monitor, &info)) {
+
                 DEVMODEA settings = {};
                 settings.dmSize = sizeof(DEVMODEA);
 
                 if (::EnumDisplaySettingsA(info.szDevice, ENUM_CURRENT_SETTINGS, &settings)) {
-                    // https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
-                    // <  Windows 8.1       : GetDeviceCaps(hdc, LOGPIXELSX)
-                    // >= Windows 8.1       : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE), but can lead to unexpected application behavior.
-                    // >= Windows 10, 1607  : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) in an irrelevant thread
+
                     ret->push_back(display_t{
                         info.szDevice,
                         geometry_t{
@@ -97,6 +90,8 @@ namespace platform::display {
 
             return TRUE;
         }, reinterpret_cast<LPARAM>(&ret));
+
+        ::SetThreadDpiAwarenessContext(PRE_DAC);
 
         return ret;
     }
