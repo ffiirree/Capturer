@@ -4,6 +4,7 @@
 #include <QObject>
 #include "json.h"
 #include "utils.h"
+#include "platform.h"
 
 #define IF_NULL_SET(X, default_value) st(if(X.is_null())  X = default_value;)
 
@@ -23,7 +24,11 @@ public:
 
     QString getFilePath() const { return filepath_; }
 
-    static QString theme();
+    static std::string theme();
+
+    // use this funtion to set theme
+    void set_theme(const std::string&);
+    static void load_theme(const std::string&);
 
     template <typename T> void set(json& key, T value)
     { 
@@ -39,12 +44,19 @@ public slots:
 
 signals:
     void changed();
+    void SYSTEM_THEME_CHANGED(int);
 
 private:
     Config();
 
+    void monitor_system_theme(bool);
+
     QString filepath_;
     json settings_ = json::parse("{}");
+
+#ifdef _WIN32
+    std::shared_ptr<platform::windows::RegistryMonitor> win_theme_monitor_{ nullptr };
+#endif // _WIN32
 };
 
 

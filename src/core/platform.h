@@ -9,6 +9,9 @@
 
 #ifdef _WIN32
 
+#include <thread>
+#include <atomic>
+#include <functional>
 #include <Windows.h>
 
 #endif
@@ -69,8 +72,29 @@ namespace platform
         inline const version_t WIN_11_21H2{ 10, 0, 22000, 194, "21H2" };
         inline const version_t WIN_11_22H2{ 10, 0, 22621, 521, "22H2" };
 
-        std::optional<DWORD> reg_read_dword(HKEY key, const char*, const char*);
-        std::optional<std::string> reg_read_string(HKEY key, const char*, const char*);
+        std::optional<DWORD> reg_read_dword(HKEY key, const std::string&, const std::string&);
+        std::optional<std::string> reg_read_string(HKEY key, const std::string&, const std::string&);
+
+        class RegistryMonitor {
+        public:
+            RegistryMonitor(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb) { monitor(key, subkey, cb); }
+            ~RegistryMonitor() { stop(); }
+
+            RegistryMonitor(const RegistryMonitor&) = delete;
+            RegistryMonitor& operator= (const RegistryMonitor&) = delete;
+
+            int monitor(HKEY key, const std::string&, std::function<void(HKEY)>);
+            void stop();
+
+        private:
+            HKEY key_;
+            HANDLE STOP_EVENT{ nullptr };
+            HANDLE NOTIFY_EVENT{ nullptr };
+            std::thread thread_;
+            std::atomic<bool> running_{ false };
+        };
+
+        std::shared_ptr<RegistryMonitor> monitor_regkey(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb);
     }
 #elif __linux__
     namespace linux {

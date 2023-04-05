@@ -1,6 +1,5 @@
 #include <QApplication>
 #include <QOperatingSystemVersion>
-#include <QFile>
 #include <QTranslator>
 #include "version.h"
 #include "utils.h"
@@ -34,16 +33,7 @@ int main(int argc, char *argv[])
     // displays
     LOG(INFO) << "VIRTUAL SCREEN: " << platform::display::virtual_screen_geometry();
 
-    LOAD_QSS(qApp,
-        {
-            ":/qss/capturer.qss",
-            ":/qss/capturer-" + Config::theme() + ".qss",
-            ":/qss/menu/menu.qss",
-            ":/qss/menu/menu-" + Config::theme() + ".qss",
-            ":/qss/setting/settingswindow.qss",
-            ":/qss/setting/settingswindow-" + Config::theme() + ".qss"
-        }
-    );
+    Config::load_theme(Config::theme());
 
     auto language = Config::instance()["language"].get<QString>();
     LOG(INFO) << "LANGUAGE: " << language;

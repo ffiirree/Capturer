@@ -2,6 +2,7 @@
 
 #include "platform.h"
 #include <windows.h>
+#include "logging.h"
 
 namespace platform 
 {
@@ -10,11 +11,12 @@ namespace platform
         // https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
         // REG_DWORD        : A 32-bit number.
         // REG_QWORD        : A 64-bit number.
-        std::optional<DWORD> reg_read_dword(HKEY key, const char* subkey, const char* valuename)
+        std::optional<DWORD> reg_read_dword(HKEY key, const std::string& subkey, const std::string& valuename)
         {
             DWORD value = 0;
             DWORD size = sizeof(uint32_t);
-            if (RegGetValueA(key, subkey, valuename, RRF_RT_REG_DWORD, nullptr, &value, &size) == ERROR_SUCCESS) {
+            if (RegGetValue(key, util::to_utf16(subkey).c_str(), util::to_utf16(valuename).c_str(), 
+                RRF_RT_REG_DWORD, nullptr, &value, &size) == ERROR_SUCCESS) {
                 return value;
             }
 
@@ -24,21 +26,91 @@ namespace platform
         // REG_SZ	        : A null - terminated string. 
         //                    It's either a Unicode or an ANSI string, 
         //                    depending on whether you use the Unicode or ANSI functions.
-        std::optional<std::string> reg_read_string(HKEY key, const char* subkey, const char* valuename)
+        std::optional<std::string> reg_read_string(HKEY key, const std::string& subkey, const std::string& valuename)
         {
 
             DWORD size = 0;
-            if (RegGetValueA(key, subkey, valuename, RRF_RT_REG_SZ, nullptr, nullptr, &size) != ERROR_SUCCESS) {
+            if (RegGetValue(key, util::to_utf16(subkey).c_str(), util::to_utf16(valuename).c_str(),
+                RRF_RT_REG_SZ, nullptr, nullptr, &size) != ERROR_SUCCESS) {
                 return std::nullopt;
             }
 
             std::string value(size, {});
 
-            if (RegGetValueA(key, subkey, valuename, RRF_RT_REG_SZ, nullptr, reinterpret_cast<LPBYTE>(&value[0]), &size) != ERROR_SUCCESS) {
+            if (RegGetValue(key, util::to_utf16(subkey).c_str(), util::to_utf16(valuename).c_str(),
+                RRF_RT_REG_SZ, nullptr, reinterpret_cast<LPBYTE>(&value[0]), &size) != ERROR_SUCCESS) {
                 return std::nullopt;
             }
 
             return value;
+        }
+
+        int RegistryMonitor::monitor(HKEY key, const std::string& subkey, std::function<void(HKEY)> callback)
+        {
+            if (::RegOpenKeyEx(key, platform::util::to_utf16(subkey).c_str(), 0, KEY_NOTIFY, &key_) != ERROR_SUCCESS) {
+                LOG(ERROR) << "failed to open the registry key : " << subkey;
+                return -1;
+            }
+
+            if ((STOP_EVENT = ::CreateEvent(nullptr, TRUE, FALSE, L"Registry Stop Event")) == nullptr) {
+                LOG(ERROR) << "failed to create event for the registry key : " << subkey;
+                return -1;
+            }
+
+            if ((NOTIFY_EVENT = ::CreateEvent(nullptr, FALSE, FALSE, L"Registry Notify Evnent")) == nullptr) {
+                LOG(ERROR) << "failed to create event for the registry key : " << subkey;
+                return -1;
+            }
+           
+            running_ = true;
+            thread_ = std::thread([=]()
+                {
+                    const HANDLE events[] = { STOP_EVENT, NOTIFY_EVENT };
+
+                    while (running_) {
+                        if (::RegNotifyChangeKeyValue(
+                            key_, TRUE, REG_LEGAL_CHANGE_FILTER, NOTIFY_EVENT, TRUE) != ERROR_SUCCESS) {
+                            LOG(ERROR) << "failed to monitor the registry key : " << subkey;
+                            ::SetEvent(STOP_EVENT);
+                        }
+
+                        switch (::WaitForMultipleObjects(2, events, false, INFINITE))
+                        {
+                        case WAIT_OBJECT_0 + 0: // STOP_EVENT
+                            running_ = false;
+                            break;
+
+                        case WAIT_OBJECT_0 + 1: // NOTIFIY_EVENT
+                            callback(key_);
+                            break;
+
+                        default: break;
+                        }
+                    }
+                }
+            );
+
+            return 0;
+        }
+
+        void RegistryMonitor::stop()
+        {
+            running_ = false;
+            ::SetEvent(STOP_EVENT);
+
+            if (thread_.joinable())
+                thread_.join();
+
+            ::CloseHandle(NOTIFY_EVENT);
+            ::CloseHandle(STOP_EVENT);
+            ::RegCloseKey(key_);
+
+            LOG(INFO) << "REG MONITOR DESTORY";
+        }
+
+        std::shared_ptr<RegistryMonitor> monitor_regkey(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb)
+        {
+            return std::make_shared<RegistryMonitor>(key, subkey, cb);
         }
     } // namespace windows
 
@@ -74,7 +146,7 @@ namespace platform
             std::wstring wstr(wlen, {});
             MultiByteToWideChar(CP_UTF8, 0, mstr, static_cast<int>(mlen), wstr.data(), static_cast<int>(wstr.size()));
 
-            return wstr;
+            return std::move(wstr);
         }
     } // namespace util
 }

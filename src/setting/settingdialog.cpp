@@ -119,7 +119,7 @@ void SettingWindow::setupGeneralWidget()
     _3_2->addItem(tr("Light"), "light");
     _3_2->setCurrentIndex(std::max(0, _3_2->findData(config["theme"].get<QString>())));
     connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _3_2](int i) {
-        config.set(config["theme"], _3_2->currentData().toString());
+        config.set_theme(_3_2->currentData().toString().toStdString());
     });
     layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
     layout->addWidget(_3_2, 3, 1, 1, 2);

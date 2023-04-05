@@ -1,4 +1,5 @@
 #include "config.h"
+#include <QApplication>
 #include <QStandardPaths>
 #include <QDir>
 #include <QTextStream>
@@ -76,6 +77,11 @@ Config::Config()
         settings_["devices"]["speakers"] = Devices::speakers()[0];
 
     connect(this, &Config::changed, this, &Config::save);
+    connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) { 
+        load_theme(platform::system::theme_name(static_cast<platform::system::theme_t>(theme)));
+    });
+
+    monitor_system_theme(settings_["theme"].get<std::string>() == "auto");
 }
 
 void Config::save()
@@ -91,12 +97,62 @@ void Config::save()
     file.close();
 }
 
-QString Config::theme()
+std::string Config::theme()
 {
-    auto theme = Config::instance()["theme"].get<QString>();
+    auto theme = Config::instance()["theme"].get<std::string>();
     if (theme == "auto") {
-        return QString::fromStdString(platform::system::theme_name(platform::system::theme()));
+        return platform::system::theme_name(platform::system::theme());
     }
 
     return (theme == "dark") ? "dark" : "light";
+}
+
+void Config::monitor_system_theme(bool m)
+{
+#ifdef _WIN32
+    if (m && win_theme_monitor_ == nullptr) {
+        win_theme_monitor_ = platform::windows::monitor_regkey(
+            HKEY_CURRENT_USER,
+            R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
+            [this](auto) {
+                emit SYSTEM_THEME_CHANGED(static_cast<int>(platform::system::theme()));
+            }
+        );
+    }
+    
+    if(!m) {
+        win_theme_monitor_ = nullptr;
+    }
+#endif
+}
+
+void Config::set_theme(const std::string& theme)
+{
+    if (settings_["theme"].get<std::string>() == theme)
+        return;
+
+    set(settings_["theme"], theme);
+
+    monitor_system_theme(theme == "auto");
+
+    load_theme(Config::theme());
+}
+
+void Config::load_theme(const std::string& theme)
+{
+    static std::string _theme = "unknown";
+    if (_theme != theme) {
+        _theme = theme;
+
+        LOAD_QSS(qApp,
+            {
+                ":/qss/capturer.qss",
+                ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",
+                ":/qss/menu/menu.qss",
+                ":/qss/menu/menu-" + QString::fromStdString(theme) + ".qss",
+                ":/qss/setting/settingswindow.qss",
+                ":/qss/setting/settingswindow-" + QString::fromStdString(theme) + ".qss"
+            }
+        );
+    }
 }
