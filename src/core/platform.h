@@ -6,12 +6,12 @@
 #include <vector>
 #include <optional>
 #include <QRect>
+#include <functional>
+#include <thread>
+#include <atomic>
 
 #ifdef _WIN32
 
-#include <thread>
-#include <atomic>
-#include <functional>
 #include <Windows.h>
 
 #endif
@@ -77,7 +77,7 @@ namespace platform
 
         class RegistryMonitor {
         public:
-            RegistryMonitor(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb) { monitor(key, subkey, cb); }
+            RegistryMonitor() = default;
             ~RegistryMonitor() { stop(); }
 
             RegistryMonitor(const RegistryMonitor&) = delete;
@@ -97,8 +97,27 @@ namespace platform
         std::shared_ptr<RegistryMonitor> monitor_regkey(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb);
     }
 #elif __linux__
-    namespace linux {
+    namespace linux 
+    {
         std::optional<std::string> exec(const char *);
+
+        class GSettingsMonitor {
+        public:
+            GSettingsMonitor() = default;
+            ~GSettingsMonitor() { stop(); }
+
+            GSettingsMonitor(const GSettingsMonitor&) = delete;
+            GSettingsMonitor& operator= (const GSettingsMonitor&) = delete;
+
+            int monitor(const std::string&, const std::string&, std::function<void(const std::string&)>);
+            void stop();
+
+        private:
+            std::thread thread_;
+            std::atomic<bool> running_{ false };
+        };
+
+        std::shared_ptr<GSettingsMonitor> monitor_gsettings(const std::string&, const std::string&, std::function<void(const std::string&)>);
     }
 #endif // _WIN32
 
@@ -121,6 +140,22 @@ namespace platform
 
     namespace system 
     {
+        enum class desktop_t
+        {
+            unknown,
+            Windows,    // Windows
+            KDE,        // K Desktop Environment, based on Qt
+            GNOME,      // GNU Network Object Model Environment
+            Unity,      // based on GNOME
+            MATE,       // forked from GNOME 2
+            Cinnamon,   // forked from GNOME 3
+            Xfce,
+            DeepinDE,   // based on Qt
+            Enlightenment,
+            LXQT,
+            Lumina
+        };
+
         enum class theme_t
         {
             dark, light
@@ -142,6 +177,8 @@ namespace platform
 
         theme_t theme();
         std::string theme_name(theme_t);
+
+        desktop_t desktop();
 
         std::string os_name();
         std::string kernel_name();

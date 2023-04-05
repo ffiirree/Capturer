@@ -6,6 +6,11 @@ namespace platform::system
 {
     extern "C" NTSYSAPI NTSTATUS NTAPI RtlGetVersion(_Out_ PRTL_OSVERSIONINFOW lpVersionInformation);
 
+    desktop_t desktop()
+    {
+        return desktop_t::Windows;
+    }
+
     theme_t theme()
     {
         if (os_version() >= platform::windows::WIN_10_1ST) {

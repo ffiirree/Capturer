@@ -55,7 +55,9 @@ private:
     json settings_ = json::parse("{}");
 
 #ifdef _WIN32
-    std::shared_ptr<platform::windows::RegistryMonitor> win_theme_monitor_{ nullptr };
+    std::shared_ptr<platform::windows::RegistryMonitor> theme_monitor_{ nullptr };
+#elif __linux__
+    std::shared_ptr<platform::linux::GSettingsMonitor> theme_monitor_{ nullptr };
 #endif // _WIN32
 };
 

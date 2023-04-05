@@ -110,7 +110,9 @@ namespace platform
 
         std::shared_ptr<RegistryMonitor> monitor_regkey(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb)
         {
-            return std::make_shared<RegistryMonitor>(key, subkey, cb);
+            auto monitor = std::make_shared<RegistryMonitor>();
+            monitor->monitor(key, subkey, cb);
+            return monitor;
         }
     } // namespace windows
 

@@ -1,6 +1,11 @@
 #ifdef __linux__
 
 #include "platform.h"
+#include <chrono>
+#include "logging.h"
+
+
+using namespace std::chrono_literals;
 
 namespace platform
 {
@@ -22,6 +27,55 @@ namespace platform
             pclose(pipe);
             return result;
         }
+
+        int GSettingsMonitor::monitor(const std::string& key, const std::string& subkey, std::function<void(const std::string&)> callback)
+        {
+            const std::string cmd = "gsettings monitor " + key + " " + subkey;
+
+            running_ = true;
+            thread_ = std::thread([=](){
+                while (running_) {
+                    FILE* pipe = popen(cmd.c_str(), "r");
+
+                    if (!pipe) {
+                        LOG(ERROR) << "failed to open : " << cmd;
+                        std::this_thread::sleep_for(100ms);
+                        continue;
+                    }
+                    
+                    char buffer[256]{};
+                    while (running_ && (fgets(buffer, sizeof(buffer), pipe) != nullptr)) {
+                        callback(buffer);
+                    }
+
+                    pclose(pipe);       // TODO: stuck if the cmd process does not exit
+
+                    // exit unexpectedly
+                    if (running_) {
+                        LOG(WARNING) << "exit unexpectedly, try monitor the '" << cmd << "' again after 250ms";
+                        std::this_thread::sleep_for(250ms);
+                    }
+                }
+            });
+
+            return 0;
+        }
+
+        void GSettingsMonitor::stop()
+        {
+            running_ = false;
+
+            if (thread_.joinable())
+                thread_.join();
+        }
+
+        std::shared_ptr<GSettingsMonitor> monitor_gsettings(const std::string& key, const std::string& subkey, std::function<void(const std::string&)> cb)
+        {
+            auto monitor = std::make_shared<GSettingsMonitor>();
+            monitor->monitor(key, subkey, cb);
+            return monitor;
+        }
+
     } // namespace linux
 
     namespace util

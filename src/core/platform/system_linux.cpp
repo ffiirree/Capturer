@@ -21,19 +21,48 @@ namespace platform::system
             return version;
     }
 
-    theme_t theme()
+    desktop_t desktop()
     {
         const char * de = std::getenv("XDG_CURRENT_DESKTOP");
         // GNOME
-        if (std::string_view(de).find("GNOME") != std::string::npos) {
-            auto result = platform::linux::exec("gsettings get org.gnome.desktop.interface color-scheme").value_or("");
-            if (result.find("dark") != std::string::npos) {
-                return theme_t::dark;
-            }
-            if (result.find("light") != std::string::npos) {
-                return theme_t::light;
-            }
+        if (std::string_view(de).find("GNOME") != std::string::npos ||
+            std::string_view(de).find("gnome") != std::string::npos) {
+            return desktop_t::GNOME;
         }
+        // Unity
+        if (std::string_view(de).find("Unity") != std::string::npos ||
+            std::string_view(de).find("unity") != std::string::npos) {
+            return desktop_t::GNOME;
+        }
+        return desktop_t::unknown;
+    }
+
+
+    theme_t theme()
+    {
+        if (desktop() == desktop_t::GNOME || desktop() == desktop_t::Unity) {
+
+            auto color_scheme = platform::linux::exec("gsettings get org.gnome.desktop.interface color-scheme").value_or("");
+            if (!color_scheme.empty()) {
+                if (color_scheme.find("dark") != std::string::npos) {
+                    return theme_t::dark;
+                }
+                if (color_scheme.find("light") != std::string::npos) {
+                    return theme_t::light;
+                }
+            }
+
+            auto gtk_theme = platform::linux::exec("gsettings get org.gnome.desktop.interface gtk-theme").value_or("");
+            if (!gtk_theme.empty()) {
+                if (gtk_theme.find("dark") != std::string::npos) {
+                    return theme_t::dark;
+                }
+                if (gtk_theme.find("light") != std::string::npos) {
+                    return theme_t::light;
+                }
+            } 
+        }
+
         // TODO : other desktop env
         return theme_t::dark;
     }

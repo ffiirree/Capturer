@@ -77,8 +77,10 @@ Config::Config()
         settings_["devices"]["speakers"] = Devices::speakers()[0];
 
     connect(this, &Config::changed, this, &Config::save);
-    connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) { 
-        load_theme(platform::system::theme_name(static_cast<platform::system::theme_t>(theme)));
+    connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) {
+        if (settings_["theme"].get<std::string>() == "auto") {
+            load_theme(platform::system::theme_name(static_cast<platform::system::theme_t>(theme)));
+        }
     });
 
     monitor_system_theme(settings_["theme"].get<std::string>() == "auto");
@@ -110,8 +112,8 @@ std::string Config::theme()
 void Config::monitor_system_theme(bool m)
 {
 #ifdef _WIN32
-    if (m && win_theme_monitor_ == nullptr) {
-        win_theme_monitor_ = platform::windows::monitor_regkey(
+    if (m && theme_monitor_ == nullptr) {
+        theme_monitor_ = platform::windows::monitor_regkey(
             HKEY_CURRENT_USER,
             R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
             [this](auto) {
@@ -121,8 +123,51 @@ void Config::monitor_system_theme(bool m)
     }
     
     if(!m) {
-        win_theme_monitor_ = nullptr;
+        theme_monitor_ = nullptr;
     }
+#elif __linux__
+    if (m && theme_monitor_ == nullptr) {
+        if (platform::system::desktop() == platform::system::desktop_t::GNOME ||
+            platform::system::desktop() == platform::system::desktop_t::Unity) {
+
+            auto color_scheme = platform::linux::exec("gsettings get org.gnome.desktop.interface color-scheme").value_or("");
+            if (!color_scheme.empty() && color_scheme != "\t") { // TODO
+                theme_monitor_ = platform::linux::monitor_gsettings("org.gnome.desktop.interface", "color-scheme", [this](auto str){
+                    platform::system::theme_t _theme = platform::system::theme_t::dark;
+                    if (str.find("dark") != std::string::npos) {
+                        _theme = platform::system::theme_t::dark;
+                    }
+                    if (str.find("light") != std::string::npos) {
+                        _theme = platform::system::theme_t::light;
+                    }
+                    emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
+                });
+
+                return;
+            }
+
+            auto gtk_theme = platform::linux::exec("gsettings get org.gnome.desktop.interface gtk-theme").value_or("");
+            if (!gtk_theme.empty() && gtk_theme != "\t") {
+                theme_monitor_ = platform::linux::monitor_gsettings("org.gnome.desktop.interface", "gtk-theme", [this](auto str){
+                    platform::system::theme_t _theme = platform::system::theme_t::dark;
+                    if (str.find("dark") != std::string::npos) {
+                        _theme = platform::system::theme_t::dark;
+                    }
+                    if (str.find("light") != std::string::npos) {
+                        _theme = platform::system::theme_t::light;
+                    }
+                    emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
+                });
+
+                return;
+            }
+        }
+    }
+
+    // TODO: pclose can not exit
+    // if (!m) {
+    //     theme_monitor_ = nullptr;
+    // }
 #endif
 }
 
