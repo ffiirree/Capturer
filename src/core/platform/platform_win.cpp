@@ -28,7 +28,6 @@ namespace platform
         //                    depending on whether you use the Unicode or ANSI functions.
         std::optional<std::string> reg_read_string(HKEY key, const std::string& subkey, const std::string& valuename)
         {
-
             DWORD size = 0;
             if (RegGetValue(key, util::to_utf16(subkey).c_str(), util::to_utf16(valuename).c_str(),
                 RRF_RT_REG_SZ, nullptr, nullptr, &size) != ERROR_SUCCESS) {
@@ -36,13 +35,12 @@ namespace platform
             }
 
             std::string value(size, {});
-
             if (RegGetValue(key, util::to_utf16(subkey).c_str(), util::to_utf16(valuename).c_str(),
-                RRF_RT_REG_SZ, nullptr, reinterpret_cast<LPBYTE>(&value[0]), &size) != ERROR_SUCCESS) {
+                RRF_RT_REG_SZ, nullptr, reinterpret_cast<LPBYTE>(value.data()), &size) != ERROR_SUCCESS) {
                 return std::nullopt;
             }
 
-            return value;
+            return platform::util::to_utf8(value);
         }
 
         int RegistryMonitor::monitor(HKEY key, const std::string& subkey, std::function<void(HKEY)> callback)

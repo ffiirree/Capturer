@@ -314,6 +314,10 @@ namespace platform
     {
         std::string to_utf8(const wchar_t*, size_t = 0);
         std::string to_utf8(const std::wstring&);
+
+        std::string to_utf8(const char*, size_t = 0); // must has a null-terminating-character if the size_t == 0
+        std::string to_utf8(const std::string&);
+
         std::wstring to_utf16(const std::string&);
         std::wstring to_utf16(const char*, size_t = 0);
     }

@@ -117,10 +117,12 @@ namespace platform::system
                 HKEY_LOCAL_MACHINE,
                 R"(Software\Microsoft\Windows NT\CurrentVersion)",
                 "InstallationType"
-            ).value_or("").compare("Client")) {
+            ).value_or("") == "Client") {
 
             auto pos = name.find("Windows 10");
-            name.replace(pos, pos + 10, "Windows 11");
+            if (pos != std::string::npos) {
+                name.replace(pos, pos + 10, "Windows 11");
+            }
         }
 
         return name;

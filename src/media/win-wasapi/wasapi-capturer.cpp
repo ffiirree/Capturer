@@ -326,7 +326,7 @@ int WasapiCapturer::produce(AVFrame* frame, int type)
 
 int WasapiCapturer::destroy()
 {
-    SetEvent(STOP_EVENT);
+    ::SetEvent(STOP_EVENT);
 
     running_ = false;
     ready_ = false;
@@ -348,11 +348,12 @@ int WasapiCapturer::destroy()
     SAFE_RELEASE(render_);
 
     if (STOP_EVENT && STOP_EVENT != INVALID_HANDLE_VALUE) {
-        CloseHandle(STOP_EVENT);
+        ::CloseHandle(STOP_EVENT);
     }
 
+    // TODO : Exception thrown at 0x00007FFC1FC72D6A (ntdll.dll) in capturer.exe: 0xC0000008: An invalid handle was specified.
     if (AUDIO_SAMPLES_READY_EVENT && AUDIO_SAMPLES_READY_EVENT != INVALID_HANDLE_VALUE) {
-        CloseHandle(AUDIO_SAMPLES_READY_EVENT);
+        ::CloseHandle(AUDIO_SAMPLES_READY_EVENT);
     }
 
     if (frame_) {

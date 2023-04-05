@@ -16,7 +16,6 @@ Config::Config()
         config_dir.mkpath(config_dir_path_);
     }
     filepath_ = config_dir_path_ + "/config.json";
-    LOG(INFO) << "config file path: " << filepath_;
 
     QString text;
     QFile config_file(filepath_);

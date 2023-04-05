@@ -8,6 +8,7 @@
 #include <QCheckBox>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QDir>
 #include "shortcutinput.h"
 #include "colorpanel.h"
 #include "titlebar.h"
@@ -80,7 +81,6 @@ void SettingWindow::setupGeneralWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    //
     auto _01 = new QCheckBox();
     _01->setChecked(config["autorun"].get<bool>());
     setAutoRun(_01->checkState());

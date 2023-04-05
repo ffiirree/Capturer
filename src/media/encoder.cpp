@@ -277,7 +277,7 @@ int Encoder::process_video_frames()
             break;
         }
         else if (ret == AVERROR_EOF) {
-            LOG(INFO) << "[   ENCODE] [V] EOF";
+            LOG(INFO) << "[   ENCODER] [V] EOF";
             eof_ |= V_ENCODING_EOF;
             break;
         }

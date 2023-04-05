@@ -5,10 +5,13 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QTextEdit>
-#include <QScrollBar>
+#include <QFileInfo>
 #include "logging.h"
 
-#define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true)) error += tr("Failed to register hotkey:<%1>\n").arg(Y.toString());)
+#define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true))  {                                              \
+                                LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();  \
+                                error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());          \
+                            })
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
@@ -113,8 +116,6 @@ void Capturer::setupSystemTrayIcon()
 void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
 {
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
-
-    if(icon == QSystemTrayIcon::Critical) LOG(ERROR) << msg;
 }
 
 std::pair<DataFormat, std::any> Capturer::clipboard_data()

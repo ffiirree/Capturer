@@ -1,5 +1,4 @@
 #include <QApplication>
-#include <QOperatingSystemVersion>
 #include <QTranslator>
 #include "version.h"
 #include "utils.h"
@@ -14,29 +13,20 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
-    LOG(INFO) << "Capturer " << CAPTURER_VERSION << " (Qt " << qVersion() << ")";
+    LOG(INFO) << "Capturer " << CAPTURER_VERSION;
 
-    LOG(INFO) << "Operating System: "
-#ifdef __linux__
-              << "Linux" <<  " ("
-#else
-              <<  QOperatingSystemVersion::current().name() << " "
-              <<  QOperatingSystemVersion::current().majorVersion() << "."
-              <<  QOperatingSystemVersion::current().minorVersion() << "."
-              <<  QOperatingSystemVersion::current().microVersion() << " ("
-#endif
-              << QSysInfo::currentCpuArchitecture() << ")";
-
-
-    LOG(INFO) << "Application Dir: " << QCoreApplication::applicationDirPath();
-
-    // displays
-    LOG(INFO) << "VIRTUAL SCREEN: " << platform::display::virtual_screen_geometry();
+    LOG(INFO) << " -- Qt               : " << qVersion();
+    LOG(INFO) << " -- Operating System : " << platform::system::os_name() << " " << platform::system::os_version();
+    LOG(INFO) << " -- Kernel           : " << platform::system::kernel_name() << " " << platform::system::kernel_version();
+    LOG(INFO) << " -- Architecture     : " << platform::cpu::architecture();
+    LOG(INFO) << " -- Virtual Screen   : " << platform::display::virtual_screen_geometry();
 
     Config::load_theme(Config::theme());
 
     auto language = Config::instance()["language"].get<QString>();
-    LOG(INFO) << "LANGUAGE: " << language;
+    LOG(INFO) << " -- Language         : " << language;
+    LOG(INFO) << " -- Config File      : " << Config::instance().getFilePath();
+    LOG(INFO);
 
     QTranslator translator;
 #ifdef __linux__

@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="95"/>
+        <location filename="../src/capturer.cpp" line="98"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="96"/>
+        <location filename="../src/capturer.cpp" line="99"/>
         <source>Record Video</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="97"/>
+        <location filename="../src/capturer.cpp" line="100"/>
         <source>Record GIF</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="99"/>
+        <location filename="../src/capturer.cpp" line="102"/>
         <source>Open Camera</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="101"/>
+        <location filename="../src/capturer.cpp" line="104"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="103"/>
+        <location filename="../src/capturer.cpp" line="106"/>
         <source>Quit</source>
         <translation></translation>
     </message>
@@ -224,12 +224,12 @@
 <context>
     <name>SettingWindow</name>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="55"/>
+        <location filename="../src/setting/settingdialog.cpp" line="56"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="78"/>
+        <location filename="../src/setting/settingdialog.cpp" line="79"/>
         <source>General</source>
         <translation></translation>
     </message>
