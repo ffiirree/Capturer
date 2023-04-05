@@ -32,11 +32,10 @@ namespace platform::system
         // Unity
         if (std::string_view(de).find("Unity") != std::string::npos ||
             std::string_view(de).find("unity") != std::string::npos) {
-            return desktop_t::GNOME;
+            return desktop_t::Unity;
         }
         return desktop_t::unknown;
     }
-
 
     theme_t theme()
     {
