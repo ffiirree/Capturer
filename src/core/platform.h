@@ -13,8 +13,8 @@
 
 #endif
 
-namespace platform {
-
+namespace platform 
+{
     struct version_t 
     {
         uint32_t major;
@@ -29,7 +29,8 @@ namespace platform {
     };
 
 #ifdef _WIN32
-    namespace windows {
+    namespace windows 
+    {
         // windows 2000
         inline const version_t WIN_2000_1ST{ 5, 0, 2195, 0, "Janus" };
 
@@ -94,8 +95,8 @@ namespace platform {
     template <> std::string vendor_cast(vendor_t);
     template <> vendor_t vendor_cast(std::string_view name);
 
-    namespace system {
-
+    namespace system 
+    {
         enum class theme_t
         {
             dark, light
@@ -128,7 +129,8 @@ namespace platform {
         kernel_info_t kernel_info();
     }
 
-    namespace cpu {
+    namespace cpu 
+    {
         enum class endianness_t
         {
             little, big
@@ -178,7 +180,8 @@ namespace platform {
         cpu_info_t info();
     }
 
-    namespace gpu {
+    namespace gpu 
+    {
         struct gpu_info_t
         {
 #ifdef _WIN32
@@ -197,7 +200,8 @@ namespace platform {
         std::vector<gpu_info_t> info();
     }
 
-    namespace display {
+    namespace display 
+    {
         struct geometry_t
         {
             int32_t x;
@@ -242,6 +246,15 @@ namespace platform {
         std::vector<display_t> displays();
 
         geometry_t virtual_screen_geometry();
+    }
+
+    // string
+    namespace util 
+    {
+        std::string to_utf8(const wchar_t*, size_t = 0);
+        std::string to_utf8(const std::wstring&);
+        std::wstring to_utf16(const std::string&);
+        std::wstring to_utf16(const char*, size_t = 0);
     }
 }
 

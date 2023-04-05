@@ -15,11 +15,11 @@ namespace platform::display {
     // Just for >= 1607
     static UINT retrieve_dpi_for_monitor(HMONITOR monitor)
     {
-        UINT dpi = 96, _;      // default value without scaling
-
         const auto PRE_DAC = ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        defer(::SetThreadDpiAwarenessContext(PRE_DAC));
+
+        UINT dpi = 96, _;
         ::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi, &_);
-        ::SetThreadDpiAwarenessContext(PRE_DAC);
 
         return dpi;
     }
@@ -55,23 +55,24 @@ namespace platform::display {
     {
         std::vector<display_t> ret{};
 
-        // prevent the GetMonitorInfoA from being affected by the process dpi awareness 
+        // prevent the GetMonitorInfo from being affected by the process dpi awareness 
         auto PRE_DAC = ::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
+        defer(::SetThreadDpiAwarenessContext(PRE_DAC));
 
         // retrieve all monitors
         ::EnumDisplayMonitors(nullptr, nullptr, [](auto monitor, auto, auto, auto userdata)->BOOL {
             auto ret = reinterpret_cast<std::vector<display_t> *>(userdata);
 
-            MONITORINFOEXA info = { sizeof(MONITORINFOEXA) };
-            if (::GetMonitorInfoA(monitor, &info)) {
+            MONITORINFOEX info = { sizeof(MONITORINFOEX) };
+            if (::GetMonitorInfo(monitor, &info)) {
 
-                DEVMODEA settings = {};
-                settings.dmSize = sizeof(DEVMODEA);
+                DEVMODE settings = {};
+                settings.dmSize = sizeof(DEVMODE);
 
-                if (::EnumDisplaySettingsA(info.szDevice, ENUM_CURRENT_SETTINGS, &settings)) {
+                if (::EnumDisplaySettings(info.szDevice, ENUM_CURRENT_SETTINGS, &settings)) {
 
                     ret->push_back(display_t{
-                        info.szDevice,
+                        platform::util::to_utf8(info.szDevice),
                         geometry_t{
                             settings.dmPosition.x,
                             settings.dmPosition.y,
@@ -90,8 +91,6 @@ namespace platform::display {
 
             return TRUE;
         }, reinterpret_cast<LPARAM>(&ret));
-
-        ::SetThreadDpiAwarenessContext(PRE_DAC);
 
         return ret;
     }
