@@ -35,7 +35,7 @@ public:
         GRAPH_MASK      = 0x0000ffff
     };
 public:
-    Canvas(ImageEditMenu*, QWidget* = nullptr);
+    explicit Canvas(ImageEditMenu*, QWidget* = nullptr);
 
     ImageEditMenu* menu()  const { return menu_; }
 
@@ -99,8 +99,8 @@ public slots:
     }
 
 private:
-    bool eventFilter(QObject*, QEvent*);
-    void focusOn(std::shared_ptr<PaintCommand>);
+    bool eventFilter(QObject*, QEvent*) override;
+    void focusOn(const std::shared_ptr<PaintCommand>&);
 
     void updateHoverPos(const QPoint&);
     QImage mosaic(const QImage&);

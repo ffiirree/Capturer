@@ -1,7 +1,7 @@
 #ifdef _WIN32
 
 #include "platform.h"
-#include <windows.h>
+#include <Windows.h>
 #include <DXGI.h>
 #include "defer.h"
 

@@ -1,8 +1,6 @@
 #include "screenrecorder.h"
-#include <QPixmap>
 #include <QMouseEvent>
 #include <QPushButton>
-#include <QFileDialog>
 #include <QStandardPaths>
 #include <QDateTime>
 #include <fmt/core.h>

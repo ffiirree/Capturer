@@ -16,8 +16,6 @@
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
-    LOG(INFO) << "initializing.";
-
     sniper_ = new ScreenShoter(this);
     recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
     gifcptr_ = new ScreenRecorder(ScreenRecorder::GIF, this);
@@ -70,7 +68,7 @@ void Capturer::updateConfig()
     QString error = "";
     SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(pin_sc_, config["pin"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(show_pin_sc_, config["pin"]["visiable"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(show_pin_sc_, config["pin"]["visible"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
     if(!error.isEmpty())

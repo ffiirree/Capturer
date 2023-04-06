@@ -195,7 +195,7 @@ int WasapiCapturer::run_f()
             break;
 
         case WAIT_OBJECT_0 + 1: // AUDIO_SAMPLES_READY_EVENT
-            LOG_IF(INFO, buffer_.full()) << "[  WASAPI] buffer is full, drop a packet";
+            LOG_IF(INFO, buffer_.full()) << "[  WASAPI] [A] buffer is full, drop a packet";
 
             while (true)
             {
@@ -265,7 +265,7 @@ int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UI
         );
     }
 
-    DLOG(INFO) << fmt::format("[    WASAPI] [{}] [A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+    DLOG(INFO) << fmt::format("[    WASAPI] [A] [{:>10d}] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
         int(type_), frame_number_++, frame_->pts, frame_->nb_samples, muted_);
 
     buffer_.push([this](AVFrame* pushed) {

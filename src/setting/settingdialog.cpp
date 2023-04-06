@@ -1,5 +1,4 @@
 #include "settingdialog.h"
-#include <QStandardPaths>
 #include <QSpinBox>
 #include <QComboBox>
 #include <QListView>
@@ -9,6 +8,7 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QDir>
+#include <QStandardPaths>
 #include "shortcutinput.h"
 #include "colorpanel.h"
 #include "titlebar.h"
@@ -16,6 +16,7 @@
 #include "logging.h"
 #include "version.h"
 #include "media.h"
+
 #ifdef __linux__
 #include <QTextStream>
 #endif
@@ -28,7 +29,6 @@ SettingWindow::SettingWindow(QWidget * parent)
     setMouseTracking(true);
 
     setMinimumSize(850, 600);
-
     setContentsMargins(20, 20, 20, 20);
 
     auto shadow_layout = new QVBoxLayout();
@@ -432,9 +432,9 @@ void SettingWindow::setupHotkeyWidget()
     layout->addWidget(new QLabel(tr("Paste")), idx_row, 1, 1, 1);
     layout->addWidget(_2_2, idx_row++, 2, 1, 3);
 
-    auto hide_show_images = new ShortcutInput(config["pin"]["visiable"]["hotkey"].get<QKeySequence>());
+    auto hide_show_images = new ShortcutInput(config["pin"]["visible"]["hotkey"].get<QKeySequence>());
     connect(hide_show_images, &ShortcutInput::changed, [this](auto&& ks){
-        config.set(config["pin"]["visiable"]["hotkey"], ks);
+        config.set(config["pin"]["visible"]["hotkey"], ks);
     });
     layout->addWidget(new QLabel(tr("Hide/Show All Images")), idx_row, 1, 1, 1);
     layout->addWidget(hide_show_images, idx_row++, 2, 1, 3);

@@ -3,10 +3,14 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QTextStream>
+#include <fstream>
+#include <streambuf>
 #include "utils.h"
 #include "platform.h"
 #include "devices.h"
 #include "logging.h"
+
+#define IF_NULL_SET(X, default_value) st(if(X.is_null())  X = default_value;)
 
 Config::Config()
 {
@@ -59,20 +63,20 @@ Config::Config()
 
     IF_NULL_SET(settings_["snip"]["hotkey"],                        "F1");
     IF_NULL_SET(settings_["pin"]["hotkey"],                         "F3");
-    IF_NULL_SET(settings_["pin"]["visiable"]["hotkey"],             "Shift+F3");
+    IF_NULL_SET(settings_["pin"]["visible"]["hotkey"],              "Shift+F3");
     IF_NULL_SET(settings_["record"]["hotkey"],                      "Ctrl+Alt+V");
     IF_NULL_SET(settings_["gif"]["hotkey"],                         "Ctrl+Alt+G");
 
     IF_NULL_SET(settings_["record"]["framerate"],                   30);
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
 
-    if(Devices::cameras().size() > 0)
+    if(!Devices::cameras().empty())
         settings_["devices"]["cameras"] = Devices::cameras()[0];
 
-    if (Devices::microphones().size() > 0)
+    if (!Devices::microphones().empty())
         settings_["devices"]["microphones"] = Devices::microphones()[0];
 
-    if (Devices::speakers().size() > 0)
+    if (!Devices::speakers().empty())
         settings_["devices"]["speakers"] = Devices::speakers()[0];
 
     connect(this, &Config::changed, this, &Config::save);
@@ -185,18 +189,30 @@ void Config::set_theme(const std::string& theme)
 void Config::load_theme(const std::string& theme)
 {
     static std::string _theme = "unknown";
+
     if (_theme != theme) {
         _theme = theme;
 
-        LOAD_QSS(qApp,
-            {
+        std::vector<QString> files{
                 ":/qss/capturer.qss",
                 ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",
                 ":/qss/menu/menu.qss",
                 ":/qss/menu/menu-" + QString::fromStdString(theme) + ".qss",
                 ":/qss/setting/settingswindow.qss",
                 ":/qss/setting/settingswindow-" + QString::fromStdString(theme) + ".qss"
+        };
+
+        QString style{};
+        for (auto& qss : files) {
+
+            QFile file(qss);
+            file.open(QFile::ReadOnly);
+
+            if (file.isOpen()) {
+                style += file.readAll();
+                file.close();
             }
-        );
+        }
+        qApp->setStyleSheet(style);
     }
 }

@@ -1,13 +1,12 @@
 #ifdef __linux__
 
 #include "platform.h"
-#include "defer.h"
-#include "logging.h"
-#include "fmt/format.h"
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
+#include "defer.h"
 
-namespace platform::display {
+namespace platform::display
+{
     static double calculate_frequency(XRRScreenResources * res, RRMode mode_id)
     {
         for (auto k = 0; k < res->nmode; ++k) {
@@ -70,6 +69,57 @@ namespace platform::display {
             });
         }
         return _displays;
+    }
+
+    std::deque<window_t> windows(bool visible)
+    {
+        std::deque<window_t> ret;
+
+        auto display = XOpenDisplay(nullptr);
+        if (!display) return  {};
+
+        auto root_window = DefaultRootWindow(display);
+
+        Window root_return, parent_return;
+        Window* child_windows = nullptr;
+        unsigned int child_num = 0;
+        // The XQueryTree() function returns the root ID, the parent window ID, a pointer to the list of children windows (NULL when there are no children), 
+        // and the number of children in the list for the specified window. 
+        // The children are listed in current stacking order, from bottommost (first) to topmost (last). 
+        // XQueryTree() returns zero if it fails and nonzero if it succeeds. 
+        // To free a non-NULL children list when it is no longer needed, use XFree().
+        XQueryTree(display, root_window, &root_return, &parent_return, &child_windows, &child_num);
+
+        for (unsigned int i = 0; i < child_num; ++i) {
+            XWindowAttributes attrs{};
+            
+            XGetWindowAttributes(display, child_windows[i], &attrs);
+
+            if (visible && (attrs.map_state < 2 || (attrs.width * attrs.height < 4))) {
+                continue;
+            }
+            
+            char* buffer = nullptr;
+            XFetchName(display, child_windows[i], &buffer);
+            defer(XFree(buffer));
+
+            ret.push_front({
+                (buffer ? buffer : std::string{}),
+                {}, 
+                geometry_t{ 
+                    attrs.x, attrs.y, 
+                    static_cast<uint32_t>(attrs.width), 
+                    static_cast<uint32_t>(attrs.height) 
+                }, 
+                static_cast<uint64_t>(child_windows[i]), 
+                attrs.map_state >= 2
+            });
+        }
+
+        XFree(child_windows);
+        XCloseDisplay(display);
+
+        return ret;
     }
 }
 

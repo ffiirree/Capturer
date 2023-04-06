@@ -14,7 +14,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
     case Graph::LINE:
     case Graph::ARROW: resizer_ = Resizer(start_point, start_point); break;
 
-    // 2. nomovable and noresizable
+    // 2. unmovable and unresizable
     case Graph::MOSAIC:
     case Graph::ERASER: 
     case Graph::CURVES: push_point(start_point);  break;
@@ -106,7 +106,7 @@ bool PaintCommand::push_point(const QPoint& pos)
         points_buff_.push_back(pos); emit modified(PaintType::DRAW_MODIFIED);
         return true;
 
-    case Graph::TEXT:       return false;
+    case Graph::TEXT:
     default:                return false;
     }
 }
@@ -148,7 +148,7 @@ bool PaintCommand::isValid()
     case Graph::ERASER:    return true;
     case Graph::ARROW:     return size() != QSize(1, 1);
     case Graph::TEXT:      return !widget_->toPlainText().isEmpty();
-    case Graph::BROKEN_LINE: return true;
+    case Graph::BROKEN_LINE:
     default: return true;
     }
 }
@@ -374,7 +374,7 @@ bool PaintCommand::regularized()
     case Graph::ELLIPSE:   return resizer_.width() == resizer_.height();
     case Graph::LINE:
     case Graph::ARROW:     return (resizer_.x1() == resizer_.x2()) || (resizer_.y1() == resizer_.y2());
-    default:        return true;
+    default:               return true;
     }
 }
 
@@ -470,19 +470,19 @@ QCursor PaintCommand::getCursorShapeByHoverPos(Resizer::PointPosition pos, const
 {
     switch (pos) {
     case Resizer::X1_ANCHOR:
-    case Resizer::X2_ANCHOR:    return Qt::SizeHorCursor;
+    case Resizer::X2_ANCHOR:     return Qt::SizeHorCursor;
     case Resizer::Y1_ANCHOR:
-    case Resizer::Y2_ANCHOR:    return Qt::SizeVerCursor;
+    case Resizer::Y2_ANCHOR:     return Qt::SizeVerCursor;
     case Resizer::X1Y1_ANCHOR:
-    case Resizer::X2Y2_ANCHOR:  return Qt::SizeFDiagCursor;
+    case Resizer::X2Y2_ANCHOR:   return Qt::SizeFDiagCursor;
     case Resizer::X1Y2_ANCHOR:
-    case Resizer::X2Y1_ANCHOR:  return Qt::SizeBDiagCursor;
+    case Resizer::X2Y1_ANCHOR:   return Qt::SizeBDiagCursor;
 
     case Resizer::BORDER:
     case Resizer::X1_BORDER:
     case Resizer::X2_BORDER:
     case Resizer::Y1_BORDER:
-    case Resizer::Y2_BORDER:    return Qt::SizeAllCursor;
+    case Resizer::Y2_BORDER:     return Qt::SizeAllCursor;
     case Resizer::ROTATE_ANCHOR: return QCursor{ QPixmap(":/icon/res/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
 
     default: return default_cursor;

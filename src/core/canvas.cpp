@@ -52,28 +52,28 @@ bool Canvas::eventFilter(QObject* object, QEvent* event)
     switch (event->type())
     {
     case QEvent::MouseButtonPress:
-        mousePressEvent(static_cast<QMouseEvent*>(event));
+        mousePressEvent(dynamic_cast<QMouseEvent*>(event));
         return false;
 
     case QEvent::MouseButtonRelease:
-        mouseReleaseEvent(static_cast<QMouseEvent*>(event));
+        mouseReleaseEvent(dynamic_cast<QMouseEvent*>(event));
         return false;
 
     case QEvent::HoverMove:
     case QEvent::MouseMove:
-        mouseMoveEvent(static_cast<QMouseEvent*>(event));
+        mouseMoveEvent(dynamic_cast<QMouseEvent*>(event));
         return false;
 
     case QEvent::KeyRelease:
-        keyReleaseEvent(static_cast<QKeyEvent*>(event));
+        keyReleaseEvent(dynamic_cast<QKeyEvent*>(event));
         return false;
 
     case QEvent::KeyPress:
-        keyPressEvent(static_cast<QKeyEvent*>(event));
+        keyPressEvent(dynamic_cast<QKeyEvent*>(event));
         return false;
 
     case QEvent::Wheel:
-        wheelEvent(static_cast<QWheelEvent*>(event));
+        wheelEvent(dynamic_cast<QWheelEvent*>(event));
         return false;
 
     case QEvent::Paint:
@@ -111,10 +111,10 @@ void Canvas::pixmap(const QPixmap& canvas)
 
 bool Canvas::editing()
 {
-    return (edit_status_ & GRAPH_MASK) != 0 || commands_.size() || redo_stack_.size();
+    return (edit_status_ & GRAPH_MASK) != 0 || !commands_.empty() || !redo_stack_.empty();
 } 
 
-void Canvas::focusOn(std::shared_ptr<PaintCommand> cmd)
+void Canvas::focusOn(const std::shared_ptr<PaintCommand>& cmd)
 {
     if (focus_cmd_ == cmd) {
         if (focus_cmd_ && focus_cmd_->graph() == TEXT) {
@@ -277,7 +277,7 @@ void Canvas::mouseReleaseEvent(QMouseEvent* event)
                 focus_cmd_->visible(false);
                 focus_cmd_->previous()->visible(true);
             }
-            // foucs on null or the previous cmd
+            // focus on null or the previous cmd
             focusOn(focus_cmd_->previous());
         }
 

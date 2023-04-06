@@ -1,7 +1,7 @@
 #ifdef _WIN32
 
 #include "platform.h"
-#include <windows.h>
+#include <Windows.h>
 #include "logging.h"
 
 namespace platform 
@@ -43,7 +43,7 @@ namespace platform
             return platform::util::to_utf8(value);
         }
 
-        int RegistryMonitor::monitor(HKEY key, const std::string& subkey, std::function<void(HKEY)> callback)
+        int RegistryMonitor::monitor(HKEY key, const std::string& subkey, const std::function<void(HKEY)>& callback)
         {
             if (::RegOpenKeyEx(key, platform::util::to_utf16(subkey).c_str(), 0, KEY_NOTIFY, &key_) != ERROR_SUCCESS) {
                 LOG(ERROR) << "failed to open the registry key : " << subkey;
@@ -78,7 +78,7 @@ namespace platform
                             running_ = false;
                             break;
 
-                        case WAIT_OBJECT_0 + 1: // NOTIFIY_EVENT
+                        case WAIT_OBJECT_0 + 1: // NOTIFY_EVENT
                             callback(key_);
                             break;
 
@@ -102,8 +102,6 @@ namespace platform
             ::CloseHandle(NOTIFY_EVENT);
             ::CloseHandle(STOP_EVENT);
             ::RegCloseKey(key_);
-
-            LOG(INFO) << "REG MONITOR DESTORY";
         }
 
         std::shared_ptr<RegistryMonitor> monitor_regkey(HKEY key, const std::string& subkey, std::function<void(HKEY)> cb)

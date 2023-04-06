@@ -1,9 +1,8 @@
 #include "platform.h"
 #include <limits>
 
-
-namespace platform {
-
+namespace platform
+{
     static uint64_t numeric_combined(uint32_t h, uint32_t l) { return static_cast<uint64_t>(h) << 32 | l; }
 
     bool version_t::operator >= (const version_t& r) const
@@ -64,7 +63,7 @@ namespace platform {
         if (name.find("AMD") != std::string::npos ||
             name.find("Advanced Micro Devices") != std::string::npos) return vendor_t::AMD;
         if (name.find("Apple") != std::string::npos) return vendor_t::Apple;
-        
+
         return vendor_t::unknown;
     }
 
@@ -82,6 +81,26 @@ namespace platform {
             return endianness_t::big;
         else
             return endianness_t::little;
+    }
+
+    bool display::geometry_t::contains(int32_t _x, int32_t _y) const
+    {
+        return (_x >= left() && _x < right()) && (_y >= top() && _y < bottom());
+    }
+
+    display::geometry_t display::geometry_t::intersected(const display::geometry_t& otr) const
+    {
+        int32_t l = std::max(left(), otr.left());
+        int32_t t = std::max(top(), otr.top());
+
+        int32_t r = std::min(right(), otr.right());
+        int32_t b = std::min(bottom(), otr.bottom());
+
+        if(r <= l || b <= t) {
+            return {};
+        }
+
+        return {l, t, static_cast<uint32_t>(r - l + 1), static_cast<uint32_t>(b - t + 1) };
     }
 
     display::geometry_t display::virtual_screen_geometry()

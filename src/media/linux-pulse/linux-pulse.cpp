@@ -23,10 +23,10 @@ static void pulse_context_state_callback(pa_context *ctx, void *userdata)
             break;
         case PA_CONTEXT_FAILED:
         case PA_CONTEXT_TERMINATED:
-            LOG(INFO) << "PA_CONTEXT_TERMINATED";
+            DLOG(INFO) << "PA_CONTEXT_TERMINATED";
             break;
         case PA_CONTEXT_READY:
-            LOG(INFO) << "PA_CONTEXT_READY";
+            DLOG(INFO) << "PA_CONTEXT_READY";
             break;
     }
 
@@ -56,9 +56,9 @@ static const char *pulse_source_state_to_string(int state)
 static void pulse_source_info_callback(pa_context *ctx, const pa_source_info *i, int eol, void *userdata)
 {
     if (eol == 0) {
-        LOG(INFO) << fmt::format("Audio source: {} ({}), rate = {}, channels = {}, state = {}",
-                                 i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
-                                 pulse_source_state_to_string(i->state));
+        DLOG(INFO) << fmt::format("Audio source: {} ({}), rate = {}, channels = {}, state = {}",
+                                  i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
+                                  pulse_source_state_to_string(i->state));
         reinterpret_cast<std::vector<PulseInfo> *>(userdata)->emplace_back(
                 i->name,
                 i->description,
@@ -76,9 +76,9 @@ static void pulse_source_info_callback(pa_context *ctx, const pa_source_info *i,
 static void pulse_sink_info_callback(pa_context *ctx, const pa_sink_info *i, int eol, void *userdata)
 {
     if (eol == 0) {
-        LOG(INFO) << fmt::format("Audio sink: {} ({}), rate = {}, channels = {}, state = {}",
-                                 i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
-                                 pulse_source_state_to_string(i->state));
+        DLOG(INFO) << fmt::format("Audio sink: {} ({}), rate = {}, channels = {}, state = {}",
+                                  i->name, i->description, i->sample_spec.rate, i->sample_spec.channels,
+                                  pulse_source_state_to_string(i->state));
         reinterpret_cast<std::vector<PulseInfo> *>(userdata)->emplace_back(
                 i->name,
                 i->description,
@@ -102,8 +102,8 @@ static void pulse_server_info_callback(pa_context *ctx, const pa_server_info*i, 
     info->default_sink_ = i->default_sink_name;
     info->default_source_ = i->default_source_name;
 
-    LOG(INFO) << fmt::format("Pulse server: {} ({}), default sink = {}, default source = {}",
-                             info->name_, info->version_, info->default_sink_, info->default_source_);
+    DLOG(INFO) << fmt::format("Pulse server: {} ({}), default sink = {}, default source = {}",
+                              info->name_, info->version_, info->default_sink_, info->default_source_);
 
     pulse_signal(0);
 }

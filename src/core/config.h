@@ -6,7 +6,6 @@
 #include "utils.h"
 #include "platform.h"
 
-#define IF_NULL_SET(X, default_value) st(if(X.is_null())  X = default_value;)
 
 class Config : public QObject
 {
@@ -26,7 +25,7 @@ public:
 
     static std::string theme();
 
-    // use this funtion to set theme
+    // use this function to set theme
     void set_theme(const std::string&);
     static void load_theme(const std::string&);
 

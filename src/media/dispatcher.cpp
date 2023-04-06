@@ -370,8 +370,8 @@ int Dispatcher::receive_thread_f()
                 }
 
                 if (!is_valid_pts(av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q))) {
-                    LOG(INFO) << fmt::format("[DISPATCHER] drop the {} frame {} ({} - {})",
-                        av_get_media_type_string(frame_mt), av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
+                    LOG(INFO) << fmt::format("[DISPATCHER] [{}] drop frame {} ({} - {})",
+                        av_get_media_type_string(frame_mt)[0], av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
                     continue;
                 }
 
@@ -421,7 +421,7 @@ int Dispatcher::dispatch_thread_f()
                 continue;
             }
             else if (ret == AVERROR_EOF) {
-                LOG(INFO) << "[DISPATCHER] " << av_get_media_type_string(media_type) << " EOF";
+                LOG(INFO) << "[DISPATCHER] [" << av_get_media_type_string(media_type)[0] << "] EOF";
                 sink_eof = true;
                 // through and send null packet
                 av_frame_unref(frame);

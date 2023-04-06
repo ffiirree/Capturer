@@ -4,7 +4,6 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include <QFile>
 
 #ifndef st
 #define st(X) do{X}while(0)
@@ -31,22 +30,5 @@ enum PaintType : uint32_t {
     DRAW_FINISHED   = 0x0040 | UPDATE_MASK,
     REPAINT_ALL     = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
 };
-
-template<typename T>
-inline void LOAD_QSS(T* obj, std::vector<QString> files)
-{
-    QString style = "";
-    for (auto& qss : files) {
-
-        QFile file(qss);
-        file.open(QFile::ReadOnly);
-
-        if (file.isOpen()) {
-            style += file.readAll();
-            file.close();
-        }
-    }
-    obj->setStyleSheet(style);
-}
 
 #endif // UTILS_H

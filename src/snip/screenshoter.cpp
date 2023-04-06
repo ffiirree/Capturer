@@ -83,9 +83,9 @@ bool ScreenShoter::eventFilter(QObject * obj, QEvent * event)
     if (obj == menu_) {
         switch (event->type())
         {
-        case QEvent::KeyPress:      keyPressEvent(static_cast<QKeyEvent*>(event));  return true;
-        case QEvent::KeyRelease:    keyReleaseEvent(static_cast<QKeyEvent*>(event));return true;
-        default:                                                                    return Selector::eventFilter(obj, event);
+        case QEvent::KeyPress:      keyPressEvent(dynamic_cast<QKeyEvent*>(event));  return true;
+        case QEvent::KeyRelease:    keyReleaseEvent(dynamic_cast<QKeyEvent*>(event));return true;
+        default:                    return Selector::eventFilter(obj, event);
         }
     }
     else {
@@ -250,7 +250,7 @@ void ScreenShoter::pin()
 
 void ScreenShoter::registerShortcuts()
 {
-    connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, [this](){
+    connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this](){
         if(status_ == SelectorStatus::CAPTURED || status_ == SelectorStatus::LOCKED) {
             save();
         }
@@ -292,7 +292,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=](){
         if(status_ < SelectorStatus::CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
@@ -301,7 +301,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL + Qt::Key_V, this), &QShortcut::activated, canvas_, &Canvas::paste);
+    connect(new QShortcut(Qt::CTRL | Qt::Key_V, this), &QShortcut::activated, canvas_, &Canvas::paste);
 
     connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, canvas_, &Canvas::remove);
 }

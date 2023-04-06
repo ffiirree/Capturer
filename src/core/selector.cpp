@@ -38,7 +38,7 @@ void Selector::start()
 
         if(use_detect_) {
             WidgetsDetector::refresh();
-            box_.reset(WidgetsDetector::window_rect());
+            box_.reset(WidgetsDetector::window(QCursor::pos()).rect);
             info_->show();
         }
 
@@ -96,7 +96,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     switch (status_) {
     case SelectorStatus::NORMAL:
         if (use_detect_) {
-            box_.reset(WidgetsDetector::window_rect());
+            box_.reset(WidgetsDetector::window(mouse_pos).rect);
             update();
         }
         setCursor(Qt::CrossCursor);
@@ -207,7 +207,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             // invalid size
             if(!isValid()) {
                 if (use_detect_) { // detected window
-                    box_.reset(WidgetsDetector::window_rect());
+                    box_.reset(WidgetsDetector::window(QCursor::pos()).rect);
                     CAPTURED();
                 }
                 else {   // reset

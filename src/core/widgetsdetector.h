@@ -1,19 +1,24 @@
 #ifndef WIDGETS_DETECTOR_H
 #define WIDGETS_DETECTOR_H
 
-#include <QRect>
-#include <vector>
-#include <tuple>
+#include <QPoint>
+#include <deque>
+#include "platform.h"
 
 class WidgetsDetector
 {
 public:
-    static std::tuple<QString, QRect, uint64_t> window();       // window rect, name and id
-    static QRect window_rect();
-    static QRect widget();
+    static platform::display::window_t window(const QPoint&);   // global pos
     static void refresh();
+
+    WidgetsDetector() = delete;
+    WidgetsDetector(const WidgetsDetector&) = delete;
+    WidgetsDetector(WidgetsDetector&&) = delete;
+    WidgetsDetector& operator=(const WidgetsDetector&) = delete;
+    WidgetsDetector& operator=(WidgetsDetector&&) = delete;
+
 private:
-    static std::vector<std::tuple<QString, QRect, uint64_t>> windows_;
+    static std::deque<platform::display::window_t> windows_;
 };
 
 #endif // WIDGETS_DETECTOR_H

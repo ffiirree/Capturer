@@ -1,15 +1,12 @@
 #ifndef RESIZER_H
 #define RESIZER_H
 
-#include<QWidget>
-#include<QPoint>
-#include<QRect>
+#include <QWidget>
+#include <QPoint>
+#include <QRect>
 #include "platform.h"
 
 #define ANCHOR_W        7
-
-#define MIN_W   1
-#define MIN_H   1
 
 class Resizer
 {
@@ -66,6 +63,7 @@ public:
     void reset(int x1, int y1, int x2, int y2) { x1_ = x1; y1_ = y1; x2_ = x2; y2_ = y2; }
     void reset(const QPoint& p1, const QPoint& p2) { x1_ = p1.x(); y1_ = p1.y(); x2_ = p2.x(); y2_ = p2.y(); }
     void reset(const QRect& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
+    void reset(const platform::display::geometry_t& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
 
     void resize(const QSize& size) 
     { 

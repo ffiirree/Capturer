@@ -6,6 +6,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/audio_fifo.h>
 }
+#include <map>
 #include "consumer.h"
 #include "logging.h"
 #include "utils.h"

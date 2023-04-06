@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     Logger::init(argv);
 
-    QApplication a(argc, argv);
+    QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
     LOG(INFO) << "Capturer " << CAPTURER_VERSION;
@@ -38,5 +38,5 @@ int main(int argc, char *argv[])
 
     Capturer window;
 
-    return a.exec();
+    return app.exec();
 }

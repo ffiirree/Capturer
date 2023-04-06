@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <deque>
 #include <optional>
 #include <QRect>
 #include <functional>
@@ -83,7 +84,7 @@ namespace platform
             RegistryMonitor(const RegistryMonitor&) = delete;
             RegistryMonitor& operator= (const RegistryMonitor&) = delete;
 
-            int monitor(HKEY key, const std::string&, std::function<void(HKEY)>);
+            int monitor(HKEY key, const std::string&, const std::function<void(HKEY)>&);
             void stop();
 
         private:
@@ -132,7 +133,7 @@ namespace platform
         Apple = 0x106b,
     };
 
-    template <class _O, class _I> _O vendor_cast(_I i) { return static_cast<_O>(i); }
+    template <class O, class I> O vendor_cast(I i) { return static_cast<O>(i); }
 
     template <> vendor_t vendor_cast(uint32_t);
     template <> std::string vendor_cast(vendor_t);
@@ -270,7 +271,25 @@ namespace platform
             uint32_t width;
             uint32_t height;
 
-            operator QRect() { return QRect{ x, y, static_cast<int>(width), static_cast<int>(height) }; }
+            [[nodiscard]] bool contains(int32_t, int32_t) const;
+            [[nodiscard]] geometry_t intersected(const geometry_t&) const;
+
+            [[nodiscard]] int32_t left() const { return x; }
+            [[nodiscard]] int32_t top() const { return y; }
+            [[nodiscard]] int32_t right() const { return x + static_cast<int32_t>(width) - 1; }
+            [[nodiscard]] int32_t bottom() const { return y + static_cast<int32_t>(height) - 1; }
+
+            operator QRect() const { return QRect{ x, y, static_cast<int>(width), static_cast<int>(height) }; }
+        };
+
+        struct window_t
+        {
+            std::string name;           // utf-8
+            std::string classname;
+
+            geometry_t rect;
+            uint64_t handle;
+            bool visible;
         };
 
         enum class orientation_t
@@ -305,6 +324,8 @@ namespace platform
         };
 
         std::vector<display_t> displays();
+
+        std::deque<window_t> windows(bool=true);
 
         geometry_t virtual_screen_geometry();
     }

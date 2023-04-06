@@ -2,11 +2,11 @@
 
 #include "platform.h"
 #include "defer.h"
-#include <utility>
 #include <ShellScalingApi.h>
-#include "logging.h"
+#include <dwmapi.h>
 
-namespace platform::display {
+namespace platform::display
+{
     // https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
     // <  Windows 8.1       : GetDeviceCaps(hdc, LOGPIXELSX)
     // >= Windows 8.1       : GetDpiForMonitor(, MDT_EFFECTIVE_DPI, ,) with SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE), but can lead to unexpected application behavior.
@@ -94,6 +94,62 @@ namespace platform::display {
 
         return ret;
     }
-}
+
+    static window_t window_info(HWND hwnd)
+    {
+        // title
+        std::wstring name;
+        auto name_len = ::GetWindowTextLength(hwnd);
+        if (name_len > 0) {
+            name.resize(name_len + 1, {});
+
+            name_len = ::GetWindowText(hwnd, name.data(), name_len + 1);
+        }
+
+        // classname
+        std::wstring classname(256, {});
+        auto cn_len = ::GetClassName(hwnd, classname.data(), 256);
+
+        // rect
+        RECT rect;
+        ::DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(RECT));
+
+        // visible
+        BOOL is_cloaked = false;
+        bool visible = ::IsWindowVisible(hwnd) &&
+                       SUCCEEDED(::DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &is_cloaked, sizeof(is_cloaked))) &&
+                       !is_cloaked &&
+                       !(::GetWindowLong(hwnd, GWL_STYLE) & WS_DISABLED);
+
+        return {
+                platform::util::to_utf8(name.c_str(), name_len),         // not including the terminating null character.
+                platform::util::to_utf8(classname.c_str(), cn_len),      // not including the terminating null character.
+                platform::display::geometry_t{
+                        rect.left, rect.top,
+                        static_cast<uint32_t>(rect.right - rect.left), static_cast<uint32_t>(rect.bottom - rect.top)
+                },
+                reinterpret_cast<uint64_t>(hwnd),
+                visible
+        };
+    }
+
+    std::deque<window_t> windows(bool visible)
+    {
+        std::deque<window_t> ret;
+
+        // Z-index: up to down
+        for (auto hwnd = ::GetTopWindow(nullptr); hwnd != nullptr; hwnd = ::GetNextWindow(hwnd, GW_HWNDNEXT)) {
+            auto window = window_info(hwnd);
+
+            if (visible && !window.visible) {
+                continue;
+            }
+
+            ret.emplace_back(window);
+        }
+
+        return ret;
+    }
+} // namespace platform::display
 
 #endif // _WIN32
