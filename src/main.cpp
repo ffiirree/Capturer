@@ -16,10 +16,11 @@ int main(int argc, char *argv[])
     LOG(INFO) << "Capturer " << CAPTURER_VERSION;
 
     LOG(INFO) << " -- Qt               : " << qVersion();
-    LOG(INFO) << " -- Operating System : " << platform::system::os_name() << " " << platform::system::os_version();
+    LOG(INFO) << " -- Operating System : " << platform::system::os_name() << " (" << platform::system::os_version() << ")";
     LOG(INFO) << " -- Kernel           : " << platform::system::kernel_name() << " " << platform::system::kernel_version();
     LOG(INFO) << " -- Architecture     : " << platform::cpu::architecture();
     LOG(INFO) << " -- Virtual Screen   : " << platform::display::virtual_screen_geometry();
+    LOG(INFO) << " -- Desktop ENV      : " << platform::system::desktop_name(platform::system::desktop());
 
     Config::load_theme(Config::theme());
 

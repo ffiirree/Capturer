@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
 #include <deque>
 #include <optional>
 #include <QRect>
@@ -180,6 +181,7 @@ namespace platform
         std::string theme_name(theme_t);
 
         desktop_t desktop();
+        std::string desktop_name(desktop_t);
 
         std::string os_name();
         std::string kernel_name();

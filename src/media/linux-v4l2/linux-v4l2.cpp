@@ -46,11 +46,11 @@ std::vector<V4l2Device> v4l2_device_list()
         auto caps = (v4l2_cap.capabilities & V4L2_CAP_DEVICE_CAPS) ? v4l2_cap.device_caps : v4l2_cap.capabilities;
         if (!(caps & V4L2_CAP_VIDEO_CAPTURE))
         {
-            LOG(INFO) << device_id << " seems to not support video capture";
+            DLOG(INFO) << device_id << " seems to not support video capture";
             continue;
         }
 
-        LOG(INFO) << fmt::format("Found device '{}' at {}", reinterpret_cast<const char *>(v4l2_cap.card), device_id);
+        DLOG(INFO) << fmt::format("Found device '{}' at {}", reinterpret_cast<const char *>(v4l2_cap.card), device_id);
 
         list.emplace_back(device_id, v4l2_cap);
     }
