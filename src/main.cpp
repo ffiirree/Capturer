@@ -1,7 +1,6 @@
 #include <QApplication>
 #include <QTranslator>
 #include "version.h"
-#include "utils.h"
 #include "capturer.h"
 #include "logging.h"
 #include "platform.h"
@@ -10,11 +9,12 @@ int main(int argc, char *argv[])
 {
     Logger::init(argv);
 
+    platform::util::thread_set_name("capturer-main");
+
     QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
     LOG(INFO) << "Capturer " << CAPTURER_VERSION;
-
     LOG(INFO) << " -- Qt               : " << qVersion();
     LOG(INFO) << " -- Operating System : " << platform::system::os_name() << " (" << platform::system::os_version() << ")";
     LOG(INFO) << " -- Kernel           : " << platform::system::kernel_name() << " " << platform::system::kernel_version();

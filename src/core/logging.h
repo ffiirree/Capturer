@@ -48,13 +48,15 @@ private:
                     << std::setw(2) << _info.time.min() << ':'
                     << std::setw(2) << _info.time.sec() << "."
                     << std::setw(3) << _info.time.usec() / 1000
-                    << " - "
-                    << std::setfill(' ') << std::setw(5) << _info.thread_id
-                    << " - "
-                    << _info.severity[0]
-                    << " - "
-                    << std::setw(24)
-                    << _file_line << ']';
+                    << std::setfill(' ')
+                    << ' '
+                    << std::setw(7) << _info.severity
+                    << ' '
+                    << std::setw(5) << _info.thread_id
+                    << " -- ["
+                    << std::setw(24) << _file_line
+                    << "] ["
+                    <<  std::setw(15) << platform::util::thread_get_name().substr(0, 15) << "]:";
             }
         );
 
@@ -62,10 +64,18 @@ private:
         FLAGS_max_log_size = 32;                    // MB
         FLAGS_stop_logging_if_full_disk = true;
         FLAGS_logbufsecs = 0;                       // s
-        FLAGS_stderrthreshold = google::GLOG_INFO;
         FLAGS_colorlogtostderr = true;
-        google::SetLogFilenameExtension(".txt");
-        google::EnableLogCleaner(7);                // days
+        google::SetStderrLogging(google::GLOG_INFO);
+        google::SetLogDestination(google::GLOG_INFO,    "logs/CAPTURER-I-");
+        google::SetLogDestination(google::GLOG_WARNING, "logs/CAPTURER-W-");
+        google::SetLogDestination(google::GLOG_ERROR,   "logs/CAPTURER-E-");
+        google::SetLogDestination(google::GLOG_FATAL,   "logs/CAPTURER-F-");
+        google::SetLogFilenameExtension(".log");
+        google::EnableLogCleaner(3);                // days
+        google::InstallFailureSignalHandler();
+        google::InstallFailureWriter([](const char* data, size_t size){
+            LOG(ERROR) << std::string(data, size);
+        });
     }
 };
 

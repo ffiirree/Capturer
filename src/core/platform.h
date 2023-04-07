@@ -343,6 +343,13 @@ namespace platform
 
         std::wstring to_utf16(const std::string&);
         std::wstring to_utf16(const char*, size_t = 0);
+
+        // linux: The thread name is a meaningful C language string, whose length is restricted to 16 characters,
+        //        including the terminating null byte ('\0')
+        int thread_set_name(const std::string&);
+        std::string thread_get_name();
+
+        // TODO: wrap the std::thread with name
     }
 }
 

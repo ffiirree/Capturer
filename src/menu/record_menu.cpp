@@ -85,7 +85,7 @@ void RecordMenu::start()
 
     show();
     // global position, primary display monitor
-    move(platform::display::displays()[0].geometry.width - width() - 5, 100);
+    move(platform::display::displays()[0].geometry.right() - width() - 5, 100);
 }
 
 void RecordMenu::mousePressEvent(QMouseEvent* event)

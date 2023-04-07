@@ -34,7 +34,11 @@ namespace platform
 
             running_ = true;
             thread_ = std::thread([=](){
+                platform::util::thread_set_name("monit-gsettings");
+
                 while (running_) {
+                    LOG(INFO) << "open '" << cmd << "'";
+
                     FILE* pipe = popen(cmd.c_str(), "r");
 
                     if (!pipe) {
@@ -94,6 +98,18 @@ namespace platform
         std::wstring to_utf16(const char*, size_t)
         {
             return {};
+        }
+
+        int thread_set_name(const std::string& name)
+        {
+            return pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+        }
+
+        std::string thread_get_name()
+        {
+            char buffer[128];
+            pthread_getname_np(pthread_self(), buffer, 128);
+            return buffer;
         }
     } // namespace util
 }

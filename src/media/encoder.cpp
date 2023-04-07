@@ -227,7 +227,10 @@ int Encoder::run()
     }
 
     running_ = true;
-    thread_ = std::thread([this]() { run_f(); });
+    thread_ = std::thread([this]() { 
+        platform::util::thread_set_name("encoder");
+        run_f(); 
+    });
 
     return 0;
 }

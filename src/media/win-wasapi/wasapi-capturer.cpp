@@ -171,7 +171,10 @@ int WasapiCapturer::run()
     eof_ = 0x00;
 
     start_time_ = os_gettime_ns();
-    thread_ = std::thread([this]() { run_f(); });
+    thread_ = std::thread([this]() {
+        platform::util::thread_set_name("wasapi-" + std::to_string((int)type_));
+        run_f(); 
+    });
 
     return 0;
 }
@@ -195,13 +198,13 @@ int WasapiCapturer::run_f()
             break;
 
         case WAIT_OBJECT_0 + 1: // AUDIO_SAMPLES_READY_EVENT
-            LOG_IF(INFO, buffer_.full()) << "[  WASAPI] [A] buffer is full, drop a packet";
+            LOG_IF(WARNING, buffer_.full()) << fmt::format("[    WASAPI] [A] [{:10}] buffer is full, drop a packet", (int)type_);
 
             while (true)
             {
                 if (FAILED(capturer_->GetNextPacketSize(&packet_size))) {
                     running_ = false;
-                    LOG(INFO) << "GetBuffer failed";
+                    LOG(ERROR) << "[    WASAPI] [A] failed to get the next packet size, exit";
                     return -1;
                 }
 
@@ -211,7 +214,7 @@ int WasapiCapturer::run_f()
                 // Get the available data in the shared buffer.
                 if (FAILED(capturer_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
                     running_ = false;
-                    LOG(INFO) << "GetBuffer failed";
+                    LOG(ERROR) << fmt::format("[    WASAPI] [A] [{:10}] failed to get the buffer, exit", (int)type_);
                     return -1;
                 }
 
@@ -219,7 +222,7 @@ int WasapiCapturer::run_f()
 
                 if (FAILED(capturer_->ReleaseBuffer(nb_samples))) {
                     running_ = false;
-                    LOG(INFO) << "ReleaseBuffer failed";
+                    LOG(ERROR) << fmt::format("[    WASAPI] [A] [{:10}] failed to release buffer, exit", (int)type_);
                     return -1;
                 }
             }
@@ -235,7 +238,7 @@ int WasapiCapturer::run_f()
 
     RETURN_ON_ERROR(capturer_audio_client_->Stop());
 
-    LOG(INFO) << fmt::format("[    WASAPI] [{}] EXITED", (int)type_);
+    LOG(INFO) << fmt::format("[    WASAPI] [A] [{:10}] EXITED", (int)type_);
     return 0;
 }
 

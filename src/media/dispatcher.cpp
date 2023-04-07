@@ -323,8 +323,15 @@ int Dispatcher::start()
     //
 
     running_ = true;
-    dispatch_thread_ = std::thread([this]() { dispatch_thread_f(); });
-    receive_thread_ = std::thread([this]() { receive_thread_f(); });
+    dispatch_thread_ = std::thread([this]() {
+        platform::util::thread_set_name("dispatcher");
+        dispatch_thread_f(); 
+    });
+
+    receive_thread_ = std::thread([this]() {
+        platform::util::thread_set_name("receiver");
+        receive_thread_f(); 
+    });
 
     return 0;
 }

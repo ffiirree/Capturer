@@ -266,7 +266,10 @@ int Decoder::run()
 
     eof_ = 0x00;
     running_ = true;
-    thread_ = std::thread([this]() { run_f(); });
+    thread_ = std::thread([this]() {
+        platform::util::thread_set_name("dec-" + name_);
+        run_f();
+    });
 
     return 0;
 }

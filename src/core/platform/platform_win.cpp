@@ -2,7 +2,9 @@
 
 #include "platform.h"
 #include <Windows.h>
+#include <processthreadsapi.h>
 #include "logging.h"
+#include "defer.h"
 
 namespace platform 
 {
@@ -61,32 +63,36 @@ namespace platform
             }
            
             running_ = true;
-            thread_ = std::thread([=]()
-                {
-                    const HANDLE events[] = { STOP_EVENT, NOTIFY_EVENT };
+            thread_ = std::thread([=]() {
+                platform::util::thread_set_name("monit-registry");
 
-                    while (running_) {
-                        if (::RegNotifyChangeKeyValue(
-                            key_, TRUE, REG_LEGAL_CHANGE_FILTER, NOTIFY_EVENT, TRUE) != ERROR_SUCCESS) {
-                            LOG(ERROR) << "failed to monitor the registry key : " << subkey;
-                            ::SetEvent(STOP_EVENT);
-                        }
+                LOG(INFO) << "start monitoring key : '" << subkey << "'";
 
-                        switch (::WaitForMultipleObjects(2, events, false, INFINITE))
-                        {
-                        case WAIT_OBJECT_0 + 0: // STOP_EVENT
-                            running_ = false;
-                            break;
+                const HANDLE events[] = { STOP_EVENT, NOTIFY_EVENT };
 
-                        case WAIT_OBJECT_0 + 1: // NOTIFY_EVENT
-                            callback(key_);
-                            break;
+                while (running_) {
+                    if (::RegNotifyChangeKeyValue(
+                        key_, TRUE, REG_LEGAL_CHANGE_FILTER, NOTIFY_EVENT, TRUE) != ERROR_SUCCESS) {
+                        LOG(ERROR) << "failed to monitor the registry key : " << subkey;
+                        ::SetEvent(STOP_EVENT);
+                    }
 
-                        default: break;
-                        }
+                    switch (::WaitForMultipleObjects(2, events, false, INFINITE))
+                    {
+                    case WAIT_OBJECT_0 + 0: // STOP_EVENT
+                        running_ = false;
+                        break;
+
+                    case WAIT_OBJECT_0 + 1: // NOTIFY_EVENT
+                        callback(key_);
+                        break;
+
+                    default: break;
                     }
                 }
-            );
+
+                LOG(INFO) << "stop monitoring : '" << subkey << "'";
+            });
 
             return 0;
         }
@@ -145,6 +151,27 @@ namespace platform
             MultiByteToWideChar(CP_UTF8, 0, mstr, static_cast<int>(mlen), wstr.data(), static_cast<int>(wstr.size()));
 
             return std::move(wstr);
+        }
+
+
+        int thread_set_name(const std::string& name)
+        {
+            // >= Windows 10, version 1607
+            if (FAILED(::SetThreadDescription(::GetCurrentThread(), to_utf16(name).c_str()))) {
+                return -1;
+            }
+            return 0;
+        }
+
+        std::string thread_get_name()
+        {
+            // >= Windows 10, version 1607
+            WCHAR *buffer = nullptr;
+            if (SUCCEEDED(::GetThreadDescription(::GetCurrentThread(), &buffer))) {
+                defer(::LocalFree(buffer));
+                return to_utf8(buffer);
+            }
+            return {};
         }
     } // namespace util
 }
