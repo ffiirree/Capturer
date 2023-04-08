@@ -125,7 +125,7 @@ void FramelessWindow::mouseMoveEvent(QMouseEvent* e)
     }
 }
 
-void FramelessWindow::mouseReleaseEvent(QMouseEvent* e)
+void FramelessWindow::mouseReleaseEvent(QMouseEvent*)
 {
     if (is_moving_ || is_resizing_) {
         is_moving_ = false;

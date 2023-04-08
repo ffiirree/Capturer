@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 
 project(capturer VERSION 1.4.2 LANGUAGES C CXX)
 
@@ -6,8 +6,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+    message(STATUS "Windows SDK version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+
+    add_compile_options(/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor  /Zc:__cplusplus)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # #######################################################################################################################
@@ -18,6 +26,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
 # 3rdparty: QHotkey glog
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
 set(WITH_GFLAGS OFF CACHE BOOL "Use gflags")
+
 add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
@@ -33,9 +42,6 @@ find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRE
 if(WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE ON)
-
-    # Windows API
-    add_definitions(-DUNICODE -DNOMINMAX)
 elseif(UNIX AND NOT APPLE)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     find_package(PulseAudio REQUIRED)
@@ -65,35 +71,35 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-    QHotkey::QHotkey
-    Qt5::Widgets Qt5::Gui
-    glog::glog
-    fmt::fmt
-    FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
-    $<$<PLATFORM_ID:Windows>:dwmapi>
-    $<$<PLATFORM_ID:Windows>:strmiids>
-    $<$<PLATFORM_ID:Windows>:ntdll>
-    $<$<PLATFORM_ID:Windows>:Shcore> 
-    $<$<PLATFORM_ID:Windows>:DXGI>
-    $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
-    $<$<PLATFORM_ID:Linux>:X11::Xrandr>
-    $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
-    $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
+        QHotkey::QHotkey
+        Qt5::Widgets Qt5::Gui
+        glog::glog
+        fmt::fmt
+        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
+        $<$<PLATFORM_ID:Windows>:dwmapi>
+        $<$<PLATFORM_ID:Windows>:strmiids>
+        $<$<PLATFORM_ID:Windows>:ntdll>
+        $<$<PLATFORM_ID:Windows>:Shcore> 
+        $<$<PLATFORM_ID:Windows>:DXGI>
+        $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+        $<$<PLATFORM_ID:Linux>:X11::Xrandr>
+        $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
+        $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
-    3rdparty
-    src/core
-    src/media
-    src/widgets
-    src/menu
-    src/pinned
-    src/snip
-    src/record
-    src/setting
-    ${PULSEAUDIO_INCLUDE_DIR}
-    ${PROJECT_BINARY_DIR} # Generated header files
+        3rdparty
+        src/core
+        src/media
+        src/widgets
+        src/menu
+        src/pinned
+        src/snip
+        src/record
+        src/setting
+        ${PULSEAUDIO_INCLUDE_DIR}
+        ${PROJECT_BINARY_DIR} # Generated header files
 )
 
 # #######################################################################################################################

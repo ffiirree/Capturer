@@ -215,11 +215,11 @@ void ImageWindow::mouseMoveEvent(QMouseEvent* event)
     }
 }
 
-void ImageWindow::mouseReleaseEvent(QMouseEvent* event)
+void ImageWindow::mouseReleaseEvent(QMouseEvent*)
 {
 }
 
-void ImageWindow::mouseDoubleClickEvent(QMouseEvent* event)
+void ImageWindow::mouseDoubleClickEvent(QMouseEvent*)
 {
     if (editing_) return;
 
@@ -246,7 +246,7 @@ void ImageWindow::wheelEvent(QWheelEvent* event)
     }
 }
 
-void ImageWindow::paintEvent(QPaintEvent* event)
+void ImageWindow::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     // background for alpha

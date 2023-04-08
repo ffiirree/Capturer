@@ -116,6 +116,7 @@ git submodule update --init --recursive
 - `FFmpeg` : `4.4.x` / `5.1.2`
 - `Windows` : `>= Windows 10 1607`
 - `Ubuntu` : `>= 18.04`
+- `CMake` : `>= 3.16`
 
 ### Windows
 
@@ -131,11 +132,8 @@ git submodule update --init --recursive
 ```bash
 cd Capturer
 
-mdkir build
-cd build
-
-cmake -A x64 .. -DCMAKE_INSTALL_PREFIX=D:\\"Program Files (x86)"\\Capturer
-cmake --build . --config Release --target install
+cmake -S. -Bbuild -DCMAKE_INSTALL_PREFIX=D:\\"Program Files"\\Capturer
+cmake --build build --target install
 ```
 
 ### Linux (Ubuntu)
@@ -162,11 +160,9 @@ sudo apt install libxrandr-dev
 ```
 
 ```bash
-cd Capturer
+cd Capturer && mkdir build && cd build
 
-mkdir build && cd build
-
-# Ubuntu 18.4 上的CMake 版本过低，请先安装更高版本的CMake, 参见下一小节
+# Ubuntu 18.4 上的 CMake 版本过低，请先安装更高版本的CMake(>=3.16), 参见下一小节
 cmake ..
 make -j8
 

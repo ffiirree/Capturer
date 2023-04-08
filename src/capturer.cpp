@@ -149,11 +149,11 @@ std::pair<DataFormat, std::any> Capturer::clipboard_data()
 
 std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::any>& data_pair)
 {
-    auto& [type, data] = data_pair;
+    auto& [type, buffer] = data_pair;
 
     switch (type)
     {
-    case DataFormat::PIXMAP: return { true,  std::any_cast<QPixmap>(data) };
+    case DataFormat::PIXMAP: return { true,  std::any_cast<QPixmap>(buffer) };
     case DataFormat::HTML:
     {
         QTextEdit view;
@@ -161,21 +161,21 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
         view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view.setLineWrapMode(QTextEdit::NoWrap);
 
-        view.setHtml(std::any_cast<QString>(data));
+        view.setHtml(std::any_cast<QString>(buffer));
         view.setFixedSize(view.document()->size().toSize());
 
         return { true, view.grab() };
     }
     case DataFormat::TEXT:
     {
-        QLabel label(std::any_cast<QString>(data));
+        QLabel label(std::any_cast<QString>(buffer));
         label.setWordWrap(true);
         label.setMargin(10);
         label.setStyleSheet("background-color:white");
         label.setFont({ "Consolas", 12 });
         return { true, label.grab() };
     }
-    case DataFormat::URLS: return { true, QPixmap(std::any_cast<QList<QUrl>>(data)[0].toLocalFile()) };
+    case DataFormat::URLS: return { true, QPixmap(std::any_cast<QList<QUrl>>(buffer)[0].toLocalFile()) };
     default: LOG(WARNING) << "not support"; return { false, {} };
     }
 }

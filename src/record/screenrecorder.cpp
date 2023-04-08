@@ -30,7 +30,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
 
     connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
-    connect(menu_, &RecordMenu::opened, [this](bool opened) { switchCamera(); });
+    connect(menu_, &RecordMenu::opened, [this](bool) { switchCamera(); });
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::started, [this]() { menu_->camera_checked(true); });
     connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });

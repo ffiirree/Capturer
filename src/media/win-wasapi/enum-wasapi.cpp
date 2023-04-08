@@ -75,7 +75,6 @@ std::vector<std::pair<std::wstring, std::wstring>> enum_audio_endpoints(bool is_
 std::optional<std::pair<std::wstring, std::wstring>> default_audio_endpoint(bool is_input)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
-    IMMDeviceCollection* collection = nullptr;
     IMMDevice* endpoint = nullptr;
     LPWSTR id = nullptr;
     IPropertyStore* props = nullptr;

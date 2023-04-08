@@ -73,7 +73,7 @@ int VideoPlayer::consume(AVFrame* frame, int type)
     return 0;
 }
 
-void VideoPlayer::paintEvent(QPaintEvent* event)
+void VideoPlayer::paintEvent(QPaintEvent*)
 {
     if (std::lock_guard lock(mtx_); frame_) {
         QPainter painter(this);
@@ -84,7 +84,7 @@ void VideoPlayer::paintEvent(QPaintEvent* event)
     }
 }
 
-void VideoPlayer::closeEvent(QCloseEvent* event)
+void VideoPlayer::closeEvent(QCloseEvent*)
 {
     eof_ = 0x01;
 

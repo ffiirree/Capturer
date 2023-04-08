@@ -14,7 +14,7 @@ class PaintCommand : public QObject
 public:
     PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&, const QPoint&);
 
-    PaintCommand(const PaintCommand& cmd) { *this = cmd; }
+    PaintCommand(const PaintCommand& cmd) : QObject() { *this = cmd; }
     PaintCommand& operator=(const PaintCommand&);
 
     [[nodiscard]] inline Graph graph() const  { return graph_; }
@@ -119,10 +119,7 @@ class CommandStack : public QObject
 public:
     CommandStack() = default;
 
-    CommandStack(const CommandStack& other)
-    {
-        stack_ = other.stack_;
-    }
+    CommandStack(const CommandStack& r) :QObject() { stack_ = r.stack_; }
 
     CommandStack& operator=(const CommandStack& other)
     {

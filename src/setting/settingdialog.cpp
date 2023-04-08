@@ -96,7 +96,7 @@ void SettingWindow::setupGeneralWidget()
     _1_2->addItem("English", "en_US");
     _1_2->addItem("简体中文", "zh_CN");
     _1_2->setCurrentIndex(std::max(0, _1_2->findData(config["language"].get<QString>())));
-    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _1_2](int i){
+    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _1_2](int){
         config.set(config["language"], _1_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
@@ -118,7 +118,7 @@ void SettingWindow::setupGeneralWidget()
     _3_2->addItem(tr("Dark"), "dark");
     _3_2->addItem(tr("Light"), "light");
     _3_2->setCurrentIndex(std::max(0, _3_2->findData(config["theme"].get<QString>())));
-    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _3_2](int i) {
+    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _3_2](int) {
         config.set_theme(_3_2->currentData().toString().toStdString());
     });
     layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
@@ -255,7 +255,7 @@ void SettingWindow::setupRecordWidget()
     //    _7_2->addItem("Hardware NVENC [H.265 / HEVC]", "hevc_nvenc");
     //}
     _7_2->setCurrentIndex(std::max(0, _7_2->findData(config["record"]["encoder"].get<QString>())));
-    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _7_2](int s) {
+    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _7_2](int) {
         config.set(config["record"]["encoder"], _7_2->currentData().toString());
     });
     layout->addWidget(new QLabel(tr("Encoder")), 9, 1, 1, 1);

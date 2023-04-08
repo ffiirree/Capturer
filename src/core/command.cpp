@@ -5,7 +5,7 @@
 #define TEXT_EDIT_MARGIN   16
 
 PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool is_fill, const QPoint& start_point, const QPoint& offset)
-    : graph_(type), pen_(pen), font_(font), is_fill_(is_fill), offset_(offset)
+    : QObject(), graph_(type), pen_(pen), font_(font), is_fill_(is_fill), offset_(offset)
 {
     switch (graph_) {
     // 1. movable and resizable without a widget

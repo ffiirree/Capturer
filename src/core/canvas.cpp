@@ -45,7 +45,7 @@ Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 }
 
-bool Canvas::eventFilter(QObject* object, QEvent* event)
+bool Canvas::eventFilter(QObject*, QEvent* event)
 {
     if (!enabled_) return false;
 
@@ -285,7 +285,7 @@ void Canvas::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-void Canvas::keyPressEvent(QKeyEvent* event)
+void Canvas::keyPressEvent(QKeyEvent*)
 {
 }
 

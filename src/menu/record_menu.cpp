@@ -102,7 +102,7 @@ void RecordMenu::mouseMoveEvent(QMouseEvent* event)
    }
 }
 
-void RecordMenu::mouseReleaseEvent(QMouseEvent* event)
+void RecordMenu::mouseReleaseEvent(QMouseEvent*)
 {
     moving_ = false;
 }

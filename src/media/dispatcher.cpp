@@ -173,7 +173,7 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
         }
     }
  
-    if (int er = 0; er = avfilter_graph_config(filter_graph_, nullptr) < 0) {
+    if (avfilter_graph_config(filter_graph_, nullptr) < 0) {
         LOG(ERROR) << "failed to configure the filter graph";
         return -1;
     }
@@ -359,8 +359,8 @@ int Dispatcher::receive_thread_f()
     AVFrame* frame = av_frame_alloc();
     defer(av_frame_free(&frame));
 
-    LOG(INFO) << "[DISPATCHER] RECEIVE THREAD STARTED";
-    defer(LOG(INFO) << "[DISPATCHER] RECEIVE THREAD EXITED");
+    LOG(INFO) << "[DISPATCHER] receive thread started";
+    defer(LOG(INFO) << "[DISPATCHER] receive thread exited");
 
     while (running_) {
         bool sleepy = true;
@@ -408,8 +408,8 @@ int Dispatcher::dispatch_thread_f()
     AVFrame* frame = av_frame_alloc();
     defer(av_frame_unref(frame); av_frame_free(&frame));
 
-    LOG(INFO) << "[DISPATCHER] DISPATCH THREAD STARTED";
-    defer(LOG(INFO) << "[DISPATCHER] DISPATCH THREAD EXITED");
+    LOG(INFO) << "[DISPATCHER] dispatch thread started";
+    defer(LOG(INFO) << "[DISPATCHER] dispatch thread exited");
 
     while (running_) {
         bool sleepy = true;
@@ -423,6 +423,7 @@ int Dispatcher::dispatch_thread_f()
             }
 
             av_frame_unref(frame);
+            // TODO : crash while recording witch audio on Windows
             int ret = av_buffersink_get_frame_flags(sink_ctx, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret == AVERROR(EAGAIN)) {
                 continue;
