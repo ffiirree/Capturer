@@ -24,17 +24,17 @@ public:
     void append(Producer<AVFrame>* decoder)
     {
         if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
-            audio_producers_.emplace_back(decoder);
+            a_producer_ctxs_.push_back({ nullptr, decoder, false });
         }
 
         if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
-            video_producers_.emplace_back(decoder);
+            v_producer_ctxs_.push_back({ nullptr, decoder, false });
         }
     }
 
     void set_encoder(Consumer<AVFrame>* encoder)
     {
-        consumer_ = encoder;
+        consumer_ctx_.consumer = encoder;
     }
 
     int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
@@ -53,6 +53,20 @@ public:
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
 private:
+    struct ProducerContext {
+        AVFilterContext* ctx;
+        Producer<AVFrame>* producer;
+        bool eof;
+    };
+
+    struct ConsumerContext {
+        AVFilterContext* actx;
+        AVFilterContext* vctx;
+        Consumer<AVFrame>* consumer;
+        bool a_eof;
+        bool v_eof;
+    };
+
     int create_filter_for_input(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
     int create_filter_for_output(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
 
@@ -62,12 +76,11 @@ private:
     int create_filter_for_audio_input(const Producer<AVFrame>*, AVFilterContext**);
     int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
 
-    [[nodiscard]] int create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type);
+    [[nodiscard]] int create_filter_graph_for(std::vector<ProducerContext>&, const std::string&, enum AVMediaType);
 
     int set_encoder_format_by_sinks();
 
-    int receive_thread_f();
-    int dispatch_thread_f();
+    int dispatch_fn(enum AVMediaType mt);
 
     // pts must in OS_TIME_BASE_Q
     bool is_valid_pts(int64_t);
@@ -84,20 +97,18 @@ private:
     std::atomic<bool> running_{ false };
     std::atomic<bool> ready_{ false };
 
-    std::vector<Producer<AVFrame>*> audio_producers_;
-    std::vector<Producer<AVFrame>*> video_producers_;
-    Consumer<AVFrame>* consumer_{ nullptr };
+    std::vector<ProducerContext> a_producer_ctxs_{};
+    std::vector<ProducerContext> v_producer_ctxs_{};
 
-    std::vector<std::tuple<AVFilterContext*, Producer<AVFrame>*, bool>> i_streams_;
-    std::vector<std::tuple<AVFilterContext*, Consumer<AVFrame>*, bool>> o_streams_;
+    ConsumerContext consumer_ctx_{};
 
     std::string video_graph_desc_{ };
     std::string audio_graph_desc_{ };
 
     AVFilterGraph* filter_graph_{ nullptr };
 
-    std::thread receive_thread_;
-    std::thread dispatch_thread_;
+    std::thread video_thread_;
+    std::thread auido_thread_;
 };
 
 #endif // !CAPTURER_DISPATCHER_H

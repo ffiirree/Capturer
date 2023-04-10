@@ -132,13 +132,13 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
     video_graph_desc_ = video_graph_desc;
     audio_graph_desc_ = audio_graph_desc;
 
-    if (video_producers_.empty() && audio_producers_.empty()) {
-        LOG(INFO) << "[DISPATCHER] At least one input";
+    if (v_producer_ctxs_.empty() && a_producer_ctxs_.empty()) {
+        LOG(INFO) << "[DISPATCHER] no input.";
         return -1;
     }
 
-    if (consumer_ == nullptr) {
-        LOG(INFO) << "[DISPATCHER] At least one output";
+    if (consumer_ctx_.consumer == nullptr) {
+        LOG(INFO) << "[DISPATCHER]no output.";
         return -1;
     }
 
@@ -149,25 +149,29 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
         return -1;
     }
 
-    if (!video_producers_.empty()) {
-        if (video_graph_desc_.empty() && video_producers_.size() > 1) {
+    if (!v_producer_ctxs_.empty()) {
+        if (video_graph_desc_.empty() && v_producer_ctxs_.size() > 1) {
             LOG(ERROR) << "no more than 1 video stream for simple filter graph";
             return -1;
         }
 
-        if (create_filter_graph_for(video_producers_, video_graph_desc_, AVMEDIA_TYPE_VIDEO) < 0) {
+        consumer_ctx_.consumer->enable(AVMEDIA_TYPE_VIDEO);
+
+        if (create_filter_graph_for(v_producer_ctxs_, video_graph_desc_, AVMEDIA_TYPE_VIDEO) < 0) {
             LOG(ERROR) << "failed to create graph for processing video";
             return -1;
         }
     }
 
-    if (!audio_producers_.empty()) {
-        if (audio_graph_desc_.empty() && audio_producers_.size() > 1) {
+    if (!a_producer_ctxs_.empty()) {
+        if (audio_graph_desc_.empty() && a_producer_ctxs_.size() > 1) {
             // TODO: the amix may not be closed with duration=longest
-            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=first", audio_producers_.size());
+            audio_graph_desc_ = fmt::format("amix=inputs={}:duration=first", a_producer_ctxs_.size());
         }
 
-        if (create_filter_graph_for(audio_producers_, audio_graph_desc_, AVMEDIA_TYPE_AUDIO) < 0) {
+        consumer_ctx_.consumer->enable(AVMEDIA_TYPE_AUDIO);
+
+        if (create_filter_graph_for(a_producer_ctxs_, audio_graph_desc_, AVMEDIA_TYPE_AUDIO) < 0) {
             LOG(ERROR) << "failed to create graph for processing audio";
             return -1;
         }
@@ -187,34 +191,29 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
 }
 
 
-int Dispatcher::create_filter_graph_for(const std::vector<Producer<AVFrame>*>& producers, const std::string& desc, enum AVMediaType type)
+int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_ctxs, const std::string& desc, enum AVMediaType type)
 {
     LOG(INFO) << "[DISPATCHER] create filter graph : " << desc;
 
     // buffersrc
-    std::vector<AVFilterContext*> src_ctxs;
-    for (const auto& producer : producers) {
-        AVFilterContext* src_ctx = nullptr;
-
-        if (create_filter_for_input(producer, &src_ctx, type) < 0) {
+    for (auto& [ctx, producer, _] : producer_ctxs) {
+        if (create_filter_for_input(producer, &ctx, type) < 0) {
             return -1;
         }
 
         producer->enable(type);
-        src_ctxs.emplace_back(src_ctx);
-        i_streams_.emplace_back(src_ctx, producer, false);
     }
 
+    auto& sink = (type == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.vctx : consumer_ctx_.actx;
+
     // buffersink
-    AVFilterContext* sink_ctx = nullptr;
-    if (create_filter_for_output(consumer_, &sink_ctx, type) < 0) {
+    if (create_filter_for_output(consumer_ctx_.consumer, &sink, type) < 0) {
         return -1;
     }
-    o_streams_.emplace_back(sink_ctx, consumer_, false);
 
     if (desc.empty()) {
         // 1 input & 1 output
-        if (avfilter_link(src_ctxs[0], 0, sink_ctx, 0) < 0) {
+        if (avfilter_link(producer_ctxs[0].ctx, 0, sink, 0) < 0) {
             return -1;
         }
     }
@@ -223,20 +222,20 @@ int Dispatcher::create_filter_graph_for(const std::vector<Producer<AVFrame>*>& p
         defer(avfilter_inout_free(&inputs); avfilter_inout_free(&outputs));
 
         if (avfilter_graph_parse2(filter_graph_, desc.c_str(), &inputs, &outputs) < 0) {
-            LOG(ERROR) << "avfilter_graph_parse2";
+            LOG(ERROR) << "failed to parse filter graph desc : '" << desc << "'";
             return -1;
         }
 
         int i = 0;
         for (auto ptr = inputs; ptr; ptr = ptr->next, i++) {
-            if (avfilter_link(src_ctxs[i], 0, ptr->filter_ctx, ptr->pad_idx) < 0) {
+            if (avfilter_link(producer_ctxs[i].ctx, 0, ptr->filter_ctx, ptr->pad_idx) < 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
         }
 
         for (auto ptr = outputs; ptr; ptr = ptr->next) {
-            if(avfilter_link(ptr->filter_ctx, ptr->pad_idx, sink_ctx, 0) < 0) {
+            if(avfilter_link(ptr->filter_ctx, ptr->pad_idx, sink, 0) < 0) {
                 LOG(ERROR) << "avfilter_link";
                 return -1;
             }
@@ -248,36 +247,26 @@ int Dispatcher::create_filter_graph_for(const std::vector<Producer<AVFrame>*>& p
 
 int Dispatcher::set_encoder_format_by_sinks()
 {
-    if (!consumer_) {
+    if (!consumer_ctx_.consumer && !consumer_ctx_.vctx && !consumer_ctx_.actx) {
         LOG(ERROR) << "no encoder was found";
         return -1;
     }
 
-    for (const auto& [sink_ctx, coder, _] : o_streams_) {
-        switch (av_buffersink_get_type(sink_ctx))
-        {
-        case AVMEDIA_TYPE_VIDEO:
-            consumer_->vfmt_.width = av_buffersink_get_w(sink_ctx);
-            consumer_->vfmt_.height = av_buffersink_get_h(sink_ctx);
-            consumer_->vfmt_.framerate = av_buffersink_get_frame_rate(sink_ctx);
-            consumer_->vfmt_.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink_ctx);
-            consumer_->vfmt_.time_base = av_buffersink_get_time_base(sink_ctx);
-            break;
-
-        case AVMEDIA_TYPE_AUDIO:
-            consumer_->enable(AVMEDIA_TYPE_AUDIO);
-
-            consumer_->afmt_.channels = av_buffersink_get_channels(sink_ctx);
-            consumer_->afmt_.channel_layout = av_buffersink_get_channel_layout(sink_ctx);
-            consumer_->afmt_.sample_rate = av_buffersink_get_sample_rate(sink_ctx);
-            consumer_->afmt_.time_base = av_buffersink_get_time_base(sink_ctx);
-            break;
-
-        default:
-            LOG(ERROR) << "unsupport media type";
-            return -1;
-        }
+    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vctx != nullptr)) {
+        consumer_ctx_.consumer->vfmt_.width = av_buffersink_get_w(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt_.height = av_buffersink_get_h(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt_.framerate = av_buffersink_get_frame_rate(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt_.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt_.time_base = av_buffersink_get_time_base(consumer_ctx_.vctx);
     }
+
+    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO) && (consumer_ctx_.actx != nullptr)) {
+        consumer_ctx_.consumer->afmt_.channels = av_buffersink_get_channels(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt_.channel_layout = av_buffersink_get_channel_layout(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt_.sample_rate = av_buffersink_get_sample_rate(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt_.time_base = av_buffersink_get_time_base(consumer_ctx_.actx);
+    }
+
     return 0;
 }
 
@@ -288,21 +277,21 @@ int Dispatcher::start()
         return -1;
     }
 
-    for (auto& coder : video_producers_) {
-        if (!coder->ready()) {
+    for (auto& coder : v_producer_ctxs_) {
+        if (!coder.producer->ready()) {
             LOG(ERROR) << "[DISPATCHER] [V] decoder not ready!";
             return -1;
         }
     }
 
-    for (auto& coder : audio_producers_) {
-        if (!coder->ready()) {
+    for (auto& coder : a_producer_ctxs_) {
+        if (!coder.producer->ready()) {
             LOG(ERROR) << "[DISPATCHER] [A] decoder not ready!";
             return -1;
         }
     }
 
-    if (!consumer_->ready()) {
+    if (!consumer_ctx_.consumer->ready()) {
         LOG(ERROR) << "[DISPATCHER] encoder not ready!";
         return -1;
     }
@@ -311,27 +300,31 @@ int Dispatcher::start()
     start_time_ = os_gettime_ns();
     resumed_pts_ = start_time_;
 
-    for (auto& coder : video_producers_) {
-        coder->run();
+    for (auto& coder : v_producer_ctxs_) {
+        coder.producer->run();
     }
 
-    for (auto& coder : audio_producers_) {
-        coder->run();
+    for (auto& coder : a_producer_ctxs_) {
+        coder.producer->run();
     }
 
-    consumer_->run();
+    consumer_ctx_.consumer->run();
     //
 
     running_ = true;
-    dispatch_thread_ = std::thread([this]() {
-        platform::util::thread_set_name("dispatcher");
-        dispatch_thread_f(); 
-    });
-
-    receive_thread_ = std::thread([this]() {
-        platform::util::thread_set_name("receiver");
-        receive_thread_f(); 
-    });
+    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO)) {
+        video_thread_ = std::thread([this]() {
+            platform::util::thread_set_name("dispatch-video");
+            dispatch_fn(AVMEDIA_TYPE_VIDEO);
+        });
+    }
+    
+    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
+        auido_thread_ = std::thread([this]() {
+            platform::util::thread_set_name("dispatch-audio");
+            dispatch_fn(AVMEDIA_TYPE_AUDIO);
+        });
+    }
 
     return 0;
 }
@@ -354,35 +347,45 @@ bool Dispatcher::is_valid_pts(int64_t pts)
     return true;
 }
 
-int Dispatcher::receive_thread_f()
+int Dispatcher::dispatch_fn(enum AVMediaType mt)
 {
+    LOG(INFO) << "[DISPATCHER] started";
+    defer(LOG(INFO) << "[DISPATCHER] exited");
+
     AVFrame* frame = av_frame_alloc();
     defer(av_frame_free(&frame));
 
-    LOG(INFO) << "[DISPATCHER] receive thread started";
-    defer(LOG(INFO) << "[DISPATCHER] receive thread exited");
+    auto& ctxs = (mt == AVMEDIA_TYPE_VIDEO) ? v_producer_ctxs_ : a_producer_ctxs_;
+    auto& sink = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.vctx : consumer_ctx_.actx;
+    auto& consumer_eof = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.v_eof : consumer_ctx_.a_eof;
 
     while (running_) {
-        bool sleepy = true;
+        bool sleepy = false;
+        if (sleepy && running_) {
+            os_sleep(25ms);
+        }
 
         // input streams
-        for (auto& [src_ctx, producer, _] : i_streams_) {
+        for (auto& [src_ctx, producer, _] : ctxs) {
             if (!producer->eof() && running_) {
-                auto frame_mt = avfilter_pad_get_type(src_ctx->filter->outputs, 0);
-                auto frame_tb = producer->time_base(frame_mt);
+                auto frame_tb = producer->time_base(mt);
 
                 // receive a frame
-                if (producer->produce(frame, frame_mt) != 0) {
+                if (producer->produce(frame, mt) != 0) {
                     continue;
                 }
 
                 if (!is_valid_pts(av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q))) {
                     LOG(INFO) << fmt::format("[DISPATCHER] [{}] drop frame {} ({} - {})",
-                        av_get_media_type_string(frame_mt)[0], av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
+                        av_get_media_type_string(mt)[0], av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
                     continue;
                 }
 
                 frame->pts -= av_rescale_q(start_time_ + paused_time(), OS_TIME_BASE_Q, frame_tb);
+
+                LOG(INFO) << fmt::format("DECODE {} frame] pts = {:>12d}, ts = {:>10.6f}", 
+                    av_get_media_type_string(mt),  frame->pts, 
+                    av_rescale_q(frame->pts, frame_tb, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
                 // send the frame to graph
                 if (av_buffersrc_add_frame_flags(src_ctx, frame, AV_BUFFERSRC_FLAG_PUSH) < 0) {
@@ -395,61 +398,35 @@ int Dispatcher::receive_thread_f()
             }
         }
 
-        if (sleepy && running_) {
-            os_sleep(25ms);
-        }
-    }
-
-    return 0;
-}
-
-int Dispatcher::dispatch_thread_f()
-{
-    AVFrame* frame = av_frame_alloc();
-    defer(av_frame_unref(frame); av_frame_free(&frame));
-
-    LOG(INFO) << "[DISPATCHER] dispatch thread started";
-    defer(LOG(INFO) << "[DISPATCHER] dispatch thread exited");
-
-    while (running_) {
-        bool sleepy = true;
-
         // output streams
-        for (auto& [sink_ctx, consumer, sink_eof] : o_streams_) {
-            auto media_type = av_buffersink_get_type(sink_ctx);
+        if (consumer_eof || consumer_ctx_.consumer->full(mt)) {
+            continue;
+        }
 
-            if (sink_eof || consumer->full(media_type)) {
-                continue;
-            }
-
+        av_frame_unref(frame);
+        int ret = av_buffersink_get_frame_flags(sink, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+        if (ret == AVERROR(EAGAIN)) {
+            continue;
+        }
+        else if (ret == AVERROR_EOF) {
+            LOG(INFO) << "[DISPATCHER] [" << av_get_media_type_string(mt)[0] << "] EOF";
+            consumer_eof = true;
+            // through and send null packet
             av_frame_unref(frame);
-            // TODO : crash while recording witch audio on Windows
-            int ret = av_buffersink_get_frame_flags(sink_ctx, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
-            if (ret == AVERROR(EAGAIN)) {
-                continue;
-            }
-            else if (ret == AVERROR_EOF) {
-                LOG(INFO) << "[DISPATCHER] [" << av_get_media_type_string(media_type)[0] << "] EOF";
-                sink_eof = true;
-                // through and send null packet
-                av_frame_unref(frame);
-            }
-            else if (ret < 0) {
-                LOG(ERROR) << "av_buffersink_get_frame_flags()";
-                running_ = false;
-                break;
-            }
-            
-            if (consumer->consume(frame, media_type) < 0) {
-                LOG(ERROR) << "failed to consume a frame.";
-            }
-
-            sleepy = false;
+        }
+        else if (ret < 0) {
+            LOG(ERROR) << "[DISPATCHER] [" << av_get_media_type_string(mt)[0] << "] failed to get frame.";
+            running_ = false;
+            break;
         }
 
-        if (sleepy && running_) {
-            os_sleep(25ms);
+        LOG(INFO) << fmt::format("ENCODE {} frame] pts = {:12d}", av_get_media_type_string(mt), frame->pts);
+
+        if (consumer_ctx_.consumer->consume(frame, mt) < 0) {
+            LOG(ERROR) << "failed to consume a frame.";
         }
+
+        sleepy = false;
     }
 
     return 0;
@@ -494,7 +471,16 @@ int Dispatcher::reset()
     ready_ = false;
 
     // producers
-    for (const auto& [ctx, coder, _] : i_streams_) {
+    for (auto& [ctx, coder, _] : v_producer_ctxs_) {
+        coder->reset();
+
+        // push nullptr frame to close the buffersrc
+        if (running_ && av_buffersrc_add_frame_flags(ctx, nullptr, AV_BUFFERSRC_FLAG_PUSH) < 0) {
+            LOG(ERROR) << "failed to close buffersrc";
+        }
+    }
+
+    for (auto& [ctx, coder, _] : a_producer_ctxs_) {
         coder->reset();
 
         // push nullptr frame to close the buffersrc
@@ -504,33 +490,31 @@ int Dispatcher::reset()
     }
 
     // consumer
-    if (consumer_) {
+    if (consumer_ctx_.consumer) {
         // wait 0~3s
         for (int i = 0; i < 100; i++) {
-            if (!consumer_->ready() || consumer_->eof()) break;
+            if (!consumer_ctx_.consumer->ready() || consumer_ctx_.consumer->eof()) break;
 
             os_sleep(30ms);
         }
-        consumer_->reset();
+        consumer_ctx_.consumer->reset();
     }
 
     // dispatcher
     running_ = false;
 
-    if (receive_thread_.joinable()) {
-        receive_thread_.join();
+    if (video_thread_.joinable()) {
+        video_thread_.join();
     }
 
-    if (dispatch_thread_.joinable()) {
-        dispatch_thread_.join();
+    if (auido_thread_.joinable()) {
+        auido_thread_.join();
     }
 
     // clear
-    video_producers_.clear();
-    audio_producers_.clear();
-    consumer_ = nullptr;
-    i_streams_.clear();
-    o_streams_.clear();
+    a_producer_ctxs_.clear();
+    v_producer_ctxs_.clear();
+    consumer_ctx_ = {};
 
     video_graph_desc_ = {};
     audio_graph_desc_ = {};
