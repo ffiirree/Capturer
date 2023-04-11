@@ -28,6 +28,12 @@ public:
         LOCKED,
     };
 
+    enum class mode_t {
+        rectanle,
+        display,
+        window,
+    };
+
 public:
     explicit Selector(QWidget *parent = nullptr);
     ~Selector() override = default;
@@ -78,7 +84,16 @@ protected:
     QPoint sbegin_{ 0,0 };
 
     // selected area @{
-    Resizer box_;
+    void select(const platform::display::window_t& win);
+    void select(const platform::display::display_t& display);
+    void select(const QRect& rect);
+
+    mode_t mode() const { return mode_; }
+
+    Resizer box_;                                   // do not use this variable directly
+    mode_t mode_ = mode_t::rectanle;                 // mode
+    platform::display::window_t window_{};          // if select a window
+    platform::display::display_t display_{};        // if select a window
     // @}
 
     bool prevent_transparent_ = false;

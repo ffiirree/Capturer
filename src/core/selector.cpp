@@ -24,8 +24,8 @@ Selector::Selector(QWidget * parent)
 
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint);
 
-    connect(this, SIGNAL(moved()), this, SLOT(update()));
-    connect(this, SIGNAL(resized()), this, SLOT(update()));
+    connect(this, &Selector::moved, [this]() { mode_ = mode_t::rectanle; update(); });
+    connect(this, &Selector::resized, [this]() { mode_ = mode_t::rectanle; update(); });
 
     registerShortcuts();
 }
@@ -38,7 +38,7 @@ void Selector::start()
 
         if(use_detect_) {
             WidgetsDetector::refresh();
-            box_.reset(WidgetsDetector::window(QCursor::pos()).rect);
+            select(WidgetsDetector::window(QCursor::pos()));
             info_->show();
         }
 
@@ -96,7 +96,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     switch (status_) {
     case SelectorStatus::NORMAL:
         if (use_detect_) {
-            box_.reset(WidgetsDetector::window(mouse_pos).rect);
+            select(WidgetsDetector::window(QCursor::pos()));
             update();
         }
         setCursor(Qt::CrossCursor);
@@ -105,7 +105,7 @@ void Selector::mouseMoveEvent(QMouseEvent* event)
     case SelectorStatus::START_SELECTING:
         if (std::abs(mouse_pos.x() - sbegin_.x()) >= std::min(min_size_.width(), 4) &&
             std::abs(mouse_pos.y() - sbegin_.y()) >= std::min(min_size_.height(), 4)) {
-            box_.reset(sbegin_, mouse_pos);
+            select({ sbegin_, mouse_pos });
             info_->show();
             status_ = SelectorStatus::SELECTING;
             update();
@@ -207,12 +207,12 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             // invalid size
             if(!isValid()) {
                 if (use_detect_) { // detected window
-                    box_.reset(WidgetsDetector::window(QCursor::pos()).rect);
+                    select(WidgetsDetector::window(QCursor::pos()));
                     CAPTURED();
                 }
                 else {   // reset
                     info_->hide();
-                    box_.reset({ 0,0 }, { 0,0 });
+                    select(QRect(0, 0, 0, 0));
                     status_ = SelectorStatus::NORMAL;
                     update();
                 }
@@ -249,7 +249,17 @@ void Selector::paintEvent(QPaintEvent *)
 
         if (use_detect_ || status_ > SelectorStatus::NORMAL) {
             // info
-            info_->setText(isValid() ? fmt::format("{} x {}", selected().width(), selected().height()).c_str() : "-- x --");
+            std::string str{ "-- x --" };
+
+            if (isValid()) {
+                str = fmt::format("{} x {}", selected().width(), selected().height());
+                if (mode_ == mode_t::window)
+                    str += " : " + window_.name;
+                else if (mode_ == mode_t::display)
+                    str += " : " + display_.name;
+            }
+
+            info_->setText(QString::fromUtf8(str.c_str()));
             info_->adjustSize();
             auto info_y = box_.top() - info_->geometry().height() - 1;
             info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) - QRect(platform::display::virtual_screen_geometry()).topLeft());
@@ -272,6 +282,30 @@ void Selector::paintEvent(QPaintEvent *)
     }
 
     painter_.end();
+}
+
+void Selector::select(const platform::display::window_t& win)
+{
+    box_.reset(win.rect);
+    window_ = win;
+    display_ = {};
+    mode_ = mode_t::window;
+}
+
+void Selector::select(const platform::display::display_t& display)
+{
+    box_.reset(display.geometry);
+    display_ = display;
+    window_ = {};
+    mode_ = mode_t::display;
+}
+
+void Selector::select(const QRect& rect)
+{
+    box_.reset(rect);
+    window_ = {};
+    display_ = {};
+    mode_ = mode_t::rectanle;
 }
 
 void Selector::moveSelectedBox(int x, int y)
@@ -358,16 +392,17 @@ void Selector::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
-            auto selected = platform::display::virtual_screen_geometry();
+            auto selected = platform::display::virtual_screen();
 
             for (auto display : platform::display::displays()) {
                 if (QRect(display.geometry).contains(box_.rect(), true)) {
-                    selected = display.geometry;
+                    selected = display;
                 }
             }
 
-            box_.reset(selected);
+            select(selected);
             emit resized();
+            mode_ = mode_t::display;
             CAPTURED();
         }
     });

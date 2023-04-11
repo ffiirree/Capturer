@@ -322,12 +322,14 @@ namespace platform
             uint32_t dpi{ 96 };         // logical dot per inch
             orientation_t orientation{ orientation_t::landscape };
             bool primary{ false };
-            double scale;
+            double scale { 1.0 };
         };
 
         std::vector<display_t> displays();
 
         std::deque<window_t> windows(bool=true);
+
+        display_t virtual_screen();
 
         geometry_t virtual_screen_geometry();
     }

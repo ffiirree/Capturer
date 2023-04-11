@@ -147,6 +147,11 @@ namespace platform
         };
     }
 
+    display::display_t display::virtual_screen()
+    {
+        return { "~VIRTUAL-SCREEN", virtual_screen_geometry(), 60.0, 32 };
+    }
+
     namespace util 
     {
         std::string to_utf8(const std::wstring& wstr)
