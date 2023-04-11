@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Capturer
+Comment=Screen recording and screenshot.
+Exec=/usr/local/bin/capturer
+Icon=capturer
+X-GNOME-Autostart-enabled=true
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=Utility

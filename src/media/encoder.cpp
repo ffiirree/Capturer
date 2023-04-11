@@ -6,6 +6,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/time.h>
+#include <libavutil/pixdesc.h>
 }
 #include "clock.h"
 #include "defer.h"
@@ -32,7 +33,7 @@ int Encoder::open(const std::string& filename,
     audio_options_ = audio_options;
 
     LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = '{}', cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
-        video_codec_name, video_options, is_cfr, vfmt_.width, vfmt_.height, vfmt_.format,
+        video_codec_name, video_options, is_cfr, vfmt_.width, vfmt_.height, av_get_pix_fmt_name(vfmt_.format),
         vfmt_.framerate.num, vfmt_.framerate.den, vfmt_.time_base.num, vfmt_.time_base.den);
 
     LOG(INFO) << fmt::format("[   ENCODER] [A] <<< [{}], options = '{}', tbn = {}/{}", 
@@ -132,12 +133,14 @@ int Encoder::new_video_stream()
     }
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   ENCODER] [V] [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
-            video_codec_name_, video_options_, vfmt_.is_cfr, vfmt_.width, vfmt_.height, vfmt_.format, vfmt_.framerate.num, vfmt_.framerate.den,
+        LOG(INFO) << fmt::format(">>> [   ENCODER] [V] [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
+            video_codec_name_, video_options_, vfmt_.is_cfr, vfmt_.width, vfmt_.height, av_get_pix_fmt_name(vfmt_.format), vfmt_.framerate.num, vfmt_.framerate.den,
             video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
         );
     }
+    
+    return 0;
 }
 
 int Encoder::new_auido_stream()
@@ -199,7 +202,7 @@ int Encoder::new_auido_stream()
     }
 
     if (audio_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   ENCODER] [A] [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format(">>> [   ENCODER] [A] [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
             audio_codec_name_, audio_options_, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
             av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
             fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
@@ -207,6 +210,8 @@ int Encoder::new_auido_stream()
             fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
         );
     }
+
+    return 0;
 }
 
 int Encoder::consume(AVFrame* frame, int type)

@@ -8,8 +8,6 @@
 #include <filesystem>
 #include "platform.h"
 
-constexpr auto GLOG_DIR = "logs";
-
 class Logger {
 public:
     Logger(const Logger&) = delete;
@@ -17,23 +15,31 @@ public:
     Logger(Logger&&) = delete;
     Logger& operator=(Logger&&) = delete;
 
-    static Logger& init(char** argv) {
-        static Logger logger(argv);
+    static Logger& init(const char* argv0) 
+    {
+        static Logger logger(argv0);
         return logger;
     }
 
-    ~Logger() {
+    ~Logger()
+    {
         google::ShutdownGoogleLogging();
     }
 
 private:
-    explicit Logger(char** argv) {
-        if (!std::filesystem::is_directory(GLOG_DIR) || std::filesystem::exists(GLOG_DIR)) {
-            std::filesystem::create_directory(GLOG_DIR);
+    explicit Logger(const char* argv0)
+    {
+#ifdef _WIN32
+        const std::string log_dir = "logs";
+#elif __linux__
+        const std::string log_dir = std::string{::getenv("HOME")} + "/.local/logs/capturer";
+#endif
+        if (!std::filesystem::is_directory(log_dir) || std::filesystem::exists(log_dir)) {
+            std::filesystem::create_directories(log_dir);
         }
 
         google::InitGoogleLogging(
-            argv[0],
+            argv0,
             [](std::ostream& _stream, const google::LogMessageInfo& _info, void*)
             {
                 std::string _file_line = _info.filename + std::string(":") + std::to_string(_info.line_number);
@@ -60,20 +66,20 @@ private:
             }
         );
 
-        FLAGS_log_dir = GLOG_DIR;
+        FLAGS_log_dir = log_dir;
         FLAGS_max_log_size = 32;                    // MB
         FLAGS_stop_logging_if_full_disk = true;
         FLAGS_logbufsecs = 0;                       // s
         FLAGS_colorlogtostderr = true;
         google::SetStderrLogging(google::GLOG_INFO);
-        google::SetLogDestination(google::GLOG_INFO,    "logs/CAPTURER-I-");
-        google::SetLogDestination(google::GLOG_WARNING, "logs/CAPTURER-W-");
-        google::SetLogDestination(google::GLOG_ERROR,   "logs/CAPTURER-E-");
-        google::SetLogDestination(google::GLOG_FATAL,   "logs/CAPTURER-F-");
+        google::SetLogDestination(google::GLOG_INFO,    std::string{log_dir + "/CAPTURER-I-"}.c_str());
+        google::SetLogDestination(google::GLOG_WARNING, std::string{log_dir + "/CAPTURER-W-"}.c_str());
+        google::SetLogDestination(google::GLOG_ERROR,   std::string{log_dir + "/CAPTURER-E-"}.c_str());
+        google::SetLogDestination(google::GLOG_FATAL,   std::string{log_dir + "/CAPTURER-F-"}.c_str());
         google::SetLogFilenameExtension(".log");
         google::EnableLogCleaner(3);                // days
         google::InstallFailureSignalHandler();
-        google::InstallFailureWriter([](const char* data, size_t size){
+        google::InstallFailureWriter([](const char* data, size_t size) {
             LOG(ERROR) << std::string(data, size);
         });
     }

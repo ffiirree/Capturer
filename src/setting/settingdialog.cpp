@@ -493,30 +493,26 @@ void SettingWindow::setAutoRun(int statue)
         QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
         settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
 #elif __linux__
-    auto native_config_path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
-    auto native_autostart_path = native_config_path + QDir::separator() + "autostart";
-    auto autorun_file = native_autostart_path + QDir::separator() + "Capturer.desktop";
+    std::string desktop_file = "/usr/share/applications/capturer.desktop";
+    std::string autorun_dir = std::string{::getenv("HOME")} + "/.config/autostart";
+    std::string autorun_file = autorun_dir + "/capturer.desktop";
+
+    if (!std::filesystem::exists(desktop_file)) {
+        LOG(INFO) << "not exists";
+    }
 
     if(statue == Qt::Checked) {
-        QFile file(autorun_file);
-        if(file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-            QTextStream in(&file);
-            in << "[Desktop Entry]\n"
-               << "Name=Capturer\n"
-               << "Comment=Screen capture/record/gif\n"
-               << "Exec=" + exec_path + "\n"
-               << "Terminal=false\n"
-               << "StartupNotify=true\n"
-               << "Type=Application\n"
-               << "Categories=Utility;\n"
-               << "Icon=capturer\n";
+        if (std::filesystem::exists(desktop_file) && !std::filesystem::exists(autorun_file)) {
+            if (!std::filesystem::exists(autorun_dir)) {
+                std::filesystem::create_directories(autorun_dir);
+            }
+            std::filesystem::create_symlink(desktop_file, autorun_file);
         }
-        file.close();
     }
     else {
-        QFile::remove(autorun_file);
+        std::filesystem::remove(autorun_file);
     }
-
 #endif
+
     config.set(config["autorun"], statue == Qt::Checked);
 }

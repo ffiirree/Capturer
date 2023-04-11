@@ -19,7 +19,7 @@ TitleBar::TitleBar(QWidget *parent)
     // logo & title
     auto icon_label = new QLabel(this);
     icon_label->setObjectName("logo");
-    auto logo = QPixmap(":/icon/res/icon");
+    auto logo = QPixmap(":/icon/res/capturer");
     icon_label->setPixmap(logo);
     icon_label->setFixedSize(60, 50);
     icon_label->setContentsMargins({ 20, 10, 10, 10 });

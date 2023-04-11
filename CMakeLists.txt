@@ -112,9 +112,23 @@ if(WIN32)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
 elseif(UNIX AND NOT APPLE)
-    install(TARGETS ${PROJECT_NAME} DESTINATION bin)
-    install(FILES ${QM_FILES} DESTINATION "/etc/capturer/translations")
+    # installed: /usr/local/bin/capturer
+    # installed: /usr/local/etc/capturer/translations/capturer_en_US.ts
+    # installed: /usr/local/etc/capturer/translations/capturer_zh_CN.ts
+    # installed: /usr/share/applications/capturer.desktop
+    # installed: /usr/share/pixmaps/capturer.png
+    # installed: /usr/share/icons/hicolor/128x128/apps/capturer.png
+    # installed: ~/.config/capturer/config.json
+    # installed: ~/.config/autostart/capturer.desktop
+    # installed: ~/.local/logs/capturer/capturer-*.log
+    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+    install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/capturer/translations")
+    install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
+    install(FILES "${PROJECT_SOURCE_DIR}/src/res/capturer.png" DESTINATION "/usr/share/pixmaps")
+    install(FILES "${PROJECT_SOURCE_DIR}/src/res/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
 endif()
+
+add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake")
 
 # #######################################################################################################################
 # Create DEB

@@ -50,6 +50,7 @@ int WasapiCapturer::open(DeviceType dt)
     type_ = dt;
     bool is_input = (type_ == DeviceType::DEVICE_MICROPHONE);
 
+    // TODO: conflict with Qt
     //CHECK(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)));
 
     IMMDeviceEnumerator* enumerator = nullptr;

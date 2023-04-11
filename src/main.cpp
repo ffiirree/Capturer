@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-    Logger::init(argv);
+    Logger::init(argv[0]);
 
     platform::util::thread_set_name("capturer-main");
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
     QTranslator translator;
 #ifdef __linux__
-    translator.load("/etc/capturer/translations/capturer_" + language);
+    translator.load("/usr/local/etc/capturer/translations/capturer_" + language);
 #else
     translator.load("translations/capturer_" + language);
 #endif

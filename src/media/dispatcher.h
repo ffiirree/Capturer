@@ -16,8 +16,6 @@ extern "C" {
 class Dispatcher {
 public:
     explicit Dispatcher() = default;
-    explicit Dispatcher(const std::string_view& video_graph_desc, const std::string_view& audio_graph_desc) 
-        : video_graph_desc_(video_graph_desc), audio_graph_desc_(audio_graph_desc) { }
 
     ~Dispatcher() { reset(); }
 
