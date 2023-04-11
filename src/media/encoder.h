@@ -6,7 +6,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/audio_fifo.h>
 }
-#include <map>
+#include <unordered_map>
 #include "consumer.h"
 #include "logging.h"
 #include "utils.h"
@@ -24,8 +24,8 @@ public:
     ~Encoder() override { destroy(); }
     void reset() override;
 
-    int open(const std::string& filename, const std::string& codec_name,
-             bool is_cfr = false, const std::map<std::string, std::string>& options = {});
+    int open(const std::string& filename, const std::string& video_codec_name = "libx264", const std::string& audio_codec_name = "aac",
+             bool is_cfr = false, const std::unordered_map<std::string, std::string>& options = {}, const std::unordered_map<std::string, std::string>& auido_options = {});
     
     int run() override;
     int consume(AVFrame* frame, int type) override;
@@ -45,7 +45,7 @@ public:
     {
         switch (type)
         {
-        case AVMEDIA_TYPE_VIDEO: return true;
+        case AVMEDIA_TYPE_VIDEO: return video_enabled_;
         case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
         default: return false;
         }
@@ -55,7 +55,7 @@ public:
     {
         switch (type)
         {
-        case AVMEDIA_TYPE_VIDEO: break;
+        case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
         case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
         }
     }
@@ -73,6 +73,9 @@ public:
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
 private:
+    int new_video_stream();
+    int new_auido_stream();
+
     int run_f();
     int process_video_frames();
     int process_audio_frames();
@@ -80,11 +83,18 @@ private:
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
+    std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
+    // ffmpeg encoders @ {
     AVFormatContext* fmt_ctx_{ nullptr };
+    std::string video_codec_name_{};
+    std::string audio_codec_name_{};
+    std::unordered_map<std::string, std::string> video_options_;
+    std::unordered_map<std::string, std::string> audio_options_;
     AVCodecContext* video_encoder_ctx_{ nullptr };
     AVCodecContext* audio_encoder_ctx_{ nullptr };
+    // @}
 
     int64_t v_last_dts_{ AV_NOPTS_VALUE };
     int64_t a_last_dts_{ AV_NOPTS_VALUE };

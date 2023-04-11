@@ -74,7 +74,7 @@ private:
     std::string codec_name_{ "libx264" };
     std::string quality_{ "medium" };
     std::string filters_{};
-    std::map<std::string, std::string> options_{};
+    std::unordered_map<std::string, std::string> options_{};
 
     std::string filename_;
 

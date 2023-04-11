@@ -204,7 +204,7 @@ void ScreenRecorder::setup()
     }
 
     encoder_->vfmt_.format = pix_fmt_;
-    if (encoder_->open(filename_, codec_name_, true, options_) < 0) {
+    if (encoder_->open(filename_, codec_name_, "aac", true, options_, {}) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();
         exit();

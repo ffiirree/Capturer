@@ -23,18 +23,24 @@ public:
 
     void append(Producer<AVFrame>* decoder)
     {
-        if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
-            a_producer_ctxs_.push_back({ nullptr, decoder, false });
-        }
+        if (!locked_) {
+            if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
+                a_producer_ctxs_.push_back({ nullptr, decoder, false });
+                audio_enabled_ = true;
+            }
 
-        if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
-            v_producer_ctxs_.push_back({ nullptr, decoder, false });
+            if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
+                v_producer_ctxs_.push_back({ nullptr, decoder, false });
+                video_enabled_ = true;
+            }
         }
     }
 
     void set_encoder(Consumer<AVFrame>* encoder)
     {
-        consumer_ctx_.consumer = encoder;
+        if (!locked_) {
+            consumer_ctx_.consumer = encoder;
+        }
     }
 
     int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
@@ -67,14 +73,14 @@ private:
         bool v_eof;
     };
 
-    int create_filter_for_input(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
-    int create_filter_for_output(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
+    int create_src_filter(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
+    int create_sink_filter(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
 
-    int create_filter_for_video_input(const Producer<AVFrame>*, AVFilterContext**);
-    int create_filter_for_video_output(const Consumer<AVFrame>*, AVFilterContext**);
+    int create_video_src(const Producer<AVFrame>*, AVFilterContext**);
+    int create_video_sink(const Consumer<AVFrame>*, AVFilterContext**);
     
-    int create_filter_for_audio_input(const Producer<AVFrame>*, AVFilterContext**);
-    int create_filter_for_audio_output(const Consumer<AVFrame>*, AVFilterContext**);
+    int create_audio_src(const Producer<AVFrame>*, AVFilterContext**);
+    int create_audio_sink(const Consumer<AVFrame>*, AVFilterContext**);
 
     [[nodiscard]] int create_filter_graph_for(std::vector<ProducerContext>&, const std::string&, enum AVMediaType);
 
@@ -94,18 +100,26 @@ private:
     std::atomic<int64_t> start_time_{ 0 };
     //@}
 
-    std::atomic<bool> running_{ false };
-    std::atomic<bool> ready_{ false };
+    // filter graphs @{
+    std::atomic<bool> locked_{};            // lock filter graph sources
+
+    bool video_enabled_{};
+    bool audio_enabled_{};
 
     std::vector<ProducerContext> a_producer_ctxs_{};
     std::vector<ProducerContext> v_producer_ctxs_{};
 
     ConsumerContext consumer_ctx_{};
 
-    std::string video_graph_desc_{ };
     std::string audio_graph_desc_{ };
+    std::string video_graph_desc_{ };
 
-    AVFilterGraph* filter_graph_{ nullptr };
+    AVFilterGraph* audio_graph_{ nullptr };
+    AVFilterGraph* video_graph_{ nullptr };
+    // @}
+
+    std::atomic<bool> running_{ false };
+    std::atomic<bool> ready_{ false };
 
     std::thread video_thread_;
     std::thread auido_thread_;
