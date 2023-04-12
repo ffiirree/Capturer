@@ -14,7 +14,7 @@ public:
 
     inline void set(const QString& str) { setText(str); emit changed(QKeySequence(str)); }
     inline void set(const QKeySequence& ks) { setText(ks.toString()); emit changed(ks); }
-    inline QKeySequence get() const { return QKeySequence(this->text()); }
+    [[nodiscard]] inline QKeySequence get() const { return text(); }
 
 signals:
     void changed(const QKeySequence&);

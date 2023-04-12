@@ -182,13 +182,13 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
 
 void Capturer::pin()
 {
-    auto [fmt, data] = clipboard_data();
+    auto [fmt, value] = clipboard_data();
     if (clipboard_changed_) {
-        auto [ok, pixmap] = to_pixmap({ fmt, data });
+        auto [ok, pixmap] = to_pixmap({ fmt, value });
         if (ok) {
             history_.append({
                 fmt,
-                data,
+                value,
                 std::make_shared<ImageWindow>(
                     pixmap,
                     QRect(platform::display::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2

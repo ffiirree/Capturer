@@ -16,21 +16,21 @@ public:
 public:
     explicit StyleMenu(int buttons, QWidget* parent = nullptr);
 
-    virtual void color(const QColor& c) override 
+    void color(const QColor& c) override
     { 
         color_ = c; 
         if (color_panel_)
             color_panel_->setColor(color_);
     }
 
-    virtual void lineWidth(int w) override
+    void lineWidth(int w) override
     { 
         width_ = std::max<int>(1, w); 
         if (width_btn_)
             width_btn_->setValue(width_);
     }
 
-    virtual void fill(bool fill) override 
+    void fill(bool fill) override
     { 
         fill_ = fill; 
 
@@ -42,7 +42,7 @@ public:
         }
     }
 
-    virtual QFont font() override
+    QFont font() override
     {
         QFont font;
         if (font_family_) font.setFamily(font_family_->currentText());
@@ -51,7 +51,7 @@ public:
         return font;
     }
 
-    virtual void font(const QFont& font) override
+    void font(const QFont& font) override
     { 
         font_ = font; 
         if (font_family_) font_family_->setCurrentText(font.family());

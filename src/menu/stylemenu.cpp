@@ -9,7 +9,7 @@
 StyleMenu::StyleMenu(int buttons, QWidget* parent)
     : EditMenu(parent)
 {
-    ButtonGroup* group = new ButtonGroup(this);
+    auto group = new ButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
         width_btn_ = new WidthButton(3, true, this);

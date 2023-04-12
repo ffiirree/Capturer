@@ -1,10 +1,8 @@
 #include "imageeditmenu.h"
 #include <QPixmap>
-#include <QStyle>
 #include <QCheckBox>
 #include <QHBoxLayout>
 #include <QMoveEvent>
-#include "logging.h"
 
 ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
     : EditMenu(parent)

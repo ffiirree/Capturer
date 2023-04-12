@@ -3,7 +3,6 @@
 
 #include <QWidget>
 #include <QPen>
-#include "custombutton.h"
 
 class EditMenu : public QWidget
 {
@@ -31,7 +30,6 @@ signals:
 protected:
     void moveEvent(QMoveEvent*) override;
 
-    void addButton(CustomButton*);
     void addSeparator();
     void addWidget(QWidget *);
 

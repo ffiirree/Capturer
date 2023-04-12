@@ -50,8 +50,8 @@ private slots:
 private:
     void setupSystemTrayIcon();
 
-    std::pair<DataFormat, std::any> clipboard_data();
-    std::pair<bool, QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
+    static std::pair<DataFormat, std::any> clipboard_data();
+    static std::pair<bool, QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
 
     ScreenShoter * sniper_{ nullptr };
     ScreenRecorder * recorder_ { nullptr };

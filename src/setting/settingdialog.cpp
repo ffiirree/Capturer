@@ -1,14 +1,12 @@
 #include "settingdialog.h"
 #include <QSpinBox>
-#include <QComboBox>
-#include <QListView>
 #include <QVBoxLayout>
 #include <QGraphicsDropShadowEffect>
 #include <QCheckBox>
 #include <QSettings>
 #include <QCoreApplication>
 #include <QDir>
-#include <QStandardPaths>
+#include "combobox.h"
 #include "shortcutinput.h"
 #include "colorpanel.h"
 #include "titlebar.h"
@@ -17,12 +15,8 @@
 #include "version.h"
 #include "media.h"
 
-#ifdef __linux__
-#include <QTextStream>
-#endif
-
 SettingWindow::SettingWindow(QWidget * parent)
-    : QWidget(parent)
+        : QWidget(parent)
 {
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -89,16 +83,15 @@ void SettingWindow::setupGeneralWidget()
     layout->addWidget(_01, 0, 1, 1, 2);
 
     //
-    auto _1_2 = new QComboBox();
-    _1_2->setView(new QListView());
-    _1_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _1_2->addItem("English", "en_US");
-    _1_2->addItem("简体中文", "zh_CN");
-    _1_2->setCurrentIndex(std::max(0, _1_2->findData(config["language"].get<QString>())));
-    connect(_1_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _1_2](int){
-        config.set(config["language"], _1_2->currentData().toString());
-    });
+    auto _1_2 = new ComboBox();
+    _1_2->add({
+                      {"en_US", "English"},
+                      {"zh_CN", "简体中文"}
+            })
+            .select(config["language"].get<QString>())
+            .onselected([this](auto value){
+                config.set(config["language"], value.toString());
+            });
     layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
     layout->addWidget(_1_2, 1, 1, 1, 2);
 
@@ -110,17 +103,16 @@ void SettingWindow::setupGeneralWidget()
     layout->addWidget(_2_2, 2, 1, 1, 2);
 
     //
-    auto _3_2 = new QComboBox();
-    _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _3_2->addItem(tr("Auto"), "auto");
-    _3_2->addItem(tr("Dark"), "dark");
-    _3_2->addItem(tr("Light"), "light");
-    _3_2->setCurrentIndex(std::max(0, _3_2->findData(config["theme"].get<QString>())));
-    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [this, _3_2](int) {
-        config.set_theme(_3_2->currentData().toString().toStdString());
-    });
+    auto _3_2 = new ComboBox();
+    _3_2->add({
+                      {"auto", tr("Auto")},
+                      {"dark", tr("Dark")},
+                      {"light", tr("Light")}
+            })
+            .select(config["theme"].get<QString>())
+            .onselected([this](auto value) {
+                config.set_theme(value.toString().toStdString());
+            });
     layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
     layout->addWidget(_3_2, 3, 1, 1, 2);
 
@@ -135,7 +127,7 @@ void SettingWindow::setupSnipWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel(tr("Apperance:"));
+    auto _0 = new QLabel(tr("Appearance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -155,16 +147,14 @@ void SettingWindow::setupSnipWidget()
     layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
-    auto _3_2 = new QComboBox();
-    _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-
-    _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
-    _3_2->setCurrentIndex(config["snip"]["selector"]["border"]["style"].get<Qt::PenStyle>());
-    connect(_3_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
-        config.set(config["snip"]["selector"]["border"]["style"], s);
-    });
+    auto _3_2 = new ComboBox();
+    _3_2->add({
+                      "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine"
+            })
+            .select(config["snip"]["selector"]["border"]["style"].get<int>())
+            .onselected([this](auto value){
+                config.set(config["snip"]["selector"]["border"]["style"], value.toInt());
+            });
     layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
@@ -184,7 +174,7 @@ void SettingWindow::setupRecordWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel(tr("Apperance:"));
+    auto _0 = new QLabel(tr("Appearance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -204,15 +194,14 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
-    auto _3_2 = new QComboBox();
-    _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
-    _3_2->setCurrentIndex(config["record"]["selector"]["border"]["style"].get<int>());
-    connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
-        config.set(config["record"]["selector"]["border"]["style"], s);
-    });
+    auto _3_2 = new ComboBox();
+    _3_2->add({
+                      "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine"
+            })
+            .select(config["record"]["selector"]["border"]["style"].get<int>())
+            .onselected( [this](auto value){
+                config.set(config["record"]["selector"]["border"]["style"], value.toInt());
+            });
     layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
@@ -244,34 +233,34 @@ void SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
     layout->addWidget(_6_2, 8, 2, 1, 2);
 
-    auto _7_2 = new QComboBox();
-    _7_2->setView(new QListView());
-    _7_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _7_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _7_2->addItem("Software x264 [H.264 / AVC]", "libx264");
-    _7_2->addItem("Software x265 [H.265 / HEVC]", "libx265");
+    auto _7_2 = new ComboBox();
+    _7_2->add({
+                      {"libx264", "Software x264 [H.264 / AVC]"},
+                      {"libx265", "Software x265 [H.265 / HEVC]"}
+              });
     //if (is_support_hwdevice(AV_HWDEVICE_TYPE_CUDA)) {
     //    _7_2->addItem("Hardware NVENC [H.264 / AVC]", "h264_nvenc");
     //    _7_2->addItem("Hardware NVENC [H.265 / HEVC]", "hevc_nvenc");
     //}
-    _7_2->setCurrentIndex(std::max(0, _7_2->findData(config["record"]["encoder"].get<QString>())));
-    connect(_7_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _7_2](int) {
-        config.set(config["record"]["encoder"], _7_2->currentData().toString());
-    });
+    _7_2->select(
+                    config["record"]["encoder"].get<QString>()
+            )
+            .onselected([this](auto value) {
+                config.set(config["record"]["encoder"], value.toString());
+            });
     layout->addWidget(new QLabel(tr("Encoder")), 9, 1, 1, 1);
     layout->addWidget(_7_2, 9, 2, 1, 2);
 
-    auto _8_2 = new QComboBox();
-    _8_2->setView(new QListView());
-    _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _8_2->addItem(tr("High"), "high");
-    _8_2->addItem(tr("Medium"), "medium");
-    _8_2->addItem(tr("Low"), "low");
-    _8_2->setCurrentIndex(std::max(0, _8_2->findData(config["record"]["quality"].get<QString>())));
-    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _8_2](int) {
-        config.set(config["record"]["quality"], _8_2->currentData().toString());
-    });
+    auto _8_2 = new ComboBox();
+    _8_2->add({
+                      {"high",      tr("High")},
+                      {"medium",    tr("Medium")},
+                      {"low",       tr("Low")}
+            })
+            .select(config["record"]["quality"].get<QString>())
+            .onselected([this](auto value) {
+                config.set(config["record"]["quality"], value.toString());
+            });
     layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
     layout->addWidget(_8_2, 10, 2, 1, 2);
 
@@ -287,7 +276,7 @@ void SettingWindow::setupGIFWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel(tr("Apperance:"));
+    auto _0 = new QLabel(tr("Appearance:"));
     _0->setObjectName("sub-title");
     layout->addWidget(_0, 0, 1, 1, 1);
 
@@ -306,15 +295,14 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(_2_2, 2, 2, 1, 2);
     layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
 
-    auto _3_2 = new QComboBox();
-    _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _3_2->addItems({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine" });
-    _3_2->setCurrentIndex(config["gif"]["selector"]["border"]["style"].get<int>());
-    connect(_3_2,  static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int s){
-        config.set(config["gif"]["selector"]["border"]["style"], s);
-    });
+    auto _3_2 = new ComboBox();
+    _3_2->add({
+                      "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine", "CustomDashLine"
+              })
+            .select(config["gif"]["selector"]["border"]["style"].get<int>())
+            .onselected([this](auto value){
+                config.set(config["gif"]["selector"]["border"]["style"], value.toInt());
+            });
     layout->addWidget(_3_2, 3, 2, 1, 2);
     layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
 
@@ -346,17 +334,16 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
     layout->addWidget(_7_2, 8, 2, 1, 2);
 
-    auto _8_2 = new QComboBox();
-    _8_2->setView(new QListView());
-    _8_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _8_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-    _8_2->addItem(tr("High"), "high");
-    _8_2->addItem(tr("Medium"), "medium");
-    _8_2->addItem(tr("Low"), "low");
-    _8_2->setCurrentIndex(std::max(0, _8_2->findData(config["gif"]["quality"].get<QString>())));
-    connect(_8_2, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this, _8_2](int) {
-        config.set(config["gif"]["quality"], _8_2->currentData().toString());
-    });
+    auto _8_2 = new ComboBox();
+    _8_2->add({
+                      {"high", tr("High")},
+                      {"medium", tr("Medium")},
+                      {"low", tr("Low")}
+              })
+            .select(config["gif"]["quality"].get<QString>())
+            .onselected([this](auto value) {
+                config.set(config["gif"]["quality"], value.toString());
+            });
     layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
     layout->addWidget(_8_2, 9, 2, 1, 2);
 
@@ -371,10 +358,7 @@ void SettingWindow::setupDevicesWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _1_2 = new QComboBox();
-    _1_2->setView(new QListView());
-    _1_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _1_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+    auto _1_2 = new ComboBox();
     _1_2->addItems(Devices::microphones());
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
     connect(_1_2, &QComboBox::currentTextChanged, [this](QString s) {
@@ -382,10 +366,7 @@ void SettingWindow::setupDevicesWidget()
     });
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
-    auto _2_2 = new QComboBox();
-    _2_2->setView(new QListView());
-    _2_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _2_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+    auto _2_2 = new ComboBox();
     _2_2->addItems(Devices::speakers());
     layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
     connect(_2_2, &QComboBox::currentTextChanged, [this](QString s) {
@@ -393,10 +374,7 @@ void SettingWindow::setupDevicesWidget()
     });
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
-    auto _3_2 = new QComboBox();
-    _3_2->setView(new QListView());
-    _3_2->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
-    _3_2->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+    auto _3_2 = new ComboBox();
     _3_2->addItems(Devices::cameras());
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
     connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
@@ -484,14 +462,13 @@ void SettingWindow::setupAboutWidget()
     parent_layout->addWidget(copyright_);
 }
 
-
 void SettingWindow::setAutoRun(int statue)
 {
     QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
 
 #ifdef _WIN32
-        QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-        settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
+    QSettings settings(R"(HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run)", QSettings::NativeFormat);
+    settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
 #elif __linux__
     std::string desktop_file = "/usr/share/applications/capturer.desktop";
     std::string autorun_dir = std::string{::getenv("HOME")} + "/.config/autostart";
