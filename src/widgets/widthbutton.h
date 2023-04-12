@@ -30,7 +30,7 @@ protected:
 
 private:
     int width_{ 2 };
-    int max_{ 25 };
+    int max_{ 24 };
     int min_{ 1 };
 };
 

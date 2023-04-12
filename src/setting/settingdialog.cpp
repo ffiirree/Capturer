@@ -6,6 +6,9 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QDir>
+#include <QListWidget>
+#include <QStackedWidget>
+#include <QLabel>
 #include "combobox.h"
 #include "shortcutinput.h"
 #include "colorpanel.h"
@@ -40,24 +43,39 @@ SettingWindow::SettingWindow(QWidget * parent)
     effect->setColor(QColor(0, 0, 0, 50));
     window->setGraphicsEffect(effect);
 
-    auto layout = new QVBoxLayout();
-    layout->setSpacing(0);
-    layout->setContentsMargins({});
-    window->setLayout(layout);
+    //
+    auto wrapper_layer = new QVBoxLayout();
+    wrapper_layer->setSpacing(0);
+    wrapper_layer->setContentsMargins({});
+    window->setLayout(wrapper_layer);
 
     // title bar
     auto titlebar = new TitleBar();
     titlebar->setTitle(tr("Settings"));
     connect(titlebar, &TitleBar::close, this, &QWidget::close);
-    connect(titlebar, &TitleBar::moved, this, [this](const QPoint& m) {
-        this->move(this->pos() + m);
+    connect(titlebar, &TitleBar::moved, [this](const QPoint& m) {
+        move(pos() + m);
     });
-    layout->addWidget(titlebar);
+    wrapper_layer->addWidget(titlebar);
 
-    tabwidget_ = new AppTabControl(45, 200);
-    tabwidget_->setObjectName("firstmenu");
-    tabwidget_->tabBar()->setObjectName("fristtab");
-    layout->addWidget(tabwidget_);
+    auto layout = new QHBoxLayout();
+    layout->setSpacing(0);
+    layout->setContentsMargins({});
+    wrapper_layer->addLayout(layout);
+
+    auto menu = new QListWidget();
+    menu->setFocusPolicy(Qt::NoFocus);
+    menu->addItem(new QListWidgetItem(tr("General")));
+    menu->addItem(new QListWidgetItem(tr("Shortcuts")));
+    menu->addItem(new QListWidgetItem(tr("Screenshot")));
+    menu->addItem(new QListWidgetItem(tr("Screen Recording")));
+    menu->addItem(new QListWidgetItem(tr("GIF Recording")));
+    menu->addItem(new QListWidgetItem(tr("Devices")));
+    menu->addItem(new QListWidgetItem(tr("About")));
+    layout->addWidget(menu);
+
+    pages_ = new QStackedWidget();
+    layout->addWidget(pages_);
 
     setupGeneralWidget();
     setupHotkeyWidget();
@@ -66,11 +84,16 @@ SettingWindow::SettingWindow(QWidget * parent)
     setupGIFWidget();
     setupDevicesWidget();
     setupAboutWidget();
+
+    connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto){
+        pages_->setCurrentIndex(menu->row(current));
+    });
+    menu->setCurrentRow(0);
 }
 
 void SettingWindow::setupGeneralWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("General"));
+    auto general_widget = new QWidget(pages_);
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -117,12 +140,13 @@ void SettingWindow::setupGeneralWidget()
     layout->addWidget(_3_2, 3, 1, 1, 2);
 
     layout->setRowStretch(4, 1);
-    tabwidget_->widget(index)->setLayout(layout);
+    general_widget->setLayout(layout);
+    pages_->addWidget(general_widget);
 }
 
 void SettingWindow::setupSnipWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Screenshot"));
+    auto snip_widget = new QWidget(pages_);
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -164,12 +188,13 @@ void SettingWindow::setupSnipWidget()
     layout->addWidget(_4_2, 4, 2, 1, 2);
 
     layout->setRowStretch(5, 1);
-    tabwidget_->widget(index)->setLayout(layout);
+    snip_widget->setLayout(layout);
+    pages_->addWidget(snip_widget);
 }
 
 void SettingWindow::setupRecordWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Screen Recording"));
+    auto record_widget = new QWidget(pages_);
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -266,12 +291,13 @@ void SettingWindow::setupRecordWidget()
 
     layout->setRowStretch(11, 1);
 
-    tabwidget_->widget(index)->setLayout(layout);
+    record_widget->setLayout(layout);
+    pages_->addWidget(record_widget);
 }
 
 void SettingWindow::setupGIFWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("GIF Recording"));
+   auto gif_widget = new QWidget();
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -348,12 +374,13 @@ void SettingWindow::setupGIFWidget()
     layout->addWidget(_8_2, 9, 2, 1, 2);
 
     layout->setRowStretch(10, 1);
-    tabwidget_->widget(index)->setLayout(layout);
+    gif_widget->setLayout(layout);
+    pages_->addWidget(gif_widget);
 }
 
 void SettingWindow::setupDevicesWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Devices"));
+    auto devices_widget = new QWidget(pages_);
 
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
@@ -384,12 +411,13 @@ void SettingWindow::setupDevicesWidget()
 
     layout->setRowStretch(5, 1);
 
-    tabwidget_->widget(index)->setLayout(layout);
+    devices_widget->setLayout(layout);
+    pages_->addWidget(devices_widget);
 }
 
 void SettingWindow::setupHotkeyWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("Shortcuts"));
+    auto hotkey_widget = new QWidget(pages_);
     auto idx_row = 1;
 
     auto layout = new QGridLayout();
@@ -432,15 +460,17 @@ void SettingWindow::setupHotkeyWidget()
     layout->addWidget(_4_2, idx_row++, 2, 1, 3);
 
     layout->setRowStretch(idx_row, 1);
-    tabwidget_->widget(index)->setLayout(layout);
+    hotkey_widget->setLayout(layout);
+    pages_->addWidget(hotkey_widget);
 }
 
 void SettingWindow::setupAboutWidget()
 {
-    auto index = tabwidget_->addTab(new QWidget(), tr("About"));
+    auto about_widget =  new QWidget(pages_);
+    pages_->addWidget(about_widget);
 
     auto parent_layout = new QVBoxLayout();
-    tabwidget_->widget(index)->setLayout(parent_layout);
+    about_widget->setLayout(parent_layout);
     parent_layout->setContentsMargins(35, 10, 35, 15);
 
     /////

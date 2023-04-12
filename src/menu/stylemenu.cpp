@@ -1,10 +1,9 @@
 #include "stylemenu.h"
-#include <QComboBox>
 #include <QFontDatabase>
-#include <QListView>
 #include <QLineEdit>
 #include <QLayout>
 #include "separator.h"
+#include "combobox.h"
 
 StyleMenu::StyleMenu(int buttons, QWidget* parent)
     : EditMenu(parent)
@@ -38,59 +37,34 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
         layout()->setSpacing(3);
         layout()->setContentsMargins({ 5, 0, 0, 0 });
 
-        // font family
-        font_family_ = new QComboBox(this);
-        font_family_->setObjectName("font-family");
-        font_family_->setView(new QListView());     // qss
-        font_family_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
-        font_family_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-        font_family_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
         QFontDatabase font_db;
-        foreach(const QString & family, font_db.families()) {
-            font_family_->addItem(family);
-
 #if WIN32
-            if (family == "微软雅黑") {
-                font_family_->setCurrentText(family);
-            }
+        QString family = "微软雅黑";
+
 #else
-            if (family == "宋体") {
-                font_family_->setCurrentText(family);
-            }
+        QString family = "宋体";
 #endif
-        }
+        // font family
+        font_family_ = new ComboBox(this);
+        font_family_->add(font_db.families()).setCurrentText(family);
         addWidget(font_family_);
 
         // font style
-        font_style_ = new QComboBox(this);
-        font_style_->setObjectName("font-style");
-        font_style_->setView(new QListView());
-        font_style_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
-        font_style_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-        font_style_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
-        foreach(const QString & style, font_db.styles(font_db.families()[0])) {
-            font_style_->addItem(style);
-        }
+        font_style_ = new ComboBox(this);
+        font_style_->addItems(font_db.styles(family));
         connect(font_style_, SIGNAL(activated(int)), this, SIGNAL(changed()));
         // set style for family
-        connect(font_style_, &QComboBox::currentTextChanged, [=](const QString& family) {
+        connect(font_family_, &QComboBox::currentTextChanged, [=](const QString& family) {
             font_style_->clear();
-            foreach(const QString & style, font_db.styles(family)) {
-                font_style_->addItem(style);
-            }
+            font_style_->addItems(font_db.styles(family));
             emit changed();
         });
         addWidget(font_style_);
 
         // font size
-        font_size_ = new QComboBox();
-        font_size_->setObjectName("font-size");
-        font_size_->setView(new QListView());
+        font_size_ = new ComboBox();
         font_size_->setEditable(true);
         font_size_->lineEdit()->setFocusPolicy(Qt::NoFocus);
-        font_size_->view()->window()->setWindowFlag(Qt::FramelessWindowHint);
-        font_size_->view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-        font_size_->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
         foreach(const int& s, font_db.standardSizes()) {
             font_size_->addItem(QString::number(s));
         }

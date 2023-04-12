@@ -1,7 +1,8 @@
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
-    border: 1px solid #dfdfdf;
-    background-color: white;
+    border: 1px solid #e9e8e7;
+    border-bottom: 1px solid #d4d3d2;
+    background-color: #fefefe;
     color: #50505f;
 }
 
@@ -13,8 +14,8 @@ QComboBox::down-arrow:on {
     image: url(:/icon/res/arrow_up.png);
 }
 
-
 QComboBox:hover {
+    background-color: #fafafa;
     border: 1px solid #dfdfdf;
 }
 
@@ -39,10 +40,63 @@ QComboBox QAbstractItemView::item {
 QComboBox QAbstractItemView::item:hover,
 QComboBox QAbstractItemView::item:selected,
 QComboBox QAbstractItemView::item:checked {
-    background-color: #dfdfdf;
+    background-color: #ebebeb;
 }
 
-/* context menu */
+/*///////////////////////////////////////////////////////////////*/
+QLineEdit {
+    border: 1px solid #e9e8e7;
+    border-bottom: 1px solid #d4d3d2;
+    background-color: #fefefe;
+    color: #50505f;
+}
+
+QLineEdit:hover {
+    background-color: #fafafa;
+    border: 1px solid #dfdfdf;
+}
+
+QLineEdit:focus {
+    color: #409eff;
+    border: 1px solid #409eff;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QSpinBox {
+    border: 1px solid #e9e8e7;
+    border-bottom: 1px solid #d4d3d2;
+    background-color: #fefefe;
+    color: #50505f;
+}
+
+QSpinBox:hover {
+    background-color: #fafafa;
+    border: 1px solid #dfdfdf;
+}
+
+QSpinBox:focus {
+    border: 1px solid #409eff;
+}
+
+QSpinBox::up-button {
+    background-color: #f0f0f0;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::up-button:pressed {
+    background-color: #e0e0e0;
+}
+
+QSpinBox::down-button {
+    background-color: #f0f0f0;
+}
+
+QSpinBox::down-button:hover,
+QSpinBox::down-button:pressed {
+    background-color: #e0e0e0;
+}
+
+/*///////////////////////////////////////////////////////////////*/
 QMenu {
     background-color: #f9f9f9;
     color: #2c2c2c;

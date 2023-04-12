@@ -59,11 +59,6 @@ QLineEdit:focus {
     border: 1px solid #323232;
 }
 
-QLineEdit[readOnly="true"] {
-    color: gray
-}
-
-
 /*///////////////////////////////////////////////////////////////*/
 QSpinBox {
     border: 1px solid #323232;
@@ -82,14 +77,14 @@ QSpinBox:focus {
 
 QSpinBox::down-button,
 QSpinBox::up-button {
-    background-color: #323232;
+    background-color: #292929;
 }
 
 QSpinBox::up-button:hover,
 QSpinBox::up-button:pressed,
 QSpinBox::down-button:hover,
 QSpinBox::down-button:pressed {
-    background-color: #393939;
+    background-color: #262626;
 }
 
 /*///////////////////////////////////////////////////////////////*/

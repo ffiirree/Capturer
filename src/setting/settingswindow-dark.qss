@@ -1,39 +1,36 @@
-#settings-mainwindow {
-    background-color: #202021;
-}
-
-#settings-mainwindow QWidget {
+SettingWindow * {
     color: #e6e6e6;
 }
 
-/*///////////////////////////////////////////////////////////////*/
 TitleBar {
     background-color: #272728;
 }
 
-QLabel#logo {
-    background-color: #202021;
-}
-
-QLabel#title {
+TitleBar QCheckBox#logo {
     background-color: #202021;
 }
 
 TitleBar QCheckBox#close-btn::indicator {
-    image: url(:/icon/res/close-light)
+    image: url(:/icon/res/close-light);
 }
 
-/*///////////////////////////////////////////////////////////////*/
-
-QTabWidget#firstmenu::pane {
-    background: #272728;
+SettingWindow QListWidget {
+    background-color: #202021;
 }
 
-QTabBar#fristtab::tab {
+SettingWindow QListWidget:item {
     color: #e6e6e6;
 }
 
-QTabBar#fristtab::tab:selected,
-QTabBar#fristtab::tab:hover {
+SettingWindow QListWidget:item:hover,
+SettingWindow QListWidget:item:selected {
     background: #272728;
+}
+
+SettingWindow QStackedWidget {
+    background-color: #272728;
+}
+
+SettingWindow #copyright-label {
+    color: #e6e6e6;
 }

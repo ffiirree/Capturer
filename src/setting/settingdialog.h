@@ -1,7 +1,7 @@
 #ifndef SETTING_DIALOG_H
 #define SETTING_DIALOG_H
 
-#include "apptabcontrol.h"
+#include <QStackedWidget>
 #include "config.h"
 
 class SettingWindow : public QWidget
@@ -26,7 +26,7 @@ private:
 
     Config& config = Config::instance();
 
-    AppTabControl* tabwidget_{ nullptr };
+    QStackedWidget* pages_{ nullptr };
 };
 
 #endif // SETTING_DIALOG_H

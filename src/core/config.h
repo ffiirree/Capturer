@@ -21,7 +21,7 @@ public:
     Config(const Config&) = delete;
     Config& operator=(const Config&) = delete;
 
-    QString getFilePath() const { return filepath_; }
+    [[nodiscard]] QString getFilePath() const { return filepath_; }
 
     static std::string theme();
 

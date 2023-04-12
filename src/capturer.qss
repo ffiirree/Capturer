@@ -1,8 +1,13 @@
+QWidget {
+    font-size: 10.5pt;
+    font-family: "Microsoft YaHei";
+}
+
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
-    border-radius: 3px;
+    border-radius: 5px;
     height: 1.5em;
-    padding-left: 10px;
+    padding-left: 0.5em;
     margin: 1px 0px;
 }
 
@@ -22,70 +27,35 @@ QComboBox::down-arrow {
 
 QComboBox QAbstractItemView {
     outline: 0px;
-    border: 1px solid #e4e7ed;
 }
 
 QComboBox QAbstractItemView {
-    background-color: #fcfcfc;
-    border: 1px solid #dfdfdf;
     padding: 5px;
     border-radius: 5px;
 }
 
 QComboBox QAbstractItemView::item {
+    font-size: 10.5pt;
     border-radius: 5px;
-    padding-left: 10px;
-    height: 30px;
-    color: #505255;
+    padding-left: 0.5em;
+    height: 2em;
     background-color: transparent;
-}
-
-QComboBox QAbstractItemView::item:hover,
-QComboBox QAbstractItemView::item:selected,
-QComboBox QAbstractItemView::item:checked {
-    background-color: #f2f2f2;
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QLineEdit {
-    border: 1px solid #dcdfe6;
-    border-radius: 3px;
+    border-radius: 5px;
     height: 1.5em;
-    padding: 0 10px;
+    padding: 0 0.5em;
     margin: 1px 0px;
-    color: #50505f;
-}
-
-QLineEdit:hover {
-    border: 1px solid #909399;
-}
-
-QLineEdit:focus {
-    color: #409eff;
-    border: 1px solid #409eff;
-}
-
-QLineEdit[readOnly="true"] {
-    color: gray
 }
 
 /*///////////////////////////////////////////////////////////////*/
 QSpinBox {
-    border: 1px solid #dcdfe6;
-    border-radius: 3px;
-    background-color: white;
+    border-radius: 5px;
     height: 1.5em;
     padding: 0 10px;
     margin: 1px 0px;
-    color: #50505f;
-}
-
-QSpinBox:hover {
-    border: 1px solid #909399;
-}
-
-QSpinBox:focus {
-    border: 1px solid #409eff;
 }
 
 QSpinBox::up-button {
@@ -93,18 +63,12 @@ QSpinBox::up-button {
     subcontrol-position: top right;
 
     border: none;
-    border-radius: 3px;
-    background-color: #f0f0f0;
+    border-radius: 5px;
 
     width: 20px;
     margin-right: 2px;
     margin-top: 2px;
     margin-bottom: 1px;
-}
-
-QSpinBox::up-button:hover,
-QSpinBox::up-button:pressed {
-    background-color: #e0e0e0;
 }
 
 QSpinBox::up-arrow {
@@ -117,18 +81,12 @@ QSpinBox::down-button {
     subcontrol-position: bottom right;
 
     border: none;
-    border-radius: 3px;
-    background-color: #f0f0f0;
+    border-radius: 5px;
 
     width: 20px;
     margin-right: 2px;
     margin-bottom: 2px;
     margin-top: 1px;
-}
-
-QSpinBox::down-button:hover,
-QSpinBox::down-button:pressed {
-    background-color: #e0e0e0;
 }
 
 QSpinBox::down-arrow {
@@ -153,9 +111,9 @@ QMenu::item {
     border-radius: 5px;
 
     font-family: "Microsoft YaHei";
-    font-size: 9pt;
+    font-size: 10pt;
 
-    height: 2em;
+    height: 1.75em;
 
     padding-left: 0.75em;
     padding-right: 0.75em;

@@ -19,7 +19,7 @@ public:
         });
     }
 
-    inline ComboBox& add(const std::map<QVariant, QString>& items)
+    inline ComboBox& add(const std::vector<std::pair<QVariant, QString>>& items)
     {
         for (auto& [value, text] : items) {
             insertItem(count(), text, value);

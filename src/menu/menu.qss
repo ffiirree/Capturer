@@ -32,15 +32,7 @@ RecordMenu QCheckBox#stop-btn::indicator {
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
 ImageEditMenu QCheckBox {
-    font-size: 9pt;
-    max-height: 2.5em;
-    max-width: 2.5em;
-    min-height: 2.5em;
-    min-width: 2.5em;
-
     spacing: 0px;
-    margin: 0px;
-    border: 0px;
 }
 
 ImageEditMenu QCheckBox::indicator {
@@ -96,24 +88,23 @@ ImageEditMenu QCheckBox#ok-btn::indicator {
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
+StyleMenu {
+    font-size: 9pt;
+    max-height: 2.5em;
+}
 
 StyleMenu QComboBox {
-    font-size: 11pt;
+    font-size: 9pt;
     max-width: 10em;
     min-width: 4em;
 }
 
 StyleMenu QCheckBox {
     font-size: 9pt;
-
-    max-height: 2.5em;
-    max-width: 2.5em;
-    min-height: 2.5em;
-    min-width: 2.5em;
-
     spacing: 0px;
-    margin: 0px;
-    border: 0px;
+
+    max-width: 2.5em;
+    max-height: 2.5em;
 }
 
 StyleMenu QCheckBox::indicator {
@@ -130,9 +121,15 @@ StyleMenu QCheckBox#width-btn:checked {
 
 StyleMenu QCheckBox#width-btn::indicator {
     padding: 0px;
+    margin: 0px;
 
     subcontrol-position: center center;
     background-color: white;
+
+    height: 0.5em; 
+    width: 0.5em;
+    margin: 1em;
+    border-radius: 0.25em;
 }
 
 StyleMenu QCheckBox#width-btn::indicator:checked {
@@ -140,10 +137,11 @@ StyleMenu QCheckBox#width-btn::indicator:checked {
 }
 
 StyleMenu QCheckBox#fill-btn::indicator:checked {
-    image: url(:/icon/res/fill)
+    image: url(:/icon/res/fill);
 }
 
 StyleMenu ColorPanel {
     font-size: 9pt;
-    min-height: 2.45em;
+    padding: 0.5em;
+    background-color: blue;
 }

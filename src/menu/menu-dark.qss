@@ -131,10 +131,6 @@ StyleMenu QCheckBox#fill-btn::indicator {
     image: url(:/icon/res/fill-light)
 }
 
-StyleMenu QCheckBox#width-btn {
-    background-color: #232323;
-}
-
 StyleMenu QCheckBox#width-btn:unchecked:hover {
     background-color: #323232;
 }

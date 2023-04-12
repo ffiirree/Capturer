@@ -7,10 +7,10 @@ void WidthButton::setValue(int width)
     width_ = std::clamp(width, min_, max_);
 
     const double max_em = 2.5;
-    double width_em = ((double)width_ / max_) * max_em;
+    double width_em = ((double)width_ / max_) * 1.75;
 
-    std::string style = fmt::format("WidthButton::indicator{{ height: {}em; width: {}em; margin: {}em; border-radius: {}em; }}",
-                                    width_em, width_em, (max_em - width_em) * 4.95, width_em * 0.45);
+    std::string style = fmt::format("WidthButton::indicator{{ height: {:2.1f}em; width: {:2.1f}em; margin: {:4.3f}em; border-radius: {:4.3f}em; }}",
+                                    width_em, width_em, (static_cast<int>((max_em - width_em) * 49.9)) / 100.0, width_em * 0.485);
 
     setStyleSheet(QString::fromStdString(style));
 
