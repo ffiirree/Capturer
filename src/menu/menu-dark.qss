@@ -130,3 +130,15 @@ ImageEditMenu QCheckBox#save-btn::indicator {
 StyleMenu QCheckBox#fill-btn::indicator {
     image: url(:/icon/res/fill-light)
 }
+
+StyleMenu QCheckBox#width-btn {
+    background-color: #232323;
+}
+
+StyleMenu QCheckBox#width-btn:unchecked:hover {
+    background-color: #323232;
+}
+
+StyleMenu QCheckBox#width-btn::indicator:unchecked {
+    background-color: #e6e6e6;
+}

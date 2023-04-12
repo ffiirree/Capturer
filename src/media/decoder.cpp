@@ -276,7 +276,7 @@ int Decoder::run()
 
 int Decoder::run_f()
 {
-    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] STARTED", name_);
+    LOG(INFO) << "STARTED";
 
     // reset the buffer
     video_buffer_.clear();
@@ -287,11 +287,11 @@ int Decoder::run_f()
 
     while (running_) {
         if (video_buffer_.full()) {
-            LOG(WARNING) << fmt::format("[   DECODER] [V] [{:>10}] buffer is full, drop a packet", name_);
+            LOG(WARNING) <<"[V] buffer is full, drop the packet";
         }
 
         if (audio_buffer_.full()) {
-            LOG(WARNING) << fmt::format("[   DECODER] [A] [{:>10}] buffer is full, drop a packet", name_);
+            LOG(WARNING) << "[A] buffer is full, drop the packet";
         }
 
         // read
@@ -302,11 +302,11 @@ int Decoder::run_f()
             //               This will enter draining mode.
             // [draining] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned.
             //               The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
-            LOG(INFO) << fmt::format("[   DECODER] [{:>10}] EOF => PUT NULL PACKET TO ENTER DRAINING MODE", name_);
+            LOG(INFO) << "EOF => PUT NULL PACKET TO ENTER DRAINING MODE";
             eof_ |= DEMUXING_EOF;
         }
         else if (ret < 0) {
-            LOG(ERROR) << fmt::format("[   DECODER] [{:>10}] READ FRAME FAILED", name_);
+            LOG(ERROR) << "failed to read frame.";
             running_ = false;
             break;
         }
@@ -321,20 +321,20 @@ int Decoder::run_f()
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] EOF", name_);
+                    LOG(INFO) << "[V] EOF";
                     eof_ |= VDECODING_EOF;
                     break;
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] DECODING ERROR", name_);
+                    LOG(INFO) << "[V] DECODING ERROR";
                     return ret;
                 }
 
                 decoded_frame_->pts += VIDEO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] frame = {:>5d}, pts = {:>9d}",
-                    name_, video_decoder_ctx_->frame_number, decoded_frame_->pts);
+                DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>13d}",
+                    video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(
                     [=](AVFrame* frame) {
@@ -355,20 +355,20 @@ int Decoder::run_f()
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] EOF", name_);
+                    LOG(INFO) <<"[A] EOF";
                     eof_ |= ADECODING_EOF;
                     break;
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] DECODING ERROR", name_);
+                    LOG(INFO) << "[A] DECODING ERROR";
                     return ret;
                 }
 
                 decoded_frame_->pts += AUDIO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
-                    name_, audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
+                DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+                    audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
 
                 if (muted_) {
                     av_samples_set_silence(
@@ -391,10 +391,10 @@ int Decoder::run_f()
     } // while(running_)
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] frames = {:>5d}",
-            name_, video_decoder_ctx_->frame_number);
+        LOG(INFO) << fmt::format("[V] decoded frames = {:>5d}",
+            video_decoder_ctx_->frame_number);
     }
-    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] EXITED", name_);
+    LOG(INFO) << "EXITED";
 
     return 0;
 }

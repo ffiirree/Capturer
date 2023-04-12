@@ -5,7 +5,7 @@
 #include <QCheckBox>
 #include "editmenu.h"
 #include "colorpanel.h"
-#include "linewidthbutton.h"
+#include "widthbutton.h"
 #include "buttongroup.h"
 
 class StyleMenu : public EditMenu

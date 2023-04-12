@@ -68,7 +68,7 @@ private:
     int run_f();
     int destroy();
 
-    uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
+    static uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
 
     void init_format(WAVEFORMATEX*);
 

@@ -8,7 +8,6 @@
 
 // REFERENCE_TIME time units per second and per millisecond
 #define REFTIMES_PER_SEC        10000000
-#define REFTIMES_PER_MILLISEC   10000
 
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
@@ -39,7 +38,7 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
     sample_fmt_ = AV_SAMPLE_FMT_FLT;
     channel_layout_ = to_ffmpeg_channel_layout(layout, channels_);
 
-    LOG(INFO) << fmt::format("sample_rate = {}, channels = {}, sample_fmt = {}, channel_layout = {}, tbn = {}/{}",
+    LOG(INFO) << fmt::format("[    WASAPI] sample_rate = {}, channels = {}, sample_fmt = {}, channel_layout = {}, tbn = {}/{}",
         sample_rate_, channels_, av_get_sample_fmt_name(sample_fmt_), channel_layout_,
         time_base_.num, time_base_.den);
 }
@@ -182,6 +181,8 @@ int WasapiCapturer::run()
 
 int WasapiCapturer::run_f()
 {
+    LOG(INFO) << "[A] STARTED";
+
     UINT32 nb_samples;
     BYTE* data_ptr;
     UINT32 packet_size = 0;
@@ -199,13 +200,13 @@ int WasapiCapturer::run_f()
             break;
 
         case WAIT_OBJECT_0 + 1: // AUDIO_SAMPLES_READY_EVENT
-            LOG_IF(WARNING, buffer_.full()) << fmt::format("[    WASAPI] [A] [{:10}] buffer is full, drop a packet", (int)type_);
+            LOG_IF(WARNING, buffer_.full()) << "[A] buffer is full, drop a packet";
 
             while (true)
             {
                 if (FAILED(capturer_->GetNextPacketSize(&packet_size))) {
                     running_ = false;
-                    LOG(ERROR) << "[    WASAPI] [A] failed to get the next packet size, exit";
+                    LOG(ERROR) << "[A] failed to get the next packet size, exit";
                     return -1;
                 }
 
@@ -215,7 +216,7 @@ int WasapiCapturer::run_f()
                 // Get the available data in the shared buffer.
                 if (FAILED(capturer_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
                     running_ = false;
-                    LOG(ERROR) << fmt::format("[    WASAPI] [A] [{:10}] failed to get the buffer, exit", (int)type_);
+                    LOG(ERROR) << "[A] failed to get the buffer, exit";
                     return -1;
                 }
 
@@ -223,7 +224,7 @@ int WasapiCapturer::run_f()
 
                 if (FAILED(capturer_->ReleaseBuffer(nb_samples))) {
                     running_ = false;
-                    LOG(ERROR) << fmt::format("[    WASAPI] [A] [{:10}] failed to release buffer, exit", (int)type_);
+                    LOG(ERROR) << "[A] failed to release buffer, exit";
                     return -1;
                 }
             }
@@ -239,7 +240,7 @@ int WasapiCapturer::run_f()
 
     RETURN_ON_ERROR(capturer_audio_client_->Stop());
 
-    LOG(INFO) << fmt::format("[    WASAPI] [A] [{:10}] EXITED", (int)type_);
+    LOG(INFO) << "[A] EXITED";
     return 0;
 }
 
@@ -269,8 +270,8 @@ int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UI
         );
     }
 
-    DLOG(INFO) << fmt::format("[    WASAPI] [A] [{:>10d}] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
-        int(type_), frame_number_++, frame_->pts, frame_->nb_samples, muted_);
+    DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>13d}, samples = {:>5d}, muted = {}",
+        frame_number_++, frame_->pts, frame_->nb_samples, muted_);
 
     buffer_.push([this](AVFrame* pushed) {
         av_frame_unref(pushed);
@@ -293,7 +294,9 @@ std::string WasapiCapturer::format_str(int type) const
             time_base_.num, time_base_.den
         );
     }
-    default: return {};
+    default: 
+        LOG(ERROR) << "unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type)); 
+        return {};
     }
 }
 
@@ -306,7 +309,7 @@ AVRational WasapiCapturer::time_base(int type) const
         return time_base_;
     }
     default:
-        LOG(ERROR) << "unknown media type.";
+        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));
         return OS_TIME_BASE_Q;
     }
 }
@@ -324,7 +327,9 @@ int WasapiCapturer::produce(AVFrame* frame, int type)
         });
         return 0;
 
-    default: return -1;
+    default:
+        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));
+        return -1;
     }
 }
 
@@ -366,6 +371,8 @@ int WasapiCapturer::destroy()
     frame_number_ = 0;
 
     //CoUninitialize();
+
+    LOG(INFO) << "[    WASAPI] RESET";
 
     return 0;
 }

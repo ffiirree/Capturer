@@ -133,7 +133,7 @@ int Encoder::new_video_stream()
     }
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format(">>> [   ENCODER] [V] [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[   ENCODER] [V] >>> [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
             video_codec_name_, video_options_, vfmt_.is_cfr, vfmt_.width, vfmt_.height, av_get_pix_fmt_name(vfmt_.format), vfmt_.framerate.num, vfmt_.framerate.den,
             video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
@@ -202,7 +202,7 @@ int Encoder::new_auido_stream()
     }
 
     if (audio_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format(">>> [   ENCODER] [A] [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[   ENCODER] [A] >>> [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
             audio_codec_name_, audio_options_, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
             av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
             fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
@@ -264,7 +264,7 @@ int Encoder::run()
 
 int Encoder::run_f()
 {
-    LOG(INFO) << "[   ENCODER] STARTED";
+    LOG(INFO) << "STARTED";
 
     if (video_stream_idx_ < 0) eof_ |= V_ENCODING_EOF;
     if (audio_stream_idx_ < 0) eof_ |= (A_ENCODING_EOF | A_ENCODING_FIFO_EOF);
@@ -280,8 +280,8 @@ int Encoder::run_f()
         ret = process_audio_frames();
     } // running
 
-    LOG(INFO) << "[   ENCODER] [V] encoded frame = " << video_encoder_ctx_->frame_number;
-    LOG(INFO) << "[   ENCODER] EXITED";
+    LOG(INFO) << "[V] encoded frame = " << video_encoder_ctx_->frame_number;
+    LOG(INFO) << "EXITED";
 
     return ret;
 }
@@ -307,30 +307,30 @@ int Encoder::process_video_frames()
             break;
         }
         else if (ret == AVERROR_EOF) {
-            LOG(INFO) << "[   ENCODER] [V] EOF";
+            LOG(INFO) << "[V] EOF";
             eof_ |= V_ENCODING_EOF;
             break;
         }
         else if (ret < 0) {
-            LOG(ERROR) << "[   ENCODER] [V] encode failed";
+            LOG(ERROR) << "[V] encode failed";
             return ret;
         }
 
         av_packet_rescale_ts(packet_, vfmt_.time_base, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
         if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
-            LOG(WARNING) << fmt::format("[    ENCODER] [V] DORP FRAME: dts = {} <= {}", packet_->dts, v_last_dts_);
+            LOG(WARNING) << fmt::format("[V] drop the frame with dts {} <= {}", packet_->dts, v_last_dts_);
             continue;
         }
         v_last_dts_ = packet_->dts;
 
-        DLOG(INFO) << fmt::format("[   ENCODER] [V] frame = {:>5d}, pts = {:>9d}, size = {:>6d}, ts = {:>10.6f}", 
+        DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>13d}, size = {:>6d}, ts = {:>10.6f}",
            video_encoder_ctx_->frame_number, packet_->pts, packet_->size,
            av_rescale_q(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
         packet_->stream_index = video_stream_idx_;
         if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-            LOG(ERROR) << "[   ENCODER] [V] av_interleaved_write_frame";
+            LOG(ERROR) << "[V] failed to write the frame to file.";
             return -1;
         }
     }
@@ -357,7 +357,7 @@ int Encoder::process_audio_frames()
         );
 
         if (filtered_frame_->nb_samples == 0) {
-            LOG(INFO) << "[   ENCODER] [A] DRAINING";
+            LOG(INFO) << "[A] DRAINING";
             eof_ |= A_ENCODING_FIFO_EOF;
             break;
         }
@@ -391,7 +391,7 @@ int Encoder::process_audio_frames()
             ret = avcodec_send_frame(audio_encoder_ctx_, nullptr);
         }
         else {
-            LOG(ERROR) << "[   ENCODER] [A] unknown error";
+            LOG(ERROR) << "[A] unknown error";
             break;
         }
 
@@ -402,22 +402,22 @@ int Encoder::process_audio_frames()
                 break;
             }
             else if (ret == AVERROR_EOF) {
-                LOG(INFO) << "[   ENCODER] [A] EOF";
+                LOG(INFO) << "[A] EOF";
                 eof_ |= A_ENCODING_EOF;
                 break;
             }
             else if (ret < 0) {
-                LOG(ERROR) << "[   ENCODER] [A] encode failed";
+                LOG(ERROR) << "[A] encode failed";
                 return ret;
             }
 
             if (a_last_dts_ != AV_NOPTS_VALUE && a_last_dts_ >= packet_->dts) {
-                LOG(WARNING) << fmt::format("[   ENCODER] [A] DORP FRAME: dts = {} <= {}", packet_->dts, a_last_dts_);
+                LOG(WARNING) << fmt::format("[A] drop the frame with dts {} <= {}", packet_->dts, a_last_dts_);
                 continue;
             }
             a_last_dts_ = packet_->dts;
 
-            DLOG(INFO) << fmt::format("[   ENCODER] [A] frame = {:>5d}, pts = {:>9d}, size = {:>6d}, ts = {:>10.6f}", 
+            DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>13d}, size = {:>6d}, ts = {:>10.6f}",
                audio_encoder_ctx_->frame_number, packet_->pts, packet_->size,
                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
@@ -425,7 +425,7 @@ int Encoder::process_audio_frames()
             av_packet_rescale_ts(packet_, afmt_.time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-                LOG(ERROR) << "[   ENCODER] [A] av_interleaved_write_frame";
+                LOG(ERROR) << "[A] failed to write frame to the file.";
                 return -1;
             }
         }
@@ -449,12 +449,12 @@ void Encoder::destroy()
     wait();
 
     if (fmt_ctx_ && ready_ && av_write_trailer(fmt_ctx_) != 0) {
-        LOG(ERROR) << "[   ENCODER] av_write_trailer";
+        LOG(ERROR) << "[   ENCODER] failed to write trailer";
     }
 
     if (fmt_ctx_ && !(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
         if (avio_close(fmt_ctx_->pb) < 0) {
-            LOG(ERROR) << "[   ENCODER] avio_close";
+            LOG(ERROR) << "[   ENCODER] failed to close the file.";
         }
     }
 

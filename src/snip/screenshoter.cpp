@@ -133,7 +133,7 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
         exit();
     }
 
-    Selector::mouseDoubleClickEvent(event);
+//    Selector::mouseDoubleClickEvent(event);
 }
 
 void ScreenShoter::moveMenu()

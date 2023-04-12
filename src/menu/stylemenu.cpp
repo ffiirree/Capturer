@@ -12,10 +12,12 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
     ButtonGroup* group = new ButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
-        width_btn_ = new WidthButton({ HEIGHT, HEIGHT }, 3, true);
-        connect(width_btn_, &WidthButton::changed, [this](int w) { width_ = w; fill_ = false; emit changed(); });
-        addButton(width_btn_);
+        width_btn_ = new WidthButton(3, true, this);
+        width_btn_->setObjectName("width-btn");
+        width_btn_->setCheckable(true);
         width_btn_->setChecked(true);
+        connect(width_btn_, &WidthButton::changed, [this](int w) { width_ = w; fill_ = false; emit changed(); });
+        addWidget(width_btn_);
         group->addButton(width_btn_);
 
         if (buttons & FILL_BTN) {
