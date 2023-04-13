@@ -4,6 +4,8 @@
 #include <QStackedWidget>
 #include "config.h"
 
+class QCheckBox;
+
 class SettingWindow : public QWidget
 {
     Q_OBJECT
@@ -27,6 +29,8 @@ private:
     Config& config = Config::instance();
 
     QStackedWidget* pages_{ nullptr };
+
+    QCheckBox* autorun_{ nullptr };
 };
 
 #endif // SETTING_DIALOG_H

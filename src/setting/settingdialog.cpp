@@ -18,8 +18,8 @@
 #include "version.h"
 #include "media.h"
 
-SettingWindow::SettingWindow(QWidget * parent)
-        : QWidget(parent)
+SettingWindow::SettingWindow(QWidget* parent)
+    : QWidget(parent)
 {
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -85,7 +85,7 @@ SettingWindow::SettingWindow(QWidget * parent)
     pages_->addWidget(setupDevicesWidget());
     pages_->addWidget(setupAboutWidget());
 
-    connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto){
+    connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto) {
         pages_->setCurrentIndex(menu->row(current));
     });
     menu->setCurrentRow(0);
@@ -98,13 +98,13 @@ QWidget* SettingWindow::setupGeneralWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _01 = new QCheckBox();
-    _01->setObjectName("autorun");
-    _01->setChecked(config["autorun"].get<bool>());
-    setAutoRun(_01->checkState());
-    connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
+    autorun_ = new QCheckBox();
+    autorun_->setObjectName("autorun");
+    autorun_->setChecked(config["autorun"].get<bool>());
+    setAutoRun(autorun_->checkState());
+    connect(autorun_, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
     layout->addWidget(new QLabel(tr("Run on Startup")), 0, 0, 1, 1);
-    layout->addWidget(_01, 0, 1, 1, 2);
+    layout->addWidget(autorun_, 0, 1, 1, 2);
 
     //
     auto _1_2 = new ComboBox();
@@ -510,14 +510,16 @@ void SettingWindow::setAutoRun(int statue)
     settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
 #elif __linux__
     std::string desktop_file = "/usr/share/applications/capturer.desktop";
-    std::string autorun_dir = std::string{::getenv("HOME")} + "/.config/autostart";
+    std::string autorun_dir = std::string{ ::getenv("HOME") } + "/.config/autostart";
     std::string autorun_file = autorun_dir + "/capturer.desktop";
 
     if (!std::filesystem::exists(desktop_file)) {
-        LOG(INFO) << "not exists";
+        LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";
+        statue = Qt::Unchecked;
+        autorun_->setCheckState(Qt::Unchecked);
     }
 
-    if(statue == Qt::Checked) {
+    if (statue == Qt::Checked) {
         if (std::filesystem::exists(desktop_file) && !std::filesystem::exists(autorun_file)) {
             if (!std::filesystem::exists(autorun_dir)) {
                 std::filesystem::create_directories(autorun_dir);

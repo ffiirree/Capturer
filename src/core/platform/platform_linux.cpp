@@ -33,7 +33,7 @@ namespace platform
             const std::string cmd = "gsettings monitor " + key + " " + subkey;
 
             running_ = true;
-            thread_ = std::thread([=](){
+            thread_ = std::thread([=]() {
                 platform::util::thread_set_name("monit-gsettings");
 
                 while (running_) {
@@ -46,13 +46,14 @@ namespace platform
                         std::this_thread::sleep_for(100ms);
                         continue;
                     }
-                    
+
                     char buffer[256]{};
                     while (running_ && (fgets(buffer, sizeof(buffer), pipe) != nullptr)) {
                         callback(buffer);
                     }
 
                     pclose(pipe);       // TODO: stuck if the cmd process does not exit
+                                        // TODO: the application can not exit
 
                     // exit unexpectedly
                     if (running_) {
@@ -84,7 +85,7 @@ namespace platform
 
     namespace util
     {
-        // TODO
+        // TODO:
         std::string to_utf8(const wchar_t* wptr, size_t wlen)
         {
             if (!wptr) return {};
@@ -95,6 +96,7 @@ namespace platform
             return {};
         }
 
+        // TODO: 
         std::wstring to_utf16(const char*, size_t)
         {
             return {};
