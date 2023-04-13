@@ -23,6 +23,11 @@ namespace platform
         return numeric_combined(patch, build) <= numeric_combined(r.patch, r.build);
     }
 
+    bool version_t::operator == (const version_t& r) const
+    {
+        return major == r.major && minor == r.minor && patch == r.patch && build == r.build;
+    }
+
     template<> vendor_t vendor_cast(uint32_t id)
     {
         switch (id)

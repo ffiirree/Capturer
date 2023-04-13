@@ -133,7 +133,7 @@ git submodule update --init --recursive
 cd Capturer
 
 cmake -S. -Bbuild -DCMAKE_INSTALL_PREFIX=D:\\"Program Files"\\Capturer
-cmake --build build --target install
+cmake --build build --target install --config Release
 ```
 
 ### Linux (Ubuntu)
@@ -163,7 +163,7 @@ sudo apt install libxrandr-dev
 cd Capturer && mkdir build && cd build
 
 # Ubuntu 18.4 上的 CMake 版本过低，请先安装更高版本的CMake(>=3.16), 参见下一小节
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j8
 
 # package 'xx.deb'
@@ -186,6 +186,20 @@ sudo apt install libssl-dev
 ./bootstrap
 make -j8
 sudo make install
+```
+
+### Install GCC/G++-11 on Ubuntu 18.04
+
+Ubuntu 18.04 上的 GCC-7 不支持 `<filesystem>`, 更新一下GCC:
+
+```bash
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt update
+sudo apt install gcc-11 g++-11
+
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 --slave /usr/bin/g++ g++ /usr/bin/g++-11
+sudo update-alternatives --config gcc
 ```
 
 ## FFmpeg代码示例

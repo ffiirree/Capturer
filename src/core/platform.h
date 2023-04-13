@@ -22,15 +22,16 @@ namespace platform
 {
     struct version_t 
     {
-        uint32_t major;
-        uint32_t minor;
-        uint32_t patch;
-        uint32_t build;
+        uint32_t major{};
+        uint32_t minor{};
+        uint32_t patch{};
+        uint32_t build{};
 
-        std::string codename;
+        std::string codename{};
 
         bool operator >= (const version_t&) const;
         bool operator <= (const version_t&) const;
+        bool operator == (const version_t&) const;
     };
 
 #ifdef _WIN32

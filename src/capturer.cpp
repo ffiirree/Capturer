@@ -95,11 +95,13 @@ void Capturer::setupSystemTray()
     // SystemTrayIcon
     auto update_tray_menu = [=]() {
         QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
-
 #ifdef __linux__
-        // <= ubuntu 2004, system trays are always light
-        if (platform::system::os_version() <= platform::version_t{ 20, 4, 0, 0 }) {
-            icon_color = "dark";
+        if (platform::system::os_name().find("Ubuntu") != std::string::npos) {
+            auto ver = platform::system::os_version();
+            if (ver.major == 20 && ver.minor == 4)
+                icon_color = "dark"; // ubuntu 2004, system trays are always light
+            else if (ver.major == 18 && ver.minor == 4)
+                icon_color = "light";  // ubuntu 1804, system trays are always dark
         }
 #endif
         menu->clear();
@@ -122,7 +124,10 @@ void Capturer::setupSystemTray()
     sys_tray_icon_->show();
     sys_tray_icon_->setToolTip("Capturer Settings");
 
-    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) { if (r == QSystemTrayIcon::DoubleClick) sniper_->start(); });
+    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) { 
+        if (r == QSystemTrayIcon::DoubleClick) 
+            sniper_->start();
+    });
 }
 
 void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
