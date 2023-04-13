@@ -63,7 +63,7 @@ namespace platform::system
         }
 
         // TODO : other desktop env
-        return theme_t::dark;
+        return theme_t::light;
     }
 
     std::string kernel_name()

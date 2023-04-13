@@ -27,7 +27,7 @@ public:
 
     // use this function to set theme
     void set_theme(const std::string&);
-    static void load_theme(const std::string&);
+    void load_theme(const std::string&);
 
     template <typename T> void set(json& key, T value)
     { 
@@ -43,6 +43,7 @@ public slots:
 
 signals:
     void changed();
+    void theme_changed();
     void SYSTEM_THEME_CHANGED(int);
 
 private:
@@ -59,6 +60,5 @@ private:
     std::shared_ptr<platform::linux::GSettingsMonitor> theme_monitor_{ nullptr };
 #endif // _WIN32
 };
-
 
 #endif // CONFIG_H

@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     LOG(INFO) << " -- Virtual Screen   : " << platform::display::virtual_screen_geometry();
     LOG(INFO) << " -- Desktop ENV      : " << platform::system::desktop_name(platform::system::desktop());
 
-    Config::load_theme(Config::theme());
+    Config::instance().load_theme(Config::theme());
 
     auto language = Config::instance()["language"].get<QString>();
     LOG(INFO) << " -- Language         : " << language;

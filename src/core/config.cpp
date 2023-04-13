@@ -193,6 +193,8 @@ void Config::load_theme(const std::string& theme)
     if (_theme != theme) {
         _theme = theme;
 
+        emit theme_changed();
+
         std::vector<QString> files{
                 ":/qss/capturer.qss",
                 ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",

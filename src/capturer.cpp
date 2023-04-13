@@ -22,7 +22,7 @@ Capturer::Capturer(QWidget *parent)
 
     connect(sniper_, &ScreenShoter::pinSnipped, this, &Capturer::pinPixmap);
 
-    sys_tray_icon_ = new QSystemTrayIcon(this);
+    sys_tray_icon_ = new QSystemTrayIcon(QIcon(":/icon/res/capturer.png"), this);
 
     snip_sc_ = new QHotkey(this);
     connect(snip_sc_, &QHotkey::activated, sniper_, &ScreenShoter::start);
@@ -46,9 +46,11 @@ Capturer::Capturer(QWidget *parent)
 
     // System tray icon
     // @attention Must after setting.
-    setupSystemTrayIcon();
+    setupSystemTray();
 
     updateConfig();
+
+    setWindowIcon(QIcon(":/icon/res/capturer.png"));
 
     // show message
     connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
@@ -82,31 +84,43 @@ void Capturer::updateConfig()
     gifcptr_->updateTheme();
 }
 
-void Capturer::setupSystemTrayIcon()
+void Capturer::setupSystemTray()
 {
-    // SystemTrayIcon
     auto menu = new QMenu(this);
     menu->setObjectName("tray-menu");
     menu->setWindowFlag(Qt::FramelessWindowHint);
     menu->setWindowFlag(Qt::NoDropShadowWindowHint);
     menu->setAttribute(Qt::WA_TranslucentBackground);
 
-    QString theme = (Config::theme() == "dark") ? "light" : "dark";
+    // SystemTrayIcon
+    auto update_tray_menu = [=]() {
+        QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
 
-    menu->addAction(QIcon(":/icon/res/screenshot-" + theme), tr("Screenshot"), sniper_, &ScreenShoter::start);
-    menu->addAction(QIcon(":/icon/res/capture-" + theme),    tr("Record Video"), recorder_, &ScreenRecorder::record);
-    menu->addAction(QIcon(":/icon/res/gif-" + theme),        tr("Record GIF"), gifcptr_, &ScreenRecorder::record);
-    menu->addSeparator();
-    menu->addAction(QIcon(":/icon/res/camera-" + theme), tr("Open Camera"), recorder_, &ScreenRecorder::switchCamera);
-    menu->addSeparator();
-    menu->addAction(QIcon(":/icon/res/setting-" + theme),    tr("Settings"), setting_dialog_, &SettingWindow::show);
-    menu->addSeparator();
-    menu->addAction(QIcon(":/icon/res/exit-" + theme),       tr("Quit"), qApp, &QCoreApplication::exit);
+#ifdef __linux__
+        // <= ubuntu 2004, system trays are always light
+        if (platform::system::os_version() <= platform::version_t{ 20, 4, 0, 0 }) {
+            icon_color = "dark";
+        }
+#endif
+        menu->clear();
+        menu->addAction(QIcon(":/icon/res/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
+        menu->addAction(QIcon(":/icon/res/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record);
+        menu->addAction(QIcon(":/icon/res/gif-" + icon_color),          tr("Record GIF"),   gifcptr_, &ScreenRecorder::record);
+        menu->addSeparator();
+        menu->addAction(QIcon(":/icon/res/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
+        menu->addSeparator();
+        menu->addAction(QIcon(":/icon/res/setting-" + icon_color),      tr("Settings"),     setting_dialog_, &SettingWindow::show);
+        menu->addSeparator();
+        menu->addAction(QIcon(":/icon/res/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
+};
+
+    // dark / light theme
+    connect(&Config::instance(), &Config::theme_changed, update_tray_menu);
+    update_tray_menu();
 
     sys_tray_icon_->setContextMenu(menu);
-    sys_tray_icon_->setIcon(QIcon(":/icon/res/capturer.png"));
-    setWindowIcon(QIcon(":/icon/res/capturer.png"));
     sys_tray_icon_->show();
+    sys_tray_icon_->setToolTip("Capturer Settings");
 
     connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) { if (r == QSystemTrayIcon::DoubleClick) sniper_->start(); });
 }

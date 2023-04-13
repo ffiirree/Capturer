@@ -48,7 +48,7 @@ private slots:
                      int msecs = 10000);
 
 private:
-    void setupSystemTrayIcon();
+    void setupSystemTray();
 
     static std::pair<DataFormat, std::any> clipboard_data();
     static std::pair<bool, QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
