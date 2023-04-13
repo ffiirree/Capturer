@@ -11,7 +11,7 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
     auto group = new ButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
-        width_btn_ = new WidthButton(3, true, this);
+        width_btn_ = new WidthButton(true, this);
         width_btn_->setObjectName("width-btn");
         width_btn_->setCheckable(true);
         width_btn_->setChecked(true);

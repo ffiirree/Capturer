@@ -6,10 +6,13 @@
 class WidthButton : public QCheckBox
 {
     Q_OBJECT
+
+    Q_PROPERTY(int width READ __r_attr_width WRITE __w_attr_width)
+
 public:
-    explicit WidthButton(int width = 1, bool checkable = false, QWidget* parent = nullptr)
-        : QCheckBox(parent) {
-        setValue(width);
+    explicit WidthButton(bool checkable = false, QWidget* parent = nullptr)
+        : QCheckBox(parent) 
+    {
         setCheckable(checkable);
     }
 
@@ -28,10 +31,16 @@ public slots:
 protected:
     void wheelEvent(QWheelEvent*) override;
 
+    int __r_attr_width() const { return __attr_width; };
+    void __w_attr_width(int w) { __attr_width = w; }
+
 private:
-    int width_{ 2 };
-    int max_{ 24 };
+    int width_{ 3 };
+    
+    int max_{ 16 };
     int min_{ 1 };
+
+    int __attr_width{ 2 };
 };
 
 #endif // !WIDTH_BUTTON_H

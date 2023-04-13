@@ -16,13 +16,13 @@ private slots:
     void setAutoRun(int);
 
 private:
-    void setupGeneralWidget();
-    void setupSnipWidget();
-    void setupRecordWidget();
-    void setupGIFWidget();
-    void setupDevicesWidget();
-    void setupHotkeyWidget();
-    void setupAboutWidget();
+    QWidget* setupGeneralWidget();
+    QWidget* setupSnipWidget();
+    QWidget* setupRecordWidget();
+    QWidget* setupGIFWidget();
+    QWidget* setupDevicesWidget();
+    QWidget* setupHotkeyWidget();
+    QWidget* setupAboutWidget();
 
     Config& config = Config::instance();
 

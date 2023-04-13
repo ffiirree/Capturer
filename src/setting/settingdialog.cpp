@@ -77,13 +77,13 @@ SettingWindow::SettingWindow(QWidget * parent)
     pages_ = new QStackedWidget();
     layout->addWidget(pages_);
 
-    setupGeneralWidget();
-    setupHotkeyWidget();
-    setupSnipWidget();
-    setupRecordWidget();
-    setupGIFWidget();
-    setupDevicesWidget();
-    setupAboutWidget();
+    pages_->addWidget(setupGeneralWidget());
+    pages_->addWidget(setupHotkeyWidget());
+    pages_->addWidget(setupSnipWidget());
+    pages_->addWidget(setupRecordWidget());
+    pages_->addWidget(setupGIFWidget());
+    pages_->addWidget(setupDevicesWidget());
+    pages_->addWidget(setupAboutWidget());
 
     connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto){
         pages_->setCurrentIndex(menu->row(current));
@@ -91,7 +91,7 @@ SettingWindow::SettingWindow(QWidget * parent)
     menu->setCurrentRow(0);
 }
 
-void SettingWindow::setupGeneralWidget()
+QWidget* SettingWindow::setupGeneralWidget()
 {
     auto general_widget = new QWidget(pages_);
 
@@ -99,6 +99,7 @@ void SettingWindow::setupGeneralWidget()
     layout->setContentsMargins(35, 10, 35, 15);
 
     auto _01 = new QCheckBox();
+    _01->setObjectName("autorun");
     _01->setChecked(config["autorun"].get<bool>());
     setAutoRun(_01->checkState());
     connect(_01, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
@@ -141,10 +142,11 @@ void SettingWindow::setupGeneralWidget()
 
     layout->setRowStretch(4, 1);
     general_widget->setLayout(layout);
-    pages_->addWidget(general_widget);
+
+    return general_widget;
 }
 
-void SettingWindow::setupSnipWidget()
+QWidget* SettingWindow::setupSnipWidget()
 {
     auto snip_widget = new QWidget(pages_);
 
@@ -189,10 +191,11 @@ void SettingWindow::setupSnipWidget()
 
     layout->setRowStretch(5, 1);
     snip_widget->setLayout(layout);
-    pages_->addWidget(snip_widget);
+    
+    return snip_widget;
 }
 
-void SettingWindow::setupRecordWidget()
+QWidget* SettingWindow::setupRecordWidget()
 {
     auto record_widget = new QWidget(pages_);
 
@@ -292,10 +295,11 @@ void SettingWindow::setupRecordWidget()
     layout->setRowStretch(11, 1);
 
     record_widget->setLayout(layout);
-    pages_->addWidget(record_widget);
+    
+    return record_widget;
 }
 
-void SettingWindow::setupGIFWidget()
+QWidget* SettingWindow::setupGIFWidget()
 {
    auto gif_widget = new QWidget();
 
@@ -375,10 +379,11 @@ void SettingWindow::setupGIFWidget()
 
     layout->setRowStretch(10, 1);
     gif_widget->setLayout(layout);
-    pages_->addWidget(gif_widget);
+    
+    return gif_widget;
 }
 
-void SettingWindow::setupDevicesWidget()
+QWidget* SettingWindow::setupDevicesWidget()
 {
     auto devices_widget = new QWidget(pages_);
 
@@ -412,10 +417,11 @@ void SettingWindow::setupDevicesWidget()
     layout->setRowStretch(5, 1);
 
     devices_widget->setLayout(layout);
-    pages_->addWidget(devices_widget);
+    
+    return devices_widget;
 }
 
-void SettingWindow::setupHotkeyWidget()
+QWidget* SettingWindow::setupHotkeyWidget()
 {
     auto hotkey_widget = new QWidget(pages_);
     auto idx_row = 1;
@@ -461,10 +467,11 @@ void SettingWindow::setupHotkeyWidget()
 
     layout->setRowStretch(idx_row, 1);
     hotkey_widget->setLayout(layout);
-    pages_->addWidget(hotkey_widget);
+
+    return hotkey_widget;
 }
 
-void SettingWindow::setupAboutWidget()
+QWidget* SettingWindow::setupAboutWidget()
 {
     auto about_widget =  new QWidget(pages_);
     pages_->addWidget(about_widget);
@@ -490,6 +497,8 @@ void SettingWindow::setupAboutWidget()
     copyright_->setObjectName("copyright-label");
     copyright_->setAlignment(Qt::AlignCenter);
     parent_layout->addWidget(copyright_);
+
+    return about_widget;
 }
 
 void SettingWindow::setAutoRun(int statue)

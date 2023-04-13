@@ -84,7 +84,7 @@ ColorPanel::ColorPanel(QWidget * parent)
     : QWidget(parent)
 {
     auto layout = new QGridLayout();
-    layout->setContentsMargins(5, 5, 5, 5);
+    layout->setContentsMargins(5, 3, 5, 3);
     layout->setVerticalSpacing(1);
     layout->setHorizontalSpacing(2);
 

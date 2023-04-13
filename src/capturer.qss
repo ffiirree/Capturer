@@ -3,6 +3,23 @@ QWidget {
     font-family: "Microsoft YaHei";
 }
 
+QCheckBox {
+    spacing: 0px;
+}
+
+QCheckBox::indicator {
+    height: 1.5em;
+    width: 1.5em;
+}
+
+QCheckBox::indicator:checked {
+    image: url(:/icon/res/checkbox-checked);
+}
+
+QCheckBox::indicator:unchecked:hover {
+    image: url(:/icon/res/checkbox-unchecked-hover);
+}
+
 /*///////////////////////////////////////////////////////////////*/
 QComboBox {
     border-radius: 5px;
@@ -14,7 +31,7 @@ QComboBox {
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: center right;
-    width: 24px;
+    width: 2em;
     padding: 4px 0;
 
     border-top-right-radius: 3px;
@@ -22,7 +39,8 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    width: 24px;
+    width: 1.25em;
+    height: 1.25em;
 }
 
 QComboBox QAbstractItemView {
@@ -59,39 +77,31 @@ QSpinBox {
 }
 
 QSpinBox::up-button {
-    subcontrol-origin: border;
+    subcontrol-origin: padding;
     subcontrol-position: top right;
 
     border: none;
-    border-radius: 5px;
+    border-top-right-radius: 5px;
 
-    width: 20px;
-    margin-right: 2px;
-    margin-top: 2px;
-    margin-bottom: 1px;
+    width: 2em;
 }
 
 QSpinBox::up-arrow {
-    image: url(:/icon/res/spin_up.png);
-    width: 20px;
+    width: 2em;
 }
 
 QSpinBox::down-button {
-    subcontrol-origin: border;
+    subcontrol-origin: padding;
     subcontrol-position: bottom right;
 
     border: none;
-    border-radius: 5px;
+    border-bottom-right-radius: 5px;
 
-    width: 20px;
-    margin-right: 2px;
-    margin-bottom: 2px;
-    margin-top: 1px;
+    width: 2em;
 }
 
 QSpinBox::down-arrow {
-    image: url(:/icon/res/spin_down.png);
-    width: 20px;
+    width: 2em;
 }
 
 /*///////////////////////////////////////////////////////////////*/

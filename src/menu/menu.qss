@@ -4,10 +4,6 @@ RecordMenu QWidget#menu {
     border-radius: 5px;
 }
 
-RecordMenu QCheckBox {
-    spacing: 0px;
-}
-
 RecordMenu QCheckBox::indicator {
     font-size: 9pt;
 
@@ -30,10 +26,6 @@ RecordMenu QCheckBox#stop-btn::indicator {
 }
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
-
-ImageEditMenu QCheckBox {
-    spacing: 0px;
-}
 
 ImageEditMenu QCheckBox::indicator {
     font-size: 9pt;
@@ -88,31 +80,14 @@ ImageEditMenu QCheckBox#ok-btn::indicator {
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
-StyleMenu {
-    font-size: 9pt;
-    max-height: 2.5em;
-}
-
 StyleMenu QComboBox {
     font-size: 9pt;
     max-width: 10em;
     min-width: 4em;
 }
 
-StyleMenu QCheckBox {
-    font-size: 9pt;
-    spacing: 0px;
-
-    max-width: 2.5em;
-    max-height: 2.5em;
-}
-
 StyleMenu QCheckBox::indicator {
     font-size: 9pt;
-
-    height: 1.5em;
-    width: 1.5em;
-    padding: 0.5em;
 }
 
 StyleMenu QCheckBox#width-btn:checked {
@@ -120,20 +95,49 @@ StyleMenu QCheckBox#width-btn:checked {
 }
 
 StyleMenu QCheckBox#width-btn::indicator {
-    padding: 0px;
-    margin: 0px;
+    height: 1.5em;
+    width: 1.5em;
+    padding: 0.5em;
 
-    subcontrol-position: center center;
-    background-color: white;
-
-    height: 0.5em; 
-    width: 0.5em;
-    margin: 1em;
-    border-radius: 0.25em;
+    image: url(:/icon/res/dot-2);
 }
 
-StyleMenu QCheckBox#width-btn::indicator:checked {
-    background-color: white;
+StyleMenu QCheckBox#width-btn[width="1"]::indicator:checked {
+    image: url(:/icon/res/dot-1);
+}
+
+StyleMenu QCheckBox#width-btn[width="2"]::indicator:checked {
+    image: url(:/icon/res/dot-2);
+}
+
+StyleMenu QCheckBox#width-btn[width="3"]::indicator:checked {
+    image: url(:/icon/res/dot-3);
+}
+
+StyleMenu QCheckBox#width-btn[width="4"]::indicator:checked {
+    image: url(:/icon/res/dot-4);
+}
+
+StyleMenu QCheckBox#width-btn[width="5"]::indicator:checked {
+    image: url(:/icon/res/dot-5);
+}
+
+StyleMenu QCheckBox#width-btn[width="6"]::indicator:checked {
+    image: url(:/icon/res/dot-6);
+}
+
+StyleMenu QCheckBox#width-btn[width="7"]::indicator:checked {
+    image: url(:/icon/res/dot-7);
+}
+
+StyleMenu QCheckBox#width-btn[width="8"]::indicator:checked {
+    image: url(:/icon/res/dot-8);
+}
+
+StyleMenu QCheckBox#fill-btn::indicator {
+    height: 1.5em;
+    width: 1.5em;
+    padding: 0.5em;
 }
 
 StyleMenu QCheckBox#fill-btn::indicator:checked {

@@ -127,10 +127,6 @@ ImageEditMenu QCheckBox#save-btn::indicator {
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
 
-StyleMenu QCheckBox#fill-btn::indicator {
-    image: url(:/icon/res/fill-dark)
-}
-
 StyleMenu QCheckBox#width-btn {
     background-color: #f9f9f9;
 }
@@ -139,6 +135,38 @@ StyleMenu QCheckBox#width-btn:unchecked:hover {
     background-color: #e6e6e6;
 }
 
-StyleMenu QCheckBox#width-btn::indicator:unchecked {
-    background-color: #2c2c2c;
+StyleMenu QCheckBox#width-btn[width="1"]::indicator {
+    image: url(:/icon/res/dot-1-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="2"]::indicator {
+    image: url(:/icon/res/dot-2-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="3"]::indicator {
+    image: url(:/icon/res/dot-3-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="4"]::indicator {
+    image: url(:/icon/res/dot-4-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="5"]::indicator {
+    image: url(:/icon/res/dot-5-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="6"]::indicator {
+    image: url(:/icon/res/dot-6-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="7"]::indicator {
+    image: url(:/icon/res/dot-7-dark);
+}
+
+StyleMenu QCheckBox#width-btn[width="8"]::indicator {
+    image: url(:/icon/res/dot-8-dark);
+}
+
+StyleMenu QCheckBox#fill-btn::indicator {
+    image: url(:/icon/res/fill-dark)
 }

@@ -1,20 +1,19 @@
 #include "widthbutton.h"
 #include <QWheelEvent>
-#include "fmt/format.h"
+#include <QStyle>
+#include <cmath>
 
 void WidthButton::setValue(int width)
 {
     width_ = std::clamp(width, min_, max_);
 
-    const double max_em = 2.5;
-    double width_em = ((double)width_ / max_) * 1.75;
+    auto __width = std::lround((width_ / static_cast<float>(max_)) * 8);
+    if (__attr_width != __width && __width >= 1) {
+        setProperty("width", QVariant::fromValue(__width));
+        style()->polish(this);
 
-    std::string style = fmt::format("WidthButton::indicator{{ height: {:2.1f}em; width: {:2.1f}em; margin: {:4.3f}em; border-radius: {:4.3f}em; }}",
-                                    width_em, width_em, (static_cast<int>((max_em - width_em) * 49.9)) / 100.0, width_em * 0.485);
-
-    setStyleSheet(QString::fromStdString(style));
-
-    update();
+        emit changed(__width * 2 - 1);
+    }
 }
 
 void WidthButton::wheelEvent(QWheelEvent* event)
@@ -24,6 +23,4 @@ void WidthButton::wheelEvent(QWheelEvent* event)
     width_ += event->angleDelta().y() / 120;
 
     setValue(width_);
-
-    emit changed(width_);
 }

@@ -51,8 +51,6 @@
         <file>res/arrow_up.png</file>
         <file>res/arrow_down-light.png</file>
         <file>res/arrow_up-light.png</file>
-        <file>res/spin_down.png</file>
-        <file>res/spin_up.png</file>
         <file>res/pause-dark.png</file>
         <file>res/play-dark.png</file>
         <file>res/microphone-dark.png</file>
@@ -79,6 +77,34 @@
         <file>res/camera-fill-dark.png</file>
         <file>res/camera-light.png</file>
         <file>res/camera-fill-light.png</file>
+        <file>res/dot-1-light.png</file>
+        <file>res/dot-2-light.png</file>
+        <file>res/dot-3-light.png</file>
+        <file>res/dot-4-light.png</file>
+        <file>res/dot-5-light.png</file>
+        <file>res/dot-6-light.png</file>
+        <file>res/dot-7-light.png</file>
+        <file>res/dot-8-light.png</file>
+        <file>res/dot-1-dark.png</file>
+        <file>res/dot-2-dark.png</file>
+        <file>res/dot-3-dark.png</file>
+        <file>res/dot-4-dark.png</file>
+        <file>res/dot-5-dark.png</file>
+        <file>res/dot-6-dark.png</file>
+        <file>res/dot-7-dark.png</file>
+        <file>res/dot-8-dark.png</file>
+        <file>res/dot-1.png</file>
+        <file>res/dot-2.png</file>
+        <file>res/dot-3.png</file>
+        <file>res/dot-4.png</file>
+        <file>res/dot-5.png</file>
+        <file>res/dot-6.png</file>
+        <file>res/dot-7.png</file>
+        <file>res/dot-8.png</file>
+        <file>res/checkbox-checked.png</file>
+        <file>res/checkbox-unchecked-dark.png</file>
+        <file>res/checkbox-unchecked-hover.png</file>
+        <file>res/checkbox-unchecked-light.png</file>
     </qresource>
     <qresource prefix="/qss">
         <file>menu/menu.qss</file>

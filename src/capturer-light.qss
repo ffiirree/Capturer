@@ -1,4 +1,9 @@
 /*///////////////////////////////////////////////////////////////*/
+QCheckBox::indicator {
+    image: url(:/icon/res/checkbox-unchecked-dark);
+}
+
+/*///////////////////////////////////////////////////////////////*/
 QComboBox {
     border: 1px solid #e9e8e7;
     border-bottom: 1px solid #d4d3d2;
@@ -24,7 +29,6 @@ QComboBox:on {
 }
 
 QComboBox QAbstractItemView {
-    outline: 0px;
     border: 1px solid #e4e7ed;
 }
 
@@ -94,6 +98,14 @@ QSpinBox::down-button {
 QSpinBox::down-button:hover,
 QSpinBox::down-button:pressed {
     background-color: #e0e0e0;
+}
+
+QSpinBox::up-arrow {
+    image: url(:/icon/res/arrow_up);
+}
+
+QSpinBox::down-arrow {
+    image: url(:/icon/res/arrow_down);
 }
 
 /*///////////////////////////////////////////////////////////////*/

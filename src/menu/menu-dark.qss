@@ -127,14 +127,42 @@ ImageEditMenu QCheckBox#save-btn::indicator {
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
 
-StyleMenu QCheckBox#fill-btn::indicator {
-    image: url(:/icon/res/fill-light)
-}
-
 StyleMenu QCheckBox#width-btn:unchecked:hover {
     background-color: #323232;
 }
 
-StyleMenu QCheckBox#width-btn::indicator:unchecked {
-    background-color: #e6e6e6;
+StyleMenu QCheckBox#width-btn[width="1"]::indicator {
+    image: url(:/icon/res/dot-1-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="2"]::indicator {
+    image: url(:/icon/res/dot-2-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="3"]::indicator {
+    image: url(:/icon/res/dot-3-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="4"]::indicator {
+    image: url(:/icon/res/dot-4-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="5"]::indicator {
+    image: url(:/icon/res/dot-5-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="6"]::indicator {
+    image: url(:/icon/res/dot-6-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="7"]::indicator {
+    image: url(:/icon/res/dot-7-light);
+}
+
+StyleMenu QCheckBox#width-btn[width="8"]::indicator {
+    image: url(:/icon/res/dot-8-light);
+}
+
+StyleMenu QCheckBox#fill-btn::indicator {
+    image: url(:/icon/res/fill-light)
 }
