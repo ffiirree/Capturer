@@ -10,8 +10,8 @@
 #include "linux-v4l2/linux-v4l2.h"
 
 #elif _WIN32
-#include "win-wasapi/enum-wasapi.h"
-#include "win-dshow/enum-devices.h"
+#include "win-wasapi/win-wasapi.h"
+#include "win-dshow/win-dshow.h"
 #endif
 
 QList<QString> Devices::cameras() {
@@ -22,8 +22,8 @@ QList<QString> Devices::cameras() {
         cameras.insert(QString::fromStdString(device.name_));
     }
 #elif _WIN32
-    for (const auto& [name, id] : enum_video_devices()) {
-        cameras.insert(QString::fromStdWString(name));
+    for (const auto& dev : dshow::video_devices()) {
+        cameras.insert(QString::fromUtf8(dev.name.c_str()));
     }
 #endif
 
@@ -41,8 +41,8 @@ QList<QString> Devices::microphones() {
     }
     pulse_unref();
 #elif _WIN32
-    for (const auto& [name, id] : enum_audio_endpoints(true)) {
-        microphones.insert(QString::fromStdWString(name));
+    for (const auto& dev : wasapi::endpoints(avdevice_t::SOURCE)) {
+        microphones.insert(QString::fromUtf8(dev.name.c_str()));
     }
 #endif
     return microphones.values();
@@ -60,8 +60,8 @@ QList<QString> Devices::speakers() {
     }
     pulse_unref();
 #elif _WIN32
-    for (const auto& [name, id] : enum_audio_endpoints(false)) {
-        speakers.insert(QString::fromStdWString(name));
+    for (const auto& dev : wasapi::endpoints(avdevice_t::SINK)) {
+        speakers.insert(QString::fromUtf8(dev.name.c_str()));
     }
 #endif
     return speakers.values();
@@ -81,9 +81,9 @@ QString Devices::default_audio_sink()
     }
     return QString::fromStdString(info.default_sink_ + ".monitor");
 #elif _WIN32
-    auto dft = default_audio_endpoint(false);
+    auto dft = wasapi::default_endpoint(avdevice_t::SINK);
     if (dft.has_value())
-        return QString::fromStdWString(dft.value().first);
+        return QString::fromUtf8(dft.value().name.c_str());
 
     return {};
 #endif
@@ -103,9 +103,9 @@ QString Devices::default_audio_source()
     }
     return QString::fromStdString(info.default_source_);
 #elif _WIN32
-    auto dft = default_audio_endpoint(true);
+    auto dft = wasapi::default_endpoint(avdevice_t::SOURCE);
     if (dft.has_value())
-        return QString::fromStdWString(dft.value().first);
+        return QString::fromUtf8(dft.value().name.c_str());
         
     return {};
 #endif

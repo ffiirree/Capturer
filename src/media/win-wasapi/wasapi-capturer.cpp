@@ -1,5 +1,6 @@
 #ifdef _WIN32
 
+#include "win-wasapi.h"
 #include "wasapi-capturer.h"
 #include "fmt/format.h"
 #include "utils.h"
@@ -38,16 +39,18 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
     sample_fmt_ = AV_SAMPLE_FMT_FLT;
     channel_layout_ = to_ffmpeg_channel_layout(layout, channels_);
 
-    LOG(INFO) << fmt::format("[    WASAPI] sample_rate = {}, channels = {}, sample_fmt = {}, channel_layout = {}, tbn = {}/{}",
-        sample_rate_, channels_, av_get_sample_fmt_name(sample_fmt_), channel_layout_,
+    std::string ch_layout_str{ 16, {} };
+    av_get_channel_layout_string(&(ch_layout_str.data()[0]), 16, channels_, channel_layout_);
+    LOG(INFO) << fmt::format("[    WASAPI] [{} - {}] sample_rate = {}, sample_fmt = {}, channels = {}, channel_layout = {}, tbn = {}/{}",
+        device_.name, device_.id,
+        sample_rate_, av_get_sample_fmt_name(sample_fmt_),  channels_, ch_layout_str,
         time_base_.num, time_base_.den);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
-int WasapiCapturer::open(DeviceType dt)
+int WasapiCapturer::open(avdevice_t::io_t dt)
 {
     type_ = dt;
-    bool is_input = (type_ == DeviceType::DEVICE_MICROPHONE);
 
     // TODO: conflict with Qt
     //CHECK(SUCCEEDED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)));
@@ -64,17 +67,19 @@ int WasapiCapturer::open(DeviceType dt)
 
     IMMDevice* device = nullptr;
     RETURN_ON_ERROR(enumerator->GetDefaultAudioEndpoint(
-        is_input ? eCapture : eRender,
-        is_input ? eCommunications : eConsole,
+        (type_ == avdevice_t::SOURCE) ? eCapture : eRender,
+        (type_ == avdevice_t::SOURCE) ? eCommunications : eConsole,
         &device
     ));
     defer(SAFE_RELEASE(device));
+
+    device_ = wasapi::device_info(device).value_or(avdevice_t{});
 
     if (init_capturer(device) != 0) {
         return -1;
     }
 
-    if (!is_input) {
+    if (type_ == avdevice_t::SINK) {
         if (init_silent_render(device) != 0) {
             return -1;
         }
@@ -100,7 +105,7 @@ int WasapiCapturer::init_capturer(IMMDevice* device)
     init_format(wfex);
 
     DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
-    if (type_ == DeviceType::DEVICE_SPEAKER)
+    if (type_ == avdevice_t::SINK)
         flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;
 
     RETURN_ON_ERROR(capturer_audio_client_->Initialize(
@@ -172,7 +177,7 @@ int WasapiCapturer::run()
 
     start_time_ = os_gettime_ns();
     thread_ = std::thread([this]() {
-        platform::util::thread_set_name("wasapi-" + std::to_string((int)type_));
+        platform::util::thread_set_name("wasapi-" + avdevice_t::io_type_name(type_));
         run_f(); 
     });
 
@@ -270,7 +275,7 @@ int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UI
         );
     }
 
-    DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>13d}, samples = {:>5d}, muted = {}",
+    DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
         frame_number_++, frame_->pts, frame_->nb_samples, muted_);
 
     buffer_.push([this](AVFrame* pushed) {

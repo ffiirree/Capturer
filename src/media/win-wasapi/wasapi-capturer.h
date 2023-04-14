@@ -23,18 +23,13 @@ extern "C" {
 #include "ringvector.h"
 #include "producer.h"
 #include "clock.h"
-
-enum class DeviceType {
-    DEVICE_UNKNOWN,
-    DEVICE_SPEAKER,
-    DEVICE_MICROPHONE
-};
+#include "devices.h"
 
 class WasapiCapturer : public Producer<AVFrame> {
 public:
     ~WasapiCapturer() override { reset(); }
 
-    int open(DeviceType);
+    int open(avdevice_t::io_t);
 
     void reset() override { destroy(); };
 
@@ -87,7 +82,7 @@ private:
 
     std::atomic<bool> muted_{ false };
 
-    DeviceType type_{ DeviceType::DEVICE_UNKNOWN };
+    avdevice_t::io_t type_{ avdevice_t::io_t::UNKNOWN };
 
     AVFrame* frame_{ nullptr };
     uint32_t frame_number_{ 0 };
@@ -114,6 +109,8 @@ private:
     // events
     HANDLE AUDIO_SAMPLES_READY_EVENT{ nullptr };
     HANDLE STOP_EVENT{ nullptr };
+
+    avdevice_t device_{};
 };
 #endif // _WIN32
 

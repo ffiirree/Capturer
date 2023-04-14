@@ -1,4 +1,4 @@
-#include "enum-devices.h"
+#include "win-dshow.h"
 
 #ifdef _WIN32
 
@@ -14,10 +14,10 @@
 #define SAFE_RELEASE(punk)  if ((punk) != nullptr) { (punk)->Release(); (punk) = nullptr; }
 
 
-static std::vector<std::pair<std::wstring, std::wstring>> DisplayDeviceInformation(IEnumMoniker* pEnum)
+static std::vector<avdevice_t> DisplayDeviceInformation(IEnumMoniker* pEnum, enum AVMediaType mt)
 {
     IMoniker* moniker = nullptr;
-    std::vector<std::pair<std::wstring, std::wstring>> list;
+    std::vector<avdevice_t> list;
 
     while (pEnum->Next(1, &moniker, NULL) == S_OK)
     {
@@ -67,13 +67,18 @@ static std::vector<std::pair<std::wstring, std::wstring>> DisplayDeviceInformati
         pPropBag->Release();
         moniker->Release();
 
-        list.emplace_back(name, id);
+        list.emplace_back(avdevice_t{
+            platform::util::to_utf8(name),
+            platform::util::to_utf8(id),
+            mt,
+            avdevice_t::SOURCE
+        });
     }
 
     return list;
 }
 
-static std::vector<std::pair<std::wstring, std::wstring>> EnumerateDevices(REFGUID category)
+static std::vector<avdevice_t> EnumerateDevices(REFGUID category)
 {
     //RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     //defer(CoUninitialize());
@@ -95,19 +100,23 @@ static std::vector<std::pair<std::wstring, std::wstring>> EnumerateDevices(REFGU
         return {};
     }
 
+    enum AVMediaType mt{};
+    if (category == CLSID_VideoInputDeviceCategory)
+        mt = AVMEDIA_TYPE_VIDEO;
+    else if (category == CLSID_AudioInputDeviceCategory)
+        mt = AVMEDIA_TYPE_AUDIO;
 
-    return DisplayDeviceInformation(enum_moniker);
+    return DisplayDeviceInformation(enum_moniker, mt);
 }
 
-std::vector<std::pair<std::wstring, std::wstring>> enum_video_devices()
+std::vector<avdevice_t> dshow::video_devices()
 {
     return EnumerateDevices(CLSID_VideoInputDeviceCategory);
 }
 
-std::vector<std::pair<std::wstring, std::wstring>> enum_audio_devices()
+std::vector<avdevice_t> dshow::audio_devices()
 {
     return EnumerateDevices(CLSID_AudioInputDeviceCategory);
 }
-
 
 #endif // !_WIN32

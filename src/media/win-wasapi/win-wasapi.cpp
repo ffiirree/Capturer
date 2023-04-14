@@ -1,11 +1,11 @@
 #ifdef _WIN32
 
-#include "enum-wasapi.h"
+#include "win-wasapi.h"
 #include <Windows.h>
-#include <mmdeviceapi.h>
 #include <propsys.h>
 #include <functiondiscoverykeys.h>
 #include <Audioclient.h>
+#include "platform.h"
 #include "utils.h"
 #include "defer.h"
 #include "logging.h"
@@ -14,16 +14,46 @@
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
 
+std::optional<avdevice_t> wasapi::device_info(IMMDevice* dev)
+{
+    if (!dev) return {};
+
+    IPropertyStore* props = nullptr;
+    LPWSTR id = nullptr;
+
+    // Get the endpoint ID string.
+    RETURN_NULL_ON_ERROR(dev->GetId(&id));
+    defer(CoTaskMemFree(id); id = nullptr);
+
+    RETURN_NULL_ON_ERROR(dev->OpenPropertyStore(STGM_READ, &props));
+    defer(SAFE_RELEASE(props));
+
+    PROPVARIANT varName;
+    // Initialize container for property value.
+    PropVariantInit(&varName);
+    defer(PropVariantClear(&varName));
+
+    // Get the endpoint's friendly-name property.
+    RETURN_NULL_ON_ERROR(props->GetValue(PKEY_Device_FriendlyName, &varName));
+
+    DWORD state{};
+    RETURN_NULL_ON_ERROR(dev->GetState(&state));
+
+    return avdevice_t{
+        platform::util::to_utf8(varName.pwszVal),
+        platform::util::to_utf8(id),
+        AVMEDIA_TYPE_AUDIO,
+        avdevice_t::UNKNOWN,
+        static_cast<uint64_t>(state)
+    };
+}
+
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/device-properties
-std::vector<std::pair<std::wstring, std::wstring>> enum_audio_endpoints(bool is_input)
+std::vector<avdevice_t> wasapi::endpoints(avdevice_t::io_t io_type)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDeviceCollection* collection = nullptr;
-    IMMDevice* endpoint = nullptr;
-    LPWSTR id = nullptr;
-    IPropertyStore* props = nullptr;
-    UINT count = 0;
-    std::vector<std::pair<std::wstring, std::wstring>> devices;
+    std::vector<avdevice_t> devices;
 
     // RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
     // defer(CoUninitialize());
@@ -38,45 +68,34 @@ std::vector<std::pair<std::wstring, std::wstring>> enum_audio_endpoints(bool is_
     defer(SAFE_RELEASE(enumerator));
 
     RETURN_NULL_ON_ERROR(enumerator->EnumAudioEndpoints(
-        is_input ? eCapture : eRender,
+        (io_type == avdevice_t::SOURCE) ? eCapture : eRender,
         DEVICE_STATE_ACTIVE,
         &collection
     ));
     defer(SAFE_RELEASE(collection));
 
+    UINT count = 0;
+    IMMDevice* endpoint = nullptr;
     RETURN_NULL_ON_ERROR(collection->GetCount(&count));
     for (ULONG i = 0; i < count; i++) {
         // Get pointer to endpoint number i.
         RETURN_NULL_ON_ERROR(collection->Item(i, &endpoint));
         defer(SAFE_RELEASE(endpoint));
 
-        // Get the endpoint ID string.
-        RETURN_NULL_ON_ERROR(endpoint->GetId(&id));
-        defer(CoTaskMemFree(id); id = nullptr);
-
-        RETURN_NULL_ON_ERROR(endpoint->OpenPropertyStore(STGM_READ, &props));
-        defer(SAFE_RELEASE(props));
-
-        PROPVARIANT varName;
-        // Initialize container for property value.
-        PropVariantInit(&varName);
-        defer(PropVariantClear(&varName));
-
-        // Get the endpoint's friendly-name property.
-        RETURN_NULL_ON_ERROR(props->GetValue(PKEY_Device_FriendlyName, &varName));
-
-        // Print endpoint friendly name and endpoint ID.
-        devices.emplace_back(varName.pwszVal, id);
+        auto dev = device_info(endpoint);
+        if (dev) {
+            dev.value().io_type = io_type;
+            devices.emplace_back(dev.value());
+        }
     }
 
     return devices;
 }
 
-std::optional<std::pair<std::wstring, std::wstring>> default_audio_endpoint(bool is_input)
+std::optional<avdevice_t> wasapi::default_endpoint(avdevice_t::io_t io_type)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
     IMMDevice* endpoint = nullptr;
-    LPWSTR id = nullptr;
     IPropertyStore* props = nullptr;
 
     RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
@@ -92,28 +111,15 @@ std::optional<std::pair<std::wstring, std::wstring>> default_audio_endpoint(bool
     defer(SAFE_RELEASE(enumerator));
 
     RETURN_NULL_ON_ERROR(enumerator->GetDefaultAudioEndpoint(
-        is_input ? eCapture : eRender,
+        (io_type == avdevice_t::SOURCE) ? eCapture : eRender,
         eConsole,
         &endpoint
     ));
     defer(SAFE_RELEASE(endpoint));
 
-    RETURN_NULL_ON_ERROR(endpoint->GetId(&id));
-    defer(CoTaskMemFree(id); id = nullptr);
-
-    RETURN_NULL_ON_ERROR(endpoint->OpenPropertyStore(STGM_READ, &props));
-    defer(SAFE_RELEASE(props));
-
-    PROPVARIANT varName;
-    // Initialize container for property value.
-    PropVariantInit(&varName);
-    defer(PropVariantClear(&varName));
-
-    // Get the endpoint's friendly-name property.
-    RETURN_NULL_ON_ERROR(props->GetValue(PKEY_Device_FriendlyName, &varName));
 
     // Print endpoint friendly name and endpoint ID.
-    return std::pair{ varName.pwszVal,  id };
+    return device_info(endpoint);
 }
 
 #endif // _WIN32
