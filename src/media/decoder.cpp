@@ -6,6 +6,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavutil/time.h>
+#include <libavutil/pixdesc.h>
 }
 #include "clock.h"
 #include "defer.h"
@@ -98,7 +99,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
         LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
             name_,
-            video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
+            video_decoder_ctx_->width, video_decoder_ctx_->height, av_get_pix_fmt_name(video_decoder_ctx_->pix_fmt),
             fr.num, fr.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
         );
@@ -142,7 +143,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 
     ready_ = true;
 
-    LOG(INFO) << fmt::format("[   DECODER] {{{:>10}}} is opened", name_);
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] is opened", name_);
     return 0;
 }
 
@@ -333,7 +334,7 @@ int Decoder::run_f()
 
                 decoded_frame_->pts += VIDEO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>13d}",
+                DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>14d}",
                     video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(
@@ -367,7 +368,7 @@ int Decoder::run_f()
 
                 decoded_frame_->pts += AUDIO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>9d}, samples = {:>5d}, muted = {}",
+                DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
                     audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
 
                 if (muted_) {

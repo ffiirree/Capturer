@@ -324,7 +324,7 @@ int Encoder::process_video_frames()
         }
         v_last_dts_ = packet_->dts;
 
-        DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>13d}, size = {:>6d}, ts = {:>10.6f}",
+        DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>14d},    size = {:>6d}, ts = {:>10.6f}",
            video_encoder_ctx_->frame_number, packet_->pts, packet_->size,
            av_rescale_q(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
@@ -417,7 +417,7 @@ int Encoder::process_audio_frames()
             }
             a_last_dts_ = packet_->dts;
 
-            DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>13d}, size = {:>6d}, ts = {:>10.6f}",
+            DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>14d},    size = {:>6d}, ts = {:>10.6f}",
                audio_encoder_ctx_->frame_number, packet_->pts, packet_->size,
                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 

@@ -120,7 +120,7 @@ void ScreenRecorder::open_audio_sources()
     }
 #elif _WIN32
     if (!Devices::microphones().empty()) {
-        if (microphone_decoder_ && microphone_decoder_->open(DeviceType::DEVICE_MICROPHONE) < 0) {
+        if (microphone_decoder_ && microphone_decoder_->open(avdevice_t::SOURCE) < 0) {
             LOG(WARNING) << "open microphone failed";
             microphone_decoder_->reset();
             menu_->disable_mic(true);
@@ -128,7 +128,7 @@ void ScreenRecorder::open_audio_sources()
     }
 
     if (!Devices::speakers().empty()) {
-        if (speaker_decoder_ && speaker_decoder_->open(DeviceType::DEVICE_SPEAKER) < 0) {
+        if (speaker_decoder_ && speaker_decoder_->open(avdevice_t::SINK) < 0) {
             LOG(WARNING) << "open speaker failed";
             speaker_decoder_->reset();
             menu_->disable_speaker(true);
@@ -194,16 +194,17 @@ void ScreenRecorder::setup()
     }
 
     // outputs
+    encoder_->vfmt_.format = pix_fmt_;          // set before create filter graph
     dispatcher_->set_encoder(encoder_.get());
 
-    // prepare
+    // prepare the filter graph and properties of encoder
+    // let dispather decide which pixel format to be used for encoding
     if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         exit();
         return;
     }
 
-    encoder_->vfmt_.format = pix_fmt_;
     if (encoder_->open(filename_, codec_name_, "aac", true, options_, {}) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();

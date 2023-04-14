@@ -97,7 +97,6 @@ private:
 
     QTimer* timer_{ nullptr };
 
-    // TODO: the low level often generate a whole gray gif while the recording area is simply black.
     std::map<std::string, std::string> gif_filters_{
         {"high",        "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1"},
         {"medium",      "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none"},

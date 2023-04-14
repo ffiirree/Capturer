@@ -66,8 +66,12 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame>* encoder, AVFilterCont
         return -1;
     }
 
-    enum AVPixelFormat pix_fmt = ((AVPixelFormat)encoder->format(AVMEDIA_TYPE_VIDEO) == AV_PIX_FMT_NONE) ? AV_PIX_FMT_YUV420P : (AVPixelFormat)encoder->format(AVMEDIA_TYPE_VIDEO);
-    enum AVPixelFormat pix_fmts[] = { pix_fmt, AV_PIX_FMT_NONE };
+    if (pix_fmt_ == AV_PIX_FMT_NONE) {              // no global format specified
+        AVPixelFormat encode_fmt = static_cast<AVPixelFormat>(encoder->format(AVMEDIA_TYPE_VIDEO));
+        pix_fmt_ = (encode_fmt == AV_PIX_FMT_NONE) ? AV_PIX_FMT_YUV420P : encode_fmt;
+    }
+
+    enum AVPixelFormat pix_fmts[] = { pix_fmt_, AV_PIX_FMT_NONE };
     if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
         LOG(ERROR) << "[DISPATCHER] [V] av_opt_set_int_list";
         return -1;
@@ -269,6 +273,7 @@ int Dispatcher::set_encoder_format_by_sinks()
     }
 
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vctx != nullptr)) {
+        consumer_ctx_.consumer->vfmt_.format = pix_fmt_;
         consumer_ctx_.consumer->vfmt_.width = av_buffersink_get_w(consumer_ctx_.vctx);
         consumer_ctx_.consumer->vfmt_.height = av_buffersink_get_h(consumer_ctx_.vctx);
         consumer_ctx_.consumer->vfmt_.framerate = av_buffersink_get_frame_rate(consumer_ctx_.vctx);

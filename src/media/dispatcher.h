@@ -1,17 +1,18 @@
 #ifndef CAPTURER_DISPATCHER_H
 #define CAPTURER_DISPATCHER_H
 
+extern "C" {
+#include <libavutil/time.h>
+#include <libavfilter/avfilter.h>
+}
+
 #include <thread>
 #include <future>
 #include <tuple>
 #include "utils.h"
 #include "producer.h"
 #include "consumer.h"
-
-extern "C" {
-#include <libavutil/time.h>
-#include <libavfilter/avfilter.h>
-}
+#include "hwaccel.h"
 
 class Dispatcher {
 public:
@@ -92,14 +93,17 @@ private:
     // clock @{
     std::mutex pause_mtx_;
 
-    int64_t paused_pts_{ AV_NOPTS_VALUE };  // 
+    int64_t paused_pts_{ AV_NOPTS_VALUE };          // 
     int64_t resumed_pts_{ AV_NOPTS_VALUE };
-    int64_t paused_time_{ 0 };              // do not include the time being paused, please use paused_time()
+    int64_t paused_time_{ 0 };                      // do not include the time being paused, please use paused_time()
     std::atomic<int64_t> start_time_{ 0 };
     //@}
 
     // filter graphs @{
-    std::atomic<bool> locked_{};            // lock filter graph sources
+    std::atomic<bool> locked_{};                    // lock filter graph sources
+
+    AVPixelFormat pix_fmt_{ AV_PIX_FMT_NONE };      // global setting -> filter graph / encoders
+    AVHWDeviceType hwaccel_{ AV_HWDEVICE_TYPE_NONE };
 
     bool video_enabled_{};
     bool audio_enabled_{};
