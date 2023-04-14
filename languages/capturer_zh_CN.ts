@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="233"/>
+        <location filename="../src/record/screenrecorder.cpp" line="234"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>
@@ -270,6 +270,26 @@
         <location filename="../src/setting/settingdialog.cpp" line="364"/>
         <source>Framerate</source>
         <translation>帧率</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="266"/>
+        <source>Software x264 [H.264 / AVC]</source>
+        <translation>软件 x264 [H.264 / AVC]</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="267"/>
+        <source>Software x265 [H.265 / HEVC]</source>
+        <translation>软件 x265 [H.265 / HEVC]</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="270"/>
+        <source>Hardware NVENC [H.264 / AVC]</source>
+        <translation>硬件 NVENC [H.264 / AVC]</translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="271"/>
+        <source>Hardware NVENC [H.265 / HEVC]</source>
+        <translation>硬件 NVENC [H.265 / HEVC]</translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="395"/>

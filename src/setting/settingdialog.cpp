@@ -16,7 +16,7 @@
 #include "devices.h"
 #include "logging.h"
 #include "version.h"
-#include "media.h"
+#include "hwaccel.h"
 
 SettingWindow::SettingWindow(QWidget* parent)
     : QWidget(parent)
@@ -263,13 +263,13 @@ QWidget* SettingWindow::setupRecordWidget()
 
     auto _7_2 = new ComboBox();
     _7_2->add({
-                      {"libx264", "Software x264 [H.264 / AVC]"},
-                      {"libx265", "Software x265 [H.265 / HEVC]"}
+                      {"libx264", tr("Software x264 [H.264 / AVC]")},
+                      {"libx265", tr("Software x265 [H.265 / HEVC]")}
               });
-    //if (is_support_hwdevice(AV_HWDEVICE_TYPE_CUDA)) {
-    //    _7_2->addItem("Hardware NVENC [H.264 / AVC]", "h264_nvenc");
-    //    _7_2->addItem("Hardware NVENC [H.265 / HEVC]", "hevc_nvenc");
-    //}
+    if (hwaccel::is_support(AV_HWDEVICE_TYPE_CUDA)) {
+        _7_2->add("h264_nvenc", tr("Hardware NVENC [H.264 / AVC]"));
+        _7_2->add("hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]"));
+    }
     _7_2->select(
                     config["record"]["encoder"].get<QString>()
             )
