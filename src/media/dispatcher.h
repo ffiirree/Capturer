@@ -42,6 +42,7 @@ public:
         }
     }
 
+    int enable_hwaccel(enum AVHWDeviceType, enum AVPixelFormat);
     int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
 
     int start();

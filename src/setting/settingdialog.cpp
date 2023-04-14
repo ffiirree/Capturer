@@ -252,7 +252,7 @@ QWidget* SettingWindow::setupRecordWidget()
     _5->setObjectName("sub-title");
     layout->addWidget(_5, 7, 1, 1, 1);
 
-    auto _6_2 = new QSpinBox();
+    auto _6_2 = new QSpinBox(); _6_2->setMaximum(144);
     _6_2->setContextMenuPolicy(Qt::NoContextMenu);
     _6_2->setValue(config["record"]["framerate"].get<int>());
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){

@@ -20,7 +20,6 @@ struct avdevice_t
     io_t io_type{ UNKNOWN };
     uint64_t state{};
 
-
     static std::string io_type_name(io_t t)
     {
         switch (t) {

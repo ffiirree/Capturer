@@ -252,6 +252,8 @@ int WasapiCapturer::run_f()
 int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UINT64 ts)
 {
     frame_->pts = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, sample_rate_);
+    frame_->pkt_dts = frame_->pts;
+
     frame_->nb_samples = nb_samples;
     frame_->format = sample_fmt_;
     frame_->sample_rate = sample_rate_;
@@ -275,7 +277,7 @@ int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UI
         );
     }
 
-    DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
+    DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
         frame_number_++, frame_->pts, frame_->nb_samples, muted_);
 
     buffer_.push([this](AVFrame* pushed) {

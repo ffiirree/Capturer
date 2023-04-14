@@ -130,6 +130,20 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
     return 0;
 }
 
+int Dispatcher::enable_hwaccel(enum AVHWDeviceType dt, enum AVPixelFormat pf)
+{
+    hwaccel_ = dt;
+    pix_fmt_ = pf;
+
+    // create hardware device
+    if (!hwaccel::find_or_create_device(hwaccel_)) {
+        LOG(ERROR) << fmt::format("[DISPATCHER] can not create haredware device for {}.", 
+            av_hwdevice_get_type_name(hwaccel_));
+        return -1;
+    }
+
+    return 0;
+}
 
 int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, const std::string_view& audio_graph_desc)
 {
@@ -168,6 +182,10 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
 
         consumer_ctx_.consumer->enable(AVMEDIA_TYPE_VIDEO);
 
+        if (video_graph_desc_.empty() && hwaccel_ != AV_HWDEVICE_TYPE_NONE) {
+            video_graph_desc_ = "format=nv12,hwupload"; // TODO: assume the decoding do not use hwaccel
+        }
+
         if (create_filter_graph_for(v_producer_ctxs_, video_graph_desc_, AVMEDIA_TYPE_VIDEO) < 0) {
             LOG(ERROR) << "[DISPATCHER] failed to create graph for processing video";
             return -1;
@@ -179,7 +197,6 @@ int Dispatcher::create_filter_graph(const std::string_view& video_graph_desc, co
     ready_ = true;
     return 0;
 }
-
 
 int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_ctxs, const std::string& desc, enum AVMediaType type)
 {
@@ -238,6 +255,15 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
             return -1;
         }
 
+        // 
+        if (type == AVMEDIA_TYPE_VIDEO && hwaccel_ != AV_HWDEVICE_TYPE_NONE) {
+            if (hwaccel::setup_for_filter_graph(graph, hwaccel_) != 0) {
+                LOG(ERROR) << "[DISPATCHER]  can not set hareware device up for filter graph.";
+                return -1;
+            }
+        }
+
+        //
         int i = 0;
         for (auto ptr = inputs; ptr; ptr = ptr->next, i++) {
             if (avfilter_link(producer_ctxs[i].ctx, 0, ptr->filter_ctx, ptr->pad_idx) < 0) {
@@ -257,6 +283,13 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
     if (avfilter_graph_config(graph, nullptr) < 0) {
         LOG(ERROR) << "[DISPATCHER] failed to configure the filter graph";
         return -1;
+    }
+
+    if (type == AVMEDIA_TYPE_VIDEO && hwaccel_ != AV_HWDEVICE_TYPE_NONE) {
+        if (hwaccel::set_sink_frame_ctx_for_encoding(sink, hwaccel_) != 0) {
+            LOG(ERROR) << "[DISPATCHER] can not get the hardware frames ctx for encoding.";
+            return -1;
+        }
     }
 
     LOG(INFO) << "[DISPATCHER] " << "filter graph @{\n" << avfilter_graph_dump(graph, nullptr);
@@ -409,6 +442,8 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
                 }
 
                 frame->pts -= av_rescale_q(start_time_ + paused_time(), OS_TIME_BASE_Q, frame_tb);
+                if (frame->pkt_dts != AV_NOPTS_VALUE)
+                    frame->pkt_dts -= av_rescale_q(start_time_ + paused_time(), OS_TIME_BASE_Q, frame_tb);
 
                 // send the frame to graph
                 if (av_buffersrc_add_frame_flags(src_ctx, frame, AV_BUFFERSRC_FLAG_PUSH) < 0) {
@@ -536,6 +571,9 @@ int Dispatcher::reset()
 
     audio_enabled_ = false;
     video_enabled_ = false;
+
+    hwaccel_ = AV_HWDEVICE_TYPE_NONE;
+    pix_fmt_ = AV_PIX_FMT_NONE;
 
     avfilter_graph_free(&video_graph_);
     avfilter_graph_free(&audio_graph_);

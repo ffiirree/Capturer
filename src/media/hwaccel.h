@@ -6,38 +6,50 @@ extern "C" {
 #include <libavutil/hwcontext.h>
 #include <libavfilter/avfilter.h>
 #include <libavcodec/avcodec.h>
+#include <libavfilter/buffersink.h>
 }
 #include <string>
 #include <vector>
 #include <memory>
+#include <optional>
 
 namespace hwaccel 
 {
-    struct device_t 
+    struct hwdevice_t 
     {
         std::string name{};
         enum AVHWDeviceType type { AV_HWDEVICE_TYPE_NONE };
         AVBufferRef* ref{ nullptr };
+        AVBufferRef* frames_ctx{ nullptr };
 
-        device_t(std::string n, AVHWDeviceType t, AVBufferRef* r)
+        hwdevice_t(std::string n, AVHWDeviceType t, AVBufferRef* r)
             : name(std::move(n)), type(t), ref(r) { }
 
-        device_t(const device_t&) = delete;
-        device_t& operator=(const device_t&) = delete;
+        hwdevice_t(const hwdevice_t&) = delete;
+        hwdevice_t& operator=(const hwdevice_t&) = delete;
 
-        device_t(device_t&&) = delete;
-        device_t& operator=(device_t&&) = delete;
+        hwdevice_t(hwdevice_t&&) = delete;
+        hwdevice_t& operator=(hwdevice_t&&) = delete;
 
-        ~device_t()
+        ~hwdevice_t()
         {
             type = AV_HWDEVICE_TYPE_NONE;
             if (!ref) av_buffer_unref(&ref);
         }
     };
 
+    inline std::vector<std::shared_ptr<hwdevice_t>> hwdevices;       // global
+
     inline bool is_support(enum AVHWDeviceType type)
     {
-        return av_hwdevice_find_type_by_name(av_hwdevice_get_type_name(type)) != AV_HWDEVICE_TYPE_NONE;
+        for (auto t = av_hwdevice_iterate_types(AV_HWDEVICE_TYPE_NONE);
+            t != AV_HWDEVICE_TYPE_NONE;
+            t = av_hwdevice_iterate_types(t)) {
+            if (t == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     inline std::vector<AVHWDeviceType> list_devices()
@@ -51,46 +63,85 @@ namespace hwaccel
         return ret;
     }
 
-    inline std::unique_ptr<device_t> create_device(AVHWDeviceType hwtype)
+    inline std::shared_ptr<hwdevice_t> find_or_create_device(AVHWDeviceType hwtype)
     {
+        for (auto& dev : hwdevices) {
+            if (dev->type == hwtype) {
+                return dev;
+            }
+        }
+
         AVBufferRef* device_ref = nullptr;
 
         if (av_hwdevice_ctx_create(&device_ref, hwtype, nullptr, nullptr, 0) < 0) {
             return nullptr;
         };
 
-        return std::make_unique<device_t>(av_hwdevice_get_type_name(hwtype), hwtype, device_ref);
+        return hwdevices.emplace_back(
+            std::make_shared<hwdevice_t>(
+                av_hwdevice_get_type_name(hwtype),
+                hwtype,
+                device_ref
+            )
+        );
     }
 
-    inline std::unique_ptr<device_t> create_device(const std::string& name)
+    inline std::shared_ptr<hwdevice_t> find_or_create_device(const std::string& name)
     {
         auto hw_type = av_hwdevice_find_type_by_name(name.c_str());
         if (hw_type == AV_HWDEVICE_TYPE_NONE) {
             return nullptr;
         }
 
-        return create_device(hw_type);
+        return find_or_create_device(hw_type);
     }
 
-    inline int setup_for_filter_graph(AVFilterGraph* graph, const std::unique_ptr<device_t>& device)
+    inline int setup_for_filter_graph(AVFilterGraph* graph, AVHWDeviceType type)
     {
-        if (!graph || device->type == AV_HWDEVICE_TYPE_NONE || !device->ref) {
+        if (!graph || !is_support(type)) {
+            return -1;
+        }
+
+        auto dev = find_or_create_device(type);
+        if (!dev) {
             return -1;
         }
 
         for (unsigned i = 0; i < graph->nb_filters; ++i) {
-            graph->filters[i]->hw_device_ctx = av_buffer_ref(device->ref);
+            graph->filters[i]->hw_device_ctx = av_buffer_ref(dev->ref);
         }
 
         return 0;
     }
 
-    inline int setup_for_encoding(AVCodecContext* ctx, const std::unique_ptr<device_t>& device)
+    inline int set_sink_frame_ctx_for_encoding(AVFilterContext* filter, AVHWDeviceType type)
     {
-        if (!ctx || device->type == AV_HWDEVICE_TYPE_NONE || !device->ref) {
+        if (!filter || !filter->hw_device_ctx) {
             return -1;
         }
-        ctx->hw_device_ctx = av_buffer_ref(device->ref);
+
+        for (auto& dev : hwdevices) {
+            if (dev->type == type) {
+                dev->frames_ctx = av_buffersink_get_hw_frames_ctx(filter);
+                return 0;
+            }
+        }
+        return -1;
+    }
+
+    inline int setup_for_encoding(AVCodecContext* ctx, AVHWDeviceType type)
+    {
+        if (!ctx || !is_support(type)) {
+            return -1;
+        }
+
+        auto dev = find_or_create_device(type);
+        if (!dev || !dev->ref || !dev->frames_ctx) {
+            return -1;
+        }
+
+        ctx->hw_frames_ctx = av_buffer_ref(dev->frames_ctx);
+        ctx->hw_device_ctx = av_buffer_ref(dev->ref);
         return 0;
     }
 }

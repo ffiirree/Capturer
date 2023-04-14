@@ -11,6 +11,7 @@
 extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
+#include <libavutil/pixdesc.h>
 }
 #ifdef __linux__
 #include <cstdlib>
@@ -196,6 +197,32 @@ void ScreenRecorder::setup()
     // outputs
     encoder_->vfmt_.format = pix_fmt_;          // set before create filter graph
     dispatcher_->set_encoder(encoder_.get());
+
+    // set hwaccel & pixel format if any
+    if (recording_type_ == VIDEO) {
+        auto vcodec = avcodec_find_encoder_by_name(codec_name_.c_str());
+        AVHWDeviceType hwdevice_type = AV_HWDEVICE_TYPE_NONE;
+        if (vcodec) {
+            const AVCodecHWConfig* config = nullptr;
+            for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)) && config->pix_fmt != AV_PIX_FMT_NONE; ++i) {
+                LOG(INFO) << codec_name_ << " : " << av_hwdevice_get_type_name(config->device_type)
+                    << ", pix_fmt = " << av_get_pix_fmt_name(config->pix_fmt);
+                hwdevice_type = config->device_type;
+                pix_fmt_ = config->pix_fmt;
+                break;
+            }
+        }
+
+        if (hwdevice_type != AV_HWDEVICE_TYPE_NONE) {
+            if (dispatcher_->enable_hwaccel(hwdevice_type, pix_fmt_) != 0) {
+                return ;
+            }
+
+            if (encoder_->enable_hwaccel(hwdevice_type, pix_fmt_) != 0) {
+                return;
+            }
+        }
+    }
 
     // prepare the filter graph and properties of encoder
     // let dispather decide which pixel format to be used for encoding

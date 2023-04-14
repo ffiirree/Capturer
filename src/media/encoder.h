@@ -72,6 +72,15 @@ public:
 
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
+    int enable_hwaccel(enum AVHWDeviceType dt, enum AVPixelFormat pf)
+    {
+        if (vfmt_.format != pf) vfmt_.format = pf;
+
+        vfmt_.hwaccel = dt;
+
+        return 0;
+    }
+
 private:
     int new_video_stream();
     int new_auido_stream();

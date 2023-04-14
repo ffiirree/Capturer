@@ -8,6 +8,7 @@ extern "C" {
 #include <libavutil/time.h>
 #include <libavutil/pixdesc.h>
 }
+#include "hwaccel.h"
 #include "clock.h"
 #include "defer.h"
 
@@ -100,6 +101,13 @@ int Encoder::new_video_stream()
     if (!video_encoder_ctx_) {
         LOG(ERROR) << "[   ENCODER] failed to alloc the video encoder context.";
         return -1;
+    }
+
+    if (vfmt_.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+        if (hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt_.hwaccel) != 0) {
+            LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
+            return -1;
+        }
     }
 
     AVDictionary* encoder_options = nullptr;
@@ -297,7 +305,9 @@ int Encoder::process_video_frames()
         }
     );
 
+    // TODO: CFR & VFR
     filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
+    filtered_frame_->pts = av_rescale_q(filtered_frame_->pts, vfmt_.time_base, video_encoder_ctx_->time_base); // sink filter timebase -> context timebase
 
     int ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width && !filtered_frame_->height) ? nullptr : filtered_frame_);
     while (ret >= 0) {
@@ -316,21 +326,21 @@ int Encoder::process_video_frames()
             return ret;
         }
 
-        av_packet_rescale_ts(packet_, vfmt_.time_base, fmt_ctx_->streams[video_stream_idx_]->time_base);
+        av_packet_rescale_ts(packet_, video_encoder_ctx_->time_base, fmt_ctx_->streams[video_stream_idx_]->time_base);
 
         if (v_last_dts_ != AV_NOPTS_VALUE && v_last_dts_ >= packet_->dts) {
-            LOG(WARNING) << fmt::format("[V] drop the frame with dts {} <= {}", packet_->dts, v_last_dts_);
+            LOG(WARNING) << fmt::format("[V] drop the packet with dts {} <= {}", packet_->dts, v_last_dts_);
             continue;
         }
         v_last_dts_ = packet_->dts;
 
-        DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>14d},    size = {:>6d}, ts = {:>10.6f}",
-           video_encoder_ctx_->frame_number, packet_->pts, packet_->size,
+        DLOG(INFO) << fmt::format("[V] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:>10.6f}",
+           video_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size,
            av_rescale_q(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
         packet_->stream_index = video_stream_idx_;
         if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-            LOG(ERROR) << "[V] failed to write the frame to file.";
+            LOG(ERROR) << "[V] failed to write the the packet to file.";
             return -1;
         }
     }
@@ -417,15 +427,15 @@ int Encoder::process_audio_frames()
             }
             a_last_dts_ = packet_->dts;
 
-            DLOG(INFO) << fmt::format("[A] frame = {:>5d}, pts = {:>14d},    size = {:>6d}, ts = {:>10.6f}",
-               audio_encoder_ctx_->frame_number, packet_->pts, packet_->size,
+            DLOG(INFO) << fmt::format("[A] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:>10.6f}",
+               audio_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size,
                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
             packet_->stream_index = audio_stream_idx_;
             av_packet_rescale_ts(packet_, afmt_.time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
-                LOG(ERROR) << "[A] failed to write frame to the file.";
+                LOG(ERROR) << "[A] failed to write the packet to the file.";
                 return -1;
             }
         }
@@ -475,6 +485,9 @@ void Encoder::destroy()
     avcodec_free_context(&audio_encoder_ctx_);
     avformat_free_context(fmt_ctx_);
     fmt_ctx_ = nullptr;
+
+    vfmt_ = {};
+    afmt_ = {};
 
     video_buffer_.clear();
     audio_buffer_.clear();

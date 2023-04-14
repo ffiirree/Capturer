@@ -59,7 +59,8 @@ public:
         enum AVPixelFormat format { AV_PIX_FMT_YUV420P };
         AVRational framerate{ 24, 1 };
         AVRational sample_aspect_ratio{ 1,1 };
-        AVRational time_base{ 1, OS_TIME_BASE };
+        AVRational time_base{ 1, OS_TIME_BASE };                // aka time base of buffer sink
+        enum AVHWDeviceType hwaccel { AV_HWDEVICE_TYPE_NONE };
     } vfmt_;
 
     struct AudioFormat {
