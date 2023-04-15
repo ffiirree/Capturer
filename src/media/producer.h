@@ -5,6 +5,7 @@
 #include <mutex>
 #include <atomic>
 #include <map>
+#include "media.h"
 
 struct AVRational;
 
@@ -55,6 +56,9 @@ public:
     [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
     
+    aformat_t afmt{};
+    vformat_t vfmt{};
+
 protected:
     std::atomic<bool> running_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };

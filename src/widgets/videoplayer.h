@@ -22,7 +22,6 @@ public:
     [[nodiscard]] bool full(int) const override { return false; }
     void enable(int, bool) override { }
     [[nodiscard]] bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
-    [[nodiscard]] int format(int) const override { return AV_PIX_FMT_RGB24; }
 
     bool play(const std::string& name, const std::string& fmt = "", const std::string& filters = "");
 

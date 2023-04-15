@@ -19,11 +19,9 @@ namespace hwaccel
     {
         std::string name{};
         enum AVHWDeviceType type { AV_HWDEVICE_TYPE_NONE };
-        AVBufferRef* ref{ nullptr };
-        AVBufferRef* frames_ctx{ nullptr };
 
         hwdevice_t(std::string n, AVHWDeviceType t, AVBufferRef* r)
-            : name(std::move(n)), type(t), ref(r) { }
+            : name(std::move(n)), type(t), ref_(r) { }
 
         hwdevice_t(const hwdevice_t&) = delete;
         hwdevice_t& operator=(const hwdevice_t&) = delete;
@@ -34,11 +32,24 @@ namespace hwaccel
         ~hwdevice_t()
         {
             type = AV_HWDEVICE_TYPE_NONE;
-            if (!ref) av_buffer_unref(&ref);
+            if (!ref_) av_buffer_unref(&ref_);
+            if (!frames_ctx_) av_buffer_unref(&frames_ctx_);
         }
+
+        void frames_ctx_ref(const AVBufferRef* ctx) { frames_ctx_ = av_buffer_ref(ctx); }
+
+        AVBufferRef* ref() const { return ref_ ? av_buffer_ref(ref_) : nullptr; }
+        AVBufferRef* frames_ctx_ref() const { return frames_ctx_ ? av_buffer_ref(frames_ctx_) : nullptr; }
+
+        AVBufferRef* ptr() const { return ref_; }
+        AVBufferRef* frames_ctx_ptr() const { return frames_ctx_; }
+
+    private:
+        AVBufferRef* ref_{ nullptr };
+        AVBufferRef* frames_ctx_{ nullptr };
     };
 
-    inline std::vector<std::shared_ptr<hwdevice_t>> hwdevices;       // global
+    inline std::vector<std::shared_ptr<hwdevice_t>> hwdevices;       // global & unique
 
     inline bool is_support(enum AVHWDeviceType type)
     {
@@ -73,6 +84,7 @@ namespace hwaccel
 
         AVBufferRef* device_ref = nullptr;
 
+        // freed by hwdevice_t
         if (av_hwdevice_ctx_create(&device_ref, hwtype, nullptr, nullptr, 0) < 0) {
             return nullptr;
         };
@@ -108,7 +120,7 @@ namespace hwaccel
         }
 
         for (unsigned i = 0; i < graph->nb_filters; ++i) {
-            graph->filters[i]->hw_device_ctx = av_buffer_ref(dev->ref);
+            graph->filters[i]->hw_device_ctx = dev->ref();
         }
 
         return 0;
@@ -122,7 +134,7 @@ namespace hwaccel
 
         for (auto& dev : hwdevices) {
             if (dev->type == type) {
-                dev->frames_ctx = av_buffersink_get_hw_frames_ctx(filter);
+                dev->frames_ctx_ref(av_buffersink_get_hw_frames_ctx(filter));
                 return 0;
             }
         }
@@ -136,12 +148,12 @@ namespace hwaccel
         }
 
         auto dev = find_or_create_device(type);
-        if (!dev || !dev->ref || !dev->frames_ctx) {
+        if (!dev || !dev->ptr() || !dev->frames_ctx_ptr()) {
             return -1;
         }
 
-        ctx->hw_frames_ctx = av_buffer_ref(dev->frames_ctx);
-        ctx->hw_device_ctx = av_buffer_ref(dev->ref);
+        ctx->hw_frames_ctx = dev->frames_ctx_ref();     // ref
+        ctx->hw_device_ctx = dev->ref();                // ref
         return 0;
     }
 }

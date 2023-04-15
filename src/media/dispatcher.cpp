@@ -9,6 +9,7 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
+#include <libavutil/pixdesc.h>
 }
 #include "clock.h"
 #include "defer.h"
@@ -37,7 +38,7 @@ int Dispatcher::create_video_src(const Producer<AVFrame>* decoder, AVFilterConte
         LOG(ERROR) << "[DISPATCHER] [V] decoder is not ready";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] [V] create video src: " << decoder->format_str(AVMEDIA_TYPE_VIDEO);
+    LOG(INFO) << "[DISPATCHER] [V] create vbuffer, args '" << decoder->format_str(AVMEDIA_TYPE_VIDEO) << "'";
 
     const AVFilter* buffersrc = avfilter_get_by_name("buffer");
     if (!buffersrc) {
@@ -66,18 +67,15 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame>* encoder, AVFilterCont
         return -1;
     }
 
-    if (pix_fmt_ == AV_PIX_FMT_NONE) {              // no global format specified
-        AVPixelFormat encode_fmt = static_cast<AVPixelFormat>(encoder->format(AVMEDIA_TYPE_VIDEO));
-        pix_fmt_ = (encode_fmt == AV_PIX_FMT_NONE) ? AV_PIX_FMT_YUV420P : encode_fmt;
+    vfmt.pix_fmt = (vfmt.pix_fmt == AV_PIX_FMT_NONE) ? encoder->vfmt.pix_fmt : vfmt.pix_fmt;
+    if (vfmt.pix_fmt != AV_PIX_FMT_NONE) {
+        enum AVPixelFormat pix_fmts[] = { vfmt.pix_fmt, AV_PIX_FMT_NONE };
+        if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
+            LOG(ERROR) << "[DISPATCHER] [V] av_opt_set_int_list";
+            return -1;
+        }
     }
-
-    enum AVPixelFormat pix_fmts[] = { pix_fmt_, AV_PIX_FMT_NONE };
-    if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
-        LOG(ERROR) << "[DISPATCHER] [V] av_opt_set_int_list";
-        return -1;
-    }
-
-    LOG(INFO) << "[DISPATCHER] [V] create video sink.";
+    LOG(INFO) << "[DISPATCHER] [V] created vbuffersink, pix_fmt = " << pix_fmt_name(vfmt.pix_fmt);
 
     return 0;
 }
@@ -88,7 +86,7 @@ int Dispatcher::create_audio_src(const Producer<AVFrame>* decoder, AVFilterConte
         LOG(ERROR) << "[DISPATCHER] [A] decoder is not ready.";
         return -1;
     }
-    LOG(INFO) << "[DISPATCHER] [A] createn audio src: " << decoder->format_str(AVMEDIA_TYPE_AUDIO);
+    LOG(INFO) << "[DISPATCHER] [A] create abuffer, args '" << decoder->format_str(AVMEDIA_TYPE_AUDIO) << "'";
 
     const AVFilter* buffersrc = avfilter_get_by_name("abuffer");
     if (!buffersrc) {
@@ -97,7 +95,7 @@ int Dispatcher::create_audio_src(const Producer<AVFrame>* decoder, AVFilterConte
     }
 
     if (avfilter_graph_create_filter(ctx, buffersrc, "a_src", decoder->format_str(AVMEDIA_TYPE_AUDIO).c_str(), nullptr, audio_graph_) < 0) {
-        LOG(ERROR) << "[DISPATCHER] [A] filter to create 'abuffer'。";
+        LOG(ERROR) << "[DISPATCHER] [A] filter to create 'abuffer'.";
         return -1;
     }
 
@@ -117,15 +115,29 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
         return -1;
     }
 
-    enum AVSampleFormat encoder_fmt = (AVSampleFormat)encoder->format(AVMEDIA_TYPE_AUDIO);
-    enum AVSampleFormat sink_fmt = (encoder_fmt == AV_SAMPLE_FMT_NONE) ? AV_SAMPLE_FMT_FLTP : encoder_fmt;
-    enum AVSampleFormat sink_fmts[] = { sink_fmt, AV_SAMPLE_FMT_NONE };
-    if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
-        LOG(ERROR) << "av_opt_set_int_list";
-        return -1;
+    afmt.sample_fmt = (afmt.sample_fmt == AV_SAMPLE_FMT_NONE) ? encoder->afmt.sample_fmt : afmt.sample_fmt;
+    // TODO: force
+    afmt.channels = 2;
+    afmt.channel_layout = AV_CH_LAYOUT_STEREO;
+    if (afmt.sample_fmt != AV_SAMPLE_FMT_NONE) {
+        // sample_fmts (int list)
+        // sample_rates(int list)
+        // ch_layouts(string)
+        // channel_counts(int list)
+        // TODO: other options
+        enum AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
+        if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
+            LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
+            return -1;
+        }
+        int sink_channels[] = { 2, 0 };
+        if (av_opt_set(*ctx, "ch_layouts", channel_layout_name(afmt.channels, afmt.channel_layout).c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
+            LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_counts' option.";
+            return -1;
+        }
     }
 
-    LOG(INFO) << "[DISPATCHER] [A] create audio sink";
+    LOG(INFO) << fmt::format("[DISPATCHER] [A] created abuffersink, sample_fmt = {}, channels = {}, ch_layout = {}", sample_fmt_name(afmt.sample_fmt), afmt.channels, "stereo");
 
     return 0;
 }
@@ -133,7 +145,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
 int Dispatcher::enable_hwaccel(enum AVHWDeviceType dt, enum AVPixelFormat pf)
 {
     hwaccel_ = dt;
-    pix_fmt_ = pf;
+    vfmt.pix_fmt = pf;
 
     // create hardware device
     if (!hwaccel::find_or_create_device(hwaccel_)) {
@@ -245,7 +257,7 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
         }
     }
     else {
-        LOG(INFO) << "[DISPATCHER] create filter graph : " << desc;
+        LOG(INFO) << fmt::format("[DISPATCHER] [{}] creating filter graph, args '{}'", av_get_media_type_string(type)[0], desc);
 
         AVFilterInOut* inputs = nullptr, * outputs = nullptr;
         defer(avfilter_inout_free(&inputs); avfilter_inout_free(&outputs));
@@ -306,19 +318,23 @@ int Dispatcher::set_encoder_format_by_sinks()
     }
 
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vctx != nullptr)) {
-        consumer_ctx_.consumer->vfmt_.format = pix_fmt_;
-        consumer_ctx_.consumer->vfmt_.width = av_buffersink_get_w(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt_.height = av_buffersink_get_h(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt_.framerate = av_buffersink_get_frame_rate(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt_.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt_.time_base = av_buffersink_get_time_base(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt.pix_fmt = static_cast<AVPixelFormat>(av_buffersink_get_format(consumer_ctx_.vctx));
+        consumer_ctx_.consumer->vfmt.width = av_buffersink_get_w(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt.height = av_buffersink_get_h(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt.time_base = av_buffersink_get_time_base(consumer_ctx_.vctx);
+
+        // min
+        auto sink_fr = av_buffersink_get_frame_rate(consumer_ctx_.vctx);
+        consumer_ctx_.consumer->vfmt.framerate = (av_q2d(vfmt.framerate) > av_q2d(sink_fr)) ? sink_fr : vfmt.framerate;
     }
 
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO) && (consumer_ctx_.actx != nullptr)) {
-        consumer_ctx_.consumer->afmt_.channels = av_buffersink_get_channels(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt_.channel_layout = av_buffersink_get_channel_layout(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt_.sample_rate = av_buffersink_get_sample_rate(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt_.time_base = av_buffersink_get_time_base(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt.sample_fmt = static_cast<AVSampleFormat>(av_buffersink_get_format(consumer_ctx_.actx));
+        consumer_ctx_.consumer->afmt.channels = av_buffersink_get_channels(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt.channel_layout = av_buffersink_get_channel_layout(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt.sample_rate = av_buffersink_get_sample_rate(consumer_ctx_.actx);
+        consumer_ctx_.consumer->afmt.time_base = av_buffersink_get_time_base(consumer_ctx_.actx);
     }
 
     return 0;
@@ -526,7 +542,7 @@ int Dispatcher::reset()
 
         // push nullptr frame to close the video buffersrc
         if (running_ && av_buffersrc_add_frame_flags(ctx, nullptr, AV_BUFFERSRC_FLAG_PUSH) < 0) {
-            LOG(ERROR) << "failed to close video buffersrc";
+            LOG(ERROR) << "[DISPATCHER] failed to close video buffersrc";
         }
     }
 
@@ -535,7 +551,7 @@ int Dispatcher::reset()
 
         // push nullptr frame to close the auido buffersrc
         if (running_ && av_buffersrc_add_frame_flags(ctx, nullptr, AV_BUFFERSRC_FLAG_PUSH) < 0) {
-            LOG(ERROR) << "failed to close audio buffersrc";
+            LOG(ERROR) << "[DISPATCHER] failed to close audio buffersrc";
         }
     }
 
@@ -543,7 +559,10 @@ int Dispatcher::reset()
     if (consumer_ctx_.consumer) {
         // wait 0~3s
         for (int i = 0; i < 100; i++) {
-            if (!consumer_ctx_.consumer->ready() || consumer_ctx_.consumer->eof()) break;
+            if (!consumer_ctx_.consumer->ready() || consumer_ctx_.consumer->eof()) {
+                LOG(INFO) << "[DISPATCHER] encoder exit with EOF";
+                break;
+            }
 
             os_sleep(30ms);
         }
@@ -573,7 +592,8 @@ int Dispatcher::reset()
     video_enabled_ = false;
 
     hwaccel_ = AV_HWDEVICE_TYPE_NONE;
-    pix_fmt_ = AV_PIX_FMT_NONE;
+    vfmt = {};
+    afmt = {};
 
     avfilter_graph_free(&video_graph_);
     avfilter_graph_free(&audio_graph_);

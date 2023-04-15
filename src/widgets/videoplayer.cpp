@@ -34,16 +34,17 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     dispatcher_->append(decoder_);
     dispatcher_->set_encoder(this);
 
+    dispatcher_->vfmt.pix_fmt = AV_PIX_FMT_RGB24;
     if (dispatcher_->create_filter_graph(filters, {})) {
         LOG(INFO) << "create filters failed";
         return false;
     }
 
-    if (vfmt_.width > 1440 || vfmt_.height > 810) {
-        resize(QSize(vfmt_.width, vfmt_.height).scaled(1440, 810, Qt::KeepAspectRatio));
+    if (vfmt.width > 1440 || vfmt.height > 810) {
+        resize(QSize(vfmt.width, vfmt.height).scaled(1440, 810, Qt::KeepAspectRatio));
     }
     else {
-        resize(vfmt_.width, vfmt_.height);
+        resize(vfmt.width, vfmt.height);
     }
 
     eof_ = 0x00;

@@ -78,12 +78,12 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         // decoder context
         video_decoder_ctx_ = avcodec_alloc_context3(video_decoder);
         if (!video_decoder_ctx_) {
-            LOG(ERROR) << "[   DECODER] avcodec_alloc_context3";
+            LOG(ERROR) << "[   DECODER] [V] failed to alloc decoder context";
             return -1;
         }
 
         if (avcodec_parameters_to_context(video_decoder_ctx_, fmt_ctx_->streams[video_stream_idx_]->codecpar) < 0) {
-            LOG(ERROR) << "[   DECODER] avcodec_parameters_to_context";
+            LOG(ERROR) << "[   DECODER] [V] avcodec_parameters_to_context";
             return -1;
         }
 
@@ -92,7 +92,7 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         defer(av_dict_free(&decoder_options));
         av_dict_set(&decoder_options, "threads", "auto", 0);
         if (avcodec_open2(video_decoder_ctx_, video_decoder, &decoder_options) < 0) {
-            LOG(ERROR) << "[DECODER] avcodec_open2";
+            LOG(ERROR) << "[DECODER] [V] can not open the video decoder";
             return -1;
         }
 
@@ -108,21 +108,21 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
     if (audio_stream_idx_ >= 0) {
         audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder);
         if (!audio_decoder_ctx_) {
-            LOG(ERROR) << "[   DECODER] avcodec_alloc_context3 failed for audio";
-            return false;
+            LOG(ERROR) << "[   DECODER] [A] failed to alloc decoder context";
+            return -1;
         }
 
         if (avcodec_parameters_to_context(audio_decoder_ctx_, fmt_ctx_->streams[audio_stream_idx_]->codecpar) < 0) {
-            LOG(ERROR) << "[   DECODER] avcodec_parameters_to_context";
-            return false;
+            LOG(ERROR) << "[   DECODER] [A] avcodec_parameters_to_context";
+            return -1;
         }
 
         if (avcodec_open2(audio_decoder_ctx_, audio_decoder, nullptr) < 0) {
-            LOG(ERROR) << "[   DECODER] avcodec_open2 failed for audio";
-            return false;
+            LOG(ERROR) << "[   DECODER] [A] can not open the audio decoder";
+            return -1;
         }
 
-        LOG(INFO) << fmt::format("[    DECODER] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}/{}",
             name_,
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
@@ -336,7 +336,7 @@ int Decoder::run_f()
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE)
                     decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[V] frame = {:>5d}, pts = {:>14d}",
+                DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
                     video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(

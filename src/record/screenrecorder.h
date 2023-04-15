@@ -36,7 +36,6 @@ public slots:
 
     void start() override;
     void record();
-    void setFramerate(int fr) { framerate_ = fr; }
 
     void switchCamera();
 

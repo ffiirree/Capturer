@@ -89,7 +89,6 @@ void ScreenRecorder::start()
         pix_fmt_ = AV_PIX_FMT_YUV420P;
         codec_name_ = Config::instance()["record"]["encoder"];
         filters_ = "";
-        options_ = { {"crf", video_qualities_[Config::instance()["record"]["quality"]]} };
     }
     else {
         pix_fmt_ = AV_PIX_FMT_PAL8;
@@ -144,6 +143,7 @@ void ScreenRecorder::setup()
     QRect selected_area = selected();
 
     Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion() : hide();
+    framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
 
     menu_->disable_mic(Devices::microphones().empty());
     menu_->disable_speaker(Devices::speakers().empty());
@@ -195,11 +195,12 @@ void ScreenRecorder::setup()
     }
 
     // outputs
-    encoder_->vfmt_.format = pix_fmt_;          // set before create filter graph
     dispatcher_->set_encoder(encoder_.get());
 
     // set hwaccel & pixel format if any
     if (recording_type_ == VIDEO) {
+        std::string quality_name = "crf";           // TODO: CRF / CQP
+
         auto vcodec = avcodec_find_encoder_by_name(codec_name_.c_str());
         AVHWDeviceType hwdevice_type = AV_HWDEVICE_TYPE_NONE;
         if (vcodec) {
@@ -214,6 +215,8 @@ void ScreenRecorder::setup()
         }
 
         if (hwdevice_type != AV_HWDEVICE_TYPE_NONE) {
+            quality_name = "cq";
+
             if (dispatcher_->enable_hwaccel(hwdevice_type, pix_fmt_) != 0) {
                 return ;
             }
@@ -222,10 +225,17 @@ void ScreenRecorder::setup()
                 return;
             }
         }
+
+        options_ = { {quality_name, video_qualities_[Config::instance()["record"]["quality"]]} };
     }
 
     // prepare the filter graph and properties of encoder
     // let dispather decide which pixel format to be used for encoding
+    dispatcher_->vfmt.pix_fmt = pix_fmt_;
+    dispatcher_->vfmt.framerate = { framerate_, 1 };
+    dispatcher_->afmt.sample_fmt = AV_SAMPLE_FMT_FLTP;
+    dispatcher_->afmt.channels = 2;
+    dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
     if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         exit();

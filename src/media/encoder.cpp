@@ -26,20 +26,24 @@ int Encoder::open(const std::string& filename,
         return -1;
     }
 
-    vfmt_.is_cfr = is_cfr;
+    is_cfr_ = is_cfr;
 
     video_codec_name_ = video_codec_name;
     audio_codec_name_ = audio_codec_name;
     video_options_ = video_options;
     audio_options_ = audio_options;
 
-    LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = '{}', cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
-        video_codec_name, video_options, is_cfr, vfmt_.width, vfmt_.height, av_get_pix_fmt_name(vfmt_.format),
-        vfmt_.framerate.num, vfmt_.framerate.den, vfmt_.time_base.num, vfmt_.time_base.den);
+    if (video_enabled_) {
+        LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
+            video_codec_name, video_options, is_cfr, vfmt.width, vfmt.height, pix_fmt_name(vfmt.pix_fmt),
+            vfmt.framerate.num, vfmt.framerate.den, vfmt.time_base.num, vfmt.time_base.den);
+    }
 
-    LOG(INFO) << fmt::format("[   ENCODER] [A] <<< [{}], options = '{}', tbn = {}/{}", 
-        audio_codec_name, audio_options, afmt_.time_base.num, afmt_.time_base.den);
-
+    if (audio_enabled_) {
+        LOG(INFO) << fmt::format("[   ENCODER] [A] <<< [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, tbn = {}/{}",
+            audio_codec_name, audio_options, afmt.sample_rate, afmt.channels, sample_fmt_name(afmt.sample_fmt),
+            afmt.time_base.num, afmt.time_base.den);
+    }
 
     // format context
     if (fmt_ctx_) destroy();
@@ -69,7 +73,8 @@ int Encoder::open(const std::string& filename,
     // prepare 
     packet_ = av_packet_alloc();
     filtered_frame_ = av_frame_alloc();
-    if (!packet_ || !filtered_frame_) {
+    last_frame_ = av_frame_alloc();
+    if (!packet_ || !filtered_frame_ || !last_frame_) {
         LOG(ERROR) << "[   ENCODER] failed to alloc memory for frames.";
         return -1;
     }
@@ -103,8 +108,8 @@ int Encoder::new_video_stream()
         return -1;
     }
 
-    if (vfmt_.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-        if (hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt_.hwaccel) != 0) {
+    if (hwaccel_ != AV_HWDEVICE_TYPE_NONE) {
+        if (hwaccel::setup_for_encoding(video_encoder_ctx_, hwaccel_) != 0) {
             LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
             return -1;
         }
@@ -117,14 +122,14 @@ int Encoder::new_video_stream()
     }
     av_dict_set(&encoder_options, "threads", "auto", 0);
 
-    video_encoder_ctx_->height = vfmt_.height;
-    video_encoder_ctx_->width = vfmt_.width;
-    video_encoder_ctx_->pix_fmt = vfmt_.format;
-    video_encoder_ctx_->sample_aspect_ratio = vfmt_.sample_aspect_ratio;
-    video_encoder_ctx_->framerate = vfmt_.framerate;
+    video_encoder_ctx_->height = vfmt.height;
+    video_encoder_ctx_->width = vfmt.width;
+    video_encoder_ctx_->pix_fmt = vfmt.pix_fmt;
+    video_encoder_ctx_->sample_aspect_ratio = vfmt.sample_aspect_ratio;
+    video_encoder_ctx_->framerate = vfmt.framerate;
 
-    video_encoder_ctx_->time_base = vfmt_.is_cfr ? av_inv_q(vfmt_.framerate) : vfmt_.time_base;
-    fmt_ctx_->streams[video_stream_idx_]->time_base = vfmt_.time_base;
+    video_encoder_ctx_->time_base = is_cfr_ ? av_inv_q(vfmt.framerate) : vfmt.time_base;
+    fmt_ctx_->streams[video_stream_idx_]->time_base = vfmt.time_base;
 
     if (fmt_ctx_->oformat->flags & AVFMT_GLOBALHEADER) {
         video_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -142,7 +147,7 @@ int Encoder::new_video_stream()
 
     if (video_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format("[   ENCODER] [V] >>> [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
-            video_codec_name_, video_options_, vfmt_.is_cfr, vfmt_.width, vfmt_.height, av_get_pix_fmt_name(vfmt_.format), vfmt_.framerate.num, vfmt_.framerate.den,
+            video_codec_name_, video_options_, is_cfr_, vfmt.width, vfmt.height, av_get_pix_fmt_name(vfmt.pix_fmt), vfmt.framerate.num, vfmt.framerate.den,
             video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
             fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
         );
@@ -172,15 +177,13 @@ int Encoder::new_auido_stream()
         return -1;
     }
 
-    afmt_.channel_layout = av_get_default_channel_layout(afmt_.channels);
-
-    audio_encoder_ctx_->sample_rate = afmt_.sample_rate;
-    audio_encoder_ctx_->channels = afmt_.channels;
-    audio_encoder_ctx_->channel_layout = afmt_.channel_layout;
-    audio_encoder_ctx_->sample_fmt = afmt_.format;
+    audio_encoder_ctx_->sample_rate = afmt.sample_rate;
+    audio_encoder_ctx_->channels = afmt.channels;
+    audio_encoder_ctx_->channel_layout = afmt.channel_layout;
+    audio_encoder_ctx_->sample_fmt = afmt.sample_fmt;
 
     audio_encoder_ctx_->time_base = { 1, audio_encoder_ctx_->sample_rate };
-    fmt_ctx_->streams[audio_stream_idx_]->time_base = afmt_.time_base;
+    fmt_ctx_->streams[audio_stream_idx_]->time_base = afmt.time_base;
 
     if (fmt_ctx_->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -305,11 +308,34 @@ int Encoder::process_video_frames()
         }
     );
 
-    // TODO: CFR & VFR
-    filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
-    filtered_frame_->pts = av_rescale_q(filtered_frame_->pts, vfmt_.time_base, video_encoder_ctx_->time_base); // sink filter timebase -> context timebase
+    // duration
+    double duration = 1 / (av_q2d(vfmt.framerate) * av_q2d(video_encoder_ctx_->time_base));
 
-    int ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width && !filtered_frame_->height) ? nullptr : filtered_frame_);
+    // TODO: CFR & 
+    double floating_pts = filtered_frame_->pts * av_q2d(video_encoder_ctx_->time_base) / av_q2d(vfmt.time_base);
+    filtered_frame_->pts = av_rescale_q(filtered_frame_->pts, vfmt.time_base, video_encoder_ctx_->time_base); // sink filter timebase -> context timebase
+
+    // floating_pts should in (last_pts, next_pts)
+    double delta_l = floating_pts - expected_pts_;                  // expected range : (-duration, duration)
+    double delta_r = (floating_pts + duration) - expected_pts_;
+
+    // 1. pass
+    if (delta_l < 0 && delta_r > 0) {
+
+    }
+
+    // 2. drop
+
+    // 3. duplicate
+
+    // 
+    filtered_frame_->quality = video_encoder_ctx_->global_quality;
+    filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
+
+
+    int ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width || !filtered_frame_->height) ? nullptr : filtered_frame_);
+    //LOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d} / {:>18.3f}", video_encoder_ctx_->frame_number, filtered_frame_->pts, pre_pts / scale);
+
     while (ret >= 0) {
         av_packet_unref(packet_);
         ret = avcodec_receive_packet(video_encoder_ctx_, packet_);
@@ -344,6 +370,11 @@ int Encoder::process_video_frames()
             return -1;
         }
     }
+
+    expected_pts_++;
+
+    av_frame_unref(last_frame_);
+    av_frame_ref(last_frame_, filtered_frame_);
 
     return ret;
 }
@@ -432,7 +463,7 @@ int Encoder::process_audio_frames()
                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, av_get_time_base_q()) / (double)AV_TIME_BASE);
 
             packet_->stream_index = audio_stream_idx_;
-            av_packet_rescale_ts(packet_, afmt_.time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
+            av_packet_rescale_ts(packet_, afmt.time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base);
 
             if (av_interleaved_write_frame(fmt_ctx_, packet_) != 0) {
                 LOG(ERROR) << "[A] failed to write the packet to the file.";
@@ -478,16 +509,19 @@ void Encoder::destroy()
 
     av_packet_free(&packet_);
     av_frame_free(&filtered_frame_);
+    av_frame_free(&last_frame_);
     av_audio_fifo_free(audio_fifo_buffer_);
     audio_fifo_buffer_ = nullptr;
+    expected_pts_ = 0;
 
     avcodec_free_context(&video_encoder_ctx_);
     avcodec_free_context(&audio_encoder_ctx_);
     avformat_free_context(fmt_ctx_);
     fmt_ctx_ = nullptr;
 
-    vfmt_ = {};
-    afmt_ = {};
+    hwaccel_ = AV_HWDEVICE_TYPE_NONE;
+    vfmt = {};
+    afmt = {};
 
     video_buffer_.clear();
     audio_buffer_.clear();

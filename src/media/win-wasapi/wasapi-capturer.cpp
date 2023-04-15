@@ -33,18 +33,18 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
         layout = ext->dwChannelMask;
     }
 
-    sample_rate_ = wfex->nSamplesPerSec;
-    channels_ = wfex->nChannels;
-    bit_rate_ = wfex->nAvgBytesPerSec;
-    sample_fmt_ = AV_SAMPLE_FMT_FLT;
-    channel_layout_ = to_ffmpeg_channel_layout(layout, channels_);
+    afmt = aformat_t{
+        static_cast<int>(wfex->nSamplesPerSec),
+        wfex->nChannels,
+        AV_SAMPLE_FMT_FLT,
+        to_ffmpeg_channel_layout(layout, wfex->nChannels),
+        { 1, OS_TIME_BASE }
+    };
 
-    std::string ch_layout_str{ 16, {} };
-    av_get_channel_layout_string(&(ch_layout_str.data()[0]), 16, channels_, channel_layout_);
-    LOG(INFO) << fmt::format("[    WASAPI] [{} - {}] sample_rate = {}, sample_fmt = {}, channels = {}, channel_layout = {}, tbn = {}/{}",
-        device_.name, device_.id,
-        sample_rate_, av_get_sample_fmt_name(sample_fmt_),  channels_, ch_layout_str,
-        time_base_.num, time_base_.den);
+    LOG(INFO) << fmt::format("[    WASAPI] [{}] sample_rate = {}, sample_fmt = {}, channels = {}, channel_layout = {}, tbn = {}/{}",
+        device_.name,
+        afmt.sample_rate, av_get_sample_fmt_name(afmt.sample_fmt), afmt.channels, channel_layout_name(afmt.channels, afmt.channel_layout),
+        afmt.time_base.num, afmt.time_base.den);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
@@ -251,20 +251,20 @@ int WasapiCapturer::run_f()
 
 int WasapiCapturer::process_received_data(BYTE * data_ptr, UINT32 nb_samples, UINT64 ts)
 {
-    frame_->pts = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, sample_rate_);
+    frame_->pts = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
     frame_->pkt_dts = frame_->pts;
 
     frame_->nb_samples = nb_samples;
-    frame_->format = sample_fmt_;
-    frame_->sample_rate = sample_rate_;
-    frame_->channels = channels_;
-    frame_->channel_layout = channel_layout_;
+    frame_->format = afmt.sample_fmt;
+    frame_->sample_rate = afmt.sample_rate;
+    frame_->channels = afmt.channels;
+    frame_->channel_layout = afmt.channel_layout;
 
     av_frame_get_buffer(frame_, 0);
     if (av_samples_copy(
         (uint8_t**)frame_->data, (uint8_t* const*)&data_ptr,
         0, 0,
-        nb_samples, channels_, sample_fmt_) < 0) {
+        nb_samples, afmt.channels, afmt.sample_fmt) < 0) {
         LOG(ERROR) << "av_samples_copy";
         return -1;
     }
@@ -296,9 +296,9 @@ std::string WasapiCapturer::format_str(int type) const
     {
         return fmt::format(
             "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}/{}",
-            sample_rate_, sample_fmt_,
-            channels_, channel_layout_,
-            time_base_.num, time_base_.den
+            afmt.sample_rate, afmt.sample_fmt,
+            afmt.channels, afmt.channel_layout,
+            afmt.time_base.num, afmt.time_base.den
         );
     }
     default: 
@@ -313,7 +313,7 @@ AVRational WasapiCapturer::time_base(int type) const
     {
     case AVMEDIA_TYPE_AUDIO:
     {
-        return time_base_;
+        return afmt.time_base;
     }
     default:
         LOG(ERROR) << "[    WASAPI] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));

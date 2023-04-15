@@ -60,23 +60,13 @@ public:
         }
     }
 
-    int format(int type) const override 
-    { 
-        switch (type)
-        {
-        case AVMEDIA_TYPE_VIDEO: return vfmt_.format;
-        case AVMEDIA_TYPE_AUDIO: return afmt_.format;
-        default: return -1;
-        }
-    }
-
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
-    int enable_hwaccel(enum AVHWDeviceType dt, enum AVPixelFormat pf)
+    int enable_hwaccel(enum AVHWDeviceType dt, enum AVPixelFormat hw_pix_fmt)
     {
-        if (vfmt_.format != pf) vfmt_.format = pf;
+        if (vfmt.pix_fmt != hw_pix_fmt) vfmt.pix_fmt = hw_pix_fmt;
 
-        vfmt_.hwaccel = dt;
+        hwaccel_ = dt;
 
         return 0;
     }
@@ -111,6 +101,8 @@ private:
 
     AVPacket* packet_{ nullptr };
     AVFrame* filtered_frame_{ nullptr };
+    AVFrame* last_frame_{ nullptr };
+    int64_t expected_pts_{ 0 };        // the expected pts of next video frame computed by last pts and duration
 
     AVAudioFifo* audio_fifo_buffer_{ nullptr };
 

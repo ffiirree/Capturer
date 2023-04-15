@@ -76,9 +76,6 @@ void Capturer::updateConfig()
     if(!error.isEmpty())
         showMessage("Capturer", error, QSystemTrayIcon::Critical);
 
-    recorder_->setFramerate(config["record"]["framerate"].get<int>());
-    gifcptr_->setFramerate(config["gif"]["framerate"].get<int>());
-
     sniper_->updateTheme();
     recorder_->updateTheme();
     gifcptr_->updateTheme();

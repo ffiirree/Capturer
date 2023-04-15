@@ -87,15 +87,6 @@ private:
     AVFrame* frame_{ nullptr };
     uint32_t frame_number_{ 0 };
 
-    // audio params @{
-    int sample_rate_{ 44100 };
-    int channels_{ 2 };
-    int bit_rate_{ 0 };
-    enum AVSampleFormat sample_fmt_ { AV_SAMPLE_FMT_FLT };
-    uint64_t channel_layout_{ 0 };
-    AVRational time_base_{ 1, OS_TIME_BASE };
-    // @}
-
     // WASAPI Capturer@{
     IAudioClient* capturer_audio_client_{ nullptr };
     IAudioCaptureClient* capturer_{ nullptr };
