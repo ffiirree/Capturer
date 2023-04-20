@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build type: Release." FORCE)
 endif()
 
 if(MSVC)
@@ -41,7 +41,7 @@ find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
 
 if(WIN32)
     # GUI/console
-    set(CMAKE_WIN32_EXECUTABLE ON)
+    set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
     # >= 6 required by nvenc for encoding d3d11 format
     find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
