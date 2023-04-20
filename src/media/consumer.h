@@ -52,8 +52,8 @@ public:
     [[nodiscard]] bool running() const { return running_; }
     [[nodiscard]] virtual bool eof() const { return eof_; }
 
-    vformat_t vfmt{};
-    aformat_t afmt{};
+    av::vformat_t vfmt{};
+    av::aformat_t afmt{};
 
 protected:
     std::atomic<bool> running_{ false };

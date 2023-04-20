@@ -21,7 +21,7 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
         layout = ext->dwChannelMask;
     }
 
-    afmt = aformat_t{
+    afmt = av::aformat_t{
         static_cast<int>(wfex->nSamplesPerSec),
         wfex->nChannels,
         AV_SAMPLE_FMT_FLT,
@@ -29,10 +29,9 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
         { 1, OS_TIME_BASE }
     };
 
-    LOG(INFO) << fmt::format("[    WASAPI] [{}] sample_rate = {}, sample_fmt = {}, channels = {}, channel_layout = {}, tbn = {}/{}",
-        device_.name,
-        afmt.sample_rate, av_get_sample_fmt_name(afmt.sample_fmt), afmt.channels, channel_layout_name(afmt.channels, afmt.channel_layout),
-        afmt.time_base.num, afmt.time_base.den);
+    LOG(INFO) << fmt::format("[    WASAPI] [{}] sample_rate = {}, sample_fmt = {}, channels = {}, channel_layout = {}, tbn = {}",
+        device_.name, afmt.sample_rate, av::to_string(afmt.sample_fmt), afmt.channels, 
+        av::channel_layout_name(afmt.channels, afmt.channel_layout), afmt.time_base);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
@@ -281,16 +280,9 @@ std::string WasapiCapturer::format_str(int type) const
     switch (type)
     {
     case AVMEDIA_TYPE_AUDIO:
-    {
-        return fmt::format(
-            "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}/{}",
-            afmt.sample_rate, afmt.sample_fmt,
-            afmt.channels, afmt.channel_layout,
-            afmt.time_base.num, afmt.time_base.den
-        );
-    }
+        return av::to_string(afmt);
     default: 
-        LOG(ERROR) << "unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type)); 
+        LOG(ERROR) << "unsupported media type : " << av::to_string(static_cast<AVMediaType>(type));
         return {};
     }
 }
@@ -304,7 +296,7 @@ AVRational WasapiCapturer::time_base(int type) const
         return afmt.time_base;
     }
     default:
-        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));
+        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av::to_string(static_cast<AVMediaType>(type));
         return OS_TIME_BASE_Q;
     }
 }
@@ -323,7 +315,7 @@ int WasapiCapturer::produce(AVFrame* frame, int type)
         return 0;
 
     default:
-        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));
+        LOG(ERROR) << "[    WASAPI] unsupported media type : " << av::to_string(static_cast<AVMediaType>(type));
         return -1;
     }
 }

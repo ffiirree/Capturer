@@ -58,8 +58,8 @@ public:
     [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
     
-    aformat_t afmt{};
-    vformat_t vfmt{};
+    av::aformat_t afmt{};
+    av::vformat_t vfmt{};
 
 protected:
     std::atomic<bool> running_{ false };

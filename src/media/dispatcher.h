@@ -10,6 +10,7 @@ extern "C" {
 #include <future>
 #include <tuple>
 #include "utils.h"
+#include "media.h"
 #include "producer.h"
 #include "consumer.h"
 #include "hwaccel.h"
@@ -57,8 +58,8 @@ public:
 
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
-    vformat_t vfmt{};
-    aformat_t afmt{};
+    av::vformat_t vfmt{};
+    av::aformat_t afmt{};
 
 private:
     struct ProducerContext {

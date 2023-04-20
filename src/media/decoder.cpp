@@ -97,11 +97,9 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
         }
 
         auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
-        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
-            name_,
-            video_decoder_ctx_->width, video_decoder_ctx_->height, av_get_pix_fmt_name(video_decoder_ctx_->pix_fmt),
-            fr.num, fr.den,
-            fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
+        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, pix_fmt = {}, framerate = {}, tbn = {}",
+            name_, video_decoder_ctx_->width, video_decoder_ctx_->height, 
+            av::to_string(video_decoder_ctx_->pix_fmt), fr, fmt_ctx_->streams[video_stream_idx_]->time_base
         );
     }
 
@@ -122,14 +120,13 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
             return -1;
         }
 
-        LOG(INFO) << fmt::format("[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}",
             name_,
             audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
-            av_get_sample_fmt_name(audio_decoder_ctx_->sample_fmt),
-            audio_decoder_ctx_->frame_size,
+            av::to_string(audio_decoder_ctx_->sample_fmt), audio_decoder_ctx_->frame_size,
             fmt_ctx_->streams[audio_stream_idx_]->start_time,
-            fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
+            fmt_ctx_->streams[audio_stream_idx_]->time_base
         );
     }
 
@@ -168,11 +165,9 @@ std::string Decoder::format_str(int type) const
         auto video_stream = fmt_ctx_->streams[video_stream_idx_];
         auto fr = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
         return fmt::format(
-            "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:frame_rate={}/{}",
-            video_decoder_ctx_->width, video_decoder_ctx_->height, video_decoder_ctx_->pix_fmt,
-            video_stream->time_base.num, video_stream->time_base.den,
-            video_stream->codecpar->sample_aspect_ratio.num, std::max<int>(1, video_stream->codecpar->sample_aspect_ratio.den),
-            fr.num, fr.den
+            "video_size={}x{}:pix_fmt={}:time_base={}:pixel_aspect={}:frame_rate={}",
+            video_decoder_ctx_->width, video_decoder_ctx_->height, av::to_string(video_decoder_ctx_->pix_fmt),
+            video_stream->time_base, video_stream->codecpar->sample_aspect_ratio, fr
         );
     }
     case AVMEDIA_TYPE_AUDIO:
@@ -181,11 +176,10 @@ std::string Decoder::format_str(int type) const
 
         auto audio_stream = fmt_ctx_->streams[audio_stream_idx_];
         return fmt::format(
-            "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}/{}",
-            audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->sample_fmt, 
+            "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}",
+            audio_decoder_ctx_->sample_rate, av::to_string(audio_decoder_ctx_->sample_fmt), 
             audio_decoder_ctx_->channels,
-            av_get_default_channel_layout(audio_decoder_ctx_->channels),
-            audio_stream->time_base.num, audio_stream->time_base.den
+            av_get_default_channel_layout(audio_decoder_ctx_->channels), audio_stream->time_base.num
         );
     }
     default: return {};

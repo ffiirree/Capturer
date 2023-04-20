@@ -1,17 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-// INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
-// THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//*********************************************************
-
 #include <Unknwn.h>
 #include <inspectable.h>
 #include "wgc-capturer.h"
@@ -39,20 +25,47 @@ static auto create_d3ddevice()
     winrt::com_ptr<::IInspectable> inspectable;
     winrt::check_hresult(CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()));
     
-    return inspectable.as<winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice>();
+    return inspectable.as<IDirect3DDevice>();
+}
+
+static GraphicsCaptureItem create_capture_item_for(HWND hwnd, HMONITOR monitor)
+{
+    if (!hwnd && !monitor) return nullptr;
+
+    auto factory = get_activation_factory<GraphicsCaptureItem>().as<IGraphicsCaptureItemInterop>();
+    GraphicsCaptureItem item = nullptr;
+
+    try {
+        if (hwnd) {
+            LOG_IF(ERROR, FAILED(factory->CreateForWindow(
+                hwnd,
+                winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
+                reinterpret_cast<void**>(winrt::put_abi(item))
+            ))) << "[       WGC] factory->CreateForWindow failed";
+        }
+        else if (monitor) {
+            LOG_IF(ERROR, FAILED(factory->CreateForMonitor(
+                monitor,
+                winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
+                reinterpret_cast<void**>(winrt::put_abi(item))
+            ))) << "[       WGC] factory->CreateForMonitor failed";
+        }
+    }
+    catch (winrt::hresult_error& err) {
+        LOG(ERROR) << fmt::format("[       WGC] error{{ code : {}, message: {} }}",
+            err.code().value, winrt::to_string(err.message()));
+    }
+    catch (...) {
+        LOG(ERROR) << fmt::format("[       WGC] error{{ code : {} }}", winrt::to_hresult().value);
+    }
+    return item;
 }
 
 const AVPixelFormat HWACCEL_OUTPUT_FMT = AV_PIX_FMT_BGRA;
 
 int WgcCapturer::open(HWND window, HMONITOR monitor)
 {
-    if (window) {
-        item_ = GraphicsCaptureItem::TryCreateFromWindowId(WindowId(reinterpret_cast<uint64_t>(window)));
-    }
-    else if (monitor) {
-        item_ = GraphicsCaptureItem::TryCreateFromDisplayId(DisplayId(reinterpret_cast<uint64_t>(monitor)));
-    }
-    
+    item_ = create_capture_item_for(window, monitor);
     if (!item_) {
         LOG(ERROR) << "[     WGC] can not create GraphicsCaptureItem.";
         return -1;
@@ -64,8 +77,7 @@ int WgcCapturer::open(HWND window, HMONITOR monitor)
     auto d3d11device = GetDXGIInterfaceFromObject<ID3D11Device>(device_);
     d3d11device->GetImmediateContext(d3d11_ctx_.put());
 
-    // Create framepool, define pixel format (DXGI_FORMAT_B8G8R8A8_UNORM), and frame size. 
-    // m_framePool = Direct3D11CaptureFramePool::Create(
+    // Create framepool
     frame_pool_ = Direct3D11CaptureFramePool::CreateFreeThreaded(
         device_,
         DirectXPixelFormat::B8G8R8A8UIntNormalized,
@@ -77,7 +89,7 @@ int WgcCapturer::open(HWND window, HMONITOR monitor)
     session_ = frame_pool_.CreateCaptureSession(item_);
 
     last_size_ = item_.Size();
-    vfmt = vformat_t{
+    vfmt = av::vformat_t{
         last_size_.Width,
         last_size_.Height,
         HWACCEL_OUTPUT_FMT,
@@ -116,7 +128,7 @@ int WgcCapturer::run()
 int WgcCapturer::produce(AVFrame* frame, int type)
 {
     if (type != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[       WGC] unsupported media type : " << av_get_media_type_string(static_cast<AVMediaType>(type));
+        LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(static_cast<AVMediaType>(type));
         return -1;
     }
 
@@ -146,13 +158,7 @@ std::string WgcCapturer::format_str(int mt) const
         return {};
     }
 
-    return fmt::format(
-        "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:frame_rate={}/{}",
-        vfmt.width, vfmt.height, vfmt.pix_fmt,
-        vfmt.time_base.num, vfmt.time_base.den,
-        vfmt.sample_aspect_ratio.num, vfmt.sample_aspect_ratio.den,
-        vfmt.framerate.num, vfmt.framerate.den
-    );
+    return av::to_string(vfmt);
 }
 
 AVRational WgcCapturer::time_base(int) const
@@ -192,7 +198,7 @@ int WgcCapturer::init_hwframes_ctx()
 {
     auto dev = hwaccel::find_or_create_device(AV_HWDEVICE_TYPE_D3D11VA);
     if (!dev) {
-        LOG(ERROR) << "[      WGC] can not create hardware device for " << av_hwdevice_get_type_name(AV_HWDEVICE_TYPE_D3D11VA);
+        LOG(ERROR) << "[      WGC] can not create hardware device for " << av::to_string(AV_HWDEVICE_TYPE_D3D11VA);
         return -1;
     }
 
@@ -213,6 +219,7 @@ int WgcCapturer::init_hwframes_ctx()
     frames_ctx_->height = last_size_.Height;
     frames_ctx_->width = last_size_.Width;
     frames_ctx_->sw_format = AV_PIX_FMT_BGRA;
+    //frames_ctx_->initial_pool_size = 32;
 
     if (av_hwframe_ctx_init(frames_ref_) < 0) {
         LOG(ERROR) << "[      WGC] av_hwframe_ctx_init";
@@ -260,7 +267,6 @@ void WgcCapturer::OnFrameArrived(Direct3D11CaptureFramePool const& sender, winrt
 
     hwaccel::transfer_frame(frame_, vfmt.pix_fmt);
 
-    // av_frame_unref(frame_);
     buffer_.push([this](AVFrame* frame) {
        av_frame_unref(frame);
        av_frame_move_ref(frame, frame_);

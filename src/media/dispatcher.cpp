@@ -65,7 +65,7 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame>* encoder, AVFilterCont
             return -1;
         }
     }
-    LOG(INFO) << "[DISPATCHER] [V] created vbuffersink, pix_fmt = " << pix_fmt_name(vfmt.pix_fmt);
+    LOG(INFO) << fmt::format("[DISPATCHER] [V] created vbuffersink with pix_fmt={}.", av::to_string(vfmt.pix_fmt));
 
     return 0;
 }
@@ -83,7 +83,7 @@ int Dispatcher::create_audio_src(const Producer<AVFrame>* decoder, AVFilterConte
         return -1;
     }
 
-    LOG(INFO) << "[DISPATCHER] [A] create abuffer, args '" << buffer_args << "'";
+    LOG(INFO) << "[DISPATCHER] [A] create abuffer with args '" << buffer_args << "'";
 
     return 0;
 }
@@ -111,13 +111,14 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
             return -1;
         }
         int sink_channels[] = { 2, 0 };
-        if (av_opt_set(*ctx, "ch_layouts", channel_layout_name(afmt.channels, afmt.channel_layout).c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
+        if (av_opt_set(*ctx, "ch_layouts", av::channel_layout_name(afmt.channels, afmt.channel_layout).c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_counts' option.";
             return -1;
         }
     }
 
-    LOG(INFO) << fmt::format("[DISPATCHER] [A] created abuffersink, sample_fmt = {}, channels = {}, ch_layout = {}", sample_fmt_name(afmt.sample_fmt), afmt.channels, "stereo");
+    LOG(INFO) << fmt::format("[DISPATCHER] [A] created abuffersink, sample_fmt = {}, channels = {}, ch_layout = {}",
+        av::to_string(afmt.sample_fmt), afmt.channels, "stereo");
 
     return 0;
 }
@@ -222,7 +223,7 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
         }
     }
     else {
-        LOG(INFO) << fmt::format("[DISPATCHER] [{}] creating filter graph, args '{}'", av_get_media_type_string(type)[0], desc);
+        LOG(INFO) << fmt::format("[DISPATCHER] [{}] creating filter graph, args '{}'", av::to_char(type), desc);
 
         AVFilterInOut* inputs = nullptr, * outputs = nullptr;
         defer(avfilter_inout_free(&inputs); avfilter_inout_free(&outputs));
@@ -251,8 +252,8 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
 
     if (type == AVMEDIA_TYPE_VIDEO && vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
         if (hwaccel::setup_for_filter_graph(graph, vfmt.hwaccel) != 0) {
-            LOG(ERROR) << "[DISPATCHER]  can not set hareware device up for filter graph.";
-            return -1;
+           LOG(ERROR) << "[DISPATCHER]  can not set hareware device up for filter graph.";
+           return -1;
         }
     }
 
@@ -263,8 +264,8 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
 
     if (type == AVMEDIA_TYPE_VIDEO && vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
         if (hwaccel::set_sink_frame_ctx_for_encoding(sink, vfmt.hwaccel) < 0) {
-            LOG(ERROR) << "[DISPATCHER] can not set sink frame context for encoder.";
-            return -1;
+           LOG(ERROR) << "[DISPATCHER] can not set sink frame context for encoder.";
+           return -1;
         }
     }
 
@@ -385,8 +386,8 @@ bool Dispatcher::is_valid_pts(int64_t pts)
 
 int Dispatcher::dispatch_fn(enum AVMediaType mt)
 {
-    LOG(INFO) << fmt::format("[{}] STARTED", av_get_media_type_string(mt)[0]);
-    defer(LOG(INFO) << fmt::format("[{}] EXITED", av_get_media_type_string(mt)[0]));
+    LOG(INFO) << fmt::format("[{}] STARTED", av::to_char(mt));
+    defer(LOG(INFO) << fmt::format("[{}] EXITED", av::to_char(mt)));
 
     AVFrame* frame = av_frame_alloc();
     defer(av_frame_free(&frame));
@@ -417,7 +418,7 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
 
                 if (!is_valid_pts(av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q))) {
                     LOG(INFO) << fmt::format("[{}] drop frame {} ({} - {})",
-                        av_get_media_type_string(mt)[0], av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
+                        av::to_char(mt), av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q), resumed_pts_, paused_pts_);
                     continue;
                 }
 
@@ -427,7 +428,7 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
 
                 // send the frame to graph
                 if (av_buffersrc_add_frame_flags(src_ctx, frame, AV_BUFFERSRC_FLAG_PUSH) < 0) {
-                    LOG(ERROR) << fmt::format("[{}] failed to send the frame to filter graph.", av_get_media_type_string(mt)[0]);
+                    LOG(ERROR) << fmt::format("[{}] failed to send the frame to filter graph.", av::to_char(mt));
                     running_ = false;
                     break;
                 }
@@ -446,13 +447,13 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
             continue;
         }
         else if (ret == AVERROR_EOF) {
-            LOG(INFO) << fmt::format("[{}] EOF",av_get_media_type_string(mt)[0]);
+            LOG(INFO) << fmt::format("[{}] EOF", av::to_char(mt));
             consumer_eof = true;
             // through and send null packet
             av_frame_unref(frame);
         }
         else if (ret < 0) {
-            LOG(ERROR) << fmt::format("[{}] failed to get frame.", av_get_media_type_string(mt)[0]);
+            LOG(ERROR) << fmt::format("[{}] failed to get frame.", av::to_char(mt));
             running_ = false;
             break;
         }

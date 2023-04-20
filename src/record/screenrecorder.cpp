@@ -232,7 +232,7 @@ void ScreenRecorder::setup()
                 pix_fmt_ = config->pix_fmt;
 
                 LOG(INFO) << fmt::format("hwaccel = {}, pix_fmt = {}", 
-                    av_hwdevice_get_type_name(hwaccel), pix_fmt_name(pix_fmt_));
+                    av::to_string(hwaccel), av::to_string(pix_fmt_));
             }
         }
 

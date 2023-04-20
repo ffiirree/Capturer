@@ -34,15 +34,15 @@ int Encoder::open(const std::string& filename,
     audio_options_ = audio_options;
 
     if (video_enabled_) {
-        LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbn = {}/{}",
-            video_codec_name, video_options, is_cfr, vfmt.width, vfmt.height, pix_fmt_name(vfmt.pix_fmt),
-            vfmt.framerate.num, vfmt.framerate.den, vfmt.time_base.num, vfmt.time_base.den);
+        LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}, tbn = {}",
+            video_codec_name, video_options, is_cfr, vfmt.width, vfmt.height, 
+            av::to_string(vfmt.pix_fmt), vfmt.framerate, vfmt.time_base);
     }
 
     if (audio_enabled_) {
-        LOG(INFO) << fmt::format("[   ENCODER] [A] <<< [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, tbn = {}/{}",
-            audio_codec_name, audio_options, afmt.sample_rate, afmt.channels, sample_fmt_name(afmt.sample_fmt),
-            afmt.time_base.num, afmt.time_base.den);
+        LOG(INFO) << fmt::format("[   ENCODER] [A] <<< [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, tbn = {}",
+            audio_codec_name, audio_options, afmt.sample_rate, afmt.channels, 
+            av::to_string(afmt.sample_fmt), afmt.time_base);
     }
 
     // format context
@@ -128,7 +128,7 @@ int Encoder::new_video_stream()
         video_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    if (video_encoder_ctx_->pix_fmt & AV_PIX_FMT_FLAG_HWACCEL) {
+    if (vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
         if (hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt.hwaccel) != 0) {
             LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
             return -1;
@@ -146,10 +146,9 @@ int Encoder::new_video_stream()
     }
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   ENCODER] [V] >>> [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}/{}, tbc = {}/{}, tbn = {}/{}",
-            video_codec_name_, video_options_, is_cfr_, vfmt.width, vfmt.height, av_get_pix_fmt_name(vfmt.pix_fmt), vfmt.framerate.num, vfmt.framerate.den,
-            video_encoder_ctx_->time_base.num, video_encoder_ctx_->time_base.den,
-            fmt_ctx_->streams[video_stream_idx_]->time_base.num, fmt_ctx_->streams[video_stream_idx_]->time_base.den
+        LOG(INFO) << fmt::format("[   ENCODER] [V] >>> [{}], options = {}, cfr = {}, size = {}x{}, format = {}, fps = {}, tbc = {}, tbn = {}, hwaccel = {}",
+            video_codec_name_, video_options_, is_cfr_, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt),
+            vfmt.framerate, video_encoder_ctx_->time_base, fmt_ctx_->streams[video_stream_idx_]->time_base, av::to_string(vfmt.hwaccel)
         );
     }
     
@@ -213,12 +212,11 @@ int Encoder::new_auido_stream()
     }
 
     if (audio_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[   ENCODER] [A] >>> [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}/{}, tbn = {}/{}",
+        LOG(INFO) << fmt::format("[   ENCODER] [A] >>> [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}, tbn = {}",
             audio_codec_name_, audio_options_, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
-            av_get_sample_fmt_name(audio_encoder_ctx_->sample_fmt),
+            av::to_string(audio_encoder_ctx_->sample_fmt),
             fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size,
-            audio_encoder_ctx_->time_base.num, audio_encoder_ctx_->time_base.den,
-            fmt_ctx_->streams[audio_stream_idx_]->time_base.num, fmt_ctx_->streams[audio_stream_idx_]->time_base.den
+            audio_encoder_ctx_->time_base, fmt_ctx_->streams[audio_stream_idx_]->time_base
         );
     }
 
