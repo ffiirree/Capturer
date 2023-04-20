@@ -12,6 +12,7 @@ extern "C" {
 #include <vector>
 #include <memory>
 #include <optional>
+#include "defer.h"
 
 namespace hwaccel 
 {
@@ -51,7 +52,7 @@ namespace hwaccel
 
     inline std::vector<std::shared_ptr<hwdevice_t>> hwdevices;       // global & unique
 
-    inline bool is_support(enum AVHWDeviceType type)
+    inline bool is_supported(enum AVHWDeviceType type)
     {
         for (auto t = av_hwdevice_iterate_types(AV_HWDEVICE_TYPE_NONE);
             t != AV_HWDEVICE_TYPE_NONE;
@@ -110,7 +111,7 @@ namespace hwaccel
 
     inline int setup_for_filter_graph(AVFilterGraph* graph, AVHWDeviceType type)
     {
-        if (!graph || !is_support(type)) {
+        if (!graph || !is_supported(type)) {
             return -1;
         }
 
@@ -134,8 +135,12 @@ namespace hwaccel
 
         for (auto& dev : hwdevices) {
             if (dev->type == type) {
-                dev->frames_ctx_ref(av_buffersink_get_hw_frames_ctx(filter));
-                return 0;
+               auto frames_ctx = av_buffersink_get_hw_frames_ctx(filter);
+               if (frames_ctx) {
+                   dev->frames_ctx_ref(frames_ctx);
+                   return 0;
+               }
+               return -1;
             }
         }
         return -1;
@@ -143,7 +148,7 @@ namespace hwaccel
 
     inline int setup_for_encoding(AVCodecContext* ctx, AVHWDeviceType type)
     {
-        if (!ctx || !is_support(type)) {
+        if (!ctx || !is_supported(type)) {
             return -1;
         }
 
@@ -154,6 +159,34 @@ namespace hwaccel
 
         ctx->hw_frames_ctx = dev->frames_ctx_ref();     // ref
         ctx->hw_device_ctx = dev->ref();                // ref
+        return 0;
+    }
+
+    inline int transfer_frame(AVFrame* input, enum AVPixelFormat pix_fmt)
+    {
+        if (input->format == pix_fmt) {
+            // Nothing to do.
+            return 0;
+        }
+
+        auto output = av_frame_alloc();
+        if (!output)
+            return AVERROR(ENOMEM);
+        defer(av_frame_free(&output));
+
+        output->format = pix_fmt;
+
+        if (av_hwframe_transfer_data(output, input, 0) < 0) {
+            return -1;
+        }
+
+        if (av_frame_copy_props(output, input) < 0) {
+            return -1;
+        }
+
+        av_frame_unref(input);
+        av_frame_move_ref(input, output);
+
         return 0;
     }
 }

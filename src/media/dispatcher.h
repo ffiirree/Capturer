@@ -42,7 +42,6 @@ public:
         }
     }
 
-    int enable_hwaccel(enum AVHWDeviceType, enum AVPixelFormat);
     int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
 
     int start();
@@ -58,8 +57,8 @@ public:
 
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
-    vformat_t vfmt;
-    aformat_t afmt;
+    vformat_t vfmt{};
+    aformat_t afmt{};
 
 private:
     struct ProducerContext {
@@ -105,8 +104,6 @@ private:
 
     // filter graphs @{
     std::atomic<bool> locked_{};                        // lock filter graph sources
-
-    AVHWDeviceType hwaccel_{ AV_HWDEVICE_TYPE_NONE };
 
     bool video_enabled_{};
     bool audio_enabled_{};

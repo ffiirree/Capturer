@@ -108,13 +108,6 @@ int Encoder::new_video_stream()
         return -1;
     }
 
-    if (hwaccel_ != AV_HWDEVICE_TYPE_NONE) {
-        if (hwaccel::setup_for_encoding(video_encoder_ctx_, hwaccel_) != 0) {
-            LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
-            return -1;
-        }
-    }
-
     AVDictionary* encoder_options = nullptr;
     defer(av_dict_free(&encoder_options));
     for (const auto& [key, value] : video_options_) {
@@ -133,6 +126,13 @@ int Encoder::new_video_stream()
 
     if (fmt_ctx_->oformat->flags & AVFMT_GLOBALHEADER) {
         video_encoder_ctx_->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
+
+    if (video_encoder_ctx_->pix_fmt & AV_PIX_FMT_FLAG_HWACCEL) {
+        if (hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt.hwaccel) != 0) {
+            LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
+            return -1;
+        }
     }
 
     if (avcodec_open2(video_encoder_ctx_, video_encoder, &encoder_options) < 0) {
@@ -332,7 +332,6 @@ int Encoder::process_video_frames()
     filtered_frame_->quality = video_encoder_ctx_->global_quality;
     filtered_frame_->pict_type = AV_PICTURE_TYPE_NONE;
 
-
     int ret = avcodec_send_frame(video_encoder_ctx_, (!filtered_frame_->width || !filtered_frame_->height) ? nullptr : filtered_frame_);
     //LOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d} / {:>18.3f}", video_encoder_ctx_->frame_number, filtered_frame_->pts, pre_pts / scale);
 
@@ -519,7 +518,6 @@ void Encoder::destroy()
     avformat_free_context(fmt_ctx_);
     fmt_ctx_ = nullptr;
 
-    hwaccel_ = AV_HWDEVICE_TYPE_NONE;
     vfmt = {};
     afmt = {};
 

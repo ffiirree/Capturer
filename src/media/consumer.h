@@ -18,7 +18,8 @@ public:
     Consumer() = default;
     Consumer(const Consumer&) = delete;
     Consumer& operator=(const Consumer&) = delete;
-    virtual ~Consumer() {
+    virtual ~Consumer() 
+    {
         std::lock_guard lock(mtx_);
 
         running_ = false;
@@ -51,8 +52,8 @@ public:
     [[nodiscard]] bool running() const { return running_; }
     [[nodiscard]] virtual bool eof() const { return eof_; }
 
-    vformat_t vfmt;
-    aformat_t afmt;
+    vformat_t vfmt{};
+    aformat_t afmt{};
 
 protected:
     std::atomic<bool> running_{ false };
@@ -62,7 +63,6 @@ protected:
     std::mutex mtx_;
 
     bool is_cfr_{ false };
-    enum AVHWDeviceType hwaccel_ { AV_HWDEVICE_TYPE_NONE };
 };
 
 #endif // !CAPTURER_CONSUMER_H

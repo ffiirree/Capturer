@@ -7,6 +7,7 @@ extern "C" {
 #include <libavutil/samplefmt.h>
 #include <libavutil/rational.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/hwcontext.h>
 }
 
 struct vformat_t {
@@ -17,6 +18,8 @@ struct vformat_t {
     AVRational framerate{ 24, 1 };
     AVRational sample_aspect_ratio{ 1,1 };
     AVRational time_base{ 1, OS_TIME_BASE };
+
+    enum AVHWDeviceType hwaccel { AV_HWDEVICE_TYPE_NONE };
 };
 
 struct aformat_t {

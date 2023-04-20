@@ -266,7 +266,7 @@ QWidget* SettingWindow::setupRecordWidget()
                       {"libx264", tr("Software x264 [H.264 / AVC]")},
                       {"libx265", tr("Software x265 [H.265 / HEVC]")}
               });
-    if (hwaccel::is_support(AV_HWDEVICE_TYPE_CUDA)) {
+    if (hwaccel::is_supported(AV_HWDEVICE_TYPE_CUDA)) {
         _7_2->add("h264_nvenc", tr("Hardware NVENC [H.264 / AVC]"));
         _7_2->add("hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]"));
     }

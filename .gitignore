@@ -24,8 +24,7 @@ moc_*.h
 qrc_*.cpp
 ui_*.h
 Makefile*
-*build-*
-*_build*
+*build*
 
 # QtCreator
 
@@ -38,8 +37,6 @@ Makefile*
 # QtCtreator CMake
 CMakeLists.txt.user*
 
-
-build
 .vscode
 debian
 .vs

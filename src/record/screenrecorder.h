@@ -13,6 +13,7 @@
 
 #if _WIN32
 #include "win-wasapi/wasapi-capturer.h"
+#include "win-wgc/wgc-capturer.h"
 #endif
 
 class ScreenRecorder : public Selector
@@ -83,11 +84,12 @@ private:
     bool m_mute_{ false };
     bool s_mute_{ false };
 
-    std::unique_ptr<Decoder> desktop_decoder_{ nullptr };
 #ifdef _WIN32
+    std::unique_ptr<WgcCapturer> desktop_decoder_{ nullptr };
     std::unique_ptr<WasapiCapturer> microphone_decoder_{ nullptr };
     std::unique_ptr<WasapiCapturer> speaker_decoder_{ nullptr };
 #else
+    std::unique_ptr<Decoder> desktop_decoder_{ nullptr };
     std::unique_ptr<Decoder> microphone_decoder_{ nullptr };
     std::unique_ptr<Decoder> speaker_decoder_{ nullptr };
 #endif

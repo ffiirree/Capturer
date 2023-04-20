@@ -3,6 +3,8 @@
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QDateTime>
+#include <QApplication>
+#include <QDesktopWidget>
 #include <fmt/core.h>
 #include "widgetsdetector.h"
 #include "devices.h"
@@ -36,7 +38,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget* parent)
     connect(player_, &VideoPlayer::started, [this]() { menu_->camera_checked(true); });
     connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });
 
-    desktop_decoder_ = std::make_unique<Decoder>();
+    desktop_decoder_ = std::make_unique<WgcCapturer>();
     if (recording_type_ != GIF) {
 #ifdef _WIN32
         microphone_decoder_ = std::make_unique<WasapiCapturer>();
@@ -154,35 +156,43 @@ void ScreenRecorder::setup()
 
     filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time, (recording_type_ == VIDEO ? "mp4" : "gif"));
 
-    if (desktop_decoder_->open(
-#ifdef __linux__
-        // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
-        // echo $DISPLAY
-        fmt::format("{}.0+{},{}", getenv("DISPLAY"), selected_area.x(), selected_area.y()),
-        "x11grab",
-        {
-            {"framerate", std::to_string(framerate_)},
-            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
+//    if (desktop_decoder_->open(
+//#ifdef __linux__
+//        // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
+//        // echo $DISPLAY
+//        fmt::format("{}.0+{},{}", getenv("DISPLAY"), selected_area.x(), selected_area.y()),
+//        "x11grab",
+//        {
+//            {"framerate", std::to_string(framerate_)},
+//            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
+//        }
+//#elif _WIN32
+//        "desktop",
+//        "gdigrab",
+//        {
+//            {"framerate", std::to_string(framerate_)},
+//            {"offset_x", std::to_string(selected_area.x())},
+//            {"offset_y", std::to_string(selected_area.y())},
+//            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
+//        }
+//#endif
+//    ) < 0) {
+//        desktop_decoder_->reset();
+//        exit();
+//        return;
+//    }
+    if (mode_ == mode_t::window) {
+        if (desktop_decoder_->open(reinterpret_cast<HWND>(window_.handle))) {
+            desktop_decoder_.reset();
+            exit();
+            return;
         }
-#elif _WIN32
-        "desktop",
-        "gdigrab",
-        {
-            {"framerate", std::to_string(framerate_)},
-            {"offset_x", std::to_string(selected_area.x())},
-            {"offset_y", std::to_string(selected_area.y())},
-            {"video_size", fmt::format("{}x{}", (selected_area.width() / 2) * 2, (selected_area.height() / 2) * 2)}
-        }
-#endif
-    ) < 0) {
-        desktop_decoder_->reset();
-        exit();
-        return;
     }
+
     
-    if (recording_type_ == VIDEO) {
-        open_audio_sources();
-    }
+    //if (recording_type_ == VIDEO) {
+    //    open_audio_sources();
+    //}
 
     // sources
     dispatcher_->append(desktop_decoder_.get());
@@ -202,28 +212,35 @@ void ScreenRecorder::setup()
         std::string quality_name = "crf";           // TODO: CRF / CQP
 
         auto vcodec = avcodec_find_encoder_by_name(codec_name_.c_str());
-        AVHWDeviceType hwdevice_type = AV_HWDEVICE_TYPE_NONE;
+        AVHWDeviceType hwaccel = AV_HWDEVICE_TYPE_NONE;
         if (vcodec) {
             const AVCodecHWConfig* config = nullptr;
-            for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)) && config->pix_fmt != AV_PIX_FMT_NONE; ++i) {
-                LOG(INFO) << codec_name_ << " : " << av_hwdevice_get_type_name(config->device_type)
-                    << ", pix_fmt = " << av_get_pix_fmt_name(config->pix_fmt);
-                hwdevice_type = config->device_type;
+            for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)); ++i) {
+                if (config->pix_fmt != AV_PIX_FMT_NONE) {
+                    if (desktop_decoder_->vfmt.hwaccel == AV_HWDEVICE_TYPE_NONE) {
+                        break;
+                    }
+
+                    if (desktop_decoder_->vfmt.pix_fmt == config->pix_fmt) {
+                        break;
+                    }
+                }
+            }
+            
+            if (config) {
+                hwaccel = config->device_type;
                 pix_fmt_ = config->pix_fmt;
-                break;
+
+                LOG(INFO) << fmt::format("hwaccel = {}, pix_fmt = {}", 
+                    av_hwdevice_get_type_name(hwaccel), pix_fmt_name(pix_fmt_));
             }
         }
 
-        if (hwdevice_type != AV_HWDEVICE_TYPE_NONE) {
+        if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
             quality_name = "cq";
 
-            if (dispatcher_->enable_hwaccel(hwdevice_type, pix_fmt_) != 0) {
-                return ;
-            }
-
-            if (encoder_->enable_hwaccel(hwdevice_type, pix_fmt_) != 0) {
-                return;
-            }
+            dispatcher_->vfmt.hwaccel = hwaccel;
+            encoder_->vfmt.hwaccel = hwaccel;
         }
 
         options_ = { {quality_name, video_qualities_[Config::instance()["record"]["quality"]]} };
