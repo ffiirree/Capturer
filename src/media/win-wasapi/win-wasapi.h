@@ -16,6 +16,9 @@ namespace wasapi
     std::optional<avdevice_t> default_endpoint(avdevice_t::io_t io_type);
 
     std::optional<avdevice_t> device_info(IMMDevice*);
+
+
+    uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
 }
 
 #endif // _WIN32

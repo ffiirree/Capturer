@@ -10,9 +10,25 @@
 #include "defer.h"
 #include "logging.h"
 
+extern "C" {
+#include <libavformat/avformat.h>
+}
+
 #define RETURN_NULL_ON_ERROR(hres) if (FAILED(hres)) { return {}; }
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
+
+uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
+{
+    switch (layout) {
+    case KSAUDIO_SPEAKER_MONO: return AV_CH_LAYOUT_MONO;
+    case KSAUDIO_SPEAKER_STEREO: return AV_CH_LAYOUT_STEREO;
+    case KSAUDIO_SPEAKER_QUAD: return AV_CH_LAYOUT_QUAD;
+    case KSAUDIO_SPEAKER_2POINT1: return AV_CH_LAYOUT_SURROUND;
+    case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
+    default: return av_get_default_channel_layout(channels);
+    }
+}
 
 std::optional<avdevice_t> wasapi::device_info(IMMDevice* dev)
 {

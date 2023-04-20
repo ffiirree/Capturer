@@ -37,6 +37,16 @@ namespace platform
 #ifdef _WIN32
     namespace windows 
     {
+        // https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions
+        // windows 3.1, 1992-04-06
+        inline const version_t WIN_3_1_1ST{ 3, 10, 102, 0, "Sparta" };
+
+        // windows 95, 1995-08-24
+        inline const version_t WIN_95_1ST{ 4, 0, 950, 0, "Chicago" };
+
+        // windows 98, 1998-06-25
+        inline const version_t WIN_98_1ST{ 4, 10, 1998, 0, "Memphis" };
+
         // windows 2000
         inline const version_t WIN_2000_1ST{ 5, 0, 2195, 0, "Janus" };
 

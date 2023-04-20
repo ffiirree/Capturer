@@ -25,7 +25,8 @@ extern "C" {
 #include "clock.h"
 #include "devices.h"
 
-class WasapiCapturer : public Producer<AVFrame> {
+class WasapiCapturer : public Producer<AVFrame> 
+{
 public:
     ~WasapiCapturer() override { reset(); }
 
@@ -57,13 +58,9 @@ public:
     std::string format_str(int) const override;
     AVRational time_base(int) const override;
 
-    void mute(bool v) { muted_ = v; }
-
 private:
     int run_f();
     int destroy();
-
-    static uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
 
     void init_format(WAVEFORMATEX*);
 
@@ -79,8 +76,6 @@ private:
     };
 
     int64_t start_time_{ AV_NOPTS_VALUE };
-
-    std::atomic<bool> muted_{ false };
 
     avdevice_t::io_t type_{ avdevice_t::io_t::UNKNOWN };
 

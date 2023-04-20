@@ -45,6 +45,8 @@ public:
     virtual void stop() { running_ = false; }
     virtual bool eof() { return eof_ != 0; }
 
+    void mute(bool v) { muted_ = v; }
+
     virtual int wait()
     {
         if (thread_.joinable()) {
@@ -66,6 +68,8 @@ protected:
     std::thread thread_;
     std::mutex mtx_;
     std::map<int, bool> enabled_;
+
+    std::atomic<bool> muted_{ false };
 };
 
 #endif // !CAPTURER_PRODUCER_H

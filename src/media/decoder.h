@@ -46,13 +46,9 @@ public:
     AVRational time_base(int) const override;
     bool eof() override;
 
-    void mute(bool v) { muted_ = v; }
-
 private:
     int run_f();
     void destroy();
-
-    std::atomic<bool> muted_{ false };
 
     std::string name_{"unknown"};
 

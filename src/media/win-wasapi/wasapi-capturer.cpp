@@ -13,18 +13,6 @@
 #define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
 #define SAFE_RELEASE(punk)  if ((punk) != NULL) { (punk)->Release(); (punk) = NULL; }
 
-uint64_t WasapiCapturer::to_ffmpeg_channel_layout(DWORD layout, int channels)
-{
-    switch (layout) {
-    case KSAUDIO_SPEAKER_MONO: return AV_CH_LAYOUT_MONO;
-    case KSAUDIO_SPEAKER_STEREO: return AV_CH_LAYOUT_STEREO;
-    case KSAUDIO_SPEAKER_QUAD: return AV_CH_LAYOUT_QUAD;
-    case KSAUDIO_SPEAKER_2POINT1: return AV_CH_LAYOUT_SURROUND;
-    case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
-    default: return av_get_default_channel_layout(channels);
-    }
-}
-
 void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
 {
     DWORD layout = 0;
@@ -37,7 +25,7 @@ void WasapiCapturer::init_format(WAVEFORMATEX* wfex)
         static_cast<int>(wfex->nSamplesPerSec),
         wfex->nChannels,
         AV_SAMPLE_FMT_FLT,
-        to_ffmpeg_channel_layout(layout, wfex->nChannels),
+        wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels),
         { 1, OS_TIME_BASE }
     };
 
