@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(capturer VERSION 1.4.2 LANGUAGES C CXX)
+project(capturer VERSION 1.5.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -21,7 +21,7 @@ endif()
 # #######################################################################################################################
 # dependencies
 # #######################################################################################################################
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # 3rdparty: QHotkey glog
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
@@ -37,12 +37,15 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
-find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRED)
+
 
 if(WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE ON)
+    # >= 6 required by nvenc for encoding d3d11 format
+    find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
+    find_package(FFmpeg 3.4 REQUIRED)
     find_package(Qt5 COMPONENTS X11Extras REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
@@ -75,12 +78,13 @@ target_link_libraries(${PROJECT_NAME}
         Qt5::Widgets Qt5::Gui
         glog::glog
         fmt::fmt
-        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
+        ffmpeg::ffmpeg
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Windows>:ntdll>
         $<$<PLATFORM_ID:Windows>:Shcore> 
         $<$<PLATFORM_ID:Windows>:DXGI>
+        $<$<PLATFORM_ID:Windows>:D3D11>
         $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
         $<$<PLATFORM_ID:Linux>:X11::Xrandr>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
