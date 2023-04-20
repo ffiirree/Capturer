@@ -15,17 +15,9 @@ Magnifier::Magnifier(QWidget *parent)
 
     // label size
     label_ = new QLabel(this);
+    label_->setObjectName("magnifier-color-label");
     label_->setGeometry(0, psize_.height(), psize_.width(), 30);
     label_->setAlignment(Qt::AlignCenter);
-
-    QFont font;
-    font.setPointSize(9);
-    font.setFamily("Consolas");
-    label_->setFont(font);
-
-    QPalette p;
-    p.setColor(QPalette::WindowText, Qt::white);
-    label_->setPalette(p);
 
     // size
     setFixedSize(psize_.width(), psize_.height() + label_->height());
