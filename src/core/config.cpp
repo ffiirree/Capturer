@@ -1,29 +1,31 @@
 #include "config.h"
+
+#include "devices.h"
+#include "logging.h"
+#include "probe/system.h"
+#include "utils.h"
+
 #include <QApplication>
-#include <QStandardPaths>
 #include <QDir>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <fstream>
 #include <streambuf>
-#include "utils.h"
-#include "platform.h"
-#include "devices.h"
-#include "logging.h"
 
-#define IF_NULL_SET(X, default_value) st(if(X.is_null())  X = default_value;)
+#define IF_NULL_SET(X, default_value) st(if (X.is_null()) X = default_value;)
 
 Config::Config()
 {
     auto config_dir_path_ = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     QDir config_dir(config_dir_path_);
-    if(!config_dir.exists()) {
+    if (!config_dir.exists()) {
         config_dir.mkpath(config_dir_path_);
     }
     filepath_ = config_dir_path_ + "/config.json";
 
     QString text;
     QFile config_file(filepath_);
-    if(config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+    if (config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         QTextStream in(&config_file);
         text = in.readAll();
     }
@@ -35,7 +37,8 @@ Config::Config()
         settings_ = json::parse("{}");
     }
 
-    // default
+    // default values
+    // clang-format off
     IF_NULL_SET(settings_["autorun"],                               true);
     IF_NULL_SET(settings_["language"],                              "zh_CN");
     IF_NULL_SET(settings_["detectwindow"],                          true);
@@ -69,20 +72,18 @@ Config::Config()
 
     IF_NULL_SET(settings_["record"]["framerate"],                   30);
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
+    // clang-format on
 
-    if(!Devices::cameras().empty())
-        settings_["devices"]["cameras"] = Devices::cameras()[0];
+    if (!Devices::cameras().empty()) settings_["devices"]["cameras"] = Devices::cameras()[0];
 
-    if (!Devices::microphones().empty())
-        settings_["devices"]["microphones"] = Devices::microphones()[0];
+    if (!Devices::microphones().empty()) settings_["devices"]["microphones"] = Devices::microphones()[0];
 
-    if (!Devices::speakers().empty())
-        settings_["devices"]["speakers"] = Devices::speakers()[0];
+    if (!Devices::speakers().empty()) settings_["devices"]["speakers"] = Devices::speakers()[0];
 
     connect(this, &Config::changed, this, &Config::save);
     connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) {
         if (settings_["theme"].get<std::string>() == "auto") {
-            load_theme(platform::system::theme_name(static_cast<platform::system::theme_t>(theme)));
+            load_theme(probe::to_string(static_cast<probe::system::theme_t>(theme)));
         }
     });
 
@@ -93,8 +94,7 @@ void Config::save()
 {
     QFile file(filepath_);
 
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text))
-        return;
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) return;
 
     QTextStream out(&file);
     out << settings_.dump(4).c_str();
@@ -106,7 +106,7 @@ std::string Config::theme()
 {
     auto theme = Config::instance()["theme"].get<std::string>();
     if (theme == "auto") {
-        return platform::system::theme_name(platform::system::theme());
+        return probe::to_string(probe::system::theme());
     }
 
     return (theme == "dark") ? "dark" : "light";
@@ -116,51 +116,58 @@ void Config::monitor_system_theme(bool m)
 {
 #ifdef _WIN32
     if (m && theme_monitor_ == nullptr) {
-        theme_monitor_ = platform::windows::monitor_regkey(
-            HKEY_CURRENT_USER,
-            R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)",
-            [this](auto) {
-                emit SYSTEM_THEME_CHANGED(static_cast<int>(platform::system::theme()));
-            }
-        );
+        theme_monitor_ = std::make_shared<probe::util::registry::RegistryListener>();
+
+        theme_monitor_->listen(
+            std::pair<HKEY, std::string>{
+                HKEY_CURRENT_USER, R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)" },
+            [this](auto) { emit SYSTEM_THEME_CHANGED(static_cast<int>(probe::system::theme())); });
     }
-    
-    if(!m) {
+
+    if (!m) {
         theme_monitor_ = nullptr;
     }
 #elif __linux__
     if (m && theme_monitor_ == nullptr) {
-        if (platform::system::desktop() == platform::system::desktop_t::GNOME ||
-            platform::system::desktop() == platform::system::desktop_t::Unity) {
+        if (probe::system::desktop() == probe::system::desktop_t::GNOME ||
+            probe::system::desktop() == probe::system::desktop_t::Unity) {
 
-            auto color_scheme = platform::linux::exec("gsettings get org.gnome.desktop.interface color-scheme").value_or("");
-            if (!color_scheme.empty() && color_scheme != "\t") { // TODO
-                theme_monitor_ = platform::linux::monitor_gsettings("org.gnome.desktop.interface", "color-scheme", [this](auto str){
-                    platform::system::theme_t _theme = platform::system::theme_t::dark;
-                    if (str.find("dark") != std::string::npos) {
-                        _theme = platform::system::theme_t::dark;
-                    }
-                    if (str.find("light") != std::string::npos) {
-                        _theme = platform::system::theme_t::light;
-                    }
-                    emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
-                });
+            theme_monitor_ = std::make_shared<probe::util::PipeListener>();
+
+            auto color_scheme = probe::util::exec_sync(
+                { "gsettings", "get", "org.gnome.desktop.interface", "color-scheme" });
+            if (!color_scheme.empty() && color_scheme[0] != "\t") { // TODO
+                theme_monitor_->listen(
+                    std::vector{ "gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme" },
+                    [this](auto str) {
+                        probe::system::theme_t _theme = probe::system::theme_t::dark;
+                        if (std::any_cast<std::string>(str).find("dark") != std::string::npos) {
+                            _theme = probe::system::theme_t::dark;
+                        }
+                        if (std::any_cast<std::string>(str).find("light") != std::string::npos) {
+                            _theme = probe::system::theme_t::light;
+                        }
+                        emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
+                    });
 
                 return;
             }
 
-            auto gtk_theme = platform::linux::exec("gsettings get org.gnome.desktop.interface gtk-theme").value_or("");
-            if (!gtk_theme.empty() && gtk_theme != "\t") {
-                theme_monitor_ = platform::linux::monitor_gsettings("org.gnome.desktop.interface", "gtk-theme", [this](auto str){
-                    platform::system::theme_t _theme = platform::system::theme_t::dark;
-                    if (str.find("dark") != std::string::npos) {
-                        _theme = platform::system::theme_t::dark;
-                    }
-                    if (str.find("light") != std::string::npos) {
-                        _theme = platform::system::theme_t::light;
-                    }
-                    emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
-                });
+            auto gtk_theme =
+                probe::util::exec_sync({ "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" });
+            if (!gtk_theme.empty() && gtk_theme[0] != "\t") {
+                theme_monitor_->listen(
+                    std::vector{ "gsettings", "monitor", "org.gnome.desktop.interface", "gtk-theme" },
+                    [this](auto str) {
+                        probe::system::theme_t _theme = probe::system::theme_t::dark;
+                        if (std::any_cast<std::string>(str).find("dark") != std::string::npos) {
+                            _theme = probe::system::theme_t::dark;
+                        }
+                        if (std::any_cast<std::string>(str).find("light") != std::string::npos) {
+                            _theme = probe::system::theme_t::light;
+                        }
+                        emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
+                    });
 
                 return;
             }
@@ -176,8 +183,7 @@ void Config::monitor_system_theme(bool m)
 
 void Config::set_theme(const std::string& theme)
 {
-    if (settings_["theme"].get<std::string>() == theme)
-        return;
+    if (settings_["theme"].get<std::string>() == theme) return;
 
     set(settings_["theme"], theme);
 
@@ -196,12 +202,12 @@ void Config::load_theme(const std::string& theme)
         emit theme_changed();
 
         std::vector<QString> files{
-                ":/qss/capturer.qss",
-                ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",
-                ":/qss/menu/menu.qss",
-                ":/qss/menu/menu-" + QString::fromStdString(theme) + ".qss",
-                ":/qss/setting/settingswindow.qss",
-                ":/qss/setting/settingswindow-" + QString::fromStdString(theme) + ".qss"
+            ":/qss/capturer.qss",
+            ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",
+            ":/qss/menu/menu.qss",
+            ":/qss/menu/menu-" + QString::fromStdString(theme) + ".qss",
+            ":/qss/setting/settingswindow.qss",
+            ":/qss/setting/settingswindow-" + QString::fromStdString(theme) + ".qss",
         };
 
         QString style{};

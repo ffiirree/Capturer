@@ -264,7 +264,7 @@ int Encoder::run()
 
     running_ = true;
     thread_ = std::thread([this]() { 
-        platform::util::thread_set_name("encoder");
+        probe::util::thread_set_name("encoder");
         run_f(); 
     });
 

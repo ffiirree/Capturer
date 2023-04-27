@@ -1,20 +1,18 @@
 #include "widgetsdetector.h"
-#include "platform.h"
+
 #include "logging.h"
+#include "probe/graphics.h"
 
-std::deque<platform::display::window_t> WidgetsDetector::windows_;
+std::deque<probe::graphics::window_t> WidgetsDetector::windows_;
 
-void WidgetsDetector::refresh()
+void WidgetsDetector::refresh() { windows_ = probe::graphics::windows(); }
+
+probe::graphics::window_t WidgetsDetector::window(const QPoint& pos)
 {
-    windows_ = platform::display::windows();
-}
+    auto desktop = probe::graphics::virtual_screen_geometry();
 
-platform::display::window_t WidgetsDetector::window(const QPoint& pos)
-{
-    auto desktop = platform::display::virtual_screen_geometry();
-
-    for (auto win : windows_) {
-        if (win.rect.contains(pos.x(), pos.y())) {
+    for(auto win : windows_) {
+        if(win.rect.contains(pos.x(), pos.y())) {
             win.rect = desktop.intersected(win.rect);
             return win;
         }

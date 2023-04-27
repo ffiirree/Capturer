@@ -1,40 +1,44 @@
 #ifndef CAPTURER_CONSUMER_H
 #define CAPTURER_CONSUMER_H
 
-#include <thread>
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <thread>
 extern "C" {
-#include <libavutil/rational.h>
 #include <libavutil/pixfmt.h>
+#include <libavutil/rational.h>
 #include <libavutil/samplefmt.h>
 }
 #include "clock.h"
 #include "media.h"
 
-template<class T>
-class Consumer {
+template<class T> class Consumer
+{
 public:
-    Consumer() = default;
-    Consumer(const Consumer&) = delete;
+    Consumer()                           = default;
+    Consumer(const Consumer&)            = delete;
     Consumer& operator=(const Consumer&) = delete;
-    virtual ~Consumer() 
+    virtual ~Consumer()
     {
         std::lock_guard lock(mtx_);
 
         running_ = false;
-        eof_ = 0x00;
-        ready_ = false;
+        eof_     = 0x00;
+        ready_   = false;
 
         if (thread_.joinable()) {
             thread_.join();
         }
     }
 
-    virtual int run() = 0;
-    virtual int consume(T*, int) = 0;
+    virtual int run()             = 0;
+    virtual int consume(T *, int) = 0;
 
-    virtual void stop() { running_ = false; reset(); }
+    virtual void stop()
+    {
+        running_ = false;
+        reset();
+    }
     virtual void reset() = 0;
     virtual int wait()
     {
@@ -44,9 +48,9 @@ public:
         return 0;
     }
 
-    [[nodiscard]] virtual bool full(int) const = 0;
+    [[nodiscard]] virtual bool full(int) const    = 0;
     [[nodiscard]] virtual bool accepts(int) const = 0;
-    virtual void enable(int, bool = true) = 0;
+    virtual void enable(int, bool = true)         = 0;
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }

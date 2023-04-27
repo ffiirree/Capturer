@@ -110,7 +110,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
             LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
             return -1;
         }
-        int sink_channels[] = { 2, 0 };
+
         if (av_opt_set(*ctx, "ch_layouts", av::channel_layout_name(afmt.channels, afmt.channel_layout).c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_counts' option.";
             return -1;
@@ -351,14 +351,14 @@ int Dispatcher::start()
     running_ = true;
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO)) {
         video_thread_ = std::thread([this]() {
-            platform::util::thread_set_name("dispatch-video");
+            probe::util::thread_set_name("dispatch-video");
             dispatch_fn(AVMEDIA_TYPE_VIDEO);
         });
     }
     
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
         auido_thread_ = std::thread([this]() {
-            platform::util::thread_set_name("dispatch-audio");
+            probe::util::thread_set_name("dispatch-audio");
             dispatch_fn(AVMEDIA_TYPE_AUDIO);
         });
     }

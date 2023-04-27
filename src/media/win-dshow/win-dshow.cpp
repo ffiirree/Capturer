@@ -68,8 +68,8 @@ static std::vector<avdevice_t> DisplayDeviceInformation(IEnumMoniker* pEnum, enu
         moniker->Release();
 
         list.emplace_back(avdevice_t{
-            platform::util::to_utf8(name),
-            platform::util::to_utf8(id),
+            probe::util::to_utf8(name),
+            probe::util::to_utf8(id),
             mt,
             avdevice_t::SOURCE
         });

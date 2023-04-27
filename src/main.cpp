@@ -1,26 +1,31 @@
-#include <QApplication>
-#include <QTranslator>
-#include "version.h"
 #include "capturer.h"
 #include "logging.h"
-#include "platform.h"
+#include "probe/cpu.h"
+#include "probe/system.h"
+#include "probe/util.h"
+#include "version.h"
+
+#include <QApplication>
+#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
     Logger::init(argv[0]);
 
-    platform::util::thread_set_name("capturer-main");
+    probe::util::thread_set_name("capturer-main");
 
     QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
     LOG(INFO) << "Capturer " << CAPTURER_VERSION;
     LOG(INFO) << " -- Qt               : " << qVersion();
-    LOG(INFO) << " -- Operating System : " << platform::system::os_name() << " (" << platform::system::os_version() << ")";
-    LOG(INFO) << " -- Kernel           : " << platform::system::kernel_name() << " " << platform::system::kernel_version();
-    LOG(INFO) << " -- Architecture     : " << platform::cpu::architecture();
-    LOG(INFO) << " -- Virtual Screen   : " << platform::display::virtual_screen_geometry();
-    LOG(INFO) << " -- Desktop ENV      : " << platform::system::desktop_name(platform::system::desktop());
+    LOG(INFO) << " -- Operating System : " << probe::system::os_name() << " ("
+              << probe::to_string(probe::system::os_version()) << ")";
+    LOG(INFO) << " -- Kernel           : " << probe::system::kernel_name() << " "
+              << probe::to_string(probe::system::kernel_version());
+    LOG(INFO) << " -- Architecture     : " << probe::to_string(probe::cpu::architecture());
+    LOG(INFO) << " -- Virtual Screen   : " << probe::to_string(probe::graphics::virtual_screen_geometry());
+    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop());
 
     Config::instance().load_theme(Config::theme());
 

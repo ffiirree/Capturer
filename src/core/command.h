@@ -1,12 +1,13 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include <QPen>
-#include <utility>
-#include "utils.h"
+#include "logging.h"
 #include "resizer.h"
 #include "textedit.h"
-#include "logging.h"
+#include "utils.h"
+
+#include <QPen>
+#include <utility>
 
 class PaintCommand : public QObject
 {
@@ -17,21 +18,23 @@ public:
     PaintCommand(const PaintCommand& cmd) : QObject() { *this = cmd; }
     PaintCommand& operator=(const PaintCommand&);
 
-    [[nodiscard]] inline Graph graph() const  { return graph_; }
+    [[nodiscard]] inline Graph graph() const { return graph_; }
 
-    inline void pen(const QPen& pen) 
+    inline void pen(const QPen& pen)
     {
         if (graph_ == Graph::ERASER || graph_ == Graph::MOSAIC) return;
-        pen_ = pen; emit modified(PaintType::REPAINT_ALL); 
+        pen_ = pen;
+        emit modified(PaintType::REPAINT_ALL);
     }
     [[nodiscard]] inline QPen pen() const { return pen_; }
 
     void font(const QFont& font);
     [[nodiscard]] inline QFont font() const { return font_; }
 
-    inline void setFill(bool fill) { 
+    inline void setFill(bool fill)
+    {
         if (graph_ == Graph::RECTANGLE || graph_ == Graph::ELLIPSE) {
-            is_fill_ = fill; 
+            is_fill_ = fill;
             emit modified(PaintType::REPAINT_ALL);
         }
     }
@@ -40,7 +43,11 @@ public:
     [[nodiscard]] inline QVector<QPoint> points() const { return points_; }
     inline QVector<QPoint> points() { return points_; }
 
-    inline QRect geometry() { if(widget_) return widget_->geometry(); return {}; }
+    inline QRect geometry()
+    {
+        if (widget_) return widget_->geometry();
+        return {};
+    }
 
     bool push_point(const QPoint& pos);
     void move(const QPoint& diff);
@@ -49,7 +56,7 @@ public:
 
     inline void setFocus(bool f)
     {
-        if(widget_) {
+        if (widget_) {
             f ? widget_->show(), widget_->activateWindow() : widget_->hide();
         }
 
@@ -58,7 +65,7 @@ public:
 
     bool isValid();
 
-    void drawAnchors(QPainter*);
+    void drawAnchors(QPainter *);
     void draw_modified(QPainter *);
     void repaint(QPainter *);
 
@@ -66,7 +73,7 @@ public:
     bool regularized();
 
     Resizer::PointPosition hover(const QPoint&);
-    static QCursor getCursorShapeByHoverPos(Resizer::PointPosition, const QCursor & = Qt::CrossCursor);
+    static QCursor getCursorShapeByHoverPos(Resizer::PointPosition, const QCursor& = Qt::CrossCursor);
 
     QRect rect() { return resizer_.rect(); }
     QSize size() { return rect().size(); }
@@ -75,7 +82,7 @@ public:
 
     void visible(bool v)
     {
-        if(visible_ != v) {
+        if (visible_ != v) {
             emit modified(v ? PaintType::DRAW_FINISHED : PaintType::REPAINT_ALL);
             visible_ = v;
         }
@@ -109,7 +116,7 @@ private:
     std::shared_ptr<PaintCommand> pre_{ nullptr };
 
     bool adjusted_ = false;
-    QPoint offset_{ 0,0 };
+    QPoint offset_{ 0, 0 };
 };
 
 class CommandStack : public QObject
@@ -119,7 +126,7 @@ class CommandStack : public QObject
 public:
     CommandStack() = default;
 
-    CommandStack(const CommandStack& r) :QObject() { stack_ = r.stack_; }
+    CommandStack(const CommandStack& r) : QObject() { stack_ = r.stack_; }
 
     CommandStack& operator=(const CommandStack& other)
     {
@@ -131,8 +138,7 @@ public:
 
     inline void push(const std::shared_ptr<PaintCommand>& command)
     {
-        if(stack_.empty())
-            emit emptied(false);
+        if (stack_.empty()) emit emptied(false);
 
         stack_.push_back(command);
 
@@ -145,8 +151,7 @@ public:
     {
         stack_.pop_back();
 
-        if(stack_.empty())
-            emit emptied(true);
+        if (stack_.empty()) emit emptied(true);
 
         emit changed(stack_.size());
         emit poped();
@@ -157,8 +162,7 @@ public:
     {
         stack_.erase(std::remove(stack_.begin(), stack_.end(), cmd), stack_.end());
 
-        if(stack_.empty())
-            emit emptied(true);
+        if (stack_.empty()) emit emptied(true);
 
         emit changed(stack_.size());
         emit removed();
@@ -181,12 +185,12 @@ signals:
     void poped();
     void removed();
 
-    void emptied(bool);               // emit when stack changed to be empty or not.
+    void emptied(bool); // emit when stack changed to be empty or not.
 
 public slots:
     inline void clear()
     {
-        if(!stack_.empty()) {
+        if (!stack_.empty()) {
             emit changed(0);
             emit emptied(true);
             emit decreased();
@@ -198,6 +202,5 @@ public slots:
 private:
     std::vector<std::shared_ptr<PaintCommand>> stack_;
 };
-
 
 #endif // COMMAND_H

@@ -24,12 +24,14 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # 3rdparty: QHotkey glog
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
-set(WITH_GFLAGS OFF CACHE BOOL "Use gflags")
+set(BUILD_SHARED_LIBS   OFF CACHE BOOL "build static libraries.")
+set(WITH_GFLAGS         OFF CACHE BOOL "Use gflags")
+set(PROBE_BUILD_WITH_QT ON  CACHE BOOL "Build probe with Qt")
 
-add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
-add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
-add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/QHotkey   EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
 
 # Qt5
 set(CMAKE_AUTOMOC ON)
@@ -37,7 +39,6 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
-
 
 if(WIN32)
     # GUI/console
@@ -78,6 +79,7 @@ target_link_libraries(${PROJECT_NAME}
         Qt5::Widgets Qt5::Gui
         glog::glog
         fmt::fmt
+        probe::probe
         ffmpeg::ffmpeg
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>

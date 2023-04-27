@@ -42,7 +42,7 @@ void Selector::start()
             info_->show();
         }
 
-        setGeometry(platform::display::virtual_screen_geometry());
+        setGeometry(probe::graphics::virtual_screen_geometry());
         show();
         activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     }
@@ -262,7 +262,7 @@ void Selector::paintEvent(QPaintEvent *)
             info_->setText(QString::fromUtf8(str.c_str()));
             info_->adjustSize();
             auto info_y = box_.top() - info_->geometry().height() - 1;
-            info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) - QRect(platform::display::virtual_screen_geometry()).topLeft());
+            info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) - QRect(probe::graphics::virtual_screen_geometry()).topLeft());
 
             // draw border
             painter_.setPen(pen_);
@@ -284,7 +284,7 @@ void Selector::paintEvent(QPaintEvent *)
     painter_.end();
 }
 
-void Selector::select(const platform::display::window_t& win)
+void Selector::select(const probe::graphics::window_t& win)
 {
     box_.reset(win.rect);
     window_ = win;
@@ -292,7 +292,7 @@ void Selector::select(const platform::display::window_t& win)
     mode_ = mode_t::window;
 }
 
-void Selector::select(const platform::display::display_t& display)
+void Selector::select(const probe::graphics::display_t& display)
 {
     box_.reset(display.geometry);
     display_ = display;
@@ -392,9 +392,9 @@ void Selector::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
-            auto selected = platform::display::virtual_screen();
+            auto selected = probe::graphics::virtual_screen();
 
-            for (auto display : platform::display::displays()) {
+            for(auto display : probe::graphics::displays()) {
                 if (QRect(display.geometry).contains(box_.rect(), true)) {
                     selected = display;
                 }

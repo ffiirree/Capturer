@@ -5,7 +5,7 @@
 #include <propsys.h>
 #include <functiondiscoverykeys.h>
 #include <Audioclient.h>
-#include "platform.h"
+#include "probe/util.h"
 #include "utils.h"
 #include "defer.h"
 #include "logging.h"
@@ -20,14 +20,16 @@ extern "C" {
 
 uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
 {
+    // clang-format off
     switch (layout) {
-    case KSAUDIO_SPEAKER_MONO: return AV_CH_LAYOUT_MONO;
-    case KSAUDIO_SPEAKER_STEREO: return AV_CH_LAYOUT_STEREO;
-    case KSAUDIO_SPEAKER_QUAD: return AV_CH_LAYOUT_QUAD;
-    case KSAUDIO_SPEAKER_2POINT1: return AV_CH_LAYOUT_SURROUND;
-    case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
+    case KSAUDIO_SPEAKER_MONO:          return AV_CH_LAYOUT_MONO;
+    case KSAUDIO_SPEAKER_STEREO:        return AV_CH_LAYOUT_STEREO;
+    case KSAUDIO_SPEAKER_QUAD:          return AV_CH_LAYOUT_QUAD;
+    case KSAUDIO_SPEAKER_2POINT1:       return AV_CH_LAYOUT_SURROUND;
+    case KSAUDIO_SPEAKER_SURROUND:      return AV_CH_LAYOUT_4POINT0;
     default: return av_get_default_channel_layout(channels);
     }
+    // clang-format on
 }
 
 std::optional<avdevice_t> wasapi::device_info(IMMDevice* dev)
@@ -56,11 +58,11 @@ std::optional<avdevice_t> wasapi::device_info(IMMDevice* dev)
     RETURN_NULL_ON_ERROR(dev->GetState(&state));
 
     return avdevice_t{
-        platform::util::to_utf8(varName.pwszVal),
-        platform::util::to_utf8(id),
+        probe::util::to_utf8(varName.pwszVal),
+        probe::util::to_utf8(id),
         AVMEDIA_TYPE_AUDIO,
         avdevice_t::UNKNOWN,
-        static_cast<uint64_t>(state)
+        static_cast<uint64_t>(state),
     };
 }
 
@@ -111,8 +113,7 @@ std::vector<avdevice_t> wasapi::endpoints(avdevice_t::io_t io_type)
 std::optional<avdevice_t> wasapi::default_endpoint(avdevice_t::io_t io_type)
 {
     IMMDeviceEnumerator* enumerator = nullptr;
-    IMMDevice* endpoint = nullptr;
-    IPropertyStore* props = nullptr;
+    IMMDevice* endpoint             = nullptr;
 
     RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
     defer(CoUninitialize());

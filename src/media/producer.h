@@ -1,27 +1,28 @@
 #ifndef CAPTURER_PRODUCER_H
 #define CAPTURER_PRODUCER_H
 
-#include <thread>
-#include <mutex>
+#include "media.h"
+
 #include <atomic>
 #include <map>
-#include "media.h"
+#include <mutex>
+#include <thread>
 
 struct AVRational;
 
-template<class T>
-class Producer {
+template<class T> class Producer
+{
 public:
-    Producer() = default;
-    Producer(const Producer&) = delete;
+    Producer()                           = default;
+    Producer(const Producer&)            = delete;
     Producer& operator=(const Producer&) = delete;
     virtual ~Producer()
     {
         std::lock_guard lock(mtx_);
 
         running_ = false;
-        eof_ = 0x00;
-        ready_ = false;
+        eof_     = 0x00;
+        ready_   = false;
         enabled_.clear();
 
         if (thread_.joinable()) {
@@ -33,12 +34,12 @@ public:
 
     virtual int run() = 0;
 
-    virtual int produce(T*, int) = 0;
-    virtual bool empty(int) = 0;
+    virtual int produce(T *, int) = 0;
+    virtual bool empty(int)       = 0;
 
-    [[nodiscard]] virtual bool has(int) const = 0;
+    [[nodiscard]] virtual bool has(int) const               = 0;
     [[nodiscard]] virtual std::string format_str(int) const = 0;
-    [[nodiscard]] virtual AVRational time_base(int) const = 0;
+    [[nodiscard]] virtual AVRational time_base(int) const   = 0;
     virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
     virtual void enable(int t) { enabled_[t] = true; }
@@ -54,10 +55,10 @@ public:
         }
         return 0;
     }
-    
+
     [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] bool running() const { return running_; }
-    
+
     av::aformat_t afmt{};
     av::vformat_t vfmt{};
 

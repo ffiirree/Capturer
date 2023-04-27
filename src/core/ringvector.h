@@ -1,17 +1,19 @@
 #ifndef CAPTURER_RING_VECTOR_H
 #define CAPTURER_RING_VECTOR_H
 
-#include <mutex>
 #include <functional>
+#include <mutex>
 
 #define EMPTY (!full_ && (pushed_idx_ == popped_idx_))
 
-template<class T, int N>
-class RingVector {
+template<class T, int N> class RingVector
+{
 public:
-    explicit RingVector(std::function<T()> allocate = []() { return T{}; }, std::function<void(T*)> deallocate = [](T*) {})
+    explicit RingVector(
+        std::function<T()> allocate         = []() { return T{}; },
+        std::function<void(T *)> deallocate = [](T *) {})
     {
-        allocate_ = allocate;
+        allocate_   = allocate;
         deallocate_ = deallocate;
 
         for (size_t i = 0; i < N; i++) {
@@ -31,7 +33,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx_);
 
         // last one
-        // 
+        //
         //                   PUSH | POP
         // ------------------------------------------------
         // |  -  |  -  | ... |    |  -  | ... |  -  |  -  |
@@ -71,7 +73,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx_);
         popped_idx_ = 0;
         pushed_idx_ = 0;
-        full_ = false;
+        full_       = false;
     }
 
     bool empty() const
@@ -98,7 +100,7 @@ public:
 
 private:
     std::function<T()> allocate_{ []() { return T{}; } };
-    std::function<void(T*)> deallocate_{ [](T*) {} };
+    std::function<void(T *)> deallocate_{ [](T *) {} };
     size_t pushed_idx_{ 0 };
     size_t popped_idx_{ 0 };
     bool full_{ false };

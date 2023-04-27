@@ -262,7 +262,7 @@ int Decoder::run()
     eof_ = 0x00;
     running_ = true;
     thread_ = std::thread([this]() {
-        platform::util::thread_set_name("dec-" + name_);
+        probe::util::thread_set_name("dec-" + name_);
         run_f();
     });
 

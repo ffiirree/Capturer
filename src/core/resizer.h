@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QPoint>
 #include <QRect>
-#include "platform.h"
+#include "probe/graphics.h"
 
 #define ANCHOR_W        7
 
@@ -13,8 +13,8 @@ class Resizer
 public:
     enum PointPosition {
         DEFAULT = 0x0000,
-        BORDER = 0x0001 | 0x0002 | 0x0004 | 0x0008,
-        ANCHOR = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
+        BORDER  = 0x0001 | 0x0002 | 0x0004 | 0x0008,
+        ANCHOR  = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
 
         X1_BORDER   = 0x00000001,  L_BORDER = 0x10000001,
         X2_BORDER   = 0x00000002,  R_BORDER = 0x10000002,
@@ -42,8 +42,9 @@ public:
     Resizer() : Resizer(0, 0, 0, 0, 5) { }
 
     Resizer(int x1, int y1, int x2, int y2, int resize_border_width = 5)
-        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), ADJUST_BORDER_W_(resize_border_width) {
-        range(platform::display::virtual_screen_geometry());
+        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), ADJUST_BORDER_W_(resize_border_width) 
+    {
+        range(probe::graphics::virtual_screen_geometry());
     }
 
     Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
@@ -56,6 +57,10 @@ public:
         : Resizer(rect.topLeft(), rect.bottomRight(), resize_border_width) { }
 
     inline void range(const QRect& r) { range_ = r; }
+    inline void range(const probe::graphics::geometry_t& r)
+    {
+        range_ = QRect{ r.x, r.y, static_cast<int>(r.width), static_cast<int>(r.height) };
+    }
     inline QRect range() const { return range_; }
 
     inline void enableRotate(bool val) { rotate_f_ = val; }
@@ -63,7 +68,7 @@ public:
     void reset(int x1, int y1, int x2, int y2) { x1_ = x1; y1_ = y1; x2_ = x2; y2_ = y2; }
     void reset(const QPoint& p1, const QPoint& p2) { x1_ = p1.x(); y1_ = p1.y(); x2_ = p2.x(); y2_ = p2.y(); }
     void reset(const QRect& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
-    void reset(const platform::display::geometry_t& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
+    void reset(const probe::graphics::geometry_t& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
 
     void resize(const QSize& size) 
     { 

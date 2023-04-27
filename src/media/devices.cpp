@@ -1,7 +1,9 @@
 #include "devices.h"
+
+#include "defer.h"
 #include "logging.h"
 #include "utils.h"
-#include "defer.h"
+
 #include <QSet>
 
 #ifdef __linux__
@@ -10,15 +12,16 @@
 #include "linux-v4l2/linux-v4l2.h"
 
 #elif _WIN32
-#include "win-wasapi/win-wasapi.h"
 #include "win-dshow/win-dshow.h"
+#include "win-wasapi/win-wasapi.h"
 #endif
 
-QList<QString> Devices::cameras() {
+QList<QString> Devices::cameras()
+{
     QSet<QString> cameras{};
 #ifdef __linux__
     auto devices = v4l2_device_list();
-    for (auto &device: devices) {
+    for (auto& device : devices) {
         cameras.insert(QString::fromStdString(device.name_));
     }
 #elif _WIN32
@@ -30,14 +33,14 @@ QList<QString> Devices::cameras() {
     return cameras.values();
 }
 
-QList<QString> Devices::microphones() {
+QList<QString> Devices::microphones()
+{
     QSet<QString> microphones{};
-#ifdef  __linux__
+#ifdef __linux__
     pulse_init();
     auto sources = pulse_get_source_info_list();
-    for (auto &s: sources) {
-        if (!s.is_monitor_)
-            microphones.insert(QString::fromStdString(s.name_));
+    for (auto& s : sources) {
+        if (!s.is_monitor_) microphones.insert(QString::fromStdString(s.name_));
     }
     pulse_unref();
 #elif _WIN32
@@ -48,15 +51,15 @@ QList<QString> Devices::microphones() {
     return microphones.values();
 }
 
-QList<QString> Devices::speakers() {
+QList<QString> Devices::speakers()
+{
     QSet<QString> speakers{};
 
-#ifdef  __linux__
+#ifdef __linux__
     pulse_init();
     auto sources = pulse_get_source_info_list();
-    for (auto &s: sources) {
-        if (s.is_monitor_)
-            speakers.insert(QString::fromStdString(s.name_));
+    for (auto& s : sources) {
+        if (s.is_monitor_) speakers.insert(QString::fromStdString(s.name_));
     }
     pulse_unref();
 #elif _WIN32
@@ -82,8 +85,7 @@ QString Devices::default_audio_sink()
     return QString::fromStdString(info.default_sink_ + ".monitor");
 #elif _WIN32
     auto dft = wasapi::default_endpoint(avdevice_t::SINK);
-    if (dft.has_value())
-        return QString::fromUtf8(dft.value().name.c_str());
+    if (dft.has_value()) return QString::fromUtf8(dft.value().name.c_str());
 
     return {};
 #endif
@@ -104,9 +106,8 @@ QString Devices::default_audio_source()
     return QString::fromStdString(info.default_source_);
 #elif _WIN32
     auto dft = wasapi::default_endpoint(avdevice_t::SOURCE);
-    if (dft.has_value())
-        return QString::fromUtf8(dft.value().name.c_str());
-        
+    if (dft.has_value()) return QString::fromUtf8(dft.value().name.c_str());
+
     return {};
 #endif
 }

@@ -7,6 +7,7 @@
 #include <QTextEdit>
 #include <QFileInfo>
 #include "logging.h"
+#include "probe/system.h"
 
 #define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true))  {                                              \
                                 LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();  \
@@ -207,7 +208,7 @@ void Capturer::pin()
                 value,
                 std::make_shared<ImageWindow>(
                     pixmap,
-                    QRect(platform::display::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
+                    QRect(probe::graphics::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
                 )
             });
             pin_idx_ = history_.size() - 1;

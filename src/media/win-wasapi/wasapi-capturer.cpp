@@ -164,7 +164,7 @@ int WasapiCapturer::run()
 
     start_time_ = os_gettime_ns();
     thread_ = std::thread([this]() {
-        platform::util::thread_set_name("wasapi-" + avdevice_t::io_type_name(type_));
+        probe::util::thread_set_name("wasapi-" + avdevice_t::io_type_name(type_));
         run_f(); 
     });
 
