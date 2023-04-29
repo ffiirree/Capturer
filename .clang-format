@@ -65,7 +65,7 @@ BraceWrapping:
   BeforeWhile:     false
   IndentBraces:    false
   SplitEmptyFunction: false
-  SplitEmptyRecord: true
+  SplitEmptyRecord: false
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: None
 BreakBeforeConceptDeclarations: Always

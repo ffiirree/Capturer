@@ -10,14 +10,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build type: Release." FORCE)
 endif()
 
-if(MSVC)
-    message(STATUS "Windows SDK version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-
-    add_compile_options(/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor  /Zc:__cplusplus)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
 # #######################################################################################################################
 # dependencies
 # #######################################################################################################################
@@ -71,6 +63,12 @@ add_executable(${PROJECT_NAME}
     src/capturer.qrc
     ${QM_FILES}
     $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
+)
+
+target_compile_options(${PROJECT_NAME} 
+    PRIVATE 
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
 )
 
 target_link_libraries(${PROJECT_NAME}

@@ -1,4 +1,5 @@
-# Capturer
+
+<h1 align="center">Capturer</h1>
 
 ![image](/capturer.png)
 
