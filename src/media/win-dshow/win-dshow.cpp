@@ -2,119 +2,91 @@
 
 #ifdef _WIN32
 
-#include <windows.h>
-#include <dshow.h>
-#include <fmt/format.h>
+#include "defer.h"
 #include "logging.h"
 #include "utils.h"
-#include "defer.h"
 
-#define RETURN_NULL_ON_ERROR(hres) if (FAILED(hres)) { return {}; }
-#define RETURN_ON_ERROR(hres)  if (FAILED(hres)) { return -1; }
-#define SAFE_RELEASE(punk)  if ((punk) != nullptr) { (punk)->Release(); (punk) = nullptr; }
+#include <dshow.h>
+#include <fmt/format.h>
+#include <windows.h>
+#include <winrt/base.h>
 
-
-static std::vector<avdevice_t> DisplayDeviceInformation(IEnumMoniker* pEnum, enum AVMediaType mt)
+static std::vector<av::device_t> DisplayDeviceInformation(IEnumMoniker *pEnum, av::device_type_t type)
 {
-    IMoniker* moniker = nullptr;
-    std::vector<avdevice_t> list;
+    IMoniker *moniker = nullptr;
+    std::vector<av::device_t> list;
 
-    while (pEnum->Next(1, &moniker, NULL) == S_OK)
-    {
-        IPropertyBag* pPropBag;
-        HRESULT hr = moniker->BindToStorage(nullptr, nullptr, IID_PPV_ARGS(&pPropBag));
-        if (FAILED(hr))
-        {
+    while (pEnum->Next(1, &moniker, NULL) == S_OK) {
+        winrt::com_ptr<IPropertyBag> props{};
+        if (FAILED(moniker->BindToStorage(nullptr, nullptr, IID_PPV_ARGS(props.put())))) {
             moniker->Release();
             continue;
         }
 
         VARIANT var;
         VariantInit(&var);
+        defer(VariantClear(&var));
 
         std::wstring name, id;
 
         // Get description or friendly name.
-        hr = pPropBag->Read(L"Description", &var, 0);
-        if (FAILED(hr))
-        {
-            hr = pPropBag->Read(L"FriendlyName", &var, 0);
+        auto hr = props->Read(L"Description", &var, 0);
+        if (FAILED(hr)) {
+            hr = props->Read(L"FriendlyName", &var, 0);
         }
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(hr)) {
             name = var.bstrVal;
-            VariantClear(&var);
         }
 
-        hr = pPropBag->Write(L"FriendlyName", &var);
+        hr = props->Write(L"FriendlyName", &var);
 
         // WaveInID applies only to audio capture devices.
-        hr = pPropBag->Read(L"WaveInID", &var, 0);
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(props->Read(L"WaveInID", &var, 0))) {
             id = std::to_wstring(var.lVal);
-            VariantClear(&var);
         }
 
-        hr = pPropBag->Read(L"DevicePath", &var, 0);
-        if (SUCCEEDED(hr))
-        {
+        if (SUCCEEDED(props->Read(L"DevicePath", &var, 0))) {
             // The device path is not intended for display.
             id = var.bstrVal;
-            VariantClear(&var);
         }
 
-        pPropBag->Release();
         moniker->Release();
 
-        list.emplace_back(avdevice_t{
-            probe::util::to_utf8(name),
-            probe::util::to_utf8(id),
-            mt,
-            avdevice_t::SOURCE
+        list.push_back({
+            .name = probe::util::to_utf8(name),
+            .id   = probe::util::to_utf8(id),
+            .type = type,
         });
     }
 
     return list;
 }
 
-static std::vector<avdevice_t> EnumerateDevices(REFGUID category)
+static std::vector<av::device_t> EnumerateDevices(REFGUID category)
 {
-    //RETURN_NULL_ON_ERROR(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-    //defer(CoUninitialize());
-
-    ICreateDevEnum* dev_enum = nullptr;
-    RETURN_NULL_ON_ERROR(CoCreateInstance(
-        CLSID_SystemDeviceEnum,
-        nullptr,
-        CLSCTX_INPROC_SERVER,
-        IID_PPV_ARGS(&dev_enum)
-    ));
-    defer(SAFE_RELEASE(dev_enum));
-
-    IEnumMoniker* enum_moniker = nullptr;
-    defer(SAFE_RELEASE(enum_moniker));
+    winrt::com_ptr<ICreateDevEnum> dev_enum{};
+    RETURN_NONE_IF_FAILED(CoCreateInstance(CLSID_SystemDeviceEnum, nullptr, CLSCTX_INPROC_SERVER,
+                                           IID_PPV_ARGS(dev_enum.put())));
 
     // Create an enumerator for the category.
-    if (dev_enum->CreateClassEnumerator(category, &enum_moniker, 0) != S_OK) {
-        return {};
-    }
+    winrt::com_ptr<IEnumMoniker> enum_moniker{};
+    RETURN_NONE_IF_FAILED(dev_enum->CreateClassEnumerator(category, enum_moniker.put(), 0));
 
-    enum AVMediaType mt{};
+    av::device_type_t mt{};
     if (category == CLSID_VideoInputDeviceCategory)
-        mt = AVMEDIA_TYPE_VIDEO;
+        mt = av::device_type_t::video;
     else if (category == CLSID_AudioInputDeviceCategory)
-        mt = AVMEDIA_TYPE_AUDIO;
+        mt = av::device_type_t::audio;
 
-    return DisplayDeviceInformation(enum_moniker, mt);
+    return DisplayDeviceInformation(enum_moniker.get(), mt);
 }
 
-std::vector<avdevice_t> dshow::video_devices()
+std::vector<av::device_t> dshow::video_devices()
 {
     return EnumerateDevices(CLSID_VideoInputDeviceCategory);
 }
 
-std::vector<avdevice_t> dshow::audio_devices()
+std::vector<av::device_t> dshow::audio_devices()
 {
     return EnumerateDevices(CLSID_AudioInputDeviceCategory);
 }

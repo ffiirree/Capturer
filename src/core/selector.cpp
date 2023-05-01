@@ -254,7 +254,7 @@ void Selector::paintEvent(QPaintEvent *)
             if (isValid()) {
                 str = fmt::format("{} x {}", selected().width(), selected().height());
                 if (mode_ == mode_t::window)
-                    str += " : " + window_.name;
+                    str += " : " + (window_.name.empty() ? window_.classname : window_.name);
                 else if (mode_ == mode_t::display)
                     str += " : " + display_.name;
             }
@@ -393,6 +393,8 @@ void Selector::registerShortcuts()
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if(status_ <= SelectorStatus::CAPTURED) {
             auto selected = probe::graphics::virtual_screen();
+            
+            // TODO: can not capture virtual screen
 
             for(auto display : probe::graphics::displays()) {
                 if (QRect(display.geometry).contains(box_.rect(), true)) {

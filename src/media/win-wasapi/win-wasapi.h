@@ -12,10 +12,10 @@
 namespace wasapi
 {
     // all std::string is utf8
-    std::vector<avdevice_t> endpoints(avdevice_t::io_t io_type);
-    std::optional<avdevice_t> default_endpoint(avdevice_t::io_t io_type);
+    std::vector<av::device_t> endpoints(av::device_type_t type);
+    std::optional<av::device_t> default_endpoint(av::device_type_t type);
 
-    std::optional<avdevice_t> device_info(IMMDevice*);
+    std::optional<av::device_t> device_info(IMMDevice*);
 
 
     uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);

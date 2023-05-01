@@ -1,49 +1,70 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#include <QString>
-extern "C" {
-#include <libavutil/avutil.h>
-}
+#include "enum.h"
 
-struct avdevice_t
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace av
 {
-    enum io_t
+    enum class device_type_t
     {
-        UNKNOWN,
-        SOURCE,
-        SINK
+        unknown = 0x00,
+        source  = 0x01,
+        sink    = 0x02,
+        audio   = 0x10,
+        video   = 0x20,
+
+        data_flow_mask = 0x0f,
+
+        ENABLE_BITMASK_OPERATORS()
     };
 
-    std::string name{}; // utf-8
-    std::string id{};   // utf-8
-    AVMediaType codec_type{ AVMEDIA_TYPE_UNKNOWN };
-    io_t io_type{ UNKNOWN };
-    uint64_t state{};
+    struct device_t
+    {
+        std::string name{};        // utf-8
+        std::string id{};          // utf-8
+        std::string description{}; // utf-8
+        device_type_t type{ device_type_t::unknown };
+        uint64_t state{};
+    };
 
-    static std::string io_type_name(io_t t)
+    [[nodiscard]] inline bool is_sink(const device_t& dev) { return any(dev.type & device_type_t::sink); }
+    [[nodiscard]] inline bool is_source(const device_t& dev)
+    {
+        return any(dev.type & device_type_t::source);
+    }
+
+    inline std::string to_string(device_type_t t)
     {
         // clang-format off
         switch(t) {
-        case SINK:      return "sink";
-        case SOURCE:    return "source";
-        default:        return "unknown";
+        case device_type_t::sink:                           return "sink";
+        case device_type_t::source:                         return "source";
+
+        case device_type_t::audio:                          return "audio";
+        case device_type_t::video:                          return "video";
+
+        case device_type_t::sink   | device_type_t::audio:  return "audio sink";
+        case device_type_t::source | device_type_t::audio:  return "audio source";
+        case device_type_t::sink   | device_type_t::video:  return "video sink";
+        case device_type_t::source | device_type_t::video:  return "video source";
+        default:                                            return "unknown";
         }
         // clang-format on
     }
-};
 
-class Devices
-{
-public:
-    static QList<QString> cameras();
+    std::vector<device_t> cameras();
 
-    static QList<QString> microphones();
+    std::vector<device_t> audio_sources();
+    std::vector<device_t> audio_sinks();
 
-    static QList<QString> speakers();
+    std::optional<device_t> default_camera();
 
-    static QString default_audio_sink();
-    static QString default_audio_source();
-};
+    std::optional<device_t> default_audio_source();
+    std::optional<device_t> default_audio_sink();
+} // namespace av
 
 #endif // !DEVICES_H

@@ -1,20 +1,21 @@
 #include "videoplayer.h"
-#include <QPainter>
+
 #include <QImage>
+#include <QPainter>
 extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
 }
 #include "logging.h"
 
-VideoPlayer::VideoPlayer(QWidget* parent)
+VideoPlayer::VideoPlayer(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | windowFlags());
     setAttribute(Qt::WA_TranslucentBackground);
 
     CHECK_NOTNULL(frame_ = av_frame_alloc());
-    decoder_ = new Decoder();
+    decoder_    = new Decoder();
     dispatcher_ = new Dispatcher();
 }
 
@@ -26,7 +27,7 @@ VideoPlayer::~VideoPlayer()
 
 bool VideoPlayer::play(const std::string& name, const std::string& fmt, const std::string& filters)
 {
-    if (decoder_->open(name, fmt, {}) != 0) {
+    if (decoder_->open(name, { { "format", fmt } }) != 0) {
         decoder_->reset();
         return false;
     }
@@ -61,7 +62,7 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     return true;
 }
 
-int VideoPlayer::consume(AVFrame* frame, int type)
+int VideoPlayer::consume(AVFrame *frame, int type)
 {
     if (type != AVMEDIA_TYPE_VIDEO) return -1;
 
@@ -74,18 +75,16 @@ int VideoPlayer::consume(AVFrame* frame, int type)
     return 0;
 }
 
-void VideoPlayer::paintEvent(QPaintEvent*)
+void VideoPlayer::paintEvent(QPaintEvent *)
 {
     if (std::lock_guard lock(mtx_); frame_) {
         QPainter painter(this);
-        painter.drawImage(
-            rect(), 
-            QImage(static_cast<const uchar*>(frame_->data[0]), frame_->width, frame_->height, QImage::Format_RGB888)
-        );
+        painter.drawImage(rect(), QImage(static_cast<const uchar *>(frame_->data[0]), frame_->width,
+                                         frame_->height, QImage::Format_RGB888));
     }
 }
 
-void VideoPlayer::closeEvent(QCloseEvent*)
+void VideoPlayer::closeEvent(QCloseEvent *)
 {
     eof_ = 0x01;
 

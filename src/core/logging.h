@@ -62,7 +62,11 @@ private:
                     << " -- ["
                     << std::setw(24) << _file_line
                     << "] ["
+#ifdef _WIN32
+                    <<  std::setw(32) << probe::util::thread_get_name().substr(0, 32) << "]:";
+#else
                     <<  std::setw(15) << probe::util::thread_get_name().substr(0, 15) << "]:";
+#endif
             }
         );
         // clang-format on

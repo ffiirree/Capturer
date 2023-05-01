@@ -10,8 +10,8 @@
 
 namespace dshow
 {
-    std::vector<avdevice_t> video_devices();
-    std::vector<avdevice_t> audio_devices();
+    std::vector<av::device_t> video_devices();
+    std::vector<av::device_t> audio_devices();
 }
 
 #endif // !_WIN32

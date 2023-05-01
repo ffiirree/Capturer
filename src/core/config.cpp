@@ -56,6 +56,7 @@ Config::Config()
     IF_NULL_SET(settings_["record"]["encoder"],                     "libx264");
     IF_NULL_SET(settings_["record"]["quality"],                     "medium");
     IF_NULL_SET(settings_["record"]["box"],                         false);
+    IF_NULL_SET(settings_["record"]["mouse"],                       true);
 
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    2);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");
@@ -63,6 +64,7 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],      "#88000000");
     IF_NULL_SET(settings_["gif"]["quality"],                        "medium");
     IF_NULL_SET(settings_["gif"]["box"],                            false);
+    IF_NULL_SET(settings_["gif"]["mouse"],                          true);
 
     IF_NULL_SET(settings_["snip"]["hotkey"],                        "F1");
     IF_NULL_SET(settings_["pin"]["hotkey"],                         "F3");
@@ -74,11 +76,11 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
     // clang-format on
 
-    if (!Devices::cameras().empty()) settings_["devices"]["cameras"] = Devices::cameras()[0];
+    if (!av::cameras().empty()) settings_["devices"]["cameras"] = av::cameras()[0].id;
 
-    if (!Devices::microphones().empty()) settings_["devices"]["microphones"] = Devices::microphones()[0];
+    if (!av::audio_sources().empty()) settings_["devices"]["microphones"] = av::audio_sources()[0].id;
 
-    if (!Devices::speakers().empty()) settings_["devices"]["speakers"] = Devices::speakers()[0];
+    if (!av::audio_sinks().empty()) settings_["devices"]["speakers"] = av::audio_sinks()[0].id;
 
     connect(this, &Config::changed, this, &Config::save);
     connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) {

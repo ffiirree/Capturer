@@ -292,7 +292,14 @@ QWidget* SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
     layout->addWidget(_8_2, 10, 2, 1, 2);
 
-    layout->setRowStretch(11, 1);
+    auto _cm_2 = new QCheckBox();
+    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
+    connect(_cm_2, &QCheckBox::stateChanged,
+            [this](int state) { config.set(config["record"]["mouse"], state == Qt::Checked); });
+    layout->addWidget(new QLabel(tr("Capture Mouse")), 11, 1, 1, 1);
+    layout->addWidget(_cm_2, 11, 2, 1, 2);
+
+    layout->setRowStretch(12, 1);
 
     record_widget->setLayout(layout);
     
@@ -377,7 +384,14 @@ QWidget* SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
     layout->addWidget(_8_2, 9, 2, 1, 2);
 
-    layout->setRowStretch(10, 1);
+    auto _cm_2 = new QCheckBox();
+    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
+    connect(_cm_2, &QCheckBox::stateChanged,
+            [this](int state) { config.set(config["gif"]["mouse"], state == Qt::Checked); });
+    layout->addWidget(new QLabel(tr("Capture Mouse")), 10, 1, 1, 1);
+    layout->addWidget(_cm_2, 10, 2, 1, 2);
+
+    layout->setRowStretch(11, 1);
     gif_widget->setLayout(layout);
     
     return gif_widget;
@@ -391,24 +405,41 @@ QWidget* SettingWindow::setupDevicesWidget()
     layout->setContentsMargins(35, 10, 35, 15);
 
     auto _1_2 = new ComboBox();
-    _1_2->addItems(Devices::microphones());
+    for (const auto& dev : av::audio_sources()) {
+        _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+    }
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
-    connect(_1_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["microphones"], s);
-    });
+    _1_2->onselected(
+        [this](auto value) { config.set(config["devices"]["microphones"], value.toString()); });
+    auto default_src = av::default_audio_source();
+    if (default_src.has_value()) {
+        _1_2->select(default_src.value().id);
+    }
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
     auto _2_2 = new ComboBox();
-    _2_2->addItems(Devices::speakers());
-    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
-    connect(_2_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["speakers"], s);
+    for (const auto& dev : av::audio_sinks()) {
+        _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+    } 
+    _2_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString());
     });
+    auto default_sink = av::default_audio_sink();
+    if (default_sink.has_value()) {
+        _2_2->select(default_sink.value().id);
+    }   
+    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new ComboBox();
-    _3_2->addItems(Devices::cameras());
+    for (const auto& dev : av::cameras()) {
+        _3_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+    }
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
+    _3_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString()); });
+    auto default_camera = av::default_camera();
+    if (default_camera.has_value()) {
+        _3_2->select(default_camera.value().id);
+    }
     connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
         config.set(config["devices"]["cameras"], s);
     });

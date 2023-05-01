@@ -58,6 +58,7 @@ public:
 
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
+    AVRational sink_framerate{ 24, 1 };
 
 protected:
     std::atomic<bool> running_{ false };
@@ -66,7 +67,7 @@ protected:
     std::thread thread_;
     std::mutex mtx_;
 
-    bool is_cfr_{ false };
+    av::vsync_t vsync_{ av::vsync_t::cfr };
 };
 
 #endif // !CAPTURER_CONSUMER_H

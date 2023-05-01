@@ -30,21 +30,25 @@ public:
         }
     }
 
+    // name
+    // options
+    [[nodiscard]] virtual int open(const std::string&, std::map<std::string, std::string>) = 0;
+
     virtual void reset() = 0;
 
     virtual int run() = 0;
 
-    virtual int produce(T *, int) = 0;
+    [[nodiscard]] virtual int produce(T *, int) = 0;
     virtual bool empty(int)       = 0;
 
     [[nodiscard]] virtual bool has(int) const               = 0;
     [[nodiscard]] virtual std::string format_str(int) const = 0;
     [[nodiscard]] virtual AVRational time_base(int) const   = 0;
-    virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
+    [[nodiscard]] virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
     virtual void enable(int t) { enabled_[t] = true; }
     virtual void stop() { running_ = false; }
-    virtual bool eof() { return eof_ != 0; }
+    [[nodiscard]] virtual bool eof() { return eof_ != 0; }
 
     void mute(bool v) { muted_ = v; }
 

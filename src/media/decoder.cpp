@@ -11,9 +11,9 @@ extern "C" {
 #include "clock.h"
 #include "defer.h"
 
-int Decoder::open(const std::string& name, const std::string& format, const std::map<std::string, std::string>& options)
+int Decoder::open(const std::string& name, std::map<std::string, std::string> options)
 {
-    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] format = {}, options = {}", name, format, options);
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] options = {}", name, options);
 
     name_ = name;
 
@@ -28,8 +28,8 @@ int Decoder::open(const std::string& name, const std::string& format, const std:
 #else
     AVInputFormat* input_fmt = nullptr;
 #endif
-    if (!format.empty()) {
-        input_fmt = av_find_input_format(format.c_str());
+    if (options.contains("format")) {
+        input_fmt = av_find_input_format(options.at("format").c_str());
         if (!input_fmt) {
             LOG(ERROR) << "[   DECODER] av_find_input_format";
             return -1;

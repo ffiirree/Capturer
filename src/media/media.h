@@ -14,6 +14,12 @@ extern "C" {
 
 namespace av
 {
+    enum class vsync_t
+    {
+        cfr,
+        vfr,
+    };
+
     struct vformat_t
     {
         int width{ 0 };
@@ -39,9 +45,9 @@ namespace av
 
     inline std::string channel_layout_name(int channels, int channel_layout)
     {
-        std::string buffer{ 8, {} };
-        av_get_channel_layout_string(&(buffer.data()[0]), 8, channels, channel_layout);
-        return buffer;
+        char buffer[32]{ 0 };
+        av_get_channel_layout_string(buffer, sizeof(buffer), channels, channel_layout);
+        return buffer; // ATTENTION: make the std::string do not contain '\0'
     }
 
     inline std::string to_string(AVPixelFormat fmt)
@@ -92,6 +98,22 @@ namespace av
                            fmt.sample_rate, to_string(fmt.sample_fmt), fmt.channels,
                            channel_layout_name(fmt.channels, fmt.channel_layout), fmt.time_base.num,
                            fmt.time_base.den);
+    }
+
+    inline std::string to_string(vsync_t m)
+    {
+        switch (m) {
+        case vsync_t::cfr: return "CFR"; break;
+        case vsync_t::vfr: return "VFR"; break;
+        default: break;
+        }
+    }
+
+    inline vsync_t to_vsync(const std::string& str)
+    {
+        if (str == "vfr" || str == "VFR") return vsync_t::vfr;
+
+        return vsync_t::cfr;
     }
 } // namespace av
 

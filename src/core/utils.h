@@ -6,7 +6,24 @@
 #include <vector>
 
 #ifndef st
-#define st(X) do { X } while(0)
+#define st(X)                                                                                              \
+    do {                                                                                                   \
+        X                                                                                                  \
+    } while (0)
+#endif
+
+#ifdef _WIN32
+#define RETURN_NONE_IF_FAILED(HR)                                                                          \
+    if (FAILED(HR)) return {};
+
+#define RETURN_NEGV_IF_FAILED(HR)                                                                          \
+    if (FAILED(HR)) return -1;
+
+#define SAFE_RELEASE(COMPTR)                                                                               \
+    if ((COMPTR) != nullptr) {                                                                             \
+        (COMPTR)->Release();                                                                               \
+        (COMPTR) = nullptr;                                                                                \
+    }
 #endif
 
 enum Graph : uint32_t

@@ -27,8 +27,7 @@ public:
     void reset() override;
 
     // open input
-    int open(const std::string& name, const std::string& format = "",
-             const std::map<std::string, std::string>& options = {});
+    int open(const std::string& name, std::map<std::string, std::string> options = {});
 
     // start thread
     int run() override;

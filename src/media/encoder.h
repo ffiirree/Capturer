@@ -29,7 +29,7 @@ public:
     void reset() override;
 
     int open(const std::string& filename, const std::string& video_codec_name = "libx264",
-             const std::string& audio_codec_name = "aac", bool is_cfr = false,
+             const std::string& audio_codec_name                               = "aac",
              const std::unordered_map<std::string, std::string>& options       = {},
              const std::unordered_map<std::string, std::string>& auido_options = {});
 
@@ -69,6 +69,7 @@ private:
     int new_auido_stream();
 
     int run_f();
+    std::pair<int, int> video_sync_process();
     int process_video_frames();
     int process_audio_frames();
     void destroy();
@@ -96,7 +97,7 @@ private:
     AVFrame *filtered_frame_{ nullptr };
     AVFrame *last_frame_{ nullptr };
     // the expected pts of next video frame computed by last pts and duration
-    int64_t expected_pts_{ 0 };
+    int64_t expected_pts_{ AV_NOPTS_VALUE };
 
     AVAudioFifo *audio_fifo_buffer_{ nullptr };
 

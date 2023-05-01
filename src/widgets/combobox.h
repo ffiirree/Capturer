@@ -4,19 +4,19 @@
 #include <QComboBox>
 #include <QListView>
 
-class ComboBox : public QComboBox {
+class ComboBox : public QComboBox
+{
     Q_OBJECT
 public:
     explicit ComboBox(QWidget *parent = nullptr)
-            : QComboBox(parent)
+        : QComboBox(parent)
     {
         setView(new QListView());
         view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
         view()->window()->setAttribute(Qt::WA_TranslucentBackground);
 
-        connect(this, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [this](int){
-            emit selected(currentData());
-        });
+        connect(this, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+                [this](int) { emit selected(currentData()); });
     }
 
     inline ComboBox& add(const std::vector<std::pair<QVariant, QString>>& items)
@@ -27,7 +27,7 @@ public:
         return *this;
     }
 
-    inline ComboBox& add(const QStringList &texts)
+    inline ComboBox& add(const QStringList& texts)
     {
         for (auto& text : texts) {
             auto index = count();
@@ -48,8 +48,13 @@ public:
         return *this;
     }
 
-    template<class Slot>
-    inline ComboBox& onselected(Slot slot)
+    inline ComboBox& select(const std::string& value)
+    {
+        setCurrentIndex(findData(QString::fromUtf8(value.c_str())));
+        return *this;
+    }
+
+    template<class Slot> inline ComboBox& onselected(Slot slot)
     {
         connect(this, &ComboBox::selected, std::move(slot));
         return *this;

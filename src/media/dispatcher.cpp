@@ -112,8 +112,8 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame>* encoder, AVFilterCont
         }
 
         if (av_opt_set(*ctx, "ch_layouts", av::channel_layout_name(afmt.channels, afmt.channel_layout).c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
-            LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_counts' option.";
-            return -1;
+            LOG(ERROR) << "[DISPATCHER] [A] failed to set 'ch_layouts' option.";
+            //return -1;
         }
     }
 
@@ -282,24 +282,24 @@ int Dispatcher::set_encoder_format_by_sinks()
         return -1;
     }
 
-    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vctx != nullptr)) {
-        consumer_ctx_.consumer->vfmt.pix_fmt = static_cast<AVPixelFormat>(av_buffersink_get_format(consumer_ctx_.vctx));
-        consumer_ctx_.consumer->vfmt.width = av_buffersink_get_w(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt.height = av_buffersink_get_h(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt.time_base = av_buffersink_get_time_base(consumer_ctx_.vctx);
-
-        // min
-        auto sink_fr = av_buffersink_get_frame_rate(consumer_ctx_.vctx);
-        consumer_ctx_.consumer->vfmt.framerate = (av_q2d(vfmt.framerate) > av_q2d(sink_fr)) ? sink_fr : vfmt.framerate;
+    auto consumer = consumer_ctx_.consumer;
+    if (consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vctx != nullptr)) {
+        consumer->vfmt.pix_fmt = static_cast<AVPixelFormat>(av_buffersink_get_format(consumer_ctx_.vctx));
+        consumer->vfmt.width   = av_buffersink_get_w(consumer_ctx_.vctx);
+        consumer->vfmt.height  = av_buffersink_get_h(consumer_ctx_.vctx);
+        consumer->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vctx);
+        consumer->vfmt.time_base           = av_buffersink_get_time_base(consumer_ctx_.vctx);
+        consumer->vfmt.framerate           = vfmt.framerate;
+        consumer->sink_framerate           = av_buffersink_get_frame_rate(consumer_ctx_.vctx);
     }
 
-    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO) && (consumer_ctx_.actx != nullptr)) {
-        consumer_ctx_.consumer->afmt.sample_fmt = static_cast<AVSampleFormat>(av_buffersink_get_format(consumer_ctx_.actx));
-        consumer_ctx_.consumer->afmt.channels = av_buffersink_get_channels(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt.channel_layout = av_buffersink_get_channel_layout(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt.sample_rate = av_buffersink_get_sample_rate(consumer_ctx_.actx);
-        consumer_ctx_.consumer->afmt.time_base = av_buffersink_get_time_base(consumer_ctx_.actx);
+    if (consumer->accepts(AVMEDIA_TYPE_AUDIO) && (consumer_ctx_.actx != nullptr)) {
+        consumer->afmt.sample_fmt =
+            static_cast<AVSampleFormat>(av_buffersink_get_format(consumer_ctx_.actx));
+        consumer->afmt.channels       = av_buffersink_get_channels(consumer_ctx_.actx);
+        consumer->afmt.channel_layout = av_buffersink_get_channel_layout(consumer_ctx_.actx);
+        consumer->afmt.sample_rate    = av_buffersink_get_sample_rate(consumer_ctx_.actx);
+        consumer->afmt.time_base      = av_buffersink_get_time_base(consumer_ctx_.actx);
     }
 
     return 0;

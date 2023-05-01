@@ -38,7 +38,7 @@ namespace hwaccel
             if (!frames_ctx_) av_buffer_unref(&frames_ctx_);
         }
 
-        void frames_ctx_ref(const AVBufferRef *ctx) { frames_ctx_ = av_buffer_ref(ctx); }
+        void frames_ctx_ref(AVBufferRef *ctx) { frames_ctx_ = av_buffer_ref(ctx); }
 
         AVBufferRef *ref() const { return ref_ ? av_buffer_ref(ref_) : nullptr; }
         AVBufferRef *frames_ctx_ref() const { return frames_ctx_ ? av_buffer_ref(frames_ctx_) : nullptr; }
