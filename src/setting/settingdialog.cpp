@@ -85,7 +85,7 @@ SettingWindow::SettingWindow(QWidget* parent)
     pages_->addWidget(setupDevicesWidget());
     pages_->addWidget(setupAboutWidget());
 
-    connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto) {
+    connect(menu, &QListWidget::currentItemChanged, [=, this](auto current, auto) {
         pages_->setCurrentIndex(menu->row(current));
     });
     menu->setCurrentRow(0);
@@ -404,6 +404,7 @@ QWidget* SettingWindow::setupDevicesWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
+    // microphones / sources
     auto _1_2 = new ComboBox();
     for (const auto& dev : av::audio_sources()) {
         _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
@@ -417,6 +418,7 @@ QWidget* SettingWindow::setupDevicesWidget()
     }
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
+    // speakers / monitor of sinks
     auto _2_2 = new ComboBox();
     for (const auto& dev : av::audio_sinks()) {
         _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
@@ -430,19 +432,14 @@ QWidget* SettingWindow::setupDevicesWidget()
     layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
+    // cameras / sources
     auto _3_2 = new ComboBox();
     for (const auto& dev : av::cameras()) {
         _3_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
     }
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
-    _3_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString()); });
-    auto default_camera = av::default_camera();
-    if (default_camera.has_value()) {
-        _3_2->select(default_camera.value().id);
-    }
-    connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["cameras"], s);
-    });
+    _3_2->onselected([this](auto value) { config.set(config["devices"]["cameras"], value.toString()); });
+    _3_2->select(config["devices"]["cameras"].get<std::string>());
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     layout->setRowStretch(5, 1);

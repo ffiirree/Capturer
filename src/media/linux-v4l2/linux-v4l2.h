@@ -3,51 +3,35 @@
 
 #ifdef __linux__
 
-#include <vector>
-#include <string>
-#include <linux/videodev2.h>
+#include "devices.h"
+
 #include <fmt/format.h>
+#include <linux/videodev2.h>
+#include <string>
+#include <vector>
 
-struct V4l2Device
+namespace v4l2
 {
-    [[nodiscard]] std::string version_str() const
-    {
-        return fmt::format("{}.{}.{}",
-                           (version_ >> 16) & 0xff, (version_ >> 8) & 0xff, version_ & 0xff);
-    }
+    std::vector<av::device_t> device_list();
 
-    V4l2Device(const std::string &name, const struct v4l2_capability &cap)
-    {
-        name_ = name;
-        card_ = reinterpret_cast<const char *>(cap.card);
-        driver_ = reinterpret_cast<const char *>(cap.driver);
-        bus_info_ = reinterpret_cast<const char *>(cap.bus_info);
-        version_ = cap.version;
-        caps_ = (cap.capabilities & V4L2_CAP_DEVICE_CAPS) ? cap.device_caps : cap.capabilities;
-    }
+    // open a v4l2 device by id, like /dev/vidoe0
+    int open(const std::string& id);
 
-    std::string name_{};
-    std::string driver_{};
-    std::string card_{};
-    std::string bus_info_{};
-    uint32_t version_{0};
-    uint32_t caps_{0};
-    int device_{-1};
-};
+    // close a v4l2 device
+    void close(int dev);
 
-std::vector<V4l2Device> v4l2_device_list();
+    void input_list(int dev);
 
-void v4l2_input_list(int device);
+    void format_list(int dev);
 
-void v4l2_format_list(int device);
+    void standard_list(int dev);
 
-void v4l2_standard_list(int device);
+    void resolution_list(int dev, uint32_t pix_fmt);
 
-void v4l2_resolution_list(int device, uint32_t pix_fmt);
+    void framerate_list(int dev, uint32_t pix_fmt, uint32_t w, uint32_t h);
 
-void v4l2_framerate_list(int device, uint32_t pix_fmt, uint32_t w, uint32_t h);
-
-void v4l2_controls(uint32_t device);
+    void controls(uint32_t dev);
+} // namespace v4l2
 
 #endif //! __linux__
 

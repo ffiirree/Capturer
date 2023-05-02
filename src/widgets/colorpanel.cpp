@@ -55,7 +55,7 @@ ColorDialogButton::ColorDialogButton(const QColor& color, QWidget *parent)
     color_dialog_->setOptions(QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
     color_dialog_->setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint);
 
-    connect(this, &ColorDialogButton::clicked, [=](){
+    connect(this, &ColorDialogButton::clicked, [this](){
         color_dialog_->setCurrentColor(color_);
         color_dialog_->show();
     });

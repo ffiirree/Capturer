@@ -53,9 +53,10 @@ static std::vector<av::device_t> DisplayDeviceInformation(IEnumMoniker *pEnum, a
         moniker->Release();
 
         list.push_back({
-            .name = probe::util::to_utf8(name),
-            .id   = probe::util::to_utf8(id),
-            .type = type,
+            .name   = probe::util::to_utf8(name),
+            .id     = probe::util::to_utf8(id),
+            .type   = type,
+            .format = av::device_format_t::dshow,
         });
     }
 
@@ -74,7 +75,8 @@ static std::vector<av::device_t> EnumerateDevices(REFGUID category)
 
     av::device_type_t mt{};
     if (category == CLSID_VideoInputDeviceCategory)
-        mt = av::device_type_t::video;
+        mt = av::device_type_t::video | av::device_type_t::source;
+        
     else if (category == CLSID_AudioInputDeviceCategory)
         mt = av::device_type_t::audio;
 

@@ -63,11 +63,11 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
             addWidget(btn);
 
             connect(menu, &EditMenu::changed, this, &ImageEditMenu::changed);
-            connect(this, &EditMenu::moved, [=]() {
+            connect(this, &EditMenu::moved, [=, this]() {
                 if (menu->isVisible())
                     menu->move(pos().x(), pos().y() + (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));
             });
-            connect(btn, &QCheckBox::toggled, [=](bool checked) {
+            connect(btn, &QCheckBox::toggled, [=, this](bool checked) {
                 if (checked) {
                         emit graphChanged(graph);
                         graph_ = graph;
@@ -114,7 +114,7 @@ ImageEditMenu::ImageEditMenu(QWidget* parent, uint32_t groups)
         save_btn->setCheckable(false);
         save_btn->setObjectName("save-btn");
         connect(save_btn, &QCheckBox::clicked, this, &ImageEditMenu::save);
-        connect(save_btn, &QCheckBox::clicked, [=]() { group_->uncheckAll(); });
+        connect(save_btn, &QCheckBox::clicked, [this]() { group_->uncheckAll(); });
         addWidget(save_btn);
     }
 

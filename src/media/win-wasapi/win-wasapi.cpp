@@ -86,6 +86,7 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
         .id          = probe::util::to_utf8(id),
         .description = probe::util::to_utf8(desc.pwszVal),
         .type        = type,
+        .format      = av::device_format_t::wasapi,
         .state       = static_cast<uint64_t>(state),
     };
 }

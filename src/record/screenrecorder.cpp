@@ -72,7 +72,7 @@ void ScreenRecorder::switchCamera()
     if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<std::string>(), "dshow",
                        "hflip")) {
 #elif __linux__
-    if (!player_->play(Devices::cameras()[0].toStdString(), "v4l2", "hflip")) {
+    if (!player_->play(Config::instance()["devices"]["cameras"].get<std::string>(), "v4l2", "hflip")) {
 #endif
         player_->close();
     }

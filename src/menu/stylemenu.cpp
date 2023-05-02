@@ -54,7 +54,7 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
         font_style_->addItems(font_db.styles(family));
         connect(font_style_, SIGNAL(activated(int)), this, SIGNAL(changed()));
         // set style for family
-        connect(font_family_, &QComboBox::currentTextChanged, [=](const QString& family) {
+        connect(font_family_, &QComboBox::currentTextChanged, [=, this](const QString& family) {
             font_style_->clear();
             font_style_->addItems(font_db.styles(family));
             emit changed();

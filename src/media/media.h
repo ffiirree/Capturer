@@ -105,7 +105,7 @@ namespace av
         switch (m) {
         case vsync_t::cfr: return "CFR"; break;
         case vsync_t::vfr: return "VFR"; break;
-        default: break;
+        default: return "unknown";
         }
     }
 

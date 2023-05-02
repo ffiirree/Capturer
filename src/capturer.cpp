@@ -91,11 +91,11 @@ void Capturer::setupSystemTray()
     menu->setAttribute(Qt::WA_TranslucentBackground);
 
     // SystemTrayIcon
-    auto update_tray_menu = [=]() {
+    auto update_tray_menu = [=, this]() {
         QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
 #ifdef __linux__
-        if (platform::system::os_name().find("Ubuntu") != std::string::npos) {
-            auto ver = platform::system::os_version();
+        if (probe::system::os_name().find("Ubuntu") != std::string::npos) {
+            auto ver = probe::system::os_version();
             if (ver.major == 20 && ver.minor == 4)
                 icon_color = "dark"; // ubuntu 2004, system trays are always light
             else if (ver.major == 18 && ver.minor == 4)

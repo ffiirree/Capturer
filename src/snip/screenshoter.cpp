@@ -276,7 +276,7 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
     connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
 
-    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
             box_.reset(history_[history_idx_]);
             CAPTURED();
@@ -284,7 +284,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
             box_.reset(history_[history_idx_]);
             CAPTURED();
@@ -292,7 +292,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this](){
         if(status_ < SelectorStatus::CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }

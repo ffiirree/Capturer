@@ -336,7 +336,9 @@ std::pair<int, int> Encoder::video_sync_process()
                 num_pre_frames = std::lround(delta_l - 0.6);
             }
         }
+#if LIBAVUTIL_VERSION_MAJOR >= 58
         filtered_frame_->duration = 1;
+#endif
         break;
 
     case av::vsync_t::vfr:
@@ -346,8 +348,9 @@ std::pair<int, int> Encoder::video_sync_process()
         else if (delta_r > 0.6) {
             expected_pts_ = std::lround(floating_pts);
         }
-
+#if LIBAVUTIL_VERSION_MAJOR >= 58
         filtered_frame_->duration = duration;
+#endif
         break;
     default: break;
     }
@@ -367,7 +370,7 @@ int Encoder::process_video_frames()
 {
     if (video_buffer_.empty()) return AVERROR(EAGAIN);
 
-    video_buffer_.pop([=](AVFrame *popped) {
+    video_buffer_.pop([this](AVFrame *popped) {
         av_frame_unref(filtered_frame_);
         av_frame_move_ref(filtered_frame_, popped);
     });
@@ -456,7 +459,7 @@ int Encoder::process_audio_frames()
             break;
         }
 
-        audio_buffer_.pop([=](AVFrame *popped) {
+        audio_buffer_.pop([this](AVFrame *popped) {
             av_frame_unref(filtered_frame_);
             av_frame_move_ref(filtered_frame_, popped);
         });

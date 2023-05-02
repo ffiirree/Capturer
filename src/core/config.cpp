@@ -76,12 +76,6 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
     // clang-format on
 
-    if (!av::cameras().empty()) settings_["devices"]["cameras"] = av::cameras()[0].id;
-
-    if (!av::audio_sources().empty()) settings_["devices"]["microphones"] = av::audio_sources()[0].id;
-
-    if (!av::audio_sinks().empty()) settings_["devices"]["speakers"] = av::audio_sinks()[0].id;
-
     connect(this, &Config::changed, this, &Config::save);
     connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) {
         if (settings_["theme"].get<std::string>() == "auto") {
@@ -176,10 +170,9 @@ void Config::monitor_system_theme(bool m)
         }
     }
 
-    // TODO: pclose can not exit
-    // if (!m) {
-    //     theme_monitor_ = nullptr;
-    // }
+    if (!m) {
+        theme_monitor_ = nullptr;
+    }
 #endif
 }
 

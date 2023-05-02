@@ -179,7 +179,7 @@ std::string Decoder::format_str(int type) const
             "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}",
             audio_decoder_ctx_->sample_rate, av::to_string(audio_decoder_ctx_->sample_fmt), 
             audio_decoder_ctx_->channels,
-            av_get_default_channel_layout(audio_decoder_ctx_->channels), audio_stream->time_base.num
+            av_get_default_channel_layout(audio_decoder_ctx_->channels), audio_stream->time_base
         );
     }
     default: return {};
@@ -334,7 +334,7 @@ int Decoder::run_f()
                     video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
                 video_buffer_.push(
-                    [=](AVFrame* frame) {
+                    [this](AVFrame* frame) {
                         av_frame_unref(frame);
                         av_frame_move_ref(frame, decoded_frame_);
                     }
@@ -380,7 +380,7 @@ int Decoder::run_f()
                 }
 
                 audio_buffer_.push(
-                    [=](AVFrame* frame) {
+                    [this](AVFrame* frame) {
                         av_frame_unref(frame);
                         av_frame_move_ref(frame, decoded_frame_);
                     }
