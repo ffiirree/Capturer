@@ -72,14 +72,14 @@ private:
     AVBufferRef *frames_ref_{ nullptr };
     AVHWFramesContext *frames_ctx_{ nullptr };
 
-    AVFrame *frame_{ nullptr };
+    av::frame frame_{};
     uint32_t frame_number_{};
 
     //
     bool draw_mouse_ = true;
     bool show_region_ = true;
     
-    RingVector<AVFrame *, 8> buffer_{
+    RingVector<AVFrame *, 4> buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame **frame) { av_frame_free(frame); },
     };

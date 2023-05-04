@@ -1,15 +1,17 @@
 #include "screenrecorder.h"
+
+#include "config.h"
+#include "devices.h"
+#include "logging.h"
+#include "widgetsdetector.h"
+
+#include <QApplication>
+#include <QDateTime>
+#include <QDesktopWidget>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QStandardPaths>
-#include <QDateTime>
-#include <QApplication>
-#include <QDesktopWidget>
 #include <fmt/core.h>
-#include "widgetsdetector.h"
-#include "devices.h"
-#include "logging.h"
-#include "config.h"
 extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
@@ -19,7 +21,8 @@ extern "C" {
 #include <cstdlib>
 #endif
 
-ScreenRecorder::ScreenRecorder(int type, QWidget *parent) : Selector(parent)
+ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
+    : Selector(parent)
 {
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
@@ -89,9 +92,9 @@ void ScreenRecorder::start()
         video_options_["vsync"] = av::to_string(av::vsync_t::cfr);
     }
     else {
-        pix_fmt_       = AV_PIX_FMT_PAL8;
-        codec_name_    = "gif";
-        filters_       = gif_filters_[Config::instance()["gif"]["quality"]];
+        pix_fmt_    = AV_PIX_FMT_PAL8;
+        codec_name_ = "gif";
+        filters_    = gif_filters_[Config::instance()["gif"]["quality"]];
     }
 
     Selector::start();
@@ -153,7 +156,7 @@ void ScreenRecorder::setup()
                             (recording_type_ == VIDEO ? "mp4" : "gif"));
 
     // desktop capturer
-    framerate_   = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
+    framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
     auto draw_mouse = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
 
     std::string name{};
@@ -195,9 +198,9 @@ void ScreenRecorder::setup()
         return;
     }
 
-     if (recording_type_ == VIDEO) {
-         open_audio_sources();
-     }
+    if (recording_type_ == VIDEO) {
+        open_audio_sources();
+    }
 
     // sources
     dispatcher_->append(desktop_capturer_.get());

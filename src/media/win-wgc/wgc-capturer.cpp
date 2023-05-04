@@ -14,8 +14,6 @@ using namespace winrt::Windows::Graphics::Capture;
 using namespace winrt::Windows::Graphics::DirectX;
 using namespace winrt::Windows::Graphics::DirectX::Direct3D11;
 
-const AVPixelFormat HWACCEL_OUTPUT_FMT = AV_PIX_FMT_BGRA;
-
 int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string, std::string> options)
 {
     std::lock_guard lock(mtx_);
@@ -60,8 +58,16 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
         return -1;
     }
 
+    auto hwdevice = hwaccel::find_or_create_device(AV_HWDEVICE_TYPE_D3D11VA);
+    if (hwdevice == nullptr) {
+        LOG(ERROR) << "[     WGC] can not create d3d11device.";
+        return -1;
+    }
+
     // D3D11Device & ImmediateContext
-    winrt::com_ptr<::ID3D11Device> d3d11_device = wgc::create_d3d11device();
+    // winrt::com_ptr<::ID3D11Device> d3d11_device = wgc::create_d3d11device();
+    AVHWDeviceContext *device_ctx = reinterpret_cast<AVHWDeviceContext *>(hwdevice->ptr()->data);
+    ID3D11Device *d3d11_device    = reinterpret_cast<AVD3D11VADeviceContext *>(device_ctx->hwctx)->device;
     d3d11_device->GetImmediateContext(d3d11_ctx_.put());
 
     // If you're using C++/WinRT, then to move back and forth between IDirect3DDevice and IDXGIDevice, use
@@ -70,8 +76,9 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     // This represents an IDXGIDevice, and can be used to interop between Windows Runtime components that
     // need to exchange IDXGIDevice references.
     winrt::com_ptr<::IInspectable> inspectable{};
-    if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(d3d11_device.as<::IDXGIDevice>().get(),
-                                                      inspectable.put()))) {
+    winrt::com_ptr<IDXGIDevice> dxgi_device{};
+    d3d11_device->QueryInterface(winrt::guid_of<IDXGIDevice>(), dxgi_device.put_void());
+    if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()))) {
         LOG(ERROR) << "[     WGC] CreateDirect3D11DeviceFromDXGIDevice failed.";
         return -1;
     }
@@ -94,15 +101,14 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     vfmt = av::vformat_t{
         .width               = item_.Size().Width,
         .height              = item_.Size().Height,
-        .pix_fmt             = HWACCEL_OUTPUT_FMT,
+        .pix_fmt             = AV_PIX_FMT_D3D11,
         .framerate           = { 60, 1 },
         .sample_aspect_ratio = { 1, 1 },
         .time_base           = { 1, OS_TIME_BASE },
         .hwaccel             = AV_HWDEVICE_TYPE_D3D11VA,
     };
 
-    frame_ = av_frame_alloc();
-    if (!frame_ || init_hwframes_ctx() < 0) {
+    if (init_hwframes_ctx() < 0) {
         return -1;
     }
 
@@ -172,7 +178,6 @@ void WindowsGraphicsCapturer::reset()
         session_.Close();
 
         // TODO: ERROR! the thread may not exit yet
-        av_frame_free(&frame_);
         av_buffer_unref(&frames_ref_);
         av_buffer_unref(&device_ref_);
 
@@ -233,22 +238,20 @@ void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const&
     std::lock_guard lock(mtx_);
 
     auto frame         = sender.TryGetNextFrame();
-    // TODO: obs-studio says: the ContentSize is not reliable
-    auto frame_size    = frame.ContentSize();
     auto frame_surface = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
 
     D3D11_TEXTURE2D_DESC desc{};
     frame_surface->GetDesc(&desc);
 
-    if (frame_size.Width != vfmt.width || frame_size.Height != vfmt.height) {
-        frame_pool_.Recreate(device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, frame_size);
+    if (static_cast<int>(desc.Width) != vfmt.width || static_cast<int>(desc.Height) != vfmt.height) {
+        frame_pool_.Recreate(device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
+                             { static_cast<int32_t>(desc.Width), static_cast<int32_t>(desc.Height) });
 
-        vfmt.height = frame_size.Height;
-        vfmt.width  = frame_size.Width;
+        vfmt.height = desc.Height;
+        vfmt.width  = desc.Width;
     }
 
-    av_frame_unref(frame_);
-    if (av_hwframe_get_buffer(reinterpret_cast<AVBufferRef *>(frames_ref_), frame_, 0) < 0) {
+    if (av_hwframe_get_buffer(reinterpret_cast<AVBufferRef *>(frames_ref_), frame_.put(), 0) < 0) {
         LOG(ERROR) << "av_hwframe_get_buffer";
         return;
     }
@@ -258,14 +261,14 @@ void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const&
 
     d3d11_ctx_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]), frame_surface.get());
 
-    LOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
-                             frame_->pts, frame_->width, frame_->height);
+    DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
+                              frame_->pts, frame_->width, frame_->height);
 
-    hwaccel::transfer_frame(frame_, vfmt.pix_fmt);
+    hwaccel::transfer_frame(frame_.get(), vfmt.pix_fmt);
 
     buffer_.push([this](AVFrame *frame) {
         av_frame_unref(frame);
-        av_frame_move_ref(frame, frame_);
+        av_frame_move_ref(frame, frame_.get());
     });
 }
 

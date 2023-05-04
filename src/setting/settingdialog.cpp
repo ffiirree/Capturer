@@ -439,7 +439,8 @@ QWidget* SettingWindow::setupDevicesWidget()
     }
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
     _3_2->onselected([this](auto value) { config.set(config["devices"]["cameras"], value.toString()); });
-    _3_2->select(config["devices"]["cameras"].get<std::string>());
+    if (!config["devices"]["cameras"].is_null())
+        _3_2->select(config["devices"]["cameras"].get<std::string>());
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     layout->setRowStretch(5, 1);

@@ -218,7 +218,7 @@ int WasapiCapturer::run_f()
     return 0;
 }
 
-int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UINT64 ts)
+int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UINT64)
 {
     frame_->pts            = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
     frame_->pkt_dts        = frame_->pts;

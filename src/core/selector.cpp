@@ -395,10 +395,11 @@ void Selector::registerShortcuts()
             auto selected = probe::graphics::virtual_screen();
             
             // TODO: can not capture virtual screen
-
-            for(auto display : probe::graphics::displays()) {
-                if (QRect(display.geometry).contains(box_.rect(), true)) {
-                    selected = display;
+            if (mode_ != mode_t::display) {
+                for (auto display : probe::graphics::displays()) {
+                    if (QRect(display.geometry).contains(box_.rect(), false)) {
+                        selected = display;
+                    }
                 }
             }
 

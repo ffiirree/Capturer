@@ -360,7 +360,7 @@ std::pair<int, int> Encoder::video_sync_process()
     }
     else if (num_frames > 1) {
         LOG(WARNING) << fmt::format("[V] duplicated {} frames and {} previous frames.", num_frames - 1,
-                                    num_pre_frames - 1);
+                                    num_pre_frames);
     }
 
     return { num_frames, num_pre_frames };

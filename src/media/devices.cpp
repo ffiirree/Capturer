@@ -24,8 +24,9 @@ namespace av
         return dshow::video_devices();
 #elif __linux__
         return v4l2::device_list();
-#endif
+#else
         return {};
+#endif
     }
 
     std::vector<device_t> audio_sources()
@@ -43,8 +44,9 @@ namespace av
             }
         }
         return list;
-#endif
+#else
         return {};
+#endif
     }
 
     std::vector<device_t> audio_sinks()
@@ -61,8 +63,9 @@ namespace av
             }
         }
         return list;
-#endif
+#else
         return {};
+#endif
     }
 
     std::optional<device_t> default_audio_source()
@@ -73,8 +76,9 @@ namespace av
         pulse::init();
         defer(pulse::unref());
         return pulse::default_source();
-#endif
+#else
         return {};
+#endif
     }
 
     // default monitor of sink
@@ -94,7 +98,8 @@ namespace av
         }
 
         return dev;
-#endif
+#else
         return {};
+#endif
     }
 } // namespace av

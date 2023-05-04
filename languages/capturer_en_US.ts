@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="294"/>
+        <location filename="../src/record/screenrecorder.cpp" line="297"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -260,7 +260,7 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="70"/>
-        <location filename="../src/setting/settingdialog.cpp" line="463"/>
+        <location filename="../src/setting/settingdialog.cpp" line="466"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
@@ -388,17 +388,17 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="411"/>
+        <location filename="../src/setting/settingdialog.cpp" line="412"/>
         <source>Microphones</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="431"/>
+        <location filename="../src/setting/settingdialog.cpp" line="432"/>
         <source>Speakers</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="438"/>
+        <location filename="../src/setting/settingdialog.cpp" line="440"/>
         <source>Cameras</source>
         <translation></translation>
     </message>
@@ -408,22 +408,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="470"/>
+        <location filename="../src/setting/settingdialog.cpp" line="473"/>
         <source>Paste</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="477"/>
+        <location filename="../src/setting/settingdialog.cpp" line="480"/>
         <source>Hide/Show All Images</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="484"/>
+        <location filename="../src/setting/settingdialog.cpp" line="487"/>
         <source>Video Recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="491"/>
+        <location filename="../src/setting/settingdialog.cpp" line="494"/>
         <source>Gif Recording</source>
         <translation></translation>
     </message>
@@ -433,12 +433,12 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="513"/>
+        <location filename="../src/setting/settingdialog.cpp" line="516"/>
         <source>Version</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="522"/>
+        <location filename="../src/setting/settingdialog.cpp" line="525"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
