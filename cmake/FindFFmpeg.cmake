@@ -56,7 +56,7 @@ function(find_ffmpeg_root_by_version version)
             if(EXISTS "${_ffmpeg_version_header}")
                 file(STRINGS "${_ffmpeg_version_header}" __ffmpeg_version_line REGEX "FFMPEG_VERSION")
 
-                string(REGEX REPLACE ".*FFMPEG_VERSION[ \t]+\"([0-9\\.]*).*\"" "\\1" _ffmpeg_version "${__ffmpeg_version_line}")
+                string(REGEX REPLACE ".*FFMPEG_VERSION[ \t]+\"[n]?([0-9\\.]*).*\"" "\\1" _ffmpeg_version "${__ffmpeg_version_line}")
 
                 # if do not specified, return the fist one
                 if("${version}" STREQUAL "")
