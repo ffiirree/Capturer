@@ -7,7 +7,6 @@
 
 #include <QApplication>
 #include <QDateTime>
-#include <QDesktopWidget>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QStandardPaths>

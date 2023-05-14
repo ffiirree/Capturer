@@ -65,7 +65,7 @@ namespace av
             return *this;
         }
 
-        frame& operator=(const AVFrame* other)
+        frame& operator=(const AVFrame *other)
         {
             unref();
             ref(other);
@@ -74,8 +74,7 @@ namespace av
 
         frame& operator=(frame&& other) noexcept
         {
-            if (this != &other) 
-            {
+            if (this != &other) {
                 unref();
                 av_frame_move_ref(ptr_, other.ptr_);
             }
@@ -99,11 +98,24 @@ namespace av
         AVFrame *ptr_{ nullptr };
     };
 
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+    inline std::string to_string(const AVChannelLayout& channel_layout)
+    {
+        char buffer[32]{ 0 };
+        if (av_channel_layout_describe(&channel_layout, buffer, sizeof(buffer)) < 0) return {};
+        return buffer;
+    }
+#endif
+
     inline std::string channel_layout_name(int channels, uint64_t channel_layout)
     {
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+        return to_string(AV_CHANNEL_LAYOUT_MASK(channels, channel_layout));
+#else
         char buffer[32]{ 0 };
         av_get_channel_layout_string(buffer, sizeof(buffer), channels, channel_layout);
         return buffer; // ATTENTION: make the std::string do not contain '\0'
+#endif
     }
 
     inline std::string to_string(AVPixelFormat fmt)

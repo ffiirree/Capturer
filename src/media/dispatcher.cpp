@@ -65,7 +65,8 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame> *encoder, AVFilterCont
     vfmt.pix_fmt = (vfmt.pix_fmt == AV_PIX_FMT_NONE) ? encoder->vfmt.pix_fmt : vfmt.pix_fmt;
     if (vfmt.pix_fmt != AV_PIX_FMT_NONE) {
         enum AVPixelFormat pix_fmts[] = { vfmt.pix_fmt, AV_PIX_FMT_NONE };
-        if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
+        if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, static_cast<uint64_t>(AV_PIX_FMT_NONE),
+                                AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [V] av_opt_set_int_list";
             return -1;
         }
@@ -114,7 +115,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
         // channel_counts(int list)
         // TODO: other options
         enum AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
-        if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE,
+        if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, static_cast<uint64_t>(AV_SAMPLE_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
             return -1;
@@ -403,7 +404,6 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
     while (running_ && !consumer_eof) {
 
         if (sleepy) os_sleep(10ms);
-
         sleepy = true;
 
         // input streams

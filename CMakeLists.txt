@@ -25,12 +25,18 @@ add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
 
-# Qt5
+if (NOT QT_DEFAULT_MAJOR_VERSION)
+    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
+endif()
+
+set(QT Qt${QT_DEFAULT_MAJOR_VERSION})
+
+# Qt5 / 6
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+find_package(${QT} COMPONENTS Widgets Gui LinguistTools REQUIRED)
 
 if(WIN32)
     # GUI/console
@@ -39,7 +45,7 @@ if(WIN32)
     find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
     find_package(FFmpeg 3.4 REQUIRED)
-    find_package(Qt5 COMPONENTS X11Extras REQUIRED)
+    find_package(${QT} COMPONENTS X11Extras REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
     find_package(X11 REQUIRED)
@@ -56,7 +62,11 @@ configure_file(src/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
-qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+if(QT_DEFAULT_MAJOR_VERSION EQUAL 5)
+    qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+elseif(QT_DEFAULT_MAJOR_VERSION EQUAL 6)
+    qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+endif()
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}
@@ -74,7 +84,7 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
-        Qt5::Widgets Qt5::Gui
+        ${QT}::Widgets ${QT}::Gui
         glog::glog
         fmt::fmt
         probe::probe
@@ -85,7 +95,7 @@ target_link_libraries(${PROJECT_NAME}
         $<$<PLATFORM_ID:Windows>:Shcore> 
         $<$<PLATFORM_ID:Windows>:DXGI>
         $<$<PLATFORM_ID:Windows>:D3D11>
-        $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+        $<$<PLATFORM_ID:Linux>:${QT}::X11Extras>
         $<$<PLATFORM_ID:Linux>:X11::Xrandr>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
         $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>

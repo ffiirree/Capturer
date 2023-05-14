@@ -1,8 +1,6 @@
 #include "magnifier.h"
 #include <QPainter>
 #include <QApplication>
-#include <QScreen>
-#include <QDesktopWidget>
 #include "probe/graphics.h"
 
 Magnifier::Magnifier(QWidget *parent)

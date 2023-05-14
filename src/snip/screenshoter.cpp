@@ -1,6 +1,8 @@
 #include "screenshoter.h"
 #include <QApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
+#endif
 #include <QScreen>
 #include <QFileDialog>
 #include <QClipboard>

@@ -58,14 +58,13 @@ namespace wgc
 
         auto factory =
             winrt::get_activation_factory<winrt::Windows::Graphics::Capture::GraphicsCaptureItem>()
-                .as<IGraphicsCaptureItemInterop>();
+                .as<::IGraphicsCaptureItemInterop>();
         winrt::Windows::Graphics::Capture::GraphicsCaptureItem item = nullptr;
 
         try {
-            if (FAILED(factory->CreateForWindow(
-                    hwnd, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-                    reinterpret_cast<void **>(winrt::put_abi(item)))))
-                return nullptr;
+            winrt::check_hresult(factory->CreateForWindow(
+                hwnd, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
+                winrt::put_abi(item)));
         }
         catch (...) {
             return nullptr;
@@ -80,13 +79,13 @@ namespace wgc
 
         auto factory =
             winrt::get_activation_factory<winrt::Windows::Graphics::Capture::GraphicsCaptureItem>()
-                .as<IGraphicsCaptureItemInterop>();
+                .as<::IGraphicsCaptureItemInterop>();
         winrt::Windows::Graphics::Capture::GraphicsCaptureItem item = nullptr;
 
         try {
             if (FAILED(factory->CreateForMonitor(
                     monitor, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-                    reinterpret_cast<void **>(winrt::put_abi(item)))))
+                    winrt::put_abi(item))))
                 return nullptr;
         }
         catch (...) {
