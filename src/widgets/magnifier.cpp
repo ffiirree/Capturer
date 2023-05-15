@@ -1,10 +1,12 @@
 #include "magnifier.h"
-#include <QPainter>
-#include <QApplication>
+
 #include "probe/graphics.h"
 
+#include <QApplication>
+#include <QPainter>
+
 Magnifier::Magnifier(QWidget *parent)
-    :QWidget(parent)
+    : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 
@@ -14,7 +16,7 @@ Magnifier::Magnifier(QWidget *parent)
     // label size
     label_ = new QLabel(this);
     label_->setObjectName("magnifier-color-label");
-    label_->setGeometry(0, psize_.height(), psize_.width(), 30);
+    label_->setGeometry(0, psize_.height(), psize_.width(), 50);
     label_->setAlignment(Qt::AlignCenter);
 
     // size
@@ -26,10 +28,20 @@ Magnifier::Magnifier(QWidget *parent)
 QRect Magnifier::mrect()
 {
     auto mouse_pos = QCursor::pos() - QRect(probe::graphics::virtual_screen_geometry()).topLeft();
-    return { mouse_pos.x() - msize_.width()/2, mouse_pos.y() - msize_.height()/2, msize_.width(), msize_.height() };
+    return { mouse_pos.x() - msize_.width() / 2, mouse_pos.y() - msize_.height() / 2, msize_.width(),
+             msize_.height() };
 }
 
-void Magnifier::paintEvent(QPaintEvent * e)
+QString Magnifier::getColorStringValue()
+{
+    return (color_format_ == ColorFormat::HEX) ? center_color_.name(QColor::HexRgb)
+                                             : QString("%1, %2, %3")
+                                                   .arg(center_color_.red())
+                                                   .arg(center_color_.green())
+                                                   .arg(center_color_.blue());
+}
+
+void Magnifier::paintEvent(QPaintEvent *e)
 {
     Q_UNUSED(e);
 
@@ -45,13 +57,14 @@ void Magnifier::paintEvent(QPaintEvent * e)
     // 2.
     painter.setPen(QPen(QColor(0, 100, 250, 125), 5, Qt::SolidLine, Qt::FlatCap));
 
-    painter.drawLine(QPoint(0,                  psize_.height()/2),    QPoint(psize_.width(),  psize_.height()/2));
-    painter.drawLine(QPoint(psize_.width()/2,   0),                    QPoint(psize_.width()/2,  psize_.height()));
+    painter.drawLine(QPoint(0, psize_.height() / 2), QPoint(psize_.width(), psize_.height() / 2));
+    painter.drawLine(QPoint(psize_.width() / 2, 0), QPoint(psize_.width() / 2, psize_.height()));
 
     // 3.
-    center_color_ = QColor(draw_.toImage().pixel(psize_.width()/2, psize_.height()/2));
+    center_color_ = QColor(draw_.toImage().pixel(psize_.width() / 2, psize_.height() / 2));
     painter.setPen(QPen(center_color_, 5, Qt::SolidLine, Qt::FlatCap));
-    painter.drawLine(QPoint(psize_.width()/2 - 2, psize_.height()/2),  QPoint(psize_.width()/2 + 3, psize_.height()/2));
+    painter.drawLine(QPoint(psize_.width() / 2 - 2, psize_.height() / 2),
+                     QPoint(psize_.width() / 2 + 3, psize_.height() / 2));
 
     // 4. border
     painter.setPen(QPen(Qt::black));
@@ -61,6 +74,6 @@ void Magnifier::paintEvent(QPaintEvent * e)
     painter.end();
 
     // 5. text
-    auto text = getColorStringValue();
+    auto text = QString("POS : %1, %2\nRGB : ").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + getColorStringValue();
     label_->setText(text);
 }

@@ -18,13 +18,7 @@ public:
     QRect mrect();
 
     QColor getColor() const { return center_color_; }
-    QString getColorStringValue()
-    {
-        return color_format_ == ColorFormat::HEX
-                ? center_color_.name(QColor::HexRgb)
-                : QString("%1, %2, %3").arg(center_color_.red()).arg(center_color_.green()).arg(center_color_.blue());
-    }
-
+    QString getColorStringValue();
     void colorFormat(ColorFormat format) { color_format_ = format; }
     ColorFormat colorFormat() const { return color_format_; }
     void toggleColorFormat() 
