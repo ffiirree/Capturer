@@ -1,7 +1,7 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
-#include "enum.h"
+#include "probe/enum.h"
 
 #include <optional>
 #include <string>

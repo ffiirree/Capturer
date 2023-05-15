@@ -2,8 +2,8 @@
 
 #ifdef _WIN32
 
-#include "defer.h"
 #include "logging.h"
+#include "probe/defer.h"
 #include "utils.h"
 
 #include <dshow.h>
@@ -76,7 +76,7 @@ static std::vector<av::device_t> EnumerateDevices(REFGUID category)
     av::device_type_t mt{};
     if (category == CLSID_VideoInputDeviceCategory)
         mt = av::device_type_t::video | av::device_type_t::source;
-        
+
     else if (category == CLSID_AudioInputDeviceCategory)
         mt = av::device_type_t::audio;
 

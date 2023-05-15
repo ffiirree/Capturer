@@ -15,6 +15,8 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
 {
+    windows_detection_flags_ = probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::children;
+
     menu_ = new ImageEditMenu(this);
     canvas_ = new Canvas(menu_, this);
 

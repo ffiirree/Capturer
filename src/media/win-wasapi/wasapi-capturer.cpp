@@ -2,9 +2,9 @@
 
 #include "wasapi-capturer.h"
 
-#include "defer.h"
 #include "fmt/format.h"
 #include "logging.h"
+#include "probe/defer.h"
 #include "utils.h"
 #include "win-wasapi.h"
 

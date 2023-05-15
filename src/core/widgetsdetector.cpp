@@ -5,14 +5,17 @@
 
 std::deque<probe::graphics::window_t> WidgetsDetector::windows_;
 
-void WidgetsDetector::refresh() { windows_ = probe::graphics::windows(); }
+void WidgetsDetector::refresh(probe::graphics::window_filter_t flags)
+{
+    windows_ = probe::graphics::windows(flags);
+}
 
 probe::graphics::window_t WidgetsDetector::window(const QPoint& pos)
 {
     auto desktop = probe::graphics::virtual_screen_geometry();
 
-    for(auto win : windows_) {
-        if(win.rect.contains(pos.x(), pos.y())) {
+    for (auto& win : windows_) {
+        if (win.rect.contains(pos.x(), pos.y())) {
             win.rect = desktop.intersected(win.rect);
             return win;
         }

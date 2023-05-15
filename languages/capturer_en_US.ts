@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="296"/>
+        <location filename="../src/record/screenrecorder.cpp" line="300"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -216,7 +216,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="216"/>
+        <location filename="../src/snip/screenshoter.cpp" line="218"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

@@ -10,8 +10,8 @@ extern "C" {
 #include <libavutil/time.h>
 }
 #include "clock.h"
-#include "defer.h"
 #include "hwaccel.h"
+#include "probe/defer.h"
 
 int Encoder::open(const std::string& filename, const std::string& video_codec_name,
                   const std::string& audio_codec_name,

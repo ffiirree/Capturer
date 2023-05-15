@@ -9,7 +9,7 @@ extern "C" {
 #include <libavutil/pixdesc.h>
 }
 #include "clock.h"
-#include "defer.h"
+#include "probe/defer.h"
 
 int Decoder::open(const std::string& name, std::map<std::string, std::string> options)
 {

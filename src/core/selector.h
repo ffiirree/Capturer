@@ -118,6 +118,9 @@ protected:
 
     bool prevent_transparent_ = false;
 
+    // windows detection flags
+    probe::graphics::window_filter_t windows_detection_flags_{ probe::graphics::window_filter_t::visible };
+
 private:
     void registerShortcuts();
     void moveSelectedBox(int x, int y);

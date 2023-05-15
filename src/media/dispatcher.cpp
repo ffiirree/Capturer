@@ -13,7 +13,7 @@ extern "C" {
 #include <libavutil/time.h>
 }
 #include "clock.h"
-#include "defer.h"
+#include "probe/defer.h"
 
 int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterContext **ctx,
                                   enum AVMediaType type)

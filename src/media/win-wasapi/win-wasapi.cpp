@@ -2,8 +2,8 @@
 
 #include "win-wasapi.h"
 
-#include "defer.h"
 #include "logging.h"
+#include "probe/defer.h"
 #include "probe/util.h"
 #include "utils.h"
 

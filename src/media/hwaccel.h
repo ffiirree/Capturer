@@ -8,7 +8,7 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavutil/hwcontext.h>
 }
-#include "defer.h"
+#include "probe/defer.h"
 
 #include <memory>
 #include <optional>

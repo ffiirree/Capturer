@@ -40,15 +40,12 @@ Selector::Selector(QWidget *parent)
 
 void Selector::start()
 {
-
-    auto windows = probe::graphics::windows();
-
     if (status_ == SelectorStatus::INITIAL) {
         status_ = SelectorStatus::NORMAL;
         setMouseTracking(true);
 
         if (use_detect_) {
-            WidgetsDetector::refresh();
+            WidgetsDetector::refresh(windows_detection_flags_);
             select(WidgetsDetector::window(QCursor::pos()));
             info_->show();
         }
@@ -268,10 +265,22 @@ void Selector::paintEvent(QPaintEvent *)
 
             if (isValid()) {
                 str = fmt::format("{} x {}", selected().width(), selected().height());
-                if (mode_ == mode_t::window)
-                    str += " : " + (window_.name.empty() ? window_.classname : window_.name);
-                else if (mode_ == mode_t::display)
+                if (mode_ == mode_t::window) {
+                    if (!window_.name.empty()) {
+                        str += " : " + window_.name;
+                    }
+                    else if (!window_.classname.empty()) {
+                        str += " : [" + window_.classname + "]";
+                    }
+#ifdef _WIN32
+                    else if (!window_.pname.empty()) {
+                        str += " : [" + window_.pname + "]";
+                    }
+#endif // _WIN32
+                }
+                else if (mode_ == mode_t::display) {
                     str += " : " + display_.name;
+                }
             }
 
             info_->setText(QString::fromUtf8(str.c_str()));
@@ -412,7 +421,7 @@ void Selector::registerShortcuts()
 
             // TODO: can not capture virtual screen
             if (mode_ != mode_t::display) {
-                for (auto display : probe::graphics::displays()) {
+                for (const auto& display : probe::graphics::displays()) {
                     if (QRect(display.geometry).contains(box_.rect(), false)) {
                         selected = display;
                     }

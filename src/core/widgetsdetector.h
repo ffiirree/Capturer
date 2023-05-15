@@ -10,7 +10,7 @@ class WidgetsDetector
 {
 public:
     static probe::graphics::window_t window(const QPoint&); // global pos
-    static void refresh();
+    static void refresh(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
 
     WidgetsDetector()                                  = delete;
     WidgetsDetector(const WidgetsDetector&)            = delete;

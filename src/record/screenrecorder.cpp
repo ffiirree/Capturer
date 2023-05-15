@@ -23,6 +23,9 @@ extern "C" {
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
+    windows_detection_flags_ = probe::graphics::window_filter_t::visible |
+                               probe::graphics::window_filter_t::capturable;
+    
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
 
