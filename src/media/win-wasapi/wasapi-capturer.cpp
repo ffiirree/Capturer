@@ -5,18 +5,15 @@
 #include "fmt/format.h"
 #include "logging.h"
 #include "probe/defer.h"
+#include "probe/util.h"
 #include "utils.h"
 #include "win-wasapi.h"
 
+#include <iterator>
 #include <winrt/base.h>
 
 // REFERENCE_TIME time units per second and per millisecond
 #define REFTIMES_PER_SEC 10000000
-
-#define RETURN_ON_ERROR(hres)                                                                              \
-    if (FAILED(hres)) {                                                                                    \
-        return -1;                                                                                         \
-    }
 
 void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
 {
@@ -41,11 +38,11 @@ void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
 int WasapiCapturer::open(const std::string& name, std::map<std::string, std::string> options)
 {
     winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
-    RETURN_ON_ERROR(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
-                                     __uuidof(IMMDeviceEnumerator), (void **)enumerator.put()));
+    RETURN_NEGV_IF_FAILED(::CoCreateInstance(winrt::guid_of<MMDeviceEnumerator>(), nullptr, CLSCTX_ALL,
+                                             winrt::guid_of<IMMDeviceEnumerator>(), enumerator.put_void()));
 
     winrt::com_ptr<IMMDevice> device{};
-    RETURN_ON_ERROR(enumerator->GetDevice(probe::util::to_utf16(name).c_str(), device.put()));
+    RETURN_NEGV_IF_FAILED(enumerator->GetDevice(probe::util::to_utf16(name).c_str(), device.put()));
 
     device_ = wasapi::device_info(device.get()).value_or(av::device_t{});
 
@@ -59,22 +56,17 @@ int WasapiCapturer::open(const std::string& name, std::map<std::string, std::str
         }
     }
 
-    if (!(frame_ = av_frame_alloc())) {
-        LOG(ERROR) << "failed to alloc an audio frame.";
-        return -1;
-    }
-
     ready_ = true;
     return 0;
 }
 
 int WasapiCapturer::init_capturer(IMMDevice *device)
 {
-    RETURN_ON_ERROR(
-        device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void **)&capturer_audio_client_));
+    RETURN_NEGV_IF_FAILED(device->Activate(winrt::guid_of<IAudioClient>(), CLSCTX_ALL, nullptr,
+                                           capturer_audio_client_.put_void()));
 
     WAVEFORMATEX *wfex = nullptr;
-    RETURN_ON_ERROR(capturer_audio_client_->GetMixFormat(&wfex));
+    RETURN_NEGV_IF_FAILED(capturer_audio_client_->GetMixFormat(&wfex));
     defer(CoTaskMemFree(wfex));
 
     init_format(wfex);
@@ -82,50 +74,52 @@ int WasapiCapturer::init_capturer(IMMDevice *device)
     DWORD flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
     if (av::is_sink(device_)) flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;
 
-    RETURN_ON_ERROR(capturer_audio_client_->Initialize(AUDCLNT_SHAREMODE_SHARED, flags, REFTIMES_PER_SEC, 0,
-                                                       wfex, nullptr));
+    RETURN_NEGV_IF_FAILED(capturer_audio_client_->Initialize(AUDCLNT_SHAREMODE_SHARED, flags,
+                                                             REFTIMES_PER_SEC, 0, wfex, nullptr));
 
-    RETURN_ON_ERROR(capturer_audio_client_->GetService(IID_PPV_ARGS(&capturer_)));
+    RETURN_NEGV_IF_FAILED(
+        capturer_audio_client_->GetService(winrt::guid_of<IAudioCaptureClient>(), capturer_.put_void()));
 
     // events
-    if (!(STOP_EVENT = CreateEvent(nullptr, true, false, nullptr))) {
+    if (STOP_EVENT = CreateEvent(nullptr, true, false, nullptr); !STOP_EVENT) {
         LOG(ERROR) << "failed to create STOP_EVENT.";
         return -1;
     }
 
-    if (!(AUDIO_SAMPLES_READY_EVENT = CreateEvent(nullptr, false, false, nullptr))) {
-        LOG(ERROR) << "failed to create AUDIO_SAMPLES_READY_EVENT.";
+    if (ARRIVED_EVENT = CreateEvent(nullptr, false, false, nullptr); !ARRIVED_EVENT) {
+        LOG(ERROR) << "failed to create ARRIVED_EVENT.";
         return -1;
     }
 
-    RETURN_ON_ERROR(capturer_audio_client_->SetEventHandle(AUDIO_SAMPLES_READY_EVENT));
+    RETURN_NEGV_IF_FAILED(capturer_audio_client_->SetEventHandle(ARRIVED_EVENT));
 
     return 0;
 }
 
 int WasapiCapturer::init_silent_render(IMMDevice *device)
 {
-    RETURN_ON_ERROR(
-        device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void **)&render_audio_client_));
+    RETURN_NEGV_IF_FAILED(device->Activate(winrt::guid_of<IAudioClient>(), CLSCTX_ALL, nullptr,
+                                           render_audio_client_.put_void()));
 
     WAVEFORMATEX *wfex = nullptr;
-    RETURN_ON_ERROR(render_audio_client_->GetMixFormat(&wfex));
+    RETURN_NEGV_IF_FAILED(render_audio_client_->GetMixFormat(&wfex));
     defer(CoTaskMemFree(wfex));
 
-    RETURN_ON_ERROR(
+    RETURN_NEGV_IF_FAILED(
         render_audio_client_->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, REFTIMES_PER_SEC, 0, wfex, nullptr));
 
     UINT32 buffer_size = 0;
-    RETURN_ON_ERROR(render_audio_client_->GetBufferSize(&buffer_size));
+    RETURN_NEGV_IF_FAILED(render_audio_client_->GetBufferSize(&buffer_size));
 
-    RETURN_ON_ERROR(render_audio_client_->GetService(IID_PPV_ARGS(&render_)));
+    RETURN_NEGV_IF_FAILED(
+        render_audio_client_->GetService(winrt::guid_of<IAudioRenderClient>(), render_.put_void()));
 
     LPBYTE buffer = nullptr;
-    RETURN_ON_ERROR(render_->GetBuffer(buffer_size, &buffer));
+    RETURN_NEGV_IF_FAILED(render_->GetBuffer(buffer_size, &buffer));
 
     memset(buffer, 0, buffer_size * av_get_bytes_per_sample(AV_SAMPLE_FMT_FLT));
 
-    RETURN_ON_ERROR(render_->ReleaseBuffer(buffer_size, 0));
+    RETURN_NEGV_IF_FAILED(render_->ReleaseBuffer(buffer_size, 0));
 
     render_audio_client_->Start();
 
@@ -151,7 +145,7 @@ int WasapiCapturer::run()
 
     start_time_ = os_gettime_ns();
     thread_     = std::thread([this]() {
-        probe::util::thread_set_name("wasapi-" + device_.name);
+        probe::thread::set_name("wasapi-" + device_.name);
         run_f();
     });
 
@@ -168,16 +162,16 @@ int WasapiCapturer::run_f()
     DWORD flags        = 0;
     UINT64 ts          = 0;
 
-    const HANDLE events[] = { STOP_EVENT, AUDIO_SAMPLES_READY_EVENT };
+    const HANDLE events[] = { STOP_EVENT, ARRIVED_EVENT };
 
     buffer_.clear();
     while (running_) {
-        switch (WaitForMultipleObjects(2, events, false, INFINITE)) {
+        switch (::WaitForMultipleObjects(std::size(events), events, false, INFINITE)) {
         case WAIT_OBJECT_0 + 0: // STOP_EVENT
             running_ = false;
             break;
 
-        case WAIT_OBJECT_0 + 1: // AUDIO_SAMPLES_READY_EVENT
+        case WAIT_OBJECT_0 + 1: // ARRIVED_EVENT
             LOG_IF(WARNING, buffer_.full()) << "[A] buffer is full, drop a packet";
 
             while (true) {
@@ -206,13 +200,13 @@ int WasapiCapturer::run_f()
             }
             break;
 
-        default: LOG(ERROR) << ""; break;
+        default: LOG(ERROR) << "[A] unknown event."; break;
         }
     } // !while(running_)
 
     eof_ = 0x01;
 
-    RETURN_ON_ERROR(capturer_audio_client_->Stop());
+    RETURN_NEGV_IF_FAILED(capturer_audio_client_->Stop());
 
     LOG(INFO) << "[A] EXITED";
     return 0;
@@ -228,7 +222,7 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     frame_->channels       = afmt.channels;
     frame_->channel_layout = afmt.channel_layout;
 
-    av_frame_get_buffer(frame_, 0);
+    av_frame_get_buffer(frame_.put(), 0);
     if (av_samples_copy((uint8_t **)frame_->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
                         afmt.channels, afmt.sample_fmt) < 0) {
         LOG(ERROR) << "av_samples_copy";
@@ -241,11 +235,11 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     }
 
     DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-                              frame_number_++, frame_->pts, frame_->nb_samples, muted_);
+                              frame_number_++, frame_->pts, frame_->nb_samples, muted_.load());
 
     buffer_.push([this](AVFrame *pushed) {
         av_frame_unref(pushed);
-        av_frame_move_ref(pushed, frame_);
+        av_frame_move_ref(pushed, frame_.get());
     });
 
     return 0;
@@ -307,14 +301,9 @@ int WasapiCapturer::destroy()
     buffer_.clear();
     start_time_ = AV_NOPTS_VALUE;
 
-    SAFE_RELEASE(capturer_audio_client_);
-    SAFE_RELEASE(capturer_);
-
     if (render_audio_client_) {
         render_audio_client_->Stop();
     }
-    SAFE_RELEASE(render_audio_client_);
-    SAFE_RELEASE(render_);
 
     if (STOP_EVENT && STOP_EVENT != INVALID_HANDLE_VALUE) {
         ::CloseHandle(STOP_EVENT);
@@ -322,16 +311,11 @@ int WasapiCapturer::destroy()
 
     // TODO : Exception thrown at 0x00007FFC1FC72D6A (ntdll.dll) in capturer.exe: 0xC0000008: An invalid
     // handle was specified.
-    if (AUDIO_SAMPLES_READY_EVENT && AUDIO_SAMPLES_READY_EVENT != INVALID_HANDLE_VALUE) {
-        ::CloseHandle(AUDIO_SAMPLES_READY_EVENT);
+    if (ARRIVED_EVENT && ARRIVED_EVENT != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(ARRIVED_EVENT);
     }
 
-    if (frame_) {
-        av_frame_free(&frame_);
-    }
     frame_number_ = 0;
-
-    // CoUninitialize();
 
     LOG(INFO) << "[    WASAPI] RESET";
 

@@ -1,11 +1,8 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include "probe/util.h"
+#include "probe/thread.h"
 
-#include <QRect>
-#include <QSize>
-#include <QStringList>
 #include <filesystem>
 #include <glog/logging.h>
 
@@ -63,9 +60,9 @@ private:
                     << std::setw(24) << _file_line
                     << "] ["
 #ifdef _WIN32
-                    <<  std::setw(32) << probe::util::thread_get_name().substr(0, 32) << "]:";
+                    <<  std::setw(32) << probe::thread::name().substr(0, 32) << "]:";
 #else
-                    <<  std::setw(15) << probe::util::thread_get_name().substr(0, 15) << "]:";
+                    <<  std::setw(15) << probe::thread::name().substr(0, 15) << "]:";
 #endif
             }
         );
@@ -74,7 +71,7 @@ private:
         FLAGS_log_dir                   = log_dir;
         FLAGS_max_log_size              = 32; // MB
         FLAGS_stop_logging_if_full_disk = true;
-        FLAGS_logbufsecs                = 0; // s
+        FLAGS_logbufsecs                = 0;  // s
         FLAGS_colorlogtostderr          = true;
         google::SetStderrLogging(google::GLOG_INFO);
         google::SetLogDestination(google::GLOG_INFO, std::string{ log_dir + "/CAPTURER-I-" }.c_str());
@@ -88,34 +85,5 @@ private:
             [](const char *data, size_t size) { LOG(ERROR) << std::string(data, size); });
     }
 };
-
-inline std::ostream& operator<<(std::ostream& out, const QString& string)
-{
-    return out << string.toStdString();
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QStringList& list)
-{
-    foreach(QString str, list) {
-        out << str.toStdString();
-    }
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QPoint& point)
-{
-    return out << "<" << point.x() << ", " << point.y() << ">";
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QSize& size)
-{
-    return out << "<" << size.width() << " x " << size.height() << ">";
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QRect& rect)
-{
-    return out << "<<" << rect.left() << ", " << rect.top() << ">, <" << rect.width() << " x "
-               << rect.height() << ">>";
-}
 
 #endif // LOGGING_H

@@ -213,6 +213,7 @@ find_package_handle_standard_args(
 )
 
 if(FFMPEG_FOUND)
+    message(STATUS "Found FFmpeg: ${FFMPEG_VERSION}")
     foreach(component ${FFmpeg_FIND_COMPONENTS})
         if(NOT TARGET ffmpeg::${component})
             string(TOUPPER ${component} component_u)

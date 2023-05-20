@@ -72,13 +72,19 @@ private:
     AVBufferRef *frames_ref_{ nullptr };
     AVHWFramesContext *frames_ctx_{ nullptr };
 
+    winrt::com_ptr<ID3D11Texture2D> resize_texture_{};
+    winrt::com_ptr<ID3D11RenderTargetView> resize_render_target_{};
+    winrt::com_ptr<ID3D11ShaderResourceView> resize_shader_view_{};
+
     av::frame frame_{};
     uint32_t frame_number_{};
 
-    //
-    bool draw_mouse_ = true;
-    bool show_region_ = true;
-    
+    // options @{
+    bool draw_mouse_{ true };
+    bool show_region_{ true };
+    D3D11_BOX box_{ .front = 0, .back = 1 };
+    // @}
+
     RingVector<AVFrame *, 4> buffer_{
         []() { return av_frame_alloc(); },
         [](AVFrame **frame) { av_frame_free(frame); },

@@ -192,7 +192,7 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 
 QPixmap ScreenShoter::snip()
 {
-    history_.push_back(selected());
+    history_.push_back(prey_);
     history_idx_ = history_.size() - 1;
 
     return canvas_->pixmap().copy(selected().translated(-QRect(probe::graphics::virtual_screen_geometry()).topLeft()));
@@ -282,7 +282,7 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
-            box_.reset(history_[history_idx_]);
+            select(history_[history_idx_]);
             CAPTURED();
             if(history_idx_ > 0) history_idx_--;
         }
@@ -290,7 +290,7 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
-            box_.reset(history_[history_idx_]);
+            select(history_[history_idx_]);
             CAPTURED();
             if(history_idx_ < history_.size() - 1) history_idx_++;
         }

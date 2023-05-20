@@ -265,7 +265,7 @@ int Encoder::run()
 
     running_ = true;
     thread_  = std::thread([this]() {
-        probe::util::thread_set_name("encoder");
+        probe::thread::set_name("encoder");
         run_f();
     });
 
@@ -349,7 +349,7 @@ std::pair<int, int> Encoder::video_sync_process()
             expected_pts_ = std::lround(floating_pts);
         }
 #if LIBAVUTIL_VERSION_MAJOR >= 58
-        filtered_frame_->duration = duration;
+        filtered_frame_->duration = static_cast<int64_t>(duration);
 #endif
         break;
     default: break;

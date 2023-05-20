@@ -12,12 +12,12 @@ int main(int argc, char *argv[])
 {
     Logger::init(argv[0]);
 
-    probe::util::thread_set_name("capturer-main");
+    probe::thread::set_name("capturer-main");
 
     QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
-    LOG(INFO) << "Capturer " << CAPTURER_VERSION;
+    LOG(INFO) << "Capturer               " << CAPTURER_VERSION;
     LOG(INFO) << " -- Qt               : " << qVersion();
     LOG(INFO) << " -- Operating System : " << probe::system::os_name() << " ("
               << probe::to_string(probe::system::os_version()) << ")";
@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
     Config::instance().load_theme(Config::theme());
 
     auto language = Config::instance()["language"].get<QString>();
-    LOG(INFO) << " -- Language         : " << language;
-    LOG(INFO) << " -- Config File      : " << Config::instance().getFilePath();
+    LOG(INFO) << " -- Language         : " << language.toStdString();
+    LOG(INFO) << " -- Config File      : " << Config::instance().getFilePath().toStdString();
     LOG(INFO);
 
     QTranslator translator;

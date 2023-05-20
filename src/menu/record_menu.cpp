@@ -6,6 +6,10 @@
 #include <QTime>
 #include "probe/graphics.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     : QWidget(parent)
 {
@@ -47,7 +51,6 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     time_label_->setObjectName("time");
     time_label_->setAlignment(Qt::AlignCenter);
     layout_->addWidget(time_label_);
-    
 
     if (buttons & RecordMenu::PAUSE) {
         pause_btn_ = new QCheckBox();
@@ -68,6 +71,16 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     backgroud_layout->setContentsMargins({});
     backgroud_layout->addWidget(window_);
     setLayout(backgroud_layout);
+
+#ifdef _WIN32
+    // exclude the recording menu
+    DWORD affinity{};
+    if (::GetWindowDisplayAffinity(reinterpret_cast<HWND>(winId()), &affinity)) {
+        if (affinity != WDA_EXCLUDEFROMCAPTURE) {
+            ::SetWindowDisplayAffinity(reinterpret_cast<HWND>(winId()), WDA_EXCLUDEFROMCAPTURE);
+        }
+    }
+#endif
 }
 
 // in ms

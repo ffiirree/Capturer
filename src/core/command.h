@@ -40,8 +40,8 @@ public:
     }
     [[nodiscard]] inline bool isFill() const { return is_fill_; }
 
-    [[nodiscard]] inline QVector<QPoint> points() const { return points_; }
-    inline QVector<QPoint> points() { return points_; }
+    [[nodiscard]] inline QVector<QPointF> points() const { return points_; }
+    inline QVector<QPointF> points() { return points_; }
 
     inline QRect geometry()
     {
@@ -106,8 +106,8 @@ private:
     QFont font_;
     float theta_{ 0 };
     bool is_fill_{ false };
-    QVector<QPoint> points_;
-    QVector<QPoint> points_buff_;
+    QVector<QPointF> points_;
+    QVector<QPointF> points_buff_;
     std::shared_ptr<TextEdit> widget_{ nullptr };
 
     Resizer resizer_{};

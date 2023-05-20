@@ -11,7 +11,18 @@ public:
     explicit TextEdit(QWidget *parent = nullptr);
 
 public slots:
-    void setFont(const QFont& font) { QTextEdit::setFont(font); emit fontChanged(); };
+
+    void setFont(const QFont& font)
+    {
+        QTextEdit::setFont(font);
+        emit fontChanged();
+    };
+
+    void setColor(const QColor& color)
+    {
+        color_ = color;
+        setTextColor(color);
+    }
 
 signals:
     void focus(bool);
@@ -21,6 +32,8 @@ signals:
 protected:
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
+
+    QColor color_{};
 };
 
 #endif // TEXTEDIT_H

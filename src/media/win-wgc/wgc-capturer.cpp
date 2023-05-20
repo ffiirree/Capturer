@@ -2,10 +2,10 @@
 
 #include "wgc-capturer.h"
 
-#include "defer.h"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
 #include "logging.h"
+#include "probe/defer.h"
 #include "probe/graphics.h"
 
 #include <regex>
@@ -22,39 +22,40 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
 
     // options
     if (options.contains("draw_mouse")) {
-        draw_mouse_ = (options["draw_mouse"] == "1" || options["draw_mouse"] == "true");
-        options.erase("draw_mouse");
+        draw_mouse_ =
+            std::regex_match(options["draw_mouse"], std::regex("1|on|true", std::regex_constants::icase));
     }
 
     if (options.contains("show_region")) {
-        show_region_ = (options["show_region"] == "1" || options["show_region"] == "true");
-        options.erase("show_region");
+        show_region_ =
+            std::regex_match(options["show_region"], std::regex("1|on|true", std::regex_constants::icase));
+    }
+
+    // capture box
+    if (options.contains("offset_x") && options.contains("offset_y") && options.contains("video_size") &&
+        std::regex_match(options.at("offset_x"), std::regex("\\d+")) &&
+        std::regex_match(options.at("offset_y"), std::regex("\\d+"))) {
+        std::smatch matchs;
+        if (std::regex_match(options.at("video_size"), matchs, std::regex("([\\d]+)x([\\d]+)"))) {
+            box_.left   = std::stoul(options.at("offset_x"));
+            box_.top    = std::stol(options.at("offset_y"));
+            // the box region includes the left pixel but not the right pixel.
+            box_.right  = box_.left + std::stoul(matchs[1]);
+            box_.bottom = box_.top + std::stoul(matchs[2]);
+        }
     }
 
     // parse capture item
     std::smatch matches;
     if (std::regex_match(name, matches, std::regex("window=(\\d+)"))) {
-        if (matches.size() == 2) {
-            item_ =
-                wgc::create_capture_item_for_window(reinterpret_cast<HWND>(std::stoull(matches[1].str())));
-
-            // framerate
-            // auto display = probe::graphics::display_contains(
-            //    reinterpret_cast<uint64_t>(std::stoull(matches[1].str())));
-            // if (display.has_value() && display->frequency > 20) {
-            //    vfmt.framerate = { std::lround(display->frequency), 1 };
-            //}
-        }
+        item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(std::stoull(matches[1])));
     }
     else if (std::regex_match(name, matches, std::regex("display=(\\d+)"))) {
-        if (matches.size() == 2) {
-            item_ = wgc::create_capture_item_for_monitor(
-                reinterpret_cast<HMONITOR>(std::stoull(matches[1].str())));
-        }
+        item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(std::stoull(matches[1])));
     }
 
     if (!item_) {
-        LOG(ERROR) << "[     WGC] can not create GraphicsCaptureItem.";
+        LOG(ERROR) << "[     WGC] can not create capture item for: '" << name << "'.";
         return -1;
     }
 
@@ -97,10 +98,24 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     session_.IsCursorCaptureEnabled(draw_mouse_);
     session_.IsBorderRequired(show_region_);
 
+    if (box_.right <= box_.left || box_.bottom <= box_.top || box_.right > item_.Size().Width ||
+        box_.bottom > item_.Size().Height) {
+        LOG(INFO) << fmt::format("[     WGC] [{}] invalid recording region <({},{}), ({},{})> in ({}x{})",
+                                 name, box_.left, box_.top, box_.right, box_.bottom, item_.Size().Width,
+                                 item_.Size().Height);
+        return -1;
+    }
+
+    // must be multiple of 2, round downwards
+    if (box_ == D3D11_BOX{ .front = 0, .back = 1 }) {
+        box_.right  = item_.Size().Width & ~0x01;
+        box_.bottom = item_.Size().Height & ~0x01;
+    }
+
     // video format
     vfmt = av::vformat_t{
-        .width               = item_.Size().Width,
-        .height              = item_.Size().Height,
+        .width               = static_cast<int>(box_.right - box_.left),
+        .height              = static_cast<int>(box_.bottom - box_.top),
         .pix_fmt             = AV_PIX_FMT_D3D11,
         .framerate           = { 60, 1 },
         .sample_aspect_ratio = { 1, 1 },
@@ -108,6 +123,42 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
         .hwaccel             = AV_HWDEVICE_TYPE_D3D11VA,
     };
 
+    D3D11_TEXTURE2D_DESC desc{
+        .Width          = static_cast<UINT>(vfmt.width),
+        .Height         = static_cast<UINT>(vfmt.height),
+        .MipLevels      = 1,
+        .ArraySize      = 1,
+        .Format         = DXGI_FORMAT_B8G8R8A8_UNORM,
+        .SampleDesc     = { 1, 0 },
+        .Usage          = D3D11_USAGE_DEFAULT,
+        .BindFlags      = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+        .CPUAccessFlags = 0,
+        .MiscFlags      = 0,
+    };
+    if (FAILED(d3d11_device->CreateTexture2D(&desc, 0, resize_texture_.put()))) {
+        LOG(INFO) << "failed to create render texture.";
+        return -1;
+    }
+
+    D3D11_RENDER_TARGET_VIEW_DESC target_desc{
+        .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
+        .ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
+        .Texture2D     = { .MipSlice = 0 },
+    };
+
+    d3d11_device->CreateRenderTargetView(reinterpret_cast<ID3D11Resource *>(resize_texture_.get()),
+                                         &target_desc, resize_render_target_.put());
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{
+        .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
+        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+        .Texture2D     = { .MostDetailedMip = 0, .MipLevels = 1 },
+    };
+
+    d3d11_device->CreateShaderResourceView(reinterpret_cast<ID3D11Resource *>(resize_texture_.get()),
+                                           &view_desc, resize_shader_view_.put());
+
+    //
     if (init_hwframes_ctx() < 0) {
         return -1;
     }
@@ -188,6 +239,7 @@ void WindowsGraphicsCapturer::reset()
         item_       = nullptr;
 
         frame_number_ = 0;
+        box_          = { .front = 0, .back = 1 };
 
         buffer_.clear();
 
@@ -246,9 +298,9 @@ void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const&
     if (static_cast<int>(desc.Width) != vfmt.width || static_cast<int>(desc.Height) != vfmt.height) {
         frame_pool_.Recreate(device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
                              { static_cast<int32_t>(desc.Width), static_cast<int32_t>(desc.Height) });
-
-        vfmt.height = desc.Height;
-        vfmt.width  = desc.Width;
+        // TODO: resize the texture2d
+        // vfmt.height = desc.Height;
+        // vfmt.width  = desc.Width;
     }
 
     if (av_hwframe_get_buffer(reinterpret_cast<AVBufferRef *>(frames_ref_), frame_.put(), 0) < 0) {
@@ -259,7 +311,15 @@ void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const&
     frame_->sample_aspect_ratio = { 1, 1 };
     frame_->pts                 = os_gettime_ns();
 
-    d3d11_ctx_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]), frame_surface.get());
+    if (vfmt.height != desc.Height || vfmt.width != desc.Width) {
+        d3d11_ctx_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+                                          reinterpret_cast<UINT>(frame_->data[1]), 0, 0, 0,
+                                          frame_surface.get(), 0, &box_);
+    }
+    else {
+        d3d11_ctx_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+                                 frame_surface.get());
+    }
 
     DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
                               frame_->pts, frame_->width, frame_->height);

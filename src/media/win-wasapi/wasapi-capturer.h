@@ -3,15 +3,16 @@
 
 #ifdef _WIN32
 
+#include <Audioclient.h>
 #include <Windows.h>
-#include <mmdeviceapi.h>
-#include <propsys.h>
-#include <functiondiscoverykeys.h>
 #include <atomic>
-#include <thread>
+#include <functiondiscoverykeys.h>
+#include <mmdeviceapi.h>
 #include <mutex>
 #include <optional>
-#include <Audioclient.h>
+#include <propsys.h>
+#include <thread>
+#include <winrt/base.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -75,21 +76,21 @@ private:
 
     int64_t start_time_{ AV_NOPTS_VALUE };
 
-    AVFrame *frame_{ nullptr };
+    av::frame frame_{ };
     uint32_t frame_number_{ 0 };
 
     // WASAPI Capturer@{
-    IAudioClient *capturer_audio_client_{ nullptr };
-    IAudioCaptureClient *capturer_{ nullptr };
+    winrt::com_ptr<IAudioClient> capturer_audio_client_{};
+    winrt::com_ptr<IAudioCaptureClient> capturer_{};
     // @}
 
     // WASAPI Render@{
-    IAudioClient *render_audio_client_{ nullptr };
-    IAudioRenderClient *render_{ nullptr };
+    winrt::com_ptr<IAudioClient> render_audio_client_{};
+    winrt::com_ptr<IAudioRenderClient> render_{};
     // @}
 
     // events
-    HANDLE AUDIO_SAMPLES_READY_EVENT{ nullptr };
+    HANDLE ARRIVED_EVENT{ nullptr };
     HANDLE STOP_EVENT{ nullptr };
 
     av::device_t device_{};

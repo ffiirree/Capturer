@@ -3,7 +3,6 @@
 #include "config.h"
 #include "devices.h"
 #include "logging.h"
-#include "widgetsdetector.h"
 
 #include <QApplication>
 #include <QDateTime>
@@ -23,9 +22,13 @@ extern "C" {
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
-    windows_detection_flags_ = probe::graphics::window_filter_t::visible |
-                               probe::graphics::window_filter_t::capturable;
-    
+    windows_detection_flags_ =
+        probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::capturable;
+
+#ifdef _WIN32
+    scope_ = scope_t::display;
+#endif
+
     recording_type_ = type;
     setMinValidSize({ 16, 16 });
 
@@ -139,7 +142,7 @@ void ScreenRecorder::setup()
 {
     status_ = SelectorStatus::LOCKED;
 
-    QRect region = selected();
+    QRect region = selected(scope_ != scope_t::desktop);
 
     Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion()
                                                                                        : hide();
@@ -168,30 +171,34 @@ void ScreenRecorder::setup()
         { "draw_mouse", std::to_string(static_cast<int>(draw_mouse)) },
     };
 
+    options["video_size"] = fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2);
+
 #ifdef __linux__
     // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
     // echo $DISPLAY
     name              = fmt::format("{}.0+{},{}", getenv("DISPLAY"), region.x(), region.y());
     options["format"] = "x11grab";
 #elif _WIN32
-#if USE_GDIGRAB
-    name                = "desktop";
-    options["format"]   = "gdigrab";
-    options["offset_x"] = std::to_string(region.x());
-    options["offset_y"] = std::to_string(region.y());
-#else
-    switch (mode_) {
-    case Selector::mode_t::rectanle:
-        name                  = "desktop";
-        options["offset_x"]   = std::to_string(region.x());
-        options["offset_y"]   = std::to_string(region.y());
-        options["video_size"] = fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2);
+    options["offset_x"]    = std::to_string(region.x());
+    options["offset_y"]    = std::to_string(region.y());
+    // TODO:
+    //   1. rectanle mode: OK, display mode
+    //   2. widget   mode: NO, display mode
+    //   3. window   mode: NO, display mode
+    //   4. display  mode: OK
+    //   5. desktop  mode: NO, not supported
+    options["show_region"] = "false";
+    switch (prey_.type) {
+    case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
+    case hunter::prey_type_t::widget:
+    case hunter::prey_type_t::window: {
+        auto display          = probe::graphics::display_contains(selected().center()).value();
+        name                  = "display=" + std::to_string(display.handle);
         break;
-    case Selector::mode_t::display: name = "display=" + std::to_string(display_.handle); break;
-    case Selector::mode_t::window: name = "window=" + std::to_string(window_.handle); break;
-    default: break;
     }
-#endif
+    case hunter::prey_type_t::display: name = "display=" + std::to_string(prey_.handle); break;
+    default: LOG(ERROR) << "unsuppored mode"; return;
+    }
 #endif
 
     if (desktop_capturer_->open(name, options) < 0) {

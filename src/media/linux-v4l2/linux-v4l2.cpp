@@ -2,7 +2,7 @@
 
 #include "linux-v4l2.h"
 
-#include "defer.h"
+#include "probe/defer.h"
 #include "logging.h"
 
 #include <dirent.h>

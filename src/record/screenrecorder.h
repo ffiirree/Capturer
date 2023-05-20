@@ -18,11 +18,7 @@
 #endif
 
 #ifdef _WIN32
-#if USE_GDIGRAB
-using DesktopCapturer = Decoder;
-#else
 using DesktopCapturer = WindowsGraphicsCapturer;
-#endif
 using AudioCapturer = WasapiCapturer;
 #elif __linux__
 using DesktopCapturer = Decoder;

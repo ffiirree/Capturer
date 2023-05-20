@@ -2,7 +2,7 @@
 
 #include "linux-pulse.h"
 
-#include "defer.h"
+#include "probe/defer.h"
 #include "utils.h"
 
 #include <fmt/format.h>

@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="300"/>
+        <location filename="../src/record/screenrecorder.cpp" line="306"/>
         <source>Path: </source>
         <translation>路径：</translation>
     </message>
@@ -450,7 +450,7 @@
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="525"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 </TS>

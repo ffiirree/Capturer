@@ -10,6 +10,7 @@ extern "C" {
 }
 #include "clock.h"
 #include "probe/defer.h"
+#include "probe/thread.h"
 
 int Decoder::open(const std::string& name, std::map<std::string, std::string> options)
 {
@@ -262,7 +263,7 @@ int Decoder::run()
     eof_ = 0x00;
     running_ = true;
     thread_ = std::thread([this]() {
-        probe::util::thread_set_name("dec-" + name_);
+        probe::thread::set_name("dec-" + name_);
         run_f();
     });
 
@@ -367,7 +368,7 @@ int Decoder::run_f()
                     decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
 
                 DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
-                    audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_);
+                    audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_.load());
 
                 if (muted_) {
                     av_samples_set_silence(

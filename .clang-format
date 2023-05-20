@@ -11,11 +11,11 @@ AlignConsecutiveAssignments:
   AlignCompound:   false
   PadOperators:    true
 AlignConsecutiveBitFields:
-  Enabled:         false
+  Enabled:         true
   AcrossEmptyLines: false
-  AcrossComments:  false
+  AcrossComments:  true
   AlignCompound:   false
-  PadOperators:    false
+  PadOperators:    true
 AlignConsecutiveDeclarations:
   Enabled:         false
   AcrossEmptyLines: false
@@ -27,18 +27,20 @@ AlignConsecutiveMacros:
   AcrossEmptyLines: false
   AcrossComments:  true
   AlignCompound:   false
-  PadOperators:    false
+  PadOperators:    true
 AlignEscapedNewlines: Right
 AlignOperands:   Align
-AlignTrailingComments: true
+AlignTrailingComments:
+  Kind:            Always
+  OverEmptyLines:  2
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortEnumsOnASingleLine: true
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
-AllowShortLambdasOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
@@ -48,17 +50,18 @@ AttributeMacros:
   - __capability
 BinPackArguments: true
 BinPackParameters: true
+BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel:  false
   AfterClass:      true
   AfterControlStatement: Never
   AfterEnum:       true
+  AfterExternBlock: false
   AfterFunction:   true
   AfterNamespace:  true
   AfterObjCDeclaration: false
   AfterStruct:     true
   AfterUnion:      true
-  AfterExternBlock: false
   BeforeCatch:     true
   BeforeElse:      true
   BeforeLambdaBody: false
@@ -67,33 +70,28 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: None
-BreakBeforeConceptDeclarations: Always
-BreakBeforeBraces: Custom
-BreakBeforeInheritanceComma: false
-BreakInheritanceList: BeforeColon
-BreakBeforeTernaryOperators: true
-BreakConstructorInitializersBeforeComma: true
-BreakConstructorInitializers: BeforeColon
+BreakAfterAttributes: Never
 BreakAfterJavaFieldAnnotations: false
+BreakArrays:     false
+BreakBeforeBinaryOperators: None
+BreakBeforeConceptDeclarations: Allowed
+BreakBeforeBraces: Custom
+BreakBeforeInlineASMColon: OnlyMultiline
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
 BreakStringLiterals: false
 ColumnLimit:     108
 CommentPragmas:  '^ IWYU pragma:'
-QualifierAlignment: Leave
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: false
-DeriveLineEnding: true
 DerivePointerAlignment: false
 DisableFormat:   false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
-PackConstructorInitializers: BinPack
-BasedOnStyle:    ''
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-AllowAllConstructorInitializersOnNextLine: true
 FixNamespaceComments: true
 ForEachMacros:
   - foreach
@@ -118,20 +116,26 @@ IncludeCategories:
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false
-IndentCaseLabels: false
 IndentCaseBlocks: false
-IndentGotoLabels: true
-IndentPPDirectives: None
+IndentCaseLabels: false
 IndentExternBlock: AfterExternBlock
-IndentRequiresClause: true
+IndentGotoLabels: false
+IndentPPDirectives: None
+IndentRequiresClause: false
 IndentWidth:     4
 IndentWrappedFunctionNames: false
 InsertBraces:    false
+InsertNewlineAtEOF: false
 InsertTrailingCommas: None
+IntegerLiteralSeparator:
+  Binary:          4
+  Decimal:         3
+  Hex:             4
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
 LambdaBodyIndentation: Signature
+LineEnding:      DeriveLF
 MacroBlockBegin: ''
 MacroBlockEnd:   ''
 MaxEmptyLinesToKeep: 1
@@ -141,6 +145,7 @@ ObjCBlockIndentWidth: 2
 ObjCBreakBeforeNestedBlockParam: true
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
+PackConstructorInitializers: BinPack
 PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300
@@ -149,22 +154,27 @@ PenaltyBreakOpenParenthesis: 0
 PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
-PenaltyReturnTypeOnItsOwnLine: 60
 PenaltyIndentedWhitespace: 0
+PenaltyReturnTypeOnItsOwnLine: 60
 PointerAlignment: Right
 PPIndentWidth:   -1
+QualifierAlignment: Custom
+QualifierOrder: ['inline', 'static', 'const', 'type', 'volatile' ]
 ReferenceAlignment: Left
 ReflowComments:  true
 RemoveBracesLLVM: false
+RemoveSemicolon: false
 RequiresClausePosition: OwnLine
-SeparateDefinitionBlocks: Leave
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 1
-SortIncludes:    CaseSensitive
+SortIncludes:    CaseInsensitive
 SortJavaStaticImport: Before
-SortUsingDeclarations: true
+SortUsingDeclarations: LexicographicNumeric
 SpaceAfterCStyleCast: false
 SpaceAfterLogicalNot: false
 SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: false
@@ -181,8 +191,8 @@ SpaceBeforeParensOptions:
   AfterRequiresInClause: false
   AfterRequiresInExpression: false
   BeforeNonEmptyParentheses: false
-SpaceAroundPointerQualifiers: Default
 SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
@@ -195,8 +205,6 @@ SpacesInLineCommentPrefix:
   Maximum:         -1
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-SpaceBeforeSquareBrackets: false
-BitFieldColonSpacing: Both
 Standard:        Latest
 StatementAttributeLikeMacros:
   - Q_EMIT
@@ -204,13 +212,12 @@ StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
 TabWidth:        4
-UseCRLF:         false
 UseTab:          Never
 WhitespaceSensitiveMacros:
-  - STRINGIZE
-  - PP_STRINGIZE
   - BOOST_PP_STRINGIZE
-  - NS_SWIFT_NAME
   - CF_SWIFT_NAME
+  - NS_SWIFT_NAME
+  - PP_STRINGIZE
+  - STRINGIZE
 ...
 

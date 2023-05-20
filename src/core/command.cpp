@@ -1,7 +1,8 @@
 #include "command.h"
 
-#include <QPainter>
 #include <cmath>
+#include <numbers>
+#include <QPainter>
 
 #define TEXT_EDIT_MARGIN 16
 
@@ -30,7 +31,7 @@ PaintCommand::PaintCommand(Graph type, const QPen& pen, const QFont& font, bool 
         });
 
         widget_->setFont(font_);
-        widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen.color().name()));
+        widget_->setColor(pen_.color());
 
         resizer_ = Resizer(start_point, widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
 
@@ -58,8 +59,9 @@ PaintCommand& PaintCommand::operator=(const PaintCommand& other)
         widget_ = std::make_shared<TextEdit>();
 
         widget_->setFont(other.widget_->font());
+        widget_->setColor(pen_.color());
+
         widget_->setText(other.widget_->toPlainText());
-        widget_->setStyleSheet(QString("QTextEdit{color:%1;}").arg(pen_.color().name()));
 
         connect(widget_.get(), &TextEdit::textChanged, [this]() {
             resizer_.resize(widget_->size() + QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
@@ -125,15 +127,15 @@ void PaintCommand::move(const QPoint& diff)
     switch (graph()) {
     case Graph::RECTANGLE:
     case Graph::ELLIPSE:
-    case Graph::LINE: resizer_.move(diff.x(), diff.y()); break;
+    case Graph::LINE: resizer_.translate(diff.x(), diff.y()); break;
 
     case Graph::ARROW:
-        resizer_.move(diff.x(), diff.y());
+        resizer_.translate(diff.x(), diff.y());
         updateArrowPoints(resizer_.point1(), resizer_.point2());
         break;
 
     case Graph::TEXT:
-        resizer_.move(diff.x(), diff.y());
+        resizer_.translate(diff.x(), diff.y());
         widget_->move(resizer_.topLeft() + QPoint{ TEXT_EDIT_MARGIN / 2, TEXT_EDIT_MARGIN / 2 } + offset_);
         break;
 
@@ -170,19 +172,19 @@ void PaintCommand::rotate(const QPoint& point)
 
 void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_pos)
 {
-    auto pre_resizer_ = resizer_;
+    auto pre_resizer = resizer_;
     if (graph() == TEXT && widget_->toPlainText().isEmpty()) return;
 
     // clang-format off
     switch (position) {
-    case Resizer::X1Y1_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
-    case Resizer::X2Y1_ANCHOR:  resizer_.rx2() = cursor_pos.x(); resizer_.ry1() = cursor_pos.y(); break;
-    case Resizer::X1Y2_ANCHOR:  resizer_.rx1() = cursor_pos.x(); resizer_.ry2() = cursor_pos.y(); break;
-    case Resizer::X2Y2_ANCHOR:  resizer_.rx2() = cursor_pos.x(); resizer_.ry2() = cursor_pos.y(); break;
-    case Resizer::X1_ANCHOR:    resizer_.rx1() = cursor_pos.x(); break;
-    case Resizer::X2_ANCHOR:    resizer_.rx2() = cursor_pos.x(); break;
-    case Resizer::Y1_ANCHOR:    resizer_.ry1() = cursor_pos.y(); break;
-    case Resizer::Y2_ANCHOR:    resizer_.ry2() = cursor_pos.y(); break;
+    case Resizer::X1Y1_ANCHOR:  resizer_.x1(cursor_pos.x()); resizer_.y1(cursor_pos.y()); break;
+    case Resizer::X2Y1_ANCHOR:  resizer_.x2(cursor_pos.x()); resizer_.y1(cursor_pos.y()); break;
+    case Resizer::X1Y2_ANCHOR:  resizer_.x1(cursor_pos.x()); resizer_.y2(cursor_pos.y()); break;
+    case Resizer::X2Y2_ANCHOR:  resizer_.x2(cursor_pos.x()); resizer_.y2(cursor_pos.y()); break;
+    case Resizer::X1_ANCHOR:    resizer_.x1(cursor_pos.x()); break;
+    case Resizer::X2_ANCHOR:    resizer_.x2(cursor_pos.x()); break;
+    case Resizer::Y1_ANCHOR:    resizer_.y1(cursor_pos.y()); break;
+    case Resizer::Y2_ANCHOR:    resizer_.y2(cursor_pos.y()); break;
     default: break;
     }
     // clang-format on
@@ -196,15 +198,15 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
         QSize text_size = widget_->size();
         QSize diff;
 
-        if (pre_resizer_.rect().contains(resizer_.rect())) {
-            auto r = resizer_.rect().intersected(pre_resizer_.rect());
+        if (pre_resizer.rect().contains(resizer_.rect())) {
+            auto r = resizer_.rect().intersected(pre_resizer.rect());
             diff =
                 text_size.scaled(r.size() - QSize(TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN),
                                  position & 0x0f00 ? Qt::KeepAspectRatioByExpanding : Qt::KeepAspectRatio) -
                 (resizer_.size() - QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
         }
         else {
-            auto r = resizer_.rect().united(pre_resizer_.rect());
+            auto r = resizer_.rect().united(pre_resizer.rect());
             diff   = text_size.scaled(r.size() - QSize(TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN),
                                       Qt::KeepAspectRatioByExpanding) -
                    (resizer_.size() - QSize{ TEXT_EDIT_MARGIN, TEXT_EDIT_MARGIN });
@@ -212,14 +214,14 @@ void PaintCommand::resize(Resizer::PointPosition position, const QPoint& cursor_
 
         // clang-format off
         switch (position) {
-        case Resizer::X1Y1_ANCHOR:  resizer_.ajust(-diff.width(), -diff.height(), 0, 0);    break;
-        case Resizer::X2Y1_ANCHOR:  resizer_.ajust(0, -diff.height(), diff.width(), 0);     break;
-        case Resizer::X1Y2_ANCHOR:  resizer_.ajust(-diff.width(), 0, 0, diff.height());     break;
-        case Resizer::X2Y2_ANCHOR:  resizer_.ajust(0, 0, diff.width(), diff.height());      break;
-        case Resizer::X1_ANCHOR:    resizer_.ajust(0, 0, 0, diff.height()); break;
-        case Resizer::X2_ANCHOR:    resizer_.ajust(0, 0, 0, diff.height()); break;
-        case Resizer::Y1_ANCHOR:    resizer_.ajust(0, 0, diff.width(), 0);  break;
-        case Resizer::Y2_ANCHOR:    resizer_.ajust(0, 0, diff.width(), 0);  break;
+        case Resizer::X1Y1_ANCHOR:  resizer_.adjust(-diff.width(),  -diff.height(), 0,              0            ); break;
+        case Resizer::X2Y1_ANCHOR:  resizer_.adjust(0,              -diff.height(), diff.width(),   0            ); break;
+        case Resizer::X1Y2_ANCHOR:  resizer_.adjust(-diff.width(),  0,              0,              diff.height()); break;
+        case Resizer::X2Y2_ANCHOR:  resizer_.adjust(0,              0,              diff.width(),   diff.height()); break;
+        case Resizer::X1_ANCHOR:    resizer_.adjust(0,              0,              0,              diff.height()); break;
+        case Resizer::X2_ANCHOR:    resizer_.adjust(0,              0,              0,              diff.height()); break;
+        case Resizer::Y1_ANCHOR:    resizer_.adjust(0,              0,              diff.width(),   0            ); break;
+        case Resizer::Y2_ANCHOR:    resizer_.adjust(0,              0,              diff.width(),   0            ); break;
         default: break;
         }
         // clang-format on
@@ -245,20 +247,22 @@ void PaintCommand::updateArrowPoints(QPoint begin, QPoint end)
 {
     points_.resize(6);
 
-    double par   = 10.0;
-    double par2  = 27.0;
-    double slopy = atan2((end.y() - begin.y()), (end.x() - begin.x()));
-    double alpha = 30.0 * 3.1415926 / 180.0;
+    double slopy = std::atan2(end.y() - begin.y(), end.x() - begin.x());
 
-    points_[1] = QPoint(end.x() - int(par * cos(alpha + slopy)) - int(9 * cos(slopy)),
-                        end.y() - int(par * sin(alpha + slopy)) - int(9 * sin(slopy)));
-    points_[5] = QPoint(end.x() - int(par * cos(alpha - slopy)) - int(9 * cos(slopy)),
-                        end.y() + int(par * sin(alpha - slopy)) - int(9 * sin(slopy)));
+    double par1 = 20.0;
+    double par2 = 25.0;
 
-    points_[2] = QPoint(end.x() - int(par2 * cos(alpha + slopy)), end.y() - int(par2 * sin(alpha + slopy)));
-    points_[4] = QPoint(end.x() - int(par2 * cos(alpha - slopy)), end.y() + int(par2 * sin(alpha - slopy)));
+    double alpha1 = 13.0 * std::numbers::pi / 180.0;
+    double alpha2 = 26.0 * std::numbers::pi / 180.0;
 
     points_[0] = begin;
+
+    points_[1] = { end.x() - par1 * std::cos(alpha1 + slopy), end.y() - par1 * std::sin(alpha1 + slopy) };
+    points_[5] = { end.x() - par1 * std::cos(alpha1 - slopy), end.y() + par1 * std::sin(alpha1 - slopy) };
+
+    points_[2] = { end.x() - par2 * std::cos(alpha2 + slopy), end.y() - par2 * std::sin(alpha2 + slopy) };
+    points_[4] = { end.x() - par2 * std::cos(alpha2 - slopy), end.y() + par2 * std::sin(alpha2 - slopy) };
+
     points_[3] = end;
 }
 
@@ -391,8 +395,8 @@ void PaintCommand::regularize()
         QRect rect{ QPoint{ 0, 0 }, QPoint{ width, width } };
         rect.moveCenter(resizer_.rect().center());
 
-        resizer_.rx1() = rect.topLeft().x();
-        resizer_.ry1() = rect.topLeft().y();
+        resizer_.x1(rect.topLeft().x());
+        resizer_.y1(rect.topLeft().y());
 
         push_point(rect.bottomRight());
 
@@ -400,23 +404,20 @@ void PaintCommand::regularize()
     }
     case Graph::LINE:
     case Graph::ARROW: {
-        auto p1 = resizer_.point1();
-        auto p2 = resizer_.point2();
+        QPointF p1 = resizer_.point1();
+        QPointF p2 = resizer_.point2();
 
-        auto theta =
-            std::atan((double)std::abs(p1.x() - p2.x()) / std::abs(p1.y() - p2.y())) * 180.0 / 3.1415926;
+        // 0~180
+        auto theta = std::abs(std::atan2(p1.y() - p2.y(), p1.x() - p2.x()) * 180.0 / std::numbers::pi);
 
-        if (theta > 80) {
-            p2.setY(p1.y());
-        }
-        else if (theta < 20) {
+        if (std::abs(theta - 90) < 10) {
             p2.setX(p1.x());
         }
+        else if (theta < 10 || std::abs(theta - 180) < 10) {
+            p2.setY(p1.y());
+        }
 
-        resizer_.rx1() = p1.x();
-        resizer_.ry1() = p1.y();
-
-        push_point(p2);
+        push_point(p2.toPoint());
 
         break;
     }

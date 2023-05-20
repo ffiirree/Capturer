@@ -355,14 +355,14 @@ int Dispatcher::start()
     running_ = true;
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO)) {
         video_thread_ = std::thread([this]() {
-            probe::util::thread_set_name("dispatch-video");
+            probe::thread::set_name("dispatch-video");
             dispatch_fn(AVMEDIA_TYPE_VIDEO);
         });
     }
 
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
         auido_thread_ = std::thread([this]() {
-            probe::util::thread_set_name("dispatch-audio");
+            probe::thread::set_name("dispatch-audio");
             dispatch_fn(AVMEDIA_TYPE_AUDIO);
         });
     }

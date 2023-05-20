@@ -1,18 +1,15 @@
 #include "selector.h"
 
 #include "logging.h"
-#include "utils.h"
-#include "widgetsdetector.h"
 
+#include <fmt/core.h>
 #include <QApplication>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
-#include <fmt/core.h>
 
-Selector::Selector(QWidget *parent)
-    : QWidget(parent)
+Selector::Selector(QWidget *parent) : QWidget(parent)
 {
     info_ = new QLabel(this);
     info_->setMinimumHeight(24);
@@ -26,14 +23,8 @@ Selector::Selector(QWidget *parent)
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                    Qt::BypassWindowManagerHint);
 
-    connect(this, &Selector::moved, [this]() {
-        mode_ = mode_t::rectanle;
-        update();
-    });
-    connect(this, &Selector::resized, [this]() {
-        mode_ = mode_t::rectanle;
-        update();
-    });
+    connect(this, &Selector::moved, [this]() { update(); });
+    connect(this, &Selector::resized, [this]() { update(); });
 
     registerShortcuts();
 }
@@ -45,8 +36,8 @@ void Selector::start()
         setMouseTracking(true);
 
         if (use_detect_) {
-            WidgetsDetector::refresh(windows_detection_flags_);
-            select(WidgetsDetector::window(QCursor::pos()));
+            hunter::ready(windows_detection_flags_);
+            select(hunter::hunt(QCursor::pos()));
             info_->show();
         }
 
@@ -74,9 +65,13 @@ void Selector::mousePressEvent(QMouseEvent *event)
         cursor_pos_ = box_.absolutePos(pos);
 
         switch (status_) {
-        case SelectorStatus::NORMAL:
-            sbegin_ = pos;
-            status_ = SelectorStatus::START_SELECTING;
+        case SelectorStatus::NORMAL: sbegin_ = pos; status_ = SelectorStatus::START_SELECTING;
+#ifdef _WIN32
+            if (auto display = probe::graphics::display_contains(pos);
+                scope_ == scope_t::display && display.has_value()) {
+                box_.range(display.value().geometry);
+            }
+#endif
             break;
 
         case SelectorStatus::CAPTURED:
@@ -105,8 +100,7 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
     switch (status_) {
     case SelectorStatus::NORMAL:
         if (use_detect_) {
-            select(WidgetsDetector::window(QCursor::pos()));
-            update();
+            select(hunter::hunt(QCursor::pos()));
         }
         setCursor(Qt::CrossCursor);
         break;
@@ -117,16 +111,13 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
             select({ sbegin_, mouse_pos });
             info_->show();
             status_ = SelectorStatus::SELECTING;
-            update();
         }
         break;
 
     case SelectorStatus::SELECTING:
-        box_.x2(mouse_pos.x());
-        box_.y2(mouse_pos.y());
+        adjust(0, 0, mouse_pos.x() - box_.x2(), mouse_pos.y() - box_.y2());
 
         status_ = SelectorStatus::SELECTING;
-        update();
         break;
 
     case SelectorStatus::CAPTURED:
@@ -157,20 +148,9 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
     case SelectorStatus::MOVING: {
         mend_ = mouse_pos;
 
-        auto dx = mend_.x() - mbegin_.x();
-        auto dy = mend_.y() - mbegin_.y();
+        translate(mend_.x() - mbegin_.x(), mend_.y() - mbegin_.y());
 
-        dx = std::max(geometry().left() - box_.left(), dx);
-        dx = std::min(geometry().right() - box_.right(), dx);
-
-        dy = std::max(geometry().top() - box_.top(), dy);
-        dy = std::min(geometry().bottom() - box_.bottom(), dy);
-
-        box_.move(dx, dy);
         mbegin_ = mouse_pos;
-
-        update();
-        emit moved();
 
         setCursor(Qt::SizeAllCursor);
         break;
@@ -179,22 +159,19 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
     case SelectorStatus::RESIZING:
         // clang-format off
         switch (cursor_pos_) {
-        case Resizer::Y1_BORDER: case Resizer::Y1_ANCHOR: box_.ry1() = mouse_pos.y(); break;
-        case Resizer::Y2_BORDER: case Resizer::Y2_ANCHOR: box_.ry2() = mouse_pos.y(); break;
-        case Resizer::X1_BORDER: case Resizer::X1_ANCHOR: box_.rx1() = mouse_pos.x(); break;
-        case Resizer::X2_BORDER: case Resizer::X2_ANCHOR: box_.rx2() = mouse_pos.x(); break;
+        case Resizer::Y1_BORDER: case Resizer::Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), 0, 0); break;
+        case Resizer::Y2_BORDER: case Resizer::Y2_ANCHOR: adjust(0, 0, 0, mouse_pos.y() - box_.y2()); break;
+        case Resizer::X1_BORDER: case Resizer::X1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, 0); break;
+        case Resizer::X2_BORDER: case Resizer::X2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), 0); break;
 
-        case Resizer::X1Y1_ANCHOR: box_.rx1() = mouse_pos.x(); box_.ry1() = mouse_pos.y(); break;
-        case Resizer::X1Y2_ANCHOR: box_.rx1() = mouse_pos.x(); box_.ry2() = mouse_pos.y(); break;
-        case Resizer::X2Y1_ANCHOR: box_.rx2() = mouse_pos.x(); box_.ry1() = mouse_pos.y(); break;
-        case Resizer::X2Y2_ANCHOR: box_.rx2() = mouse_pos.x(); box_.ry2() = mouse_pos.y(); break;
+        case Resizer::X1Y1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), mouse_pos.y() - box_.y1(), 0, 0); break;
+        case Resizer::X1Y2_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, mouse_pos.y() - box_.y2()); break;
+        case Resizer::X2Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), mouse_pos.x() - box_.x2(), 0); break;
+        case Resizer::X2Y2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), mouse_pos.y() - box_.y2()); break;
 
         default: break;
         }
         // clang-format on
-
-        update();
-        emit resized();
         break;
 
     case SelectorStatus::LOCKED:
@@ -219,14 +196,13 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             // invalid size
             if (!isValid()) {
                 if (use_detect_) { // detected window
-                    select(WidgetsDetector::window(QCursor::pos()));
+                    select(hunter::hunt(QCursor::pos()));
                     CAPTURED();
                 }
                 else { // reset
                     info_->hide();
                     select(QRect(0, 0, 0, 0));
                     status_ = SelectorStatus::NORMAL;
-                    update();
                 }
             }
             else {
@@ -240,6 +216,32 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
         default: break;
         }
     }
+}
+
+void Selector::update_info_label()
+{
+    std::string str{ "-- x --" };
+
+    if (isValid()) {
+        str = fmt::format("{} x {}", selected().width(), selected().height());
+        if (prey_.type == hunter::prey_type_t::window || prey_.type == hunter::prey_type_t::desktop) {
+            str += prey_.name.empty()
+                       ? (prey_.codename.empty() ? std::string{} : " : [" + prey_.codename + "]")
+                       : " : " + prey_.name;
+        }
+        else if (prey_.type == hunter::prey_type_t::display) {
+            str += " : " + prey_.codename + " - " + prey_.name;
+        }
+    }
+
+    info_->setText(QString::fromUtf8(str.c_str()));
+
+    info_->adjustSize();
+
+    // move
+    auto info_y = box_.top() - info_->geometry().height() - 1;
+    info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) -
+                QRect(probe::graphics::virtual_screen_geometry()).topLeft());
 }
 
 void Selector::paintEvent(QPaintEvent *)
@@ -260,34 +262,8 @@ void Selector::paintEvent(QPaintEvent *)
         painter_.restore();
 
         if (use_detect_ || status_ > SelectorStatus::NORMAL) {
-            // info
-            std::string str{ "-- x --" };
-
-            if (isValid()) {
-                str = fmt::format("{} x {}", selected().width(), selected().height());
-                if (mode_ == mode_t::window) {
-                    if (!window_.name.empty()) {
-                        str += " : " + window_.name;
-                    }
-                    else if (!window_.classname.empty()) {
-                        str += " : [" + window_.classname + "]";
-                    }
-#ifdef _WIN32
-                    else if (!window_.pname.empty()) {
-                        str += " : [" + window_.pname + "]";
-                    }
-#endif // _WIN32
-                }
-                else if (mode_ == mode_t::display) {
-                    str += " : " + display_.name;
-                }
-            }
-
-            info_->setText(QString::fromUtf8(str.c_str()));
-            info_->adjustSize();
-            auto info_y = box_.top() - info_->geometry().height() - 1;
-            info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) -
-                        QRect(probe::graphics::virtual_screen_geometry()).topLeft());
+            // info label
+            update_info_label();
 
             // draw border
             painter_.setPen(pen_);
@@ -309,128 +285,115 @@ void Selector::paintEvent(QPaintEvent *)
     painter_.end();
 }
 
-void Selector::select(const probe::graphics::window_t& win)
+void Selector::select(const hunter::prey_t& prey)
 {
-    box_.reset(win.rect);
-    window_  = win;
-    display_ = {};
-    mode_    = mode_t::window;
+    box_.coords(prey.geometry);
+    prey_ = prey;
+
+    update();
 }
 
-void Selector::select(const probe::graphics::display_t& display)
+void Selector::select(const probe::graphics::display_t& dis)
 {
-    box_.reset(display.geometry);
-    display_ = display;
-    window_  = {};
-    mode_    = mode_t::display;
+    box_.coords(dis.geometry);
+    prey_ = hunter::prey_t::from(dis);
+
+    update();
 }
 
 void Selector::select(const QRect& rect)
 {
-    box_.reset(rect);
-    window_  = {};
-    display_ = {};
-    mode_    = mode_t::rectanle;
+    box_.coords(rect);
+    prey_ = hunter::prey_t::from(rect);
+
+    update();
 }
 
-void Selector::moveSelectedBox(int x, int y)
+void Selector::translate(int32_t dx, int32_t dy)
 {
-    if (status_ == SelectorStatus::CAPTURED) {
-        box_.move(x, y);
-        emit moved();
-    }
+    if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::MOVING) return;
+
+    box_.translate(dx, dy);
+    prey_ = hunter::prey_t::from(box_.rect());
+
+    emit moved();
+}
+
+void Selector::adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2)
+{
+    if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::RESIZING &&
+        status_ != SelectorStatus::SELECTING)
+        return;
+
+    box_.adjust(dx1, dy1, dx2, dy2);
+    prey_ = hunter::prey_t::from(box_.rect());
+
+    emit resized();
+}
+
+void Selector::margins(int32_t t, int32_t r, int32_t b, int32_t l)
+{
+    if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::RESIZING) return;
+
+    box_.margins(t, r, b, l);
+    prey_ = hunter::prey_t::from(box_.rect());
+
+    emit resized();
 }
 
 void Selector::registerShortcuts()
 {
-    // move
-    connect(new QShortcut(Qt::Key_W, this), &QShortcut::activated, [this]() { moveSelectedBox(0, -1); });
-    connect(new QShortcut(Qt::Key_Up, this), &QShortcut::activated, [this]() { moveSelectedBox(0, -1); });
+    // clang-format off
+    // move 1 pixel
+    connect(new QShortcut(Qt::Key_W,     this), &QShortcut::activated, [this]() { translate(0, -1); });
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this]() { translate(0, -1); });
 
-    connect(new QShortcut(Qt::Key_S, this), &QShortcut::activated, [this]() { moveSelectedBox(0, 1); });
-    connect(new QShortcut(Qt::Key_Down, this), &QShortcut::activated, [this]() { moveSelectedBox(0, 1); });
+    connect(new QShortcut(Qt::Key_S,     this), &QShortcut::activated, [this]() { translate(0, +1); });
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this]() { translate(0, +1); });
 
-    connect(new QShortcut(Qt::Key_A, this), &QShortcut::activated, [this]() { moveSelectedBox(-1, 0); });
-    connect(new QShortcut(Qt::Key_Left, this), &QShortcut::activated, [this]() { moveSelectedBox(-1, 0); });
+    connect(new QShortcut(Qt::Key_A,     this), &QShortcut::activated, [this]() { translate(-1, 0); });
+    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this]() { translate(-1, 0); });
 
-    connect(new QShortcut(Qt::Key_D, this), &QShortcut::activated, [this]() { moveSelectedBox(1, 0); });
-    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { moveSelectedBox(1, 0); });
+    connect(new QShortcut(Qt::Key_D,     this), &QShortcut::activated, [this]() { translate(+1, 0); });
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { translate(+1, 0); });
 
     // resize
-    // increase
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Up, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rtop() = std::max(box_.top() - 1, 0);
-            emit resized();
-        }
-    });
+    // expand 1 pixel
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Up,    this), &QShortcut::activated, [this]() { margins(-1, 0, 0, 0); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Down,  this), &QShortcut::activated, [this]() { margins(0, 0, +1, 0); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Left,  this), &QShortcut::activated, [this]() { margins(0, 0, 0, -1); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Right, this), &QShortcut::activated, [this]() { margins(0, +1, 0, 0); });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Down, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rbottom() = std::min(box_.bottom() + 1, height());
-            emit resized();
-        }
-    });
+    // shrink 1 pixel
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Up,   this), &QShortcut::activated, [this]() { margins(+1, 0, 0, 0); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [this]() { margins(0, 0, -1, 0); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Left, this), &QShortcut::activated, [this]() { margins(0, 0, 0, +1); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Right,this), &QShortcut::activated, [this]() { margins(0, -1, 0, 0); });
+    // clang-format on
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Left, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rleft() = std::max(box_.left() - 1, 0);
-            emit resized();
-        }
-    });
-
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Right, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rright() = std::min(box_.right() + 1, width());
-            emit resized();
-        }
-    });
-
-    // decrease
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Up, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rtop() = std::min(box_.top() + 1, box_.bottom());
-            emit resized();
-        }
-    });
-
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rbottom() = std::max(box_.bottom() - 1, box_.top());
-            emit resized();
-        }
-    });
-
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Left, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rleft() = std::min(box_.left() + 1, box_.right());
-            emit resized();
-        }
-    });
-
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Right, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED) {
-            box_.rright() = std::max(box_.right() - 1, box_.left());
-            emit resized();
-        }
-    });
-
+    // fullscreen
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if (status_ <= SelectorStatus::CAPTURED) {
-            auto selected = probe::graphics::virtual_screen();
 
-            // TODO: can not capture virtual screen
-            if (mode_ != mode_t::display) {
+            // rectangle / window -> display
+            if (prey_.type < hunter::prey_type_t::display) {
                 for (const auto& display : probe::graphics::displays()) {
                     if (QRect(display.geometry).contains(box_.rect(), false)) {
-                        selected = display;
+                        select(display);
                     }
                 }
             }
+            else if (prey_.type == hunter::prey_type_t::display && scope_ == scope_t::desktop) {
+                auto desktop = probe::graphics::virtual_screen();
+                select(hunter::prey_t{
+                    .type     = hunter::prey_type_t::desktop,
+                    .geometry = desktop.geometry,
+                    .handle   = desktop.handle,
+                    .name     = desktop.name,
+                    .codename = desktop.classname,
+                });
+            }
 
-            select(selected);
-            emit resized();
-            mode_ = mode_t::display;
             CAPTURED();
         }
     });
@@ -453,3 +416,13 @@ void Selector::setBorderStyle(Qt::PenStyle s) { pen_.setStyle(s); }
 void Selector::setMaskColor(const QColor& c) { mask_color_ = c; }
 
 void Selector::setUseDetectWindow(bool f) { use_detect_ = f; }
+
+std::string to_string(Selector::scope_t s)
+{
+    switch (s) {
+    case Selector::scope_t::desktop: return "desktop";
+    case Selector::scope_t::display: return "display";
+
+    default: return "unknown";
+    }
+}
