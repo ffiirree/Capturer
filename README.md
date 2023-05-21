@@ -113,8 +113,9 @@ git submodule update --init --recursive
 
 ### ENV
 
+- `C++` :  `C++20`
 - `Qt` : `5.12.x` / `5.15.x`
-- `FFmpeg` : `4.4.x` / `5.1.2`
+- `FFmpeg` : Ubuntu: `4.4.x` / `5.1.2`; Windows: `6.0`
 - `Windows` : `>= Windows 10 1607`
 - `Ubuntu` : `>= 18.04`
 - `CMake` : `>= 3.16`

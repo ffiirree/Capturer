@@ -149,9 +149,6 @@ static std::pair<AVPixelFormat, AVHWDeviceType>
 set_pix_fmt(const std::unique_ptr<Producer<AVFrame>>& producer,
             const std::unique_ptr<Consumer<AVFrame>>& consumer, const AVCodec *vcodec)
 {
-    AVHWDeviceType hwaccel = AV_HWDEVICE_TYPE_NONE;
-    AVPixelFormat pix_fmt  = AV_PIX_FMT_NONE;
-
     if (!vcodec) return {};
 
     const AVCodecHWConfig *config = nullptr;

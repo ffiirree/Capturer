@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="315"/>
+        <location filename="../src/record/screenrecorder.cpp" line="312"/>
         <source>Path: </source>
         <translation></translation>
     </message>
