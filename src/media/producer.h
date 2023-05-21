@@ -16,6 +16,7 @@ public:
     Producer()                           = default;
     Producer(const Producer&)            = delete;
     Producer& operator=(const Producer&) = delete;
+
     virtual ~Producer()
     {
         std::lock_guard lock(mtx_);
@@ -39,15 +40,18 @@ public:
     virtual int run() = 0;
 
     [[nodiscard]] virtual int produce(T *, int) = 0;
-    virtual bool empty(int)       = 0;
+    virtual bool empty(int)                     = 0;
 
     [[nodiscard]] virtual bool has(int) const               = 0;
     [[nodiscard]] virtual std::string format_str(int) const = 0;
     [[nodiscard]] virtual AVRational time_base(int) const   = 0;
+
     [[nodiscard]] virtual bool enabled(int t) { return (enabled_.count(t) > 0) && enabled_[t]; }
 
     virtual void enable(int t) { enabled_[t] = true; }
+
     virtual void stop() { running_ = false; }
+
     [[nodiscard]] virtual bool eof() { return eof_ != 0; }
 
     void mute(bool v) { muted_ = v; }
@@ -61,8 +65,14 @@ public:
     }
 
     [[nodiscard]] bool ready() const { return ready_; }
+
     [[nodiscard]] bool running() const { return running_; }
 
+    // supported formats
+    virtual std::vector<av::vformat_t> vformats() const = 0;
+    virtual std::vector<av::aformat_t> aformats() const = 0;
+
+    // current format
     av::aformat_t afmt{};
     av::vformat_t vfmt{};
 

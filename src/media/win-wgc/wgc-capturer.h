@@ -47,12 +47,16 @@ public:
     std::string format_str(int) const override;
     AVRational time_base(int) const override;
 
-private:
-    void on_frame_arrived(winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const& sender,
-                          winrt::Windows::Foundation::IInspectable const& args);
+    std::vector<av::vformat_t> vformats() const override;
 
-    void on_closed(winrt::Windows::Graphics::Capture::GraphicsCaptureItem const&,
-                   winrt::Windows::Foundation::IInspectable const&);
+    std::vector<av::aformat_t> aformats() const override { return {}; }
+
+private:
+    void on_frame_arrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
+                          const winrt::Windows::Foundation::IInspectable& args);
+
+    void on_closed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem&,
+                   const winrt::Windows::Foundation::IInspectable&);
 
     int init_hwframes_ctx();
 

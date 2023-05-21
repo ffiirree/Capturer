@@ -11,8 +11,6 @@ extern "C" {
 #include "ringvector.h"
 #include "utils.h"
 
-#include <unordered_map>
-
 class Encoder : public Consumer<AVFrame>
 {
 public:
@@ -26,12 +24,10 @@ public:
 
 public:
     ~Encoder() override { destroy(); }
+
     void reset() override;
 
-    int open(const std::string& filename, const std::string& video_codec_name = "libx264",
-             const std::string& audio_codec_name                               = "aac",
-             const std::unordered_map<std::string, std::string>& options       = {},
-             const std::unordered_map<std::string, std::string>& auido_options = {});
+    int open(const std::string&, std::map<std::string, std::string>) override;
 
     int run() override;
     int consume(AVFrame *frame, int type) override;
@@ -83,8 +79,8 @@ private:
     AVFormatContext *fmt_ctx_{ nullptr };
     std::string video_codec_name_{};
     std::string audio_codec_name_{};
-    std::unordered_map<std::string, std::string> video_options_;
-    std::unordered_map<std::string, std::string> audio_options_;
+    std::map<std::string, std::string> video_options_;
+    std::map<std::string, std::string> audio_options_;
     AVCodecContext *video_encoder_ctx_{ nullptr };
     AVCodecContext *audio_encoder_ctx_{ nullptr };
     // @}

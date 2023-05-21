@@ -13,10 +13,7 @@ extern "C" {
 #include "hwaccel.h"
 #include "probe/defer.h"
 
-int Encoder::open(const std::string& filename, const std::string& video_codec_name,
-                  const std::string& audio_codec_name,
-                  const std::unordered_map<std::string, std::string>& video_options,
-                  const std::unordered_map<std::string, std::string>& audio_options)
+int Encoder::open(const std::string& filename, std::map<std::string, std::string> options)
 {
     std::lock_guard lock(mtx_);
 
@@ -25,27 +22,31 @@ int Encoder::open(const std::string& filename, const std::string& video_codec_na
         return -1;
     }
 
-    video_codec_name_ = video_codec_name;
-    audio_codec_name_ = audio_codec_name;
-    video_options_    = video_options;
-    audio_options_    = audio_options;
+    LOG(INFO) << fmt::format("[   ENCODER] {}, options = {}", filename, options);
 
-    if (video_options.contains("vsync")) {
-        vsync_ = av::to_vsync(video_options.at("vsync"));
+    video_codec_name_ = options.contains("vcodec") ? options.at("vcodec") : "libx264";
+    audio_codec_name_ = options.contains("acodec") ? options.at("acodec") : "aac";
+    options.erase("vcodec");
+    options.erase("acodec");
+
+    video_options_ = options;
+    audio_options_ = options;
+
+    if (options.contains("vsync")) {
+        vsync_ = av::to_vsync(options.at("vsync"));
     }
 
     if (video_enabled_) {
-        LOG(INFO) << fmt::format(
-            "[   ENCODER] [V] <<< [{}], options = {}, size = {}x{}, format = {}, fps = {}, tbn = {}",
-            video_codec_name, video_options, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt),
-            vfmt.framerate, vfmt.time_base);
+        LOG(INFO) << fmt::format("[   ENCODER] [V] <<< [{}], size = {}x{}, format = {}, fps = {}, tbn = {}",
+                                 video_codec_name_, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt),
+                                 vfmt.framerate, vfmt.time_base);
     }
 
     if (audio_enabled_) {
         LOG(INFO) << fmt::format(
-            "[   ENCODER] [A] <<< [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, tbn = {}",
-            audio_codec_name, audio_options, afmt.sample_rate, afmt.channels,
-            av::to_string(afmt.sample_fmt), afmt.time_base);
+            "[   ENCODER] [A] <<< [{}], sample_rate = {}Hz, channels = {}, sample_fmt = {}, tbn = {}",
+            audio_codec_name_, afmt.sample_rate, afmt.channels, av::to_string(afmt.sample_fmt),
+            afmt.time_base);
     }
 
     // format context
@@ -75,17 +76,17 @@ int Encoder::open(const std::string& filename, const std::string& video_codec_na
 
     if (video_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format(
-            "[   ENCODER] [V] >>> [{}], options = {}, size = {}x{}, format = {}, fps = {}, tbc = {}, tbn = {}, hwaccel = {}",
-            video_codec_name_, video_options_, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt),
-            vfmt.framerate, video_encoder_ctx_->time_base, fmt_ctx_->streams[video_stream_idx_]->time_base,
+            "[   ENCODER] [V] >>> [{}], size = {}x{}, format = {}, fps = {}, tbc = {}, tbn = {}, hwaccel = {}",
+            video_codec_name_, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt), vfmt.framerate,
+            video_encoder_ctx_->time_base, fmt_ctx_->streams[video_stream_idx_]->time_base,
             av::to_string(vfmt.hwaccel));
     }
 
     if (audio_stream_idx_ >= 0) {
         LOG(INFO) << fmt::format(
-            "[   ENCODER] [A] >>> [{}], options = {}, sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}, tbn = {}",
-            audio_codec_name_, audio_options_, audio_encoder_ctx_->sample_rate,
-            audio_encoder_ctx_->channels, av::to_string(audio_encoder_ctx_->sample_fmt),
+            "[   ENCODER] [A] >>> [{}], sample_rate = {}Hz, channels = {}, sample_fmt = {}, frame_size = {}, tbc = {}, tbn = {}",
+            audio_codec_name_, audio_encoder_ctx_->sample_rate, audio_encoder_ctx_->channels,
+            av::to_string(audio_encoder_ctx_->sample_fmt),
             fmt_ctx_->streams[audio_stream_idx_]->codecpar->frame_size, audio_encoder_ctx_->time_base,
             fmt_ctx_->streams[audio_stream_idx_]->time_base);
     }

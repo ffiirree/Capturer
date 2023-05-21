@@ -4,12 +4,12 @@
 #include "devices.h"
 #include "logging.h"
 
+#include <fmt/core.h>
 #include <QApplication>
 #include <QDateTime>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QStandardPaths>
-#include <fmt/core.h>
 extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
@@ -19,8 +19,7 @@ extern "C" {
 #include <cstdlib>
 #endif
 
-ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : Selector(parent)
+ScreenRecorder::ScreenRecorder(int type, QWidget *parent) : Selector(parent)
 {
     windows_detection_flags_ =
         probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::capturable;
@@ -76,11 +75,11 @@ void ScreenRecorder::switchCamera()
         return;
     }
 
+    auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
 #ifdef _WIN32
-    if (!player_->play("video=" + Config::instance()["devices"]["cameras"].get<std::string>(), "dshow",
-                       "hflip")) {
+    if (!player_->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
 #elif __linux__
-    if (!player_->play(Config::instance()["devices"]["cameras"].get<std::string>(), "v4l2", "hflip")) {
+    if (!player_->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
 #endif
         player_->close();
     }
@@ -90,16 +89,23 @@ void ScreenRecorder::record() { status_ == SelectorStatus::INITIAL ? start() : e
 
 void ScreenRecorder::start()
 {
+    auto time_str = QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
     if (recording_type_ == VIDEO) {
-        pix_fmt_                = AV_PIX_FMT_YUV420P;
-        codec_name_             = Config::instance()["record"]["encoder"];
-        filters_                = "";
-        video_options_["vsync"] = av::to_string(av::vsync_t::cfr);
+        pix_fmt_                  = AV_PIX_FMT_YUV420P;
+        codec_name_               = Config::instance()["record"]["encoder"];
+        filters_                  = "";
+        encoder_options_["vsync"] = av::to_string(av::vsync_t::cfr);
+
+        auto root_dir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation).toStdString();
+        filename_     = fmt::format("{}/Capturer_{}.mp4", root_dir, time_str);
     }
     else {
         pix_fmt_    = AV_PIX_FMT_PAL8;
         codec_name_ = "gif";
         filters_    = gif_filters_[Config::instance()["gif"]["quality"]];
+
+        auto root_dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation).toStdString();
+        filename_     = fmt::format("{}/Capturer_{}.gif", root_dir, time_str);
     }
 
     Selector::start();
@@ -113,6 +119,7 @@ void ScreenRecorder::open_audio_sources()
 #ifdef __linux__
     mic_options["format"]        = "pulse";
     mic_options["fragment_size"] = "19200";
+
     spk_options["format"]        = "pulse";
     spk_options["fragment_size"] = "19200";
 #endif
@@ -138,6 +145,40 @@ void ScreenRecorder::open_audio_sources()
     }
 }
 
+static std::pair<AVPixelFormat, AVHWDeviceType>
+set_pix_fmt(const std::unique_ptr<Producer<AVFrame>>& producer,
+            const std::unique_ptr<Consumer<AVFrame>>& consumer, const AVCodec *vcodec)
+{
+    AVHWDeviceType hwaccel = AV_HWDEVICE_TYPE_NONE;
+    AVPixelFormat pix_fmt  = AV_PIX_FMT_NONE;
+
+    if (!vcodec) return {};
+
+    const AVCodecHWConfig *config = nullptr;
+    for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)); ++i) {
+        if (config->pix_fmt != AV_PIX_FMT_NONE) {
+
+            for (const auto& producer_fmt : producer->vformats()) {
+                if (producer_fmt.hwaccel == config->device_type &&
+                    producer_fmt.pix_fmt == config->pix_fmt) {
+
+                    producer->vfmt.pix_fmt = config->pix_fmt;
+                    consumer->vfmt.hwaccel = config->device_type;
+
+                    return { config->pix_fmt, config->device_type };
+                }
+            }
+        }
+    }
+
+    // software
+    for (const auto& fmt : producer->vformats()) {
+        if (fmt.hwaccel == AV_HWDEVICE_TYPE_NONE) producer->vfmt.pix_fmt = fmt.pix_fmt;
+    }
+    //
+    return {};
+}
+
 void ScreenRecorder::setup()
 {
     status_ = SelectorStatus::LOCKED;
@@ -150,15 +191,6 @@ void ScreenRecorder::setup()
     menu_->disable_mic(av::audio_sources().empty());
     menu_->disable_speaker(av::audio_sinks().empty());
     menu_->disable_cam(av::cameras().empty());
-
-    auto root_dir =
-        QStandardPaths::writableLocation(recording_type_ == VIDEO ? QStandardPaths::MoviesLocation
-                                                                  : QStandardPaths::PicturesLocation)
-            .toStdString();
-    auto date_time = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz").toStdString();
-
-    filename_ = fmt::format("{}/Capturer_video_{}.{}", root_dir, date_time,
-                            (recording_type_ == VIDEO ? "mp4" : "gif"));
 
     // desktop capturer
     framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
@@ -192,8 +224,8 @@ void ScreenRecorder::setup()
     case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
     case hunter::prey_type_t::widget:
     case hunter::prey_type_t::window: {
-        auto display          = probe::graphics::display_contains(selected().center()).value();
-        name                  = "display=" + std::to_string(display.handle);
+        auto display = probe::graphics::display_contains(selected().center()).value();
+        name         = "display=" + std::to_string(display.handle);
         break;
     }
     case hunter::prey_type_t::display: name = "display=" + std::to_string(prey_.handle); break;
@@ -225,47 +257,21 @@ void ScreenRecorder::setup()
     dispatcher_->set_encoder(encoder_.get());
 
     // set hwaccel & pixel format if any
-    if (recording_type_ == VIDEO) {
-        std::string quality_name = "crf"; // TODO: CRF / CQP
+    auto [pix_fmt, hwaccel] =
+        set_pix_fmt(desktop_capturer_, encoder_, avcodec_find_encoder_by_name(codec_name_.c_str()));
 
-        auto vcodec            = avcodec_find_encoder_by_name(codec_name_.c_str());
-        AVHWDeviceType hwaccel = AV_HWDEVICE_TYPE_NONE;
-        if (vcodec) {
-            const AVCodecHWConfig *config = nullptr;
-            for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)); ++i) {
-                if (config->pix_fmt != AV_PIX_FMT_NONE) {
-                    if (desktop_capturer_->vfmt.hwaccel == AV_HWDEVICE_TYPE_NONE) {
-                        break;
-                    }
-
-                    if (desktop_capturer_->vfmt.pix_fmt == config->pix_fmt) {
-                        break;
-                    }
-                }
-            }
-
-            if (config) {
-                hwaccel  = config->device_type;
-                pix_fmt_ = config->pix_fmt;
-
-                LOG(INFO) << fmt::format("hwaccel = {}, pix_fmt = {}", av::to_string(hwaccel),
-                                         av::to_string(pix_fmt_));
-            }
-        }
-
-        if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
-            quality_name = "cq";
-
-            dispatcher_->vfmt.hwaccel = hwaccel;
-            encoder_->vfmt.hwaccel    = hwaccel;
-        }
-
-        video_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
+    std::string quality_name = "crf"; // TODO: CRF / CQP
+    if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
+        quality_name = "cq";
+        pix_fmt_     = pix_fmt;
     }
+
+    encoder_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
 
     // prepare the filter graph and properties of encoder
     // let dispather decide which pixel format to be used for encoding
     dispatcher_->vfmt.pix_fmt        = pix_fmt_;
+    dispatcher_->vfmt.hwaccel        = hwaccel;
     dispatcher_->vfmt.framerate      = { framerate_, 1 };
     dispatcher_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     dispatcher_->afmt.channels       = 2;
@@ -276,7 +282,10 @@ void ScreenRecorder::setup()
         return;
     }
 
-    if (encoder_->open(filename_, codec_name_, "aac", video_options_, {}) < 0) {
+    encoder_options_["vcodec"] = codec_name_;
+    encoder_options_["acodec"] = "aac";
+
+    if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();
         exit();

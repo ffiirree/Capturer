@@ -210,7 +210,7 @@ void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
 
 void ScreenShoter::save()
 {
-    QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
+    QString default_filename = "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
  
 #ifdef _WIN32
     QString filename = QFileDialog::getSaveFileName(

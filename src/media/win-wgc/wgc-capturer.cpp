@@ -216,6 +216,20 @@ std::string WindowsGraphicsCapturer::format_str(int mt) const
 
 AVRational WindowsGraphicsCapturer::time_base(int) const { return vfmt.time_base; }
 
+std::vector<av::vformat_t> WindowsGraphicsCapturer::vformats() const
+{
+    return {
+        {
+            .pix_fmt = AV_PIX_FMT_D3D11,
+            .hwaccel = AV_HWDEVICE_TYPE_D3D11VA,
+        },
+        {
+            .pix_fmt = AV_PIX_FMT_BGRA,
+            .hwaccel = AV_HWDEVICE_TYPE_NONE,
+        },
+    };
+}
+
 // Process captured frames
 void WindowsGraphicsCapturer::reset()
 {
@@ -284,10 +298,10 @@ int WindowsGraphicsCapturer::init_hwframes_ctx()
     return 0;
 }
 
-void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const& sender,
-                                               winrt::Windows::Foundation::IInspectable const&)
+void WindowsGraphicsCapturer::on_frame_arrived(const Direct3D11CaptureFramePool& sender,
+                                               const winrt::Windows::Foundation::IInspectable&)
 {
-    std::lock_guard lock(mtx_);
+    if (!running_) return;
 
     auto frame         = sender.TryGetNextFrame();
     auto frame_surface = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
@@ -332,8 +346,8 @@ void WindowsGraphicsCapturer::on_frame_arrived(Direct3D11CaptureFramePool const&
     });
 }
 
-void WindowsGraphicsCapturer::on_closed(GraphicsCaptureItem const&,
-                                        winrt::Windows::Foundation::IInspectable const&)
+void WindowsGraphicsCapturer::on_closed(const GraphicsCaptureItem&,
+                                        const winrt::Windows::Foundation::IInspectable&)
 {
     LOG(INFO) << "OnClosed";
 }

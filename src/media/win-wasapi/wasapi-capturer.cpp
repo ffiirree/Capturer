@@ -214,6 +214,8 @@ int WasapiCapturer::run_f()
 
 int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UINT64)
 {
+    frame_.unref();
+
     frame_->pts            = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
     frame_->pkt_dts        = frame_->pts;
     frame_->nb_samples     = nb_samples;
@@ -222,7 +224,7 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     frame_->channels       = afmt.channels;
     frame_->channel_layout = afmt.channel_layout;
 
-    av_frame_get_buffer(frame_.put(), 0);
+    av_frame_get_buffer(frame_.get(), 0);
     if (av_samples_copy((uint8_t **)frame_->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
                         afmt.channels, afmt.sample_fmt) < 0) {
         LOG(ERROR) << "av_samples_copy";

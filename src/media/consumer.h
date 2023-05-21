@@ -2,8 +2,10 @@
 #define CAPTURER_CONSUMER_H
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include <thread>
+
 extern "C" {
 #include <libavutil/pixfmt.h>
 #include <libavutil/rational.h>
@@ -18,6 +20,7 @@ public:
     Consumer()                           = default;
     Consumer(const Consumer&)            = delete;
     Consumer& operator=(const Consumer&) = delete;
+
     virtual ~Consumer()
     {
         std::lock_guard lock(mtx_);
@@ -31,6 +34,8 @@ public:
         }
     }
 
+    [[nodiscard]] virtual int open(const std::string&, std::map<std::string, std::string>) = 0;
+
     virtual int run()             = 0;
     virtual int consume(T *, int) = 0;
 
@@ -39,7 +44,9 @@ public:
         running_ = false;
         reset();
     }
+
     virtual void reset() = 0;
+
     virtual int wait()
     {
         if (thread_.joinable()) {
@@ -53,7 +60,9 @@ public:
     virtual void enable(int, bool = true)         = 0;
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
+
     [[nodiscard]] bool running() const { return running_; }
+
     [[nodiscard]] virtual bool eof() const { return eof_; }
 
     av::vformat_t vfmt{};

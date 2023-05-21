@@ -19,7 +19,7 @@
 
 #ifdef _WIN32
 using DesktopCapturer = WindowsGraphicsCapturer;
-using AudioCapturer = WasapiCapturer;
+using AudioCapturer   = WasapiCapturer;
 #elif __linux__
 using DesktopCapturer = Decoder;
 using AudioCapturer   = Decoder;
@@ -43,7 +43,7 @@ public:
 
 signals:
     void SHOW_MESSAGE(const QString&, const QString&,
-                      QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10000);
+                      QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10'000);
 
 public slots:
     void exit() override;
@@ -83,7 +83,7 @@ private:
     std::string codec_name_{ "libx264" };
     std::string quality_{ "medium" };
     std::string filters_{};
-    std::unordered_map<std::string, std::string> video_options_{};
+    std::map<std::string, std::string> encoder_options_{};
 
     std::string filename_;
 
@@ -93,12 +93,12 @@ private:
     bool m_mute_{ false };
     bool s_mute_{ false };
 
-    std::unique_ptr<Producer<AVFrame>> desktop_capturer_{ nullptr };
-    std::unique_ptr<Producer<AVFrame>> microphone_capturer_{ nullptr };
-    std::unique_ptr<Producer<AVFrame>> speaker_capturer_{ nullptr };
+    std::unique_ptr<Producer<AVFrame>> desktop_capturer_{};
+    std::unique_ptr<Producer<AVFrame>> microphone_capturer_{};
+    std::unique_ptr<Producer<AVFrame>> speaker_capturer_{};
 
-    std::unique_ptr<Encoder> encoder_{ nullptr };
-    std::unique_ptr<Dispatcher> dispatcher_{ nullptr };
+    std::unique_ptr<Consumer<AVFrame>> encoder_{};
+    std::unique_ptr<Dispatcher> dispatcher_{};
 
     QTimer *timer_{ nullptr };
 
@@ -106,7 +106,7 @@ private:
     std::map<std::string, std::string> gif_filters_{
         { "high",   "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1" },
         { "medium", "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none" },
-        { "low",    "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=96 [p];[b][p] paletteuse=new=1:dither=none" },
+        { "low",    "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=96  [p];[b][p] paletteuse=new=1:dither=none" },
     };
 
     std::map<std::string, std::string> video_qualities_ = {

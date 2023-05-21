@@ -48,6 +48,10 @@ public:
     AVRational time_base(int) const override;
     bool eof() override;
 
+    std::vector<av::vformat_t> vformats() const override { return { vfmt }; }
+
+    std::vector<av::aformat_t> aformats() const override { return { afmt }; }
+
 private:
     int run_f();
     void destroy();

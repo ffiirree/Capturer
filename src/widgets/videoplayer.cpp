@@ -8,8 +8,7 @@ extern "C" {
 }
 #include "logging.h"
 
-VideoPlayer::VideoPlayer(QWidget *parent)
-    : QWidget(parent)
+VideoPlayer::VideoPlayer(QWidget *parent) : QWidget(parent)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | windowFlags());
     setAttribute(Qt::WA_TranslucentBackground);
@@ -25,9 +24,12 @@ VideoPlayer::~VideoPlayer()
     delete dispatcher_;
 }
 
-bool VideoPlayer::play(const std::string& name, const std::string& fmt, const std::string& filters)
+int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string> options)
 {
-    if (decoder_->open(name, { { "format", fmt } }) != 0) {
+    std::map<std::string, std::string> decoder_options;
+    if (options.contains("format")) decoder_options["format"] = options.at("format");
+
+    if (decoder_->open(filename, decoder_options) != 0) {
         decoder_->reset();
         return false;
     }
@@ -36,13 +38,13 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
     dispatcher_->set_encoder(this);
 
     dispatcher_->vfmt.pix_fmt = AV_PIX_FMT_RGB24;
-    if (dispatcher_->create_filter_graph(filters, {})) {
+    if (dispatcher_->create_filter_graph(options.contains("filters") ? options.at("filters") : "", {})) {
         LOG(INFO) << "create filters failed";
         return false;
     }
 
-    if (vfmt.width > 1440 || vfmt.height > 810) {
-        resize(QSize(vfmt.width, vfmt.height).scaled(1440, 810, Qt::KeepAspectRatio));
+    if (vfmt.width > 1'440 || vfmt.height > 810) {
+        resize(QSize(vfmt.width, vfmt.height).scaled(1'440, 810, Qt::KeepAspectRatio));
     }
     else {
         resize(vfmt.width, vfmt.height);
@@ -55,6 +57,8 @@ bool VideoPlayer::play(const std::string& name, const std::string& fmt, const st
         LOG(INFO) << "failed to start";
         return false;
     }
+
+    QWidget::setWindowTitle(QString::fromUtf8(filename.c_str()));
 
     QWidget::show();
 

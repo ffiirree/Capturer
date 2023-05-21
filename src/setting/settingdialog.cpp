@@ -435,7 +435,7 @@ QWidget* SettingWindow::setupDevicesWidget()
     // cameras / sources
     auto _3_2 = new ComboBox();
     for (const auto& dev : av::cameras()) {
-        _3_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+        _3_2->add(QString::fromUtf8(dev.name.c_str()), QString::fromUtf8(dev.name.c_str()));
     }
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
     _3_2->onselected([this](auto value) { config.set(config["devices"]["cameras"], value.toString()); });

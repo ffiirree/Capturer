@@ -5,11 +5,11 @@
 #include "probe/system.h"
 #include "utils.h"
 
+#include <fstream>
 #include <QApplication>
 #include <QDir>
 #include <QStandardPaths>
 #include <QTextStream>
-#include <fstream>
 #include <streambuf>
 
 #define IF_NULL_SET(X, default_value) st(if (X.is_null()) X = default_value;)
@@ -76,8 +76,10 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
     // clang-format on
 
-    if (settings_["devices"]["cameras"].is_null() && !av::cameras().empty())
-        settings_["devices"]["cameras"] = av::cameras()[0].id;
+    if ((settings_["devices"]["cameras"].is_null() ||
+         settings_["devices"]["cameras"].get<std::string>().empty()) &&
+        !av::cameras().empty())
+        settings_["devices"]["cameras"] = av::cameras()[0].name;
 
     if (settings_["devices"]["microphones"].is_null()) {
         auto asrc = av::default_audio_source();

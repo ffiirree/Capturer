@@ -3,15 +3,15 @@
 
 #ifdef _WIN32
 
-#include <Audioclient.h>
-#include <Windows.h>
 #include <atomic>
+#include <Audioclient.h>
 #include <functiondiscoverykeys.h>
 #include <mmdeviceapi.h>
 #include <mutex>
 #include <optional>
 #include <propsys.h>
 #include <thread>
+#include <Windows.h>
 #include <winrt/base.h>
 
 extern "C" {
@@ -54,8 +54,13 @@ public:
         default: return false;
         }
     }
+
     std::string format_str(int) const override;
     AVRational time_base(int) const override;
+
+    std::vector<av::vformat_t> vformats() const override { return {}; }
+
+    std::vector<av::aformat_t> aformats() const override { return { afmt }; }
 
 private:
     int run_f();
@@ -76,7 +81,7 @@ private:
 
     int64_t start_time_{ AV_NOPTS_VALUE };
 
-    av::frame frame_{ };
+    av::frame frame_{};
     uint32_t frame_number_{ 0 };
 
     // WASAPI Capturer@{
