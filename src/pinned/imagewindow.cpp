@@ -403,7 +403,6 @@ void ImageWindow::dropEvent(QDropEvent* event)
     if (editing_) return;
 
     auto path = event->mimeData()->urls()[0].toLocalFile();
-    LOG(INFO) << "Drop to ImageWindow : " << path;
 
     scale_ = 1.0;
     image(QPixmap(path));

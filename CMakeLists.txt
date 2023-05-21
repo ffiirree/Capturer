@@ -1,49 +1,51 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(capturer VERSION 1.4.2 LANGUAGES C CXX)
+project(capturer VERSION 1.5.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-endif()
-
-if(MSVC)
-    message(STATUS "Windows SDK version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-
-    add_compile_options(/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor  /Zc:__cplusplus)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build type: Release." FORCE)
 endif()
 
 # #######################################################################################################################
 # dependencies
 # #######################################################################################################################
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # 3rdparty: QHotkey glog
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "build static libraries.")
-set(WITH_GFLAGS OFF CACHE BOOL "Use gflags")
+set(BUILD_SHARED_LIBS   OFF CACHE BOOL "build static libraries.")
+set(WITH_GFLAGS         OFF CACHE BOOL "Use gflags")
+set(PROBE_BUILD_WITH_QT ON  CACHE BOOL "Build probe with Qt")
 
-add_subdirectory(3rdparty/QHotkey EXCLUDE_FROM_ALL)
-add_subdirectory(3rdparty/glog EXCLUDE_FROM_ALL)
-add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/QHotkey   EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
 
-# Qt5
+if (NOT QT_DEFAULT_MAJOR_VERSION)
+    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
+endif()
+
+set(QT Qt${QT_DEFAULT_MAJOR_VERSION})
+
+# Qt5 / 6
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
-find_package(FFmpeg COMPONENTS avutil avcodec avformat avdevice avfilter REQUIRED)
+find_package(${QT} COMPONENTS Widgets Gui LinguistTools REQUIRED)
 
 if(WIN32)
     # GUI/console
-    set(CMAKE_WIN32_EXECUTABLE ON)
+    set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
+    # >= 6 required by nvenc for encoding d3d11 format
+    find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
-    find_package(Qt5 COMPONENTS X11Extras REQUIRED)
+    find_package(FFmpeg 3.4 REQUIRED)
+    find_package(${QT} COMPONENTS X11Extras REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
     find_package(X11 REQUIRED)
@@ -60,7 +62,11 @@ configure_file(src/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
-qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+if(QT_DEFAULT_MAJOR_VERSION EQUAL 5)
+    qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+elseif(QT_DEFAULT_MAJOR_VERSION EQUAL 6)
+    qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+endif()
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}
@@ -69,19 +75,27 @@ add_executable(${PROJECT_NAME}
     $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
+target_compile_options(${PROJECT_NAME} 
+    PRIVATE 
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion>
+)
+
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
-        Qt5::Widgets Qt5::Gui
+        ${QT}::Widgets ${QT}::Gui
         glog::glog
         fmt::fmt
-        FFmpeg::avutil FFmpeg::avcodec FFmpeg::avformat FFmpeg::avdevice FFmpeg::avfilter
+        probe::probe
+        ffmpeg::ffmpeg
         $<$<PLATFORM_ID:Windows>:dwmapi>
         $<$<PLATFORM_ID:Windows>:strmiids>
         $<$<PLATFORM_ID:Windows>:ntdll>
         $<$<PLATFORM_ID:Windows>:Shcore> 
         $<$<PLATFORM_ID:Windows>:DXGI>
-        $<$<PLATFORM_ID:Linux>:Qt5::X11Extras>
+        $<$<PLATFORM_ID:Windows>:D3D11>
+        $<$<PLATFORM_ID:Linux>:${QT}::X11Extras>
         $<$<PLATFORM_ID:Linux>:X11::Xrandr>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
         $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>

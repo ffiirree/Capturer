@@ -3,58 +3,43 @@
 
 #ifdef __linux__
 
-#include <string>
+#include "devices.h"
 extern "C" {
-    #include <pulse/pulseaudio.h>
+#include <pulse/pulseaudio.h>
 }
 
-struct PulseInfo
-{
-    PulseInfo(const char* name, const char * desc, int32_t fmt, uint32_t rate, uint8_t channels, int32_t state, bool is_monitor)
-    {
-        name_ = name;
-        description_ = desc;
-        format_ = fmt;
-        rate_ = rate;
-        channels_ = channels;
-        state_ = state;
-        is_monitor_ = is_monitor;
-    }
-
-    std::string name_;
-    std::string description_;
-    int32_t format_;
-    uint32_t rate_;
-    uint8_t channels_;
-    int32_t state_;
-    bool is_monitor_{false};
-};
+#include <optional>
+#include <string>
+#include <vector>
 
 struct PulseServerInfo
 {
-    std::string version_;
-    std::string name_;
-    std::string default_sink_;
-    std::string default_source_;
+    std::string version;
+    std::string name;
+    std::string default_sink_name;
+    std::string default_source_name;
 };
 
-void pulse_init();
-void pulse_unref();
+namespace pulse
+{
+    void init();
+    void unref();
 
-void pulse_loop_lock();
-void pulse_loop_unlock();
+    void loop_lock();
+    void loop_unlock();
 
-bool pulse_context_is_ready();
+    bool context_is_ready();
 
-void pulse_signal(int);
+    void signal(int);
 
-std::vector<PulseInfo> pulse_get_source_info_list();
-std::vector<PulseInfo> pulse_get_sink_info_list();
+    std::vector<av::device_t> source_list();
+    std::vector<av::device_t> sink_list();
 
-void pulse_get_source_info();
-void pulse_get_sink_info();
+    std::optional<av::device_t> default_source();
+    std::optional<av::device_t> default_sink();
 
-int pulse_get_server_info(PulseServerInfo& info);
+    int server_info(PulseServerInfo& info);
+} // namespace pulse
 
 #endif // !__linux__
 

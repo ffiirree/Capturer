@@ -1,11 +1,11 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <QObject>
 #include "json.h"
+#include "probe/util.h"
 #include "utils.h"
-#include "platform.h"
 
+#include <QObject>
 
 class Config : public QObject
 {
@@ -18,7 +18,7 @@ public:
         return instance;
     }
 
-    Config(const Config&) = delete;
+    Config(const Config&)            = delete;
     Config& operator=(const Config&) = delete;
 
     [[nodiscard]] QString getFilePath() const { return filepath_; }
@@ -29,10 +29,10 @@ public:
     void set_theme(const std::string&);
     void load_theme(const std::string&);
 
-    template <typename T> void set(json& key, T value)
-    { 
-        key = value; 
-        emit changed(); 
+    template<typename T> void set(json& key, T value)
+    {
+        key = value;
+        emit changed();
     }
 
     decltype(auto) operator[](const std::string& key) { return settings_[key]; }
@@ -54,11 +54,7 @@ private:
     QString filepath_;
     json settings_ = json::parse("{}");
 
-#ifdef _WIN32
-    std::shared_ptr<platform::windows::RegistryMonitor> theme_monitor_{ nullptr };
-#elif __linux__
-    std::shared_ptr<platform::linux::GSettingsMonitor> theme_monitor_{ nullptr };
-#endif // _WIN32
+    std::shared_ptr<probe::Listener> theme_monitor_{ nullptr };
 };
 
 #endif // CONFIG_H

@@ -68,7 +68,7 @@ private:
     CircleCursor circle_cursor_{ 20 };
     Canvas* canvas_{ nullptr };
 
-    std::vector<QRect> history_;
+    std::vector<hunter::prey_t> history_;
     size_t history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };

@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QPoint>
 #include <QRect>
-#include "platform.h"
+#include "probe/graphics.h"
 
 #define ANCHOR_W        7
 
@@ -13,8 +13,8 @@ class Resizer
 public:
     enum PointPosition {
         DEFAULT = 0x0000,
-        BORDER = 0x0001 | 0x0002 | 0x0004 | 0x0008,
-        ANCHOR = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
+        BORDER  = 0x0001 | 0x0002 | 0x0004 | 0x0008,
+        ANCHOR  = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
 
         X1_BORDER   = 0x00000001,  L_BORDER = 0x10000001,
         X2_BORDER   = 0x00000002,  R_BORDER = 0x10000002,
@@ -42,8 +42,9 @@ public:
     Resizer() : Resizer(0, 0, 0, 0, 5) { }
 
     Resizer(int x1, int y1, int x2, int y2, int resize_border_width = 5)
-        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), ADJUST_BORDER_W_(resize_border_width) {
-        range(platform::display::virtual_screen_geometry());
+        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), ADJUST_BORDER_W_(resize_border_width) 
+    {
+        range(probe::graphics::virtual_screen_geometry());
     }
 
     Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
@@ -55,31 +56,93 @@ public:
     explicit Resizer(const QRect& rect, int resize_border_width = 5)
         : Resizer(rect.topLeft(), rect.bottomRight(), resize_border_width) { }
 
+    // TODO: constrain the box coordinates by range
     inline void range(const QRect& r) { range_ = r; }
+    inline void range(const probe::geometry_t& r)
+    {
+        range_ = QRect{ r.x, r.y, static_cast<int>(r.width), static_cast<int>(r.height) };
+    }
     inline QRect range() const { return range_; }
 
     inline void enableRotate(bool val) { rotate_f_ = val; }
 
-    void reset(int x1, int y1, int x2, int y2) { x1_ = x1; y1_ = y1; x2_ = x2; y2_ = y2; }
-    void reset(const QPoint& p1, const QPoint& p2) { x1_ = p1.x(); y1_ = p1.y(); x2_ = p2.x(); y2_ = p2.y(); }
-    void reset(const QRect& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
-    void reset(const platform::display::geometry_t& rect) { x1_ = rect.left(); y1_ = rect.top(); x2_ = rect.right(); y2_ = rect.bottom(); }
-
-    void resize(const QSize& size) 
-    { 
-        x2_ = x1_ + (x2_ > x1_ ? (size.width() - 1) : (-size.width() + 1));
-        y2_ = y1_ + (y2_ > y1_ ? (size.height() - 1) : (-size.height() + 1));
+    void coords(int x1, int y1, int x2, int y2)
+    {
+        x1_ = clamp_x(x1);
+        y1_ = clamp_y(y1);
+        x2_ = clamp_x(x2);
+        y2_ = clamp_y(y2);
     }
 
-    int& rx1() { return x1_; }  void x1(int val) { x1_ = val; } int x1() const { return x1_; }
-    int& rx2() { return x2_; }  void x2(int val) { x2_ = val; } int x2() const { return x2_; }
-    int& ry1() { return y1_; }  void y1(int val) { y1_ = val; } int y1() const { return y1_; }
-    int& ry2() { return y2_; }  void y2(int val) { y2_ = val; } int y2() const { return y2_; }
-
-    void ajust(int x1, int y1, int x2, int y2) { x1_ += x1; y1_ += y1; x2_ += x2; y2_ += y2; }
-    void move(int x, int y)
+    void coords(const QPoint& p1, const QPoint& p2) { coords(p1.x(), p1.y(), p2.x(), p2.y()); }
+    void coords(const QRect& rect) { coords(rect.left(), rect.top(), rect.right(), rect.bottom()); }
+    void coords(const probe::geometry_t& rect)
     {
-        x1_ += x; x2_ += x; y1_ += y; y2_ += y;
+        coords(rect.left(), rect.top(), rect.right(), rect.bottom());
+    }
+
+    // clang-format off
+    inline int clamp_x(int v)   { return std::clamp(v, range_.left(), range_.right()); }
+    inline int clamp_y(int v)   { return std::clamp(v, range_.top(), range_.bottom()); }
+    
+    inline int x1()     const   { return x1_; }
+    inline int x2()     const   { return x2_; }
+    inline int y1()     const   { return y1_; }
+    inline int y2()     const   { return y2_; }
+
+    inline void x1(int v)       { x1_ = clamp_x(v); }
+    inline void x2(int v)       { x2_ = clamp_x(v); }
+    inline void y1(int v)       { y1_ = clamp_y(v); }
+    inline void y2(int v)       { y2_ = clamp_y(v); }
+
+    inline int left()   const   { return x1_ < x2_ ? x1_ : x2_; }
+    inline int right()  const   { return x1_ > x2_ ? x1_ : x2_; }
+    inline int top()    const   { return y1_ < y2_ ? y1_ : y2_; }
+    inline int bottom() const   { return y1_ > y2_ ? y1_ : y2_; }
+
+    inline void left(int v)     { x1_ < x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    inline void right(int v)    { x1_ > x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    inline void top(int v)      { y1_ < y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    inline void bottom(int v)   { y1_ > y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    // clang-format on
+
+    void adjust(int dx1, int dy1, int dx2, int dy2)
+    {
+        x1_ = clamp_x(x1_ + dx1);
+        x2_ = clamp_x(x2_ + dx2);
+        y1_ = clamp_y(y1_ + dy1);
+        y2_ = clamp_y(y2_ + dy2);
+    }
+
+    void margins(int dt, int dr, int db, int dl)
+    {
+        top(top() + dt);
+        right(right() + dr);
+        bottom(bottom() + db);
+        left(left() + dl);
+    }
+
+    void resize(int w, int h)
+    {
+        right(left() + w);
+        bottom(top() + h);
+    }
+
+    void resize(const QSize& size)
+    {
+        right(left() + size.width());
+        bottom(top() + size.height());
+    }
+
+    void translate(int dx, int dy)
+    {
+        dx  = std::clamp(dx, range_.left() - left(), range_.right() - right());
+        dy  = std::clamp(dy, range_.top() - top(), range_.bottom() - bottom());
+
+        x1_ += dx;
+        x2_ += dx;
+        y1_ += dy;
+        y2_ += dy;
     }
 
     inline bool isContains(const QPoint& p) const { return QRect(left(), top(), width(), height()).contains(p); }
@@ -214,14 +277,14 @@ public:
         return rotate_f_ && rotateAnchor().contains(p);
     }
 
-    inline bool isY1Anchor(const QPoint& p)     const { return Y1Anchor().contains(p); }
-    inline bool isY2Anchor(const QPoint& p)     const { return Y2Anchor().contains(p); }
-    inline bool isX1Anchor(const QPoint& p)     const { return X1Anchor().contains(p); }
-    inline bool isX2Anchor(const QPoint& p)     const { return X2Anchor().contains(p); }
-    inline bool isX1Y1Anchor(const QPoint& p)   const { return X1Y1Anchor().contains(p); }
-    inline bool isX2Y1Anchor(const QPoint& p)   const { return X2Y1Anchor().contains(p); }
-    inline bool isX1Y2Anchor(const QPoint& p)   const { return X1Y2Anchor().contains(p); }
-    inline bool isX2Y2Anchor(const QPoint& p)   const { return X2Y2Anchor().contains(p); }
+    inline bool isY1Anchor(const QPoint& p)             const { return Y1Anchor().contains(p); }
+    inline bool isY2Anchor(const QPoint& p)             const { return Y2Anchor().contains(p); }
+    inline bool isX1Anchor(const QPoint& p)             const { return X1Anchor().contains(p); }
+    inline bool isX2Anchor(const QPoint& p)             const { return X2Anchor().contains(p); }
+    inline bool isX1Y1Anchor(const QPoint& p)           const { return X1Y1Anchor().contains(p); }
+    inline bool isX2Y1Anchor(const QPoint& p)           const { return X2Y1Anchor().contains(p); }
+    inline bool isX1Y2Anchor(const QPoint& p)           const { return X1Y2Anchor().contains(p); }
+    inline bool isX2Y2Anchor(const QPoint& p)           const { return X2Y2Anchor().contains(p); }
 
     inline bool isTopAnchor(const QPoint& p)            const { return topAnchor().contains(p); }
     inline bool isBottomAnchor(const QPoint& p)         const { return bottomAnchor().contains(p); }
@@ -243,18 +306,9 @@ public:
         return isX1Y1Anchor(p) || isX2Y1Anchor(p) || isX1Y2Anchor(p) || isX2Y2Anchor(p);
     }
 
-    inline int left()   const { return x1_ < x2_ ? x1_ : x2_; }
-    inline int right()  const { return x1_ > x2_ ? x1_ : x2_; }
-    inline int top()    const { return y1_ < y2_ ? y1_ : y2_; }
-    inline int bottom() const { return y1_ > y2_ ? y1_ : y2_; }
-
-    inline int& rleft()   { return x1_ < x2_ ? x1_ : x2_; }
-    inline int& rright()  { return x1_ > x2_ ? x1_ : x2_; }
-    inline int& rtop()    { return y1_ < y2_ ? y1_ : y2_; }
-    inline int& rbottom() { return y1_ > y2_ ? y1_ : y2_; }
-
     inline int width()  const { return std::abs(x1_ - x2_) + 1; }   // like QRect class
     inline int height() const { return std::abs(y1_ - y2_) + 1; }
+
     inline QSize size() const { return { width(), height() }; }
 
     inline QPoint topLeft()     const { return {left(), top()}; }
@@ -312,12 +366,15 @@ public:
     }
 
 protected:
+    // point 1
     int x1_ = 0;
     int y1_ = 0;
+    // point 2
     int x2_ = 0;
     int y2_ = 0;
 
-    QRect range_{0, 0, 0, 0};
+    QRect range_{ std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
+                  std::numeric_limits<int>::max(), std::numeric_limits<int>::max() };
 
     bool rotate_f_ = false;
 

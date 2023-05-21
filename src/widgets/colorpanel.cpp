@@ -1,19 +1,20 @@
 #include "colorpanel.h"
-#include <QWheelEvent>
+
 #include <QGridLayout>
+#include <QWheelEvent>
 
 ColorButton::ColorButton(QWidget *parent)
     : ColorButton(Qt::blue, parent)
-{ }
+{}
 
 ColorButton::ColorButton(const QColor& c, QWidget *parent)
-    : QPushButton(parent), color_(c) {
+    : QPushButton(parent)
+    , color_(c)
+{
 
     setAutoFillBackground(true);
 
-    connect(this, &QPushButton::clicked, [this](){
-        emit clicked(color_);
-    });
+    connect(this, &QPushButton::clicked, [this]() { emit clicked(color_); });
 }
 
 void ColorButton::paintEvent(QPaintEvent *)
@@ -33,15 +34,16 @@ void ColorButton::paintEvent(QPaintEvent *)
     painter.end();
 }
 
-void ColorButton::enterEvent(QEvent*)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ColorButton::enterEvent(QEnterEvent *)
+#else
+void ColorButton::enterEvent(QEvent *)
+#endif
 {
     border_pen_.setColor(hover_color_);
 }
 
-void ColorButton::leaveEvent(QEvent *)
-{
-    border_pen_.setColor(default_color_);
-}
+void ColorButton::leaveEvent(QEvent *) { border_pen_.setColor(default_color_); }
 
 ///////////////////////////////////////////////////////////////////////////
 ColorDialogButton::ColorDialogButton(QWidget *parent)
@@ -55,32 +57,29 @@ ColorDialogButton::ColorDialogButton(const QColor& color, QWidget *parent)
     color_dialog_->setOptions(QColorDialog::DontUseNativeDialog | QColorDialog::ShowAlphaChannel);
     color_dialog_->setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint);
 
-    connect(this, &ColorDialogButton::clicked, [=](){
+    connect(this, &ColorDialogButton::clicked, [this]() {
         color_dialog_->setCurrentColor(color_);
         color_dialog_->show();
     });
 
-    connect(color_dialog_, &QColorDialog::colorSelected, [&](const QColor& color){
-        if(color.isValid()) {
+    connect(color_dialog_, &QColorDialog::colorSelected, [&](const QColor& color) {
+        if (color.isValid()) {
             color_ = color;
             emit changed(color_);
         }
     });
 }
 
-void ColorDialogButton::wheelEvent(QWheelEvent* event)
+void ColorDialogButton::wheelEvent(QWheelEvent *event)
 {
     color_.setAlpha(color_.alpha() + event->angleDelta().y() / 60);
     color(color_);
 }
 
-ColorDialogButton::~ColorDialogButton()
-{
-    delete color_dialog_;
-}
+ColorDialogButton::~ColorDialogButton() { delete color_dialog_; }
 
 ///////////////////////////////////////////////////////////////////////////
-ColorPanel::ColorPanel(QWidget * parent)
+ColorPanel::ColorPanel(QWidget *parent)
     : QWidget(parent)
 {
     auto layout = new QGridLayout();
@@ -92,12 +91,14 @@ ColorPanel::ColorPanel(QWidget * parent)
     color_dialog_btn_->setFixedSize(29, 29);
     layout->addWidget(color_dialog_btn_, 0, 0, 2, 2);
 
-#define ADD_COLOR(COLOR, X, Y)   do {                                   \
-                                    auto cbtn = new ColorButton(COLOR); \
-                                    cbtn->setFixedSize(14, 14);         \
-                                    layout->addWidget(cbtn, X, Y);       \
-                                    connect(cbtn, &ColorButton::clicked, this, &ColorPanel::setColor);\
-                                } while(0)
+#define ADD_COLOR(COLOR, X, Y)                                                                             \
+    do {                                                                                                   \
+        auto cbtn = new ColorButton(COLOR);                                                                \
+        cbtn->setFixedSize(14, 14);                                                                        \
+        layout->addWidget(cbtn, X, Y);                                                                     \
+        connect(cbtn, &ColorButton::clicked, this, &ColorPanel::setColor);                                 \
+    } while (0)
+
     ADD_COLOR(QColor(000, 000, 000), 0, 2);
     ADD_COLOR(QColor(128, 128, 128), 1, 2);
     ADD_COLOR(QColor(192, 192, 192), 0, 3);

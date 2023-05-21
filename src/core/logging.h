@@ -1,43 +1,40 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include <glog/logging.h>
-#include <QSize>
-#include <QRect>
-#include <QStringList>
+#include "probe/thread.h"
+
 #include <filesystem>
-#include "platform.h"
+#include <glog/logging.h>
 
-class Logger {
+class Logger
+{
 public:
-    Logger(const Logger&) = delete;
+    Logger(const Logger&)            = delete;
     Logger& operator=(const Logger&) = delete;
-    Logger(Logger&&) = delete;
-    Logger& operator=(Logger&&) = delete;
+    Logger(Logger&&)                 = delete;
+    Logger& operator=(Logger&&)      = delete;
 
-    static Logger& init(const char* argv0) 
+    static Logger& init(const char *argv0)
     {
         static Logger logger(argv0);
         return logger;
     }
 
-    ~Logger()
-    {
-        google::ShutdownGoogleLogging();
-    }
+    ~Logger() { google::ShutdownGoogleLogging(); }
 
 private:
-    explicit Logger(const char* argv0)
+    explicit Logger(const char *argv0)
     {
 #ifdef _WIN32
         const std::string log_dir = "logs";
 #elif __linux__
-        const std::string log_dir = std::string{::getenv("HOME")} + "/.local/logs/capturer";
+        const std::string log_dir = std::string{ ::getenv("HOME") } + "/.local/logs/capturer";
 #endif
         if (!std::filesystem::is_directory(log_dir) || std::filesystem::exists(log_dir)) {
             std::filesystem::create_directories(log_dir);
         }
 
+        // clang-format off
         google::InitGoogleLogging(
             argv0,
             [](std::ostream& _stream, const google::LogMessageInfo& _info, void*)
@@ -62,82 +59,31 @@ private:
                     << " -- ["
                     << std::setw(24) << _file_line
                     << "] ["
-                    <<  std::setw(15) << platform::util::thread_get_name().substr(0, 15) << "]:";
+#ifdef _WIN32
+                    <<  std::setw(32) << probe::thread::name().substr(0, 32) << "]:";
+#else
+                    <<  std::setw(15) << probe::thread::name().substr(0, 15) << "]:";
+#endif
             }
         );
+        // clang-format on
 
-        FLAGS_log_dir = log_dir;
-        FLAGS_max_log_size = 32;                    // MB
+        FLAGS_log_dir                   = log_dir;
+        FLAGS_max_log_size              = 32; // MB
         FLAGS_stop_logging_if_full_disk = true;
-        FLAGS_logbufsecs = 0;                       // s
-        FLAGS_colorlogtostderr = true;
+        FLAGS_logbufsecs                = 0;  // s
+        FLAGS_colorlogtostderr          = true;
         google::SetStderrLogging(google::GLOG_INFO);
-        google::SetLogDestination(google::GLOG_INFO,    std::string{log_dir + "/CAPTURER-I-"}.c_str());
-        google::SetLogDestination(google::GLOG_WARNING, std::string{log_dir + "/CAPTURER-W-"}.c_str());
-        google::SetLogDestination(google::GLOG_ERROR,   std::string{log_dir + "/CAPTURER-E-"}.c_str());
-        google::SetLogDestination(google::GLOG_FATAL,   std::string{log_dir + "/CAPTURER-F-"}.c_str());
+        google::SetLogDestination(google::GLOG_INFO, std::string{ log_dir + "/CAPTURER-I-" }.c_str());
+        google::SetLogDestination(google::GLOG_WARNING, std::string{ log_dir + "/CAPTURER-W-" }.c_str());
+        google::SetLogDestination(google::GLOG_ERROR, std::string{ log_dir + "/CAPTURER-E-" }.c_str());
+        google::SetLogDestination(google::GLOG_FATAL, std::string{ log_dir + "/CAPTURER-F-" }.c_str());
         google::SetLogFilenameExtension(".log");
-        google::EnableLogCleaner(3);                // days
+        google::EnableLogCleaner(3); // days
         google::InstallFailureSignalHandler();
-        google::InstallFailureWriter([](const char* data, size_t size) {
-            LOG(ERROR) << std::string(data, size);
-        });
+        google::InstallFailureWriter(
+            [](const char *data, size_t size) { LOG(ERROR) << std::string(data, size); });
     }
 };
-
-inline std::ostream& operator<<(std::ostream& out, const QString& string) 
-{
-    return out << string.toStdString();
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QStringList& list) 
-{
-    foreach (QString str, list) {
-        out << str.toStdString();
-    }
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QPoint& point)
-{
-    return out << "<" << point.x() << ", " << point.y() << ">";
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QSize& size) 
-{
-    return out << "<" << size.width() << " x " << size.height() << ">";
-}
-
-inline std::ostream& operator<<(std::ostream& out, const QRect& rect)
-{
-    return out << "<<" << rect.left() << ", " << rect.top() << ">, <"<< rect.width() << " x " << rect.height() << ">>";
-}
-
-inline std::ostream& operator<<(std::ostream& out, const platform::version_t& ver)
-{
-    out << ver.major << "." << ver.minor << "." << ver.patch << "." << ver.build;
-
-    if (!ver.codename.empty()) {
-        out << " (" << ver.codename << ")";
-    }
-
-    return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const platform::cpu::architecture_t& arch)
-{
-    switch (arch)
-    {
-    case platform::cpu::architecture_t::x86: out << "x86"; break;
-    case platform::cpu::architecture_t::ia64: out << "ia64"; break;
-    case platform::cpu::architecture_t::x64: out << "x64"; break;
-    case platform::cpu::architecture_t::arm: out << "arm"; break;
-    case platform::cpu::architecture_t::arm64: out << "arm64"; break;
-    case platform::cpu::architecture_t::unknown:
-    default: out << "unknown"; break;
-    }
-
-    return out;
-}
 
 #endif // LOGGING_H

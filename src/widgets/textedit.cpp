@@ -25,6 +25,7 @@ TextEdit::TextEdit(QWidget * parent)
     auto resize_fuctor = [this](){
         auto doc_size = document()->size().toSize();
         setFixedSize(QSize(std::max<int>(2, doc_size.width()), doc_size.height()));
+        setTextColor(color_);
         emit resized();
     };
 

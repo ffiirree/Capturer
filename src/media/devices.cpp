@@ -1,8 +1,10 @@
 #include "devices.h"
+
 #include "logging.h"
+#include "probe/defer.h"
 #include "utils.h"
-#include "defer.h"
-#include <QSet>
+
+// #include <QSet>
 
 #ifdef __linux__
 
@@ -10,103 +12,94 @@
 #include "linux-v4l2/linux-v4l2.h"
 
 #elif _WIN32
-#include "win-wasapi/enum-wasapi.h"
-#include "win-dshow/enum-devices.h"
+#include "win-dshow/win-dshow.h"
+#include "win-wasapi/win-wasapi.h"
 #endif
 
-QList<QString> Devices::cameras() {
-    QSet<QString> cameras{};
-#ifdef __linux__
-    auto devices = v4l2_device_list();
-    for (auto &device: devices) {
-        cameras.insert(QString::fromStdString(device.name_));
-    }
-#elif _WIN32
-    for (const auto& [name, id] : enum_video_devices()) {
-        cameras.insert(QString::fromStdWString(name));
-    }
-#endif
-
-    return cameras.values();
-}
-
-QList<QString> Devices::microphones() {
-    QSet<QString> microphones{};
-#ifdef  __linux__
-    pulse_init();
-    auto sources = pulse_get_source_info_list();
-    for (auto &s: sources) {
-        if (!s.is_monitor_)
-            microphones.insert(QString::fromStdString(s.name_));
-    }
-    pulse_unref();
-#elif _WIN32
-    for (const auto& [name, id] : enum_audio_endpoints(true)) {
-        microphones.insert(QString::fromStdWString(name));
-    }
-#endif
-    return microphones.values();
-}
-
-QList<QString> Devices::speakers() {
-    QSet<QString> speakers{};
-
-#ifdef  __linux__
-    pulse_init();
-    auto sources = pulse_get_source_info_list();
-    for (auto &s: sources) {
-        if (s.is_monitor_)
-            speakers.insert(QString::fromStdString(s.name_));
-    }
-    pulse_unref();
-#elif _WIN32
-    for (const auto& [name, id] : enum_audio_endpoints(false)) {
-        speakers.insert(QString::fromStdWString(name));
-    }
-#endif
-    return speakers.values();
-}
-
-QString Devices::default_audio_sink()
+namespace av
 {
-#ifdef __linux__
-    PulseServerInfo info;
-
-    pulse_init();
-    defer(pulse_unref());
-
-    if (pulse_get_server_info(info) < 0) {
-        LOG(ERROR) << "failed to get pulse server";
+    std::vector<device_t> cameras()
+    {
+#if _WIN32
+        return dshow::video_devices();
+#elif __linux__
+        return v4l2::device_list();
+#else
         return {};
-    }
-    return QString::fromStdString(info.default_sink_ + ".monitor");
-#elif _WIN32
-    auto dft = default_audio_endpoint(false);
-    if (dft.has_value())
-        return QString::fromStdWString(dft.value().first);
-
-    return {};
 #endif
-}
+    }
 
-QString Devices::default_audio_source()
-{
-#ifdef __linux__
-    PulseServerInfo info;
+    std::vector<device_t> audio_sources()
+    {
+#if _WIN32
+        return wasapi::endpoints(av::device_type_t::source);
+#elif __linux__
+        pulse::init();
+        defer(pulse::unref());
 
-    pulse_init();
-    defer(pulse_unref());
-
-    if (pulse_get_server_info(info) < 0) {
-        LOG(ERROR) << "failed to get pulse server";
+        std::vector<device_t> list;
+        for (const auto& dev : pulse::source_list()) {
+            if (!any(dev.type & device_type_t::monitor)) {
+                list.push_back(dev);
+            }
+        }
+        return list;
+#else
         return {};
-    }
-    return QString::fromStdString(info.default_source_);
-#elif _WIN32
-    auto dft = default_audio_endpoint(true);
-    if (dft.has_value())
-        return QString::fromStdWString(dft.value().first);
-        
-    return {};
 #endif
-}
+    }
+
+    std::vector<device_t> audio_sinks()
+    {
+#if _WIN32
+        return wasapi::endpoints(av::device_type_t::sink);
+#elif __linux__
+        pulse::init();
+        defer(pulse::unref());
+        std::vector<device_t> list;
+        for (const auto& dev : pulse::source_list()) {
+            if (any(dev.type & device_type_t::monitor)) {
+                list.push_back(dev);
+            }
+        }
+        return list;
+#else
+        return {};
+#endif
+    }
+
+    std::optional<device_t> default_audio_source()
+    {
+#if _WIN32
+        return wasapi::default_endpoint(av::device_type_t::source);
+#elif __linux__
+        pulse::init();
+        defer(pulse::unref());
+        return pulse::default_source();
+#else
+        return {};
+#endif
+    }
+
+    // default monitor of sink
+    std::optional<device_t> default_audio_sink()
+    {
+#if _WIN32
+        return wasapi::default_endpoint(av::device_type_t::sink);
+#elif __linux__
+        pulse::init();
+        defer(pulse::unref());
+
+        auto dev = pulse::default_sink();
+        if (dev.has_value()) {
+            dev->id += ".monitor";
+            dev->name = "Monitor of " + dev->name;
+            dev->type = device_type_t::audio | device_type_t::source | device_type_t::monitor;
+        }
+
+        return dev;
+#else
+        return {};
+#endif
+    }
+} // namespace av

@@ -1,15 +1,33 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <vector>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #ifndef st
-#define st(X) do{X}while(0)
+#define st(X)                                                                                              \
+    do {                                                                                                   \
+        X                                                                                                  \
+    } while (0)
 #endif
 
-enum Graph : uint32_t {
+#ifdef _WIN32
+#define RETURN_NONE_IF_FAILED(HR)                                                                          \
+    if (FAILED(HR)) return {};
+
+#define RETURN_NEGV_IF_FAILED(HR)                                                                          \
+    if (FAILED(HR)) return -1;
+
+#define SAFE_RELEASE(COMPTR)                                                                               \
+    if ((COMPTR) != nullptr) {                                                                             \
+        (COMPTR)->Release();                                                                               \
+        (COMPTR) = nullptr;                                                                                \
+    }
+#endif
+
+enum Graph : uint32_t
+{
     NONE,
     RECTANGLE   = 0x0001,
     ELLIPSE     = 0x0002,
@@ -22,13 +40,14 @@ enum Graph : uint32_t {
     BROKEN_LINE = 0x0100,
 };
 
-enum PaintType : uint32_t {
-    UNMODIFIED      = 0x0000,
-    UPDATE_MASK     = 0x0001,
-    DRAW_MODIFYING  = 0x0010,
-    DRAW_MODIFIED   = 0x0020 | UPDATE_MASK,
-    DRAW_FINISHED   = 0x0040 | UPDATE_MASK,
-    REPAINT_ALL     = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
+enum PaintType : uint32_t
+{
+    UNMODIFIED     = 0x0000,
+    UPDATE_MASK    = 0x0001,
+    DRAW_MODIFYING = 0x0010,
+    DRAW_MODIFIED  = 0x0020 | UPDATE_MASK,
+    DRAW_FINISHED  = 0x0040 | UPDATE_MASK,
+    REPAINT_ALL    = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
 };
 
 #endif // UTILS_H

@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="108"/>
+        <location filename="../src/capturer.cpp" line="106"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="109"/>
+        <location filename="../src/capturer.cpp" line="107"/>
         <source>Record Video</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="110"/>
+        <location filename="../src/capturer.cpp" line="108"/>
         <source>Record GIF</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="112"/>
+        <location filename="../src/capturer.cpp" line="110"/>
         <source>Open Camera</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="114"/>
+        <location filename="../src/capturer.cpp" line="112"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="116"/>
+        <location filename="../src/capturer.cpp" line="114"/>
         <source>Quit</source>
         <translation></translation>
     </message>
@@ -208,7 +208,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/record/screenrecorder.cpp" line="233"/>
+        <location filename="../src/record/screenrecorder.cpp" line="315"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -216,7 +216,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snip/screenshoter.cpp" line="214"/>
+        <location filename="../src/snip/screenshoter.cpp" line="218"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
@@ -260,35 +260,35 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="70"/>
-        <location filename="../src/setting/settingdialog.cpp" line="437"/>
+        <location filename="../src/setting/settingdialog.cpp" line="466"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="168"/>
         <location filename="../src/setting/settingdialog.cpp" line="217"/>
-        <location filename="../src/setting/settingdialog.cpp" line="320"/>
+        <location filename="../src/setting/settingdialog.cpp" line="327"/>
         <source>Border Width</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="173"/>
         <location filename="../src/setting/settingdialog.cpp" line="222"/>
-        <location filename="../src/setting/settingdialog.cpp" line="326"/>
+        <location filename="../src/setting/settingdialog.cpp" line="333"/>
         <source>Border Color</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="184"/>
         <location filename="../src/setting/settingdialog.cpp" line="233"/>
-        <location filename="../src/setting/settingdialog.cpp" line="337"/>
+        <location filename="../src/setting/settingdialog.cpp" line="344"/>
         <source>Line Type</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="189"/>
         <location filename="../src/setting/settingdialog.cpp" line="238"/>
-        <location filename="../src/setting/settingdialog.cpp" line="342"/>
+        <location filename="../src/setting/settingdialog.cpp" line="349"/>
         <source>Mask Color</source>
         <translation></translation>
     </message>
@@ -300,26 +300,52 @@
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="156"/>
         <location filename="../src/setting/settingdialog.cpp" line="205"/>
-        <location filename="../src/setting/settingdialog.cpp" line="309"/>
+        <location filename="../src/setting/settingdialog.cpp" line="316"/>
         <source>Appearance:</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="246"/>
-        <location filename="../src/setting/settingdialog.cpp" line="349"/>
+        <location filename="../src/setting/settingdialog.cpp" line="356"/>
         <source>Show Region</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="251"/>
-        <location filename="../src/setting/settingdialog.cpp" line="354"/>
+        <location filename="../src/setting/settingdialog.cpp" line="361"/>
         <source>Params:</source>
         <translation></translation>
     </message>
     <message>
+        <location filename="../src/setting/settingdialog.cpp" line="299"/>
+        <location filename="../src/setting/settingdialog.cpp" line="391"/>
+        <source>Capture Mouse</source>
+        <translation></translation>
+    </message>
+    <message>
         <location filename="../src/setting/settingdialog.cpp" line="261"/>
-        <location filename="../src/setting/settingdialog.cpp" line="364"/>
+        <location filename="../src/setting/settingdialog.cpp" line="371"/>
         <source>Framerate</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="266"/>
+        <source>Software x264 [H.264 / AVC]</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="267"/>
+        <source>Software x265 [H.265 / HEVC]</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="270"/>
+        <source>Hardware NVENC [H.264 / AVC]</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/setting/settingdialog.cpp" line="271"/>
+        <source>Hardware NVENC [H.265 / HEVC]</source>
         <translation></translation>
     </message>
     <message>
@@ -329,25 +355,25 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="284"/>
-        <location filename="../src/setting/settingdialog.cpp" line="369"/>
+        <location filename="../src/setting/settingdialog.cpp" line="376"/>
         <source>High</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="285"/>
-        <location filename="../src/setting/settingdialog.cpp" line="370"/>
+        <location filename="../src/setting/settingdialog.cpp" line="377"/>
         <source>Medium</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="286"/>
-        <location filename="../src/setting/settingdialog.cpp" line="371"/>
+        <location filename="../src/setting/settingdialog.cpp" line="378"/>
         <source>Low</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="292"/>
-        <location filename="../src/setting/settingdialog.cpp" line="377"/>
+        <location filename="../src/setting/settingdialog.cpp" line="384"/>
         <source>Quality</source>
         <translation></translation>
     </message>
@@ -362,17 +388,17 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="395"/>
+        <location filename="../src/setting/settingdialog.cpp" line="412"/>
         <source>Microphones</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="403"/>
+        <location filename="../src/setting/settingdialog.cpp" line="432"/>
         <source>Speakers</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="411"/>
+        <location filename="../src/setting/settingdialog.cpp" line="440"/>
         <source>Cameras</source>
         <translation></translation>
     </message>
@@ -382,22 +408,22 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="444"/>
+        <location filename="../src/setting/settingdialog.cpp" line="473"/>
         <source>Paste</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="451"/>
+        <location filename="../src/setting/settingdialog.cpp" line="480"/>
         <source>Hide/Show All Images</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="458"/>
+        <location filename="../src/setting/settingdialog.cpp" line="487"/>
         <source>Video Recording</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="465"/>
+        <location filename="../src/setting/settingdialog.cpp" line="494"/>
         <source>Gif Recording</source>
         <translation></translation>
     </message>
@@ -407,12 +433,12 @@
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="487"/>
+        <location filename="../src/setting/settingdialog.cpp" line="516"/>
         <source>Version</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="496"/>
+        <location filename="../src/setting/settingdialog.cpp" line="525"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>

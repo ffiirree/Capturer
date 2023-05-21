@@ -10,7 +10,7 @@ using json = nlohmann::json;
 inline void from_json(const json& j, QString& qstr)         { qstr = QString::fromStdString(j.get<std::string>()); }
 inline void to_json(json& j, const QString& qstr)           { j = qstr.toStdString(); }
 
-inline void from_json(const json& j, QColor& c)				{ c = { j.get<QString>() }; }
+inline void from_json(const json& j, QColor& c)             { c = { j.get<QString>() }; }
 inline void to_json(json& j, const QColor& c)               { j = c.name(QColor::HexArgb); }
 
 inline void from_json(const json& j, QKeySequence& key)     { key = { j.get<QString>() }; }

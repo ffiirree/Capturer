@@ -43,4 +43,5 @@ inline void os_msleep(int64_t _ms)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(_ms));
 }
+
 #endif // !CAPTURER_CLOCK_H

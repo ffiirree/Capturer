@@ -1,17 +1,19 @@
 #ifndef CAPTURER_DISPATCHER_H
 #define CAPTURER_DISPATCHER_H
 
-#include <thread>
-#include <future>
-#include <tuple>
-#include "utils.h"
-#include "producer.h"
-#include "consumer.h"
-
 extern "C" {
 #include <libavutil/time.h>
 #include <libavfilter/avfilter.h>
 }
+
+#include <thread>
+#include <future>
+#include <tuple>
+#include "utils.h"
+#include "media.h"
+#include "producer.h"
+#include "consumer.h"
+#include "hwaccel.h"
 
 class Dispatcher {
 public:
@@ -56,6 +58,9 @@ public:
 
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
 
+    av::vformat_t vfmt{};
+    av::aformat_t afmt{};
+
 private:
     struct ProducerContext {
         AVFilterContext* ctx;
@@ -92,14 +97,14 @@ private:
     // clock @{
     std::mutex pause_mtx_;
 
-    int64_t paused_pts_{ AV_NOPTS_VALUE };  // 
+    int64_t paused_pts_{ AV_NOPTS_VALUE };              // 
     int64_t resumed_pts_{ AV_NOPTS_VALUE };
-    int64_t paused_time_{ 0 };              // do not include the time being paused, please use paused_time()
+    int64_t paused_time_{ 0 };                          // do not include the time being paused, please use paused_time()
     std::atomic<int64_t> start_time_{ 0 };
     //@}
 
     // filter graphs @{
-    std::atomic<bool> locked_{};            // lock filter graph sources
+    std::atomic<bool> locked_{};                        // lock filter graph sources
 
     bool video_enabled_{};
     bool audio_enabled_{};

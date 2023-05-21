@@ -6,9 +6,13 @@
 #include <vector>
 #include <optional>
 #include <string>
+#include "devices.h"
 
-std::vector<std::pair<std::wstring, std::wstring>> enum_video_devices();
-std::vector<std::pair<std::wstring, std::wstring>> enum_audio_devices();
+namespace dshow
+{
+    std::vector<av::device_t> video_devices();
+    std::vector<av::device_t> audio_devices();
+}
 
 #endif // !_WIN32
 

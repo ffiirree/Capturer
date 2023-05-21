@@ -16,7 +16,7 @@
 #include "devices.h"
 #include "logging.h"
 #include "version.h"
-#include "media.h"
+#include "hwaccel.h"
 
 SettingWindow::SettingWindow(QWidget* parent)
     : QWidget(parent)
@@ -85,7 +85,7 @@ SettingWindow::SettingWindow(QWidget* parent)
     pages_->addWidget(setupDevicesWidget());
     pages_->addWidget(setupAboutWidget());
 
-    connect(menu, &QListWidget::currentItemChanged, [=](auto current, auto) {
+    connect(menu, &QListWidget::currentItemChanged, [=, this](auto current, auto) {
         pages_->setCurrentIndex(menu->row(current));
     });
     menu->setCurrentRow(0);
@@ -252,7 +252,7 @@ QWidget* SettingWindow::setupRecordWidget()
     _5->setObjectName("sub-title");
     layout->addWidget(_5, 7, 1, 1, 1);
 
-    auto _6_2 = new QSpinBox();
+    auto _6_2 = new QSpinBox(); _6_2->setMaximum(144);
     _6_2->setContextMenuPolicy(Qt::NoContextMenu);
     _6_2->setValue(config["record"]["framerate"].get<int>());
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), [this](int w){
@@ -263,13 +263,13 @@ QWidget* SettingWindow::setupRecordWidget()
 
     auto _7_2 = new ComboBox();
     _7_2->add({
-                      {"libx264", "Software x264 [H.264 / AVC]"},
-                      {"libx265", "Software x265 [H.265 / HEVC]"}
+                      {"libx264", tr("Software x264 [H.264 / AVC]")},
+                      {"libx265", tr("Software x265 [H.265 / HEVC]")}
               });
-    //if (is_support_hwdevice(AV_HWDEVICE_TYPE_CUDA)) {
-    //    _7_2->addItem("Hardware NVENC [H.264 / AVC]", "h264_nvenc");
-    //    _7_2->addItem("Hardware NVENC [H.265 / HEVC]", "hevc_nvenc");
-    //}
+    if (hwaccel::is_supported(AV_HWDEVICE_TYPE_CUDA)) {
+        _7_2->add("h264_nvenc", tr("Hardware NVENC [H.264 / AVC]"));
+        _7_2->add("hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]"));
+    }
     _7_2->select(
                     config["record"]["encoder"].get<QString>()
             )
@@ -292,7 +292,14 @@ QWidget* SettingWindow::setupRecordWidget()
     layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
     layout->addWidget(_8_2, 10, 2, 1, 2);
 
-    layout->setRowStretch(11, 1);
+    auto _cm_2 = new QCheckBox();
+    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
+    connect(_cm_2, &QCheckBox::stateChanged,
+            [this](int state) { config.set(config["record"]["mouse"], state == Qt::Checked); });
+    layout->addWidget(new QLabel(tr("Capture Mouse")), 11, 1, 1, 1);
+    layout->addWidget(_cm_2, 11, 2, 1, 2);
+
+    layout->setRowStretch(12, 1);
 
     record_widget->setLayout(layout);
     
@@ -377,7 +384,14 @@ QWidget* SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
     layout->addWidget(_8_2, 9, 2, 1, 2);
 
-    layout->setRowStretch(10, 1);
+    auto _cm_2 = new QCheckBox();
+    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
+    connect(_cm_2, &QCheckBox::stateChanged,
+            [this](int state) { config.set(config["gif"]["mouse"], state == Qt::Checked); });
+    layout->addWidget(new QLabel(tr("Capture Mouse")), 10, 1, 1, 1);
+    layout->addWidget(_cm_2, 10, 2, 1, 2);
+
+    layout->setRowStretch(11, 1);
     gif_widget->setLayout(layout);
     
     return gif_widget;
@@ -390,28 +404,43 @@ QWidget* SettingWindow::setupDevicesWidget()
     auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
+    // microphones / sources
     auto _1_2 = new ComboBox();
-    _1_2->addItems(Devices::microphones());
+    for (const auto& dev : av::audio_sources()) {
+        _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+    }
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
-    connect(_1_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["microphones"], s);
-    });
+    _1_2->onselected(
+        [this](auto value) { config.set(config["devices"]["microphones"], value.toString()); });
+    auto default_src = av::default_audio_source();
+    if (default_src.has_value()) {
+        _1_2->select(default_src.value().id);
+    }
     layout->addWidget(_1_2, 1, 2, 1, 2);
 
+    // speakers / monitor of sinks
     auto _2_2 = new ComboBox();
-    _2_2->addItems(Devices::speakers());
-    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
-    connect(_2_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["speakers"], s);
+    for (const auto& dev : av::audio_sinks()) {
+        _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+    } 
+    _2_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString());
     });
+    auto default_sink = av::default_audio_sink();
+    if (default_sink.has_value()) {
+        _2_2->select(default_sink.value().id);
+    }   
+    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
+    // cameras / sources
     auto _3_2 = new ComboBox();
-    _3_2->addItems(Devices::cameras());
+    for (const auto& dev : av::cameras()) {
+        _3_2->add(QString::fromUtf8(dev.name.c_str()), QString::fromUtf8(dev.name.c_str()));
+    }
     layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
-    connect(_3_2, &QComboBox::currentTextChanged, [this](QString s) {
-        config.set(config["devices"]["cameras"], s);
-    });
+    _3_2->onselected([this](auto value) { config.set(config["devices"]["cameras"], value.toString()); });
+    if (!config["devices"]["cameras"].is_null())
+        _3_2->select(config["devices"]["cameras"].get<std::string>());
     layout->addWidget(_3_2, 3, 2, 1, 2);
 
     layout->setRowStretch(5, 1);

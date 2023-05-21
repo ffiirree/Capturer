@@ -5,8 +5,8 @@ void ButtonGroup::addButton(QAbstractButton* btn)
     if (!btn) return;
 
     buttons_.append(btn);
-    connect(btn, &QAbstractButton::clicked, [=]() { emit buttonClicked(btn); });
-    connect(btn, &QAbstractButton::toggled, [=](bool checked) {
+    connect(btn, &QAbstractButton::clicked, [=, this]() { emit buttonClicked(btn); });
+    connect(btn, &QAbstractButton::toggled, [=, this](bool checked) {
         emit buttonToggled(btn, checked);
 
         if (checked) {

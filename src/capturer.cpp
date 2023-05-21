@@ -7,6 +7,7 @@
 #include <QTextEdit>
 #include <QFileInfo>
 #include "logging.h"
+#include "probe/system.h"
 
 #define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true))  {                                              \
                                 LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();  \
@@ -76,9 +77,6 @@ void Capturer::updateConfig()
     if(!error.isEmpty())
         showMessage("Capturer", error, QSystemTrayIcon::Critical);
 
-    recorder_->setFramerate(config["record"]["framerate"].get<int>());
-    gifcptr_->setFramerate(config["gif"]["framerate"].get<int>());
-
     sniper_->updateTheme();
     recorder_->updateTheme();
     gifcptr_->updateTheme();
@@ -93,11 +91,11 @@ void Capturer::setupSystemTray()
     menu->setAttribute(Qt::WA_TranslucentBackground);
 
     // SystemTrayIcon
-    auto update_tray_menu = [=]() {
+    auto update_tray_menu = [=, this]() {
         QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
 #ifdef __linux__
-        if (platform::system::os_name().find("Ubuntu") != std::string::npos) {
-            auto ver = platform::system::os_version();
+        if (probe::system::os_name().find("Ubuntu") != std::string::npos) {
+            auto ver = probe::system::os_version();
             if (ver.major == 20 && ver.minor == 4)
                 icon_color = "dark"; // ubuntu 2004, system trays are always light
             else if (ver.major == 18 && ver.minor == 4)
@@ -210,7 +208,7 @@ void Capturer::pin()
                 value,
                 std::make_shared<ImageWindow>(
                     pixmap,
-                    QRect(platform::display::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
+                    QRect(probe::graphics::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
                 )
             });
             pin_idx_ = history_.size() - 1;

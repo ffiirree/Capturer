@@ -1,6 +1,8 @@
 #include "screenshoter.h"
 #include <QApplication>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
+#endif
 #include <QScreen>
 #include <QFileDialog>
 #include <QClipboard>
@@ -13,6 +15,8 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : Selector(parent)
 {
+    windows_detection_flags_ = probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::children;
+
     menu_ = new ImageEditMenu(this);
     canvas_ = new Canvas(menu_, this);
 
@@ -188,10 +192,10 @@ void ScreenShoter::paintEvent(QPaintEvent *event)
 
 QPixmap ScreenShoter::snip()
 {
-    history_.push_back(selected());
+    history_.push_back(prey_);
     history_idx_ = history_.size() - 1;
 
-    return canvas_->pixmap().copy(selected().translated(-QRect(platform::display::virtual_screen_geometry()).topLeft()));
+    return canvas_->pixmap().copy(selected().translated(-QRect(probe::graphics::virtual_screen_geometry()).topLeft()));
 }
 
 void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
@@ -206,7 +210,7 @@ void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
 
 void ScreenShoter::save()
 {
-    QString default_filename = "Capturer_picture_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz") + ".png";
+    QString default_filename = "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
  
 #ifdef _WIN32
     QString filename = QFileDialog::getSaveFileName(
@@ -276,23 +280,23 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
     connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::redo);
 
-    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
-            box_.reset(history_[history_idx_]);
+            select(history_[history_idx_]);
             CAPTURED();
             if(history_idx_ > 0) history_idx_--;
         }
     });
 
-    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this](){
         if(history_idx_ < history_.size()) {
-            box_.reset(history_[history_idx_]);
+            select(history_[history_idx_]);
             CAPTURED();
             if(history_idx_ < history_.size() - 1) history_idx_++;
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=](){
+    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this](){
         if(status_ < SelectorStatus::CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }

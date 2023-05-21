@@ -1,6 +1,7 @@
 #ifndef CIRCLE_CURSOR_H
 #define CIRCLE_CURSOR_H
 
+#include <QObject>
 #include <QPixmap>
 
 class CircleCursor : QObject
