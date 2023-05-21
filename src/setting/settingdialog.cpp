@@ -407,11 +407,14 @@ QWidget* SettingWindow::setupDevicesWidget()
     // microphones / sources
     auto _1_2 = new ComboBox();
     for (const auto& dev : av::audio_sources()) {
-        _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+        std::string name = dev.name;
+#ifdef _WIN32
+        name = dev.description + " - " + name;
+#endif
+        _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
     }
     layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
-    _1_2->onselected(
-        [this](auto value) { config.set(config["devices"]["microphones"], value.toString()); });
+    _1_2->onselected([this](auto value) { config.set(config["devices"]["microphones"], value.toString()); });
     auto default_src = av::default_audio_source();
     if (default_src.has_value()) {
         _1_2->select(default_src.value().id);
@@ -421,10 +424,13 @@ QWidget* SettingWindow::setupDevicesWidget()
     // speakers / monitor of sinks
     auto _2_2 = new ComboBox();
     for (const auto& dev : av::audio_sinks()) {
-        _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+        std::string name = dev.name;
+#ifdef _WIN32
+        name = dev.description + " - " + name;
+#endif
+        _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
     } 
-    _2_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString());
-    });
+    _2_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString()); });
     auto default_sink = av::default_audio_sink();
     if (default_sink.has_value()) {
         _2_2->select(default_sink.value().id);

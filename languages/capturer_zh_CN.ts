@@ -255,7 +255,7 @@
     </message>
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="70"/>
-        <location filename="../src/setting/settingdialog.cpp" line="466"/>
+        <location filename="../src/setting/settingdialog.cpp" line="472"/>
         <source>Screenshot</source>
         <translation>截图</translation>
     </message>
@@ -298,17 +298,17 @@
         <translation>硬件 NVENC [H.265 / HEVC]</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="412"/>
+        <location filename="../src/setting/settingdialog.cpp" line="416"/>
         <source>Microphones</source>
         <translation>麦克风</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="432"/>
+        <location filename="../src/setting/settingdialog.cpp" line="438"/>
         <source>Speakers</source>
         <translation>扬声器</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="440"/>
+        <location filename="../src/setting/settingdialog.cpp" line="446"/>
         <source>Cameras</source>
         <translation>摄像头</translation>
     </message>
@@ -418,22 +418,22 @@
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="473"/>
+        <location filename="../src/setting/settingdialog.cpp" line="479"/>
         <source>Paste</source>
         <translation>粘贴</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="480"/>
+        <location filename="../src/setting/settingdialog.cpp" line="486"/>
         <source>Hide/Show All Images</source>
         <translation>隐藏/显示全部贴图</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="487"/>
+        <location filename="../src/setting/settingdialog.cpp" line="493"/>
         <source>Video Recording</source>
         <translation>录制视频</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="494"/>
+        <location filename="../src/setting/settingdialog.cpp" line="500"/>
         <source>Gif Recording</source>
         <translation>录制GIF</translation>
     </message>
@@ -443,12 +443,12 @@
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="516"/>
+        <location filename="../src/setting/settingdialog.cpp" line="522"/>
         <source>Version</source>
         <translation>版本</translation>
     </message>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="525"/>
+        <location filename="../src/setting/settingdialog.cpp" line="531"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
