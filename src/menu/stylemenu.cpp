@@ -1,11 +1,13 @@
 #include "stylemenu.h"
-#include <QFontDatabase>
-#include <QLineEdit>
-#include <QLayout>
-#include "separator.h"
-#include "combobox.h"
 
-StyleMenu::StyleMenu(int buttons, QWidget* parent)
+#include "combobox.h"
+#include "separator.h"
+
+#include <QFontDatabase>
+#include <QLayout>
+#include <QLineEdit>
+
+StyleMenu::StyleMenu(int buttons, QWidget *parent)
     : EditMenu(parent)
 {
     auto group = new ButtonGroup(this);
@@ -15,14 +17,21 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
         width_btn_->setObjectName("width-btn");
         width_btn_->setCheckable(true);
         width_btn_->setChecked(true);
-        connect(width_btn_, &WidthButton::changed, [this](int w) { width_ = w; fill_ = false; emit changed(); });
+        connect(width_btn_, &WidthButton::changed, [this](int w) {
+            width_ = w;
+            fill_  = false;
+            emit changed();
+        });
         addWidget(width_btn_);
         group->addButton(width_btn_);
 
         if (buttons & FILL_BTN) {
             fill_btn_ = new QCheckBox(this);
             fill_btn_->setObjectName("fill-btn");
-            connect(fill_btn_, &QCheckBox::toggled, [this](bool checked) { fill_ = checked; emit changed(); });
+            connect(fill_btn_, &QCheckBox::toggled, [this](bool checked) {
+                fill_ = checked;
+                emit changed();
+            });
 
             addWidget(fill_btn_);
             group->addButton(fill_btn_);
@@ -72,14 +81,17 @@ StyleMenu::StyleMenu(int buttons, QWidget* parent)
         connect(font_size_, SIGNAL(activated(int)), this, SIGNAL(changed()));
         addWidget(font_size_);
     }
-    
+
     if (buttons & COLOR_PENAL) {
         if (buttons & ~COLOR_PENAL) {
             addSeparator();
         }
 
         color_panel_ = new ColorPanel();
-        connect(color_panel_, &ColorPanel::changed, [this](const QColor& c) { color_ = c; emit changed(); });
+        connect(color_panel_, &ColorPanel::changed, [this](const QColor& c) {
+            color_ = c;
+            emit changed();
+        });
         addWidget(color_panel_);
     }
 }

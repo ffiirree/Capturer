@@ -1,8 +1,9 @@
 #include "titlebar.h"
+
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QStyle>
-#include <QCheckBox>
 
 TitleBar::TitleBar(QWidget *parent)
     : QWidget(parent)
@@ -32,15 +33,15 @@ TitleBar::TitleBar(QWidget *parent)
     layout->addWidget(close_btn, 0, Qt::AlignTop);
 }
 
-void TitleBar::mousePressEvent(QMouseEvent * event)
+void TitleBar::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        begin_ = event->globalPos();
+        begin_  = event->globalPos();
         moving_ = true;
     }
 }
 
-void TitleBar::mouseMoveEvent(QMouseEvent * event)
+void TitleBar::mouseMoveEvent(QMouseEvent *event)
 {
     auto mouse_global_pos = event->globalPos();
     if (moving_) {
@@ -50,6 +51,6 @@ void TitleBar::mouseMoveEvent(QMouseEvent * event)
 }
 
 void TitleBar::mouseReleaseEvent(QMouseEvent *)
-{
+{ 
     moving_ = false;
 }

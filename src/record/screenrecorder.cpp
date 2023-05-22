@@ -19,7 +19,8 @@ extern "C" {
 #include <cstdlib>
 #endif
 
-ScreenRecorder::ScreenRecorder(int type, QWidget *parent) : Selector(parent)
+ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
+    : Selector(parent)
 {
     windows_detection_flags_ =
         probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::capturable;

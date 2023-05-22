@@ -22,7 +22,8 @@ namespace hwaccel
         std::string name{};
         AVHWDeviceType type{ AV_HWDEVICE_TYPE_NONE };
 
-        hwdevice_t(std::string n, AVHWDeviceType t, AVBufferRef *r) : name(std::move(n)), type(t), ref_(r)
+        hwdevice_t(std::string n, AVHWDeviceType t, AVBufferRef *r)
+            : name(std::move(n)), type(t), ref_(r)
         {}
 
         hwdevice_t(const hwdevice_t&)            = delete;
@@ -41,9 +42,11 @@ namespace hwaccel
         void frames_ctx_ref(AVBufferRef *ctx) { frames_ctx_ = av_buffer_ref(ctx); }
 
         AVBufferRef *ref() const { return ref_ ? av_buffer_ref(ref_) : nullptr; }
+
         AVBufferRef *frames_ctx_ref() const { return frames_ctx_ ? av_buffer_ref(frames_ctx_) : nullptr; }
 
         AVBufferRef *ptr() const { return ref_; }
+
         AVBufferRef *frames_ctx_ptr() const { return frames_ctx_; }
 
     private:

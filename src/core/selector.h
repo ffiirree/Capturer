@@ -50,12 +50,14 @@ public slots:
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
+
     void showRegion()
     {
         info_->hide();
         mask_hidden_ = true;
         repaint();
     }
+
     void resetSelected()
     {
         box_.coords(use_detect_ ? probe::graphics::virtual_screen_geometry() : probe::geometry_t{});
@@ -69,12 +71,14 @@ public slots:
         repaint();
         QWidget::hide();
     }
+
     virtual void exit();
 
     void updateTheme(json& setting);
 
     // minimum size of selected area
     void setMinValidSize(const QSize& size) { min_size_ = size; }
+
     bool isValid() { return box_.width() >= min_size_.width() && box_.height() >= min_size_.height(); }
 
 signals:
@@ -116,7 +120,7 @@ protected:
     void adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2);
     void margins(int32_t dt, int32_t dr, int32_t db, int32_t dl);
 
-    Resizer box_; // TODO: do not use this variable directly
+    Resizer box_;                       // TODO: do not use this variable directly
 
     scope_t scope_{ scope_t::desktop }; // selection scope
     hunter::prey_t prey_{};             // capture object

@@ -8,9 +8,9 @@
 #include "utils.h"
 
 #include <Audioclient.h>
-#include <Windows.h>
 #include <functiondiscoverykeys.h>
 #include <propsys.h>
+#include <Windows.h>
 
 extern "C" {
 #include <libavformat/avformat.h>

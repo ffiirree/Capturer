@@ -8,8 +8,8 @@ ColorButton::ColorButton(QWidget *parent)
 {}
 
 ColorButton::ColorButton(const QColor& c, QWidget *parent)
-    : QPushButton(parent)
-    , color_(c)
+    : QPushButton(parent),
+      color_(c)
 {
 
     setAutoFillBackground(true);

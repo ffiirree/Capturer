@@ -1,27 +1,29 @@
 #ifndef CAPTURER_DISPATCHER_H
 #define CAPTURER_DISPATCHER_H
 
-extern "C" {
-#include <libavutil/time.h>
-#include <libavfilter/avfilter.h>
-}
-
-#include <thread>
-#include <future>
-#include <tuple>
-#include "utils.h"
-#include "media.h"
-#include "producer.h"
 #include "consumer.h"
 #include "hwaccel.h"
+#include "media.h"
+#include "producer.h"
+#include "utils.h"
 
-class Dispatcher {
+#include <future>
+#include <thread>
+#include <tuple>
+
+extern "C" {
+#include <libavfilter/avfilter.h>
+#include <libavutil/time.h>
+}
+
+class Dispatcher
+{
 public:
     explicit Dispatcher() = default;
 
     ~Dispatcher() { reset(); }
 
-    void append(Producer<AVFrame>* decoder)
+    void append(Producer<AVFrame> *decoder)
     {
         if (!locked_) {
             if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
@@ -36,7 +38,7 @@ public:
         }
     }
 
-    void set_encoder(Consumer<AVFrame>* encoder)
+    void set_encoder(Consumer<AVFrame> *encoder)
     {
         if (!locked_) {
             consumer_ctx_.consumer = encoder;
@@ -50,42 +52,46 @@ public:
     void resume();
     int64_t paused_time();
     int reset();
+
     void stop() { reset(); }
 
     [[nodiscard]] bool running() const { return running_; }
 
     [[nodiscard]] int64_t escaped_us();
 
-    [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1000; }
+    [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1'000; }
 
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
 
 private:
-    struct ProducerContext {
-        AVFilterContext* ctx;
-        Producer<AVFrame>* producer;
+    struct ProducerContext
+    {
+        AVFilterContext *ctx;
+        Producer<AVFrame> *producer;
         bool eof;
     };
 
-    struct ConsumerContext {
-        AVFilterContext* actx;
-        AVFilterContext* vctx;
-        Consumer<AVFrame>* consumer;
+    struct ConsumerContext
+    {
+        AVFilterContext *actx;
+        AVFilterContext *vctx;
+        Consumer<AVFrame> *consumer;
         bool a_eof;
         bool v_eof;
     };
 
-    int create_src_filter(const Producer<AVFrame>*, AVFilterContext**, enum AVMediaType);
-    int create_sink_filter(const Consumer<AVFrame>*, AVFilterContext**, enum AVMediaType);
+    int create_src_filter(const Producer<AVFrame> *, AVFilterContext **, enum AVMediaType);
+    int create_sink_filter(const Consumer<AVFrame> *, AVFilterContext **, enum AVMediaType);
 
-    int create_video_src(const Producer<AVFrame>*, AVFilterContext**);
-    int create_video_sink(const Consumer<AVFrame>*, AVFilterContext**);
-    
-    int create_audio_src(const Producer<AVFrame>*, AVFilterContext**);
-    int create_audio_sink(const Consumer<AVFrame>*, AVFilterContext**);
+    int create_video_src(const Producer<AVFrame> *, AVFilterContext **);
+    int create_video_sink(const Consumer<AVFrame> *, AVFilterContext **);
 
-    [[nodiscard]] int create_filter_graph_for(std::vector<ProducerContext>&, const std::string&, enum AVMediaType);
+    int create_audio_src(const Producer<AVFrame> *, AVFilterContext **);
+    int create_audio_sink(const Consumer<AVFrame> *, AVFilterContext **);
+
+    [[nodiscard]] int create_filter_graph_for(std::vector<ProducerContext>&, const std::string&,
+                                              enum AVMediaType);
 
     int set_encoder_format_by_sinks();
 
@@ -97,14 +103,14 @@ private:
     // clock @{
     std::mutex pause_mtx_;
 
-    int64_t paused_pts_{ AV_NOPTS_VALUE };              // 
+    int64_t paused_pts_{ AV_NOPTS_VALUE }; //
     int64_t resumed_pts_{ AV_NOPTS_VALUE };
-    int64_t paused_time_{ 0 };                          // do not include the time being paused, please use paused_time()
+    int64_t paused_time_{ 0 };             // do not include the time being paused, please use paused_time()
     std::atomic<int64_t> start_time_{ 0 };
     //@}
 
     // filter graphs @{
-    std::atomic<bool> locked_{};                        // lock filter graph sources
+    std::atomic<bool> locked_{}; // lock filter graph sources
 
     bool video_enabled_{};
     bool audio_enabled_{};
@@ -114,11 +120,11 @@ private:
 
     ConsumerContext consumer_ctx_{};
 
-    std::string audio_graph_desc_{ };
-    std::string video_graph_desc_{ };
+    std::string audio_graph_desc_{};
+    std::string video_graph_desc_{};
 
-    AVFilterGraph* audio_graph_{ nullptr };
-    AVFilterGraph* video_graph_{ nullptr };
+    AVFilterGraph *audio_graph_{ nullptr };
+    AVFilterGraph *video_graph_{ nullptr };
     // @}
 
     std::atomic<bool> running_{ false };

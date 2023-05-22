@@ -1,7 +1,8 @@
 #include "widthbutton.h"
-#include <QWheelEvent>
-#include <QStyle>
+
 #include <cmath>
+#include <QStyle>
+#include <QWheelEvent>
 
 void WidthButton::setValue(int width)
 {
@@ -16,7 +17,7 @@ void WidthButton::setValue(int width)
     }
 }
 
-void WidthButton::wheelEvent(QWheelEvent* event)
+void WidthButton::wheelEvent(QWheelEvent *event)
 {
     if (!isChecked()) return;
 

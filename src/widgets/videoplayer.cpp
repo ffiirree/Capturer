@@ -8,7 +8,8 @@ extern "C" {
 }
 #include "logging.h"
 
-VideoPlayer::VideoPlayer(QWidget *parent) : QWidget(parent)
+VideoPlayer::VideoPlayer(QWidget *parent)
+    : QWidget(parent)
 {
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Tool | windowFlags());
     setAttribute(Qt::WA_TranslucentBackground);

@@ -3,11 +3,12 @@
 
 #ifdef _WIN32
 
-#include <vector>
+#include "devices.h"
+
+#include <mmdeviceapi.h>
 #include <optional>
 #include <string>
-#include <mmdeviceapi.h>
-#include "devices.h"
+#include <vector>
 
 namespace wasapi
 {
@@ -15,11 +16,10 @@ namespace wasapi
     std::vector<av::device_t> endpoints(av::device_type_t type);
     std::optional<av::device_t> default_endpoint(av::device_type_t type);
 
-    std::optional<av::device_t> device_info(IMMDevice*);
-
+    std::optional<av::device_t> device_info(IMMDevice *);
 
     uint64_t to_ffmpeg_channel_layout(DWORD layout, int channels);
-}
+} // namespace wasapi
 
 #endif // _WIN32
 

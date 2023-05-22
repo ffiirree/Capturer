@@ -19,6 +19,7 @@ public:
         update();
         emit changed(color_);
     }
+
     inline QColor color() const { return color_; }
 
 signals:
@@ -65,12 +66,14 @@ class ColorPanel : public QWidget
 
 public:
     explicit ColorPanel(QWidget * = nullptr);
+
     QColor color() const { return color_dialog_btn_->color(); }
 
 signals:
     void changed(const QColor&);
 
 public slots:
+
     void setColor(const QColor& color) { color_dialog_btn_->color(color); }
 
 private:

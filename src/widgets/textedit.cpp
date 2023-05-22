@@ -1,9 +1,11 @@
 #include "textedit.h"
-#include <QFocusEvent>
-#include <QPainter>
+
 #include "logging.h"
 
-TextEdit::TextEdit(QWidget * parent)
+#include <QFocusEvent>
+#include <QPainter>
+
+TextEdit::TextEdit(QWidget *parent)
     : QTextEdit(parent)
 {
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -22,7 +24,7 @@ TextEdit::TextEdit(QWidget * parent)
     setLineWrapMode(QTextEdit::NoWrap);
     setAlignment(Qt::AlignVCenter);
 
-    auto resize_fuctor = [this](){
+    auto resize_fuctor = [this]() {
         auto doc_size = document()->size().toSize();
         setFixedSize(QSize(std::max<int>(2, doc_size.width()), doc_size.height()));
         setTextColor(color_);
@@ -31,7 +33,7 @@ TextEdit::TextEdit(QWidget * parent)
 
     connect(this, &TextEdit::textChanged, resize_fuctor);
     connect(this, &TextEdit::fontChanged, resize_fuctor);
-    connect(document(), &QTextDocument::contentsChanged, resize_fuctor );
+    connect(document(), &QTextDocument::contentsChanged, resize_fuctor);
 }
 
 void TextEdit::focusInEvent(QFocusEvent *e)

@@ -50,6 +50,7 @@ namespace av
     };
 
     [[nodiscard]] inline bool is_sink(const device_t& dev) { return any(dev.type & device_type_t::sink); }
+
     [[nodiscard]] inline bool is_source(const device_t& dev)
     {
         return any(dev.type & device_type_t::source);

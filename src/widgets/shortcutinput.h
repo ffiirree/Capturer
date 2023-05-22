@@ -9,11 +9,21 @@ class ShortcutInput : public QLineEdit
 
 public:
     explicit ShortcutInput(QWidget *parent = nullptr);
-    explicit ShortcutInput(const QKeySequence &, QWidget *parent = nullptr);
-    explicit ShortcutInput(const QString &, QWidget *parent = nullptr);
+    explicit ShortcutInput(const QKeySequence&, QWidget *parent = nullptr);
+    explicit ShortcutInput(const QString&, QWidget *parent = nullptr);
 
-    inline void set(const QString& str) { setText(str); emit changed(QKeySequence(str)); }
-    inline void set(const QKeySequence& ks) { setText(ks.toString()); emit changed(ks); }
+    inline void set(const QString& str)
+    {
+        setText(str);
+        emit changed(QKeySequence(str));
+    }
+
+    inline void set(const QKeySequence& ks)
+    {
+        setText(ks.toString());
+        emit changed(ks);
+    }
+
     [[nodiscard]] inline QKeySequence get() const { return text(); }
 
 signals:

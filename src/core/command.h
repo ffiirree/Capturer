@@ -15,7 +15,12 @@ class PaintCommand : public QObject
 public:
     PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&, const QPoint&);
 
-    PaintCommand(const PaintCommand& cmd) : QObject() { *this = cmd; }
+    PaintCommand(const PaintCommand& cmd)
+        : QObject()
+    {
+        *this = cmd;
+    }
+
     PaintCommand& operator=(const PaintCommand&);
 
     [[nodiscard]] inline Graph graph() const { return graph_; }
@@ -26,9 +31,11 @@ public:
         pen_ = pen;
         emit modified(PaintType::REPAINT_ALL);
     }
+
     [[nodiscard]] inline QPen pen() const { return pen_; }
 
     void font(const QFont& font);
+
     [[nodiscard]] inline QFont font() const { return font_; }
 
     inline void setFill(bool fill)
@@ -38,9 +45,11 @@ public:
             emit modified(PaintType::REPAINT_ALL);
         }
     }
+
     [[nodiscard]] inline bool isFill() const { return is_fill_; }
 
     [[nodiscard]] inline QVector<QPointF> points() const { return points_; }
+
     inline QVector<QPointF> points() { return points_; }
 
     inline QRect geometry()
@@ -76,6 +85,7 @@ public:
     static QCursor getCursorShapeByHoverPos(Resizer::PointPosition, const QCursor& = Qt::CrossCursor);
 
     QRect rect() { return resizer_.rect(); }
+
     QSize size() { return rect().size(); }
 
     [[nodiscard]] Resizer resizer() const { return resizer_; }
@@ -87,12 +97,15 @@ public:
             visible_ = v;
         }
     }
+
     [[nodiscard]] bool visible() const { return visible_; }
 
     void previous(std::shared_ptr<PaintCommand> pre) { pre_ = std::move(pre); }
+
     [[nodiscard]] std::shared_ptr<PaintCommand> previous() const { return pre_; }
 
     [[nodiscard]] bool adjusted() const { return adjusted_; }
+
 signals:
     void modified(PaintType);
     void styleChanged();
@@ -126,7 +139,11 @@ class CommandStack : public QObject
 public:
     CommandStack() = default;
 
-    CommandStack(const CommandStack& r) : QObject() { stack_ = r.stack_; }
+    CommandStack(const CommandStack& r)
+        : QObject()
+    {
+        stack_ = r.stack_;
+    }
 
     CommandStack& operator=(const CommandStack& other)
     {

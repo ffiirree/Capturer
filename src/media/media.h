@@ -35,7 +35,7 @@ namespace av
 
     struct aformat_t
     {
-        int sample_rate{ 48000 };
+        int sample_rate{ 48'000 };
         int channels{ 2 };
         AVSampleFormat sample_fmt{ AV_SAMPLE_FMT_NONE };
         uint64_t channel_layout{ 0 };
@@ -46,16 +46,19 @@ namespace av
     struct frame
     {
         frame() { ptr_ = av_frame_alloc(); }
+
         frame(const frame& other)
         {
             ptr_  = av_frame_alloc();
             *this = other;
         }
+
         frame(frame&& other) noexcept
         {
             ptr_  = av_frame_alloc();
             *this = std::forward<frame>(other);
         }
+
         ~frame() { av_frame_free(&ptr_); }
 
         frame& operator=(const frame& other)
@@ -82,6 +85,7 @@ namespace av
         }
 
         auto get() const noexcept { return ptr_; }
+
         auto put()
         {
             unref();
@@ -89,7 +93,9 @@ namespace av
         }
 
         void unref() { av_frame_unref(ptr_); }
+
         int ref(const frame& other) { return av_frame_ref(ptr_, other.get()); }
+
         int ref(const AVFrame *other) { return av_frame_ref(ptr_, other); }
 
         AVFrame *operator->() const noexcept { return ptr_; }

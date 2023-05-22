@@ -1,12 +1,13 @@
 #include "decoder.h"
+
 #include "fmt/format.h"
 #include "fmt/ranges.h"
 extern "C" {
-#include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
-#include <libavutil/time.h>
+#include <libavformat/avformat.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/time.h>
 }
 #include "clock.h"
 #include "probe/defer.h"
@@ -25,9 +26,9 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // input format
 #if LIBAVFORMAT_VERSION_MAJOR >= 59
-    const AVInputFormat* input_fmt = nullptr;
+    const AVInputFormat *input_fmt = nullptr;
 #else
-    AVInputFormat* input_fmt = nullptr;
+    AVInputFormat *input_fmt = nullptr;
 #endif
     if (options.contains("format")) {
         input_fmt = av_find_input_format(options.at("format").c_str());
@@ -38,7 +39,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     }
 
     // options
-    AVDictionary* input_options = nullptr;
+    AVDictionary *input_options = nullptr;
     defer(av_dict_free(&input_options));
     for (const auto& [key, value] : options) {
         av_dict_set(&input_options, key.c_str(), value.c_str(), 0);
@@ -59,11 +60,11 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // find video & audio streams
 #if LIBAVCODEC_VERSION_MAJOR >= 59
-    const AVCodec* video_decoder = nullptr;
-    const AVCodec* audio_decoder = nullptr;
+    const AVCodec *video_decoder = nullptr;
+    const AVCodec *audio_decoder = nullptr;
 #else
-    AVCodec* video_decoder = nullptr;
-    AVCodec* audio_decoder = nullptr;
+    AVCodec *video_decoder   = nullptr;
+    AVCodec *audio_decoder   = nullptr;
 #endif
     video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder, 0);
     audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder, 0);
@@ -83,13 +84,14 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             return -1;
         }
 
-        if (avcodec_parameters_to_context(video_decoder_ctx_, fmt_ctx_->streams[video_stream_idx_]->codecpar) < 0) {
+        if (avcodec_parameters_to_context(video_decoder_ctx_,
+                                          fmt_ctx_->streams[video_stream_idx_]->codecpar) < 0) {
             LOG(ERROR) << "[   DECODER] [V] avcodec_parameters_to_context";
             return -1;
         }
 
         // open codec
-        AVDictionary* decoder_options = nullptr;
+        AVDictionary *decoder_options = nullptr;
         defer(av_dict_free(&decoder_options));
         av_dict_set(&decoder_options, "threads", "auto", 0);
         if (avcodec_open2(video_decoder_ctx_, video_decoder, &decoder_options) < 0) {
@@ -99,9 +101,9 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
         auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
         LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, pix_fmt = {}, framerate = {}, tbn = {}",
-            name_, video_decoder_ctx_->width, video_decoder_ctx_->height, 
-            av::to_string(video_decoder_ctx_->pix_fmt), fr, fmt_ctx_->streams[video_stream_idx_]->time_base
-        );
+                                 name_, video_decoder_ctx_->width, video_decoder_ctx_->height,
+                                 av::to_string(video_decoder_ctx_->pix_fmt), fr,
+                                 fmt_ctx_->streams[video_stream_idx_]->time_base);
     }
 
     if (audio_stream_idx_ >= 0) {
@@ -111,7 +113,8 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             return -1;
         }
 
-        if (avcodec_parameters_to_context(audio_decoder_ctx_, fmt_ctx_->streams[audio_stream_idx_]->codecpar) < 0) {
+        if (avcodec_parameters_to_context(audio_decoder_ctx_,
+                                          fmt_ctx_->streams[audio_stream_idx_]->codecpar) < 0) {
             LOG(ERROR) << "[   DECODER] [A] avcodec_parameters_to_context";
             return -1;
         }
@@ -121,18 +124,17 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             return -1;
         }
 
-        LOG(INFO) << fmt::format("[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}",
-            name_,
-            audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
+        LOG(INFO) << fmt::format(
+            "[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}",
+            name_, audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
             av_get_default_channel_layout(audio_decoder_ctx_->channels),
             av::to_string(audio_decoder_ctx_->sample_fmt), audio_decoder_ctx_->frame_size,
             fmt_ctx_->streams[audio_stream_idx_]->start_time,
-            fmt_ctx_->streams[audio_stream_idx_]->time_base
-        );
+            fmt_ctx_->streams[audio_stream_idx_]->time_base);
     }
 
-    // prepare 
-    packet_ = av_packet_alloc();
+    // prepare
+    packet_        = av_packet_alloc();
     decoded_frame_ = av_frame_alloc();
     if (!packet_ || !decoded_frame_) {
         LOG(ERROR) << "[   DECODER] av_frame_alloc";
@@ -147,8 +149,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
 bool Decoder::has(int type) const
 {
-    switch (type)
-    {
+    switch (type) {
     case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ >= 0;
     case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ >= 0;
     default: return false;
@@ -157,43 +158,35 @@ bool Decoder::has(int type) const
 
 std::string Decoder::format_str(int type) const
 {
-    switch (type)
-    {
-    case AVMEDIA_TYPE_VIDEO:
-    {
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO: {
         if (video_stream_idx_ < 0) return {};
 
         auto video_stream = fmt_ctx_->streams[video_stream_idx_];
-        auto fr = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
-        return fmt::format(
-            "video_size={}x{}:pix_fmt={}:time_base={}:pixel_aspect={}:frame_rate={}",
-            video_decoder_ctx_->width, video_decoder_ctx_->height, av::to_string(video_decoder_ctx_->pix_fmt),
-            video_stream->time_base, video_stream->codecpar->sample_aspect_ratio, fr
-        );
+        auto fr           = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
+        return fmt::format("video_size={}x{}:pix_fmt={}:time_base={}:pixel_aspect={}:frame_rate={}",
+                           video_decoder_ctx_->width, video_decoder_ctx_->height,
+                           av::to_string(video_decoder_ctx_->pix_fmt), video_stream->time_base,
+                           video_stream->codecpar->sample_aspect_ratio, fr);
     }
-    case AVMEDIA_TYPE_AUDIO:
-    {
+    case AVMEDIA_TYPE_AUDIO: {
         if (audio_stream_idx_ < 0) return {};
 
         auto audio_stream = fmt_ctx_->streams[audio_stream_idx_];
-        return fmt::format(
-            "sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}",
-            audio_decoder_ctx_->sample_rate, av::to_string(audio_decoder_ctx_->sample_fmt), 
-            audio_decoder_ctx_->channels,
-            av_get_default_channel_layout(audio_decoder_ctx_->channels), audio_stream->time_base
-        );
+        return fmt::format("sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}",
+                           audio_decoder_ctx_->sample_rate, av::to_string(audio_decoder_ctx_->sample_fmt),
+                           audio_decoder_ctx_->channels,
+                           av_get_default_channel_layout(audio_decoder_ctx_->channels),
+                           audio_stream->time_base);
     }
     default: return {};
     }
 }
 
-
 AVRational Decoder::time_base(int type) const
 {
-    switch (type)
-    {
-    case AVMEDIA_TYPE_AUDIO:
-    {
+    switch (type) {
+    case AVMEDIA_TYPE_AUDIO: {
         if (audio_stream_idx_ < 0) {
             LOG(WARNING) << "no audio stream";
             return OS_TIME_BASE_Q;
@@ -201,8 +194,7 @@ AVRational Decoder::time_base(int type) const
 
         return fmt_ctx_->streams[audio_stream_idx_]->time_base;
     }
-    case AVMEDIA_TYPE_VIDEO:
-    {
+    case AVMEDIA_TYPE_VIDEO: {
         if (video_stream_idx_ < 0) {
             LOG(WARNING) << "[   DECODER] [V] no video stream";
             return OS_TIME_BASE_Q;
@@ -210,41 +202,31 @@ AVRational Decoder::time_base(int type) const
 
         return fmt_ctx_->streams[video_stream_idx_]->time_base;
     }
-    default: 
-        LOG(ERROR) << "[   DECODER] [X] unknown meida type.";
-        return OS_TIME_BASE_Q;
+    default: LOG(ERROR) << "[   DECODER] [X] unknown meida type."; return OS_TIME_BASE_Q;
     }
 }
 
-bool Decoder::eof()
-{ 
-    return (eof_ == DECODING_EOF) && video_buffer_.empty() && audio_buffer_.empty(); 
-}
+bool Decoder::eof() { return (eof_ == DECODING_EOF) && video_buffer_.empty() && audio_buffer_.empty(); }
 
-int Decoder::produce(AVFrame* frame, int type)
+int Decoder::produce(AVFrame *frame, int type)
 {
-    switch (type)
-    {
+    switch (type) {
     case AVMEDIA_TYPE_VIDEO:
         if (video_buffer_.empty()) return (eof_ & VDECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        video_buffer_.pop(
-            [frame](AVFrame* popped) {
-                av_frame_unref(frame);
-                av_frame_move_ref(frame, popped);
-            }
-        );
+        video_buffer_.pop([frame](AVFrame *popped) {
+            av_frame_unref(frame);
+            av_frame_move_ref(frame, popped);
+        });
         return 0;
 
     case AVMEDIA_TYPE_AUDIO:
         if (audio_buffer_.empty()) return (eof_ & ADECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        audio_buffer_.pop(
-            [frame](AVFrame* popped) {
-                av_frame_unref(frame);
-                av_frame_move_ref(frame, popped);
-            }
-        );
+        audio_buffer_.pop([frame](AVFrame *popped) {
+            av_frame_unref(frame);
+            av_frame_move_ref(frame, popped);
+        });
         return 0;
 
     default: return -1;
@@ -260,9 +242,9 @@ int Decoder::run()
         return -1;
     }
 
-    eof_ = 0x00;
+    eof_     = 0x00;
     running_ = true;
-    thread_ = std::thread([this]() {
+    thread_  = std::thread([this]() {
         probe::thread::set_name("dec-" + name_);
         run_f();
     });
@@ -283,7 +265,7 @@ int Decoder::run_f()
 
     while (running_) {
         if (video_buffer_.full()) {
-            LOG(WARNING) <<"[V] buffer is full, drop the packet";
+            LOG(WARNING) << "[V] buffer is full, drop the packet";
         }
 
         if (audio_buffer_.full()) {
@@ -294,10 +276,13 @@ int Decoder::run_f()
         av_packet_unref(packet_);
         int ret = av_read_frame(fmt_ctx_, packet_);
         if ((ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) && !(eof_ & DEMUXING_EOF)) {
-            // [draining] 1. Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or avcodec_send_frame() (encoding) functions. 
+            // [draining] 1. Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or
+            //               avcodec_send_frame() (encoding) functions.
             //               This will enter draining mode.
-            // [draining] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned.
-            //               The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
+            // [draining] 2. Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding)
+            //               in a loop until AVERROR_EOF is returned.
+            //               The functions will not return AVERROR(EAGAIN), unless you forgot to enter
+            //               draining mode.
             LOG(INFO) << "EOF => PUT NULL PACKET TO ENTER DRAINING MODE";
             eof_ |= DEMUXING_EOF;
         }
@@ -308,7 +293,8 @@ int Decoder::run_f()
         }
 
         // video decoding
-        if (packet_->stream_index == video_stream_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
+        if (packet_->stream_index == video_stream_idx_ ||
+            ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
             ret = avcodec_send_packet(video_decoder_ctx_, packet_);
             while (ret >= 0) {
                 av_frame_unref(decoded_frame_);
@@ -327,24 +313,22 @@ int Decoder::run_f()
                     return ret;
                 }
 
-                decoded_frame_->pts += VIDEO_OFFSET_TIME;               // synchronize with the system clock
-                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE)
-                    decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
+                decoded_frame_->pts += VIDEO_OFFSET_TIME; // synchronize with the system clock
+                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
 
                 DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
-                    video_decoder_ctx_->frame_number, decoded_frame_->pts);
+                                          video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
-                video_buffer_.push(
-                    [this](AVFrame* frame) {
-                        av_frame_unref(frame);
-                        av_frame_move_ref(frame, decoded_frame_);
-                    }
-                );
+                video_buffer_.push([this](AVFrame *frame) {
+                    av_frame_unref(frame);
+                    av_frame_move_ref(frame, decoded_frame_);
+                });
             }
         }
-        
+
         // audio decoding
-        if (packet_->stream_index == audio_stream_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & ADECODING_EOF))) {
+        if (packet_->stream_index == audio_stream_idx_ ||
+            ((eof_ & DEMUXING_EOF) && !(eof_ & ADECODING_EOF))) {
             ret = avcodec_send_packet(audio_decoder_ctx_, packet_);
             while (ret >= 0) {
                 av_frame_unref(decoded_frame_);
@@ -353,7 +337,7 @@ int Decoder::run_f()
                     break;
                 }
                 else if (ret == AVERROR_EOF) {
-                    LOG(INFO) <<"[A] EOF";
+                    LOG(INFO) << "[A] EOF";
                     eof_ |= ADECODING_EOF;
                     break;
                 }
@@ -364,35 +348,29 @@ int Decoder::run_f()
                 }
 
                 decoded_frame_->pts += AUDIO_OFFSET_TIME;
-                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE)
-                    decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
+                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
 
-                DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
-                    audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples, muted_.load());
+                DLOG(INFO) << fmt::format(
+                    "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
+                    audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples,
+                    muted_.load());
 
                 if (muted_) {
-                    av_samples_set_silence(
-                        decoded_frame_->data,
-                        0,
-                        decoded_frame_->nb_samples,
-                        decoded_frame_->channels,
-                        static_cast<AVSampleFormat>(decoded_frame_->format)
-                    );
+                    av_samples_set_silence(decoded_frame_->data, 0, decoded_frame_->nb_samples,
+                                           decoded_frame_->channels,
+                                           static_cast<AVSampleFormat>(decoded_frame_->format));
                 }
 
-                audio_buffer_.push(
-                    [this](AVFrame* frame) {
-                        av_frame_unref(frame);
-                        av_frame_move_ref(frame, decoded_frame_);
-                    }
-                );
+                audio_buffer_.push([this](AVFrame *frame) {
+                    av_frame_unref(frame);
+                    av_frame_move_ref(frame, decoded_frame_);
+                });
             }
         } // decoding
-    } // while(running_)
+    }
 
     if (video_stream_idx_ >= 0) {
-        LOG(INFO) << fmt::format("[V] decoded frames = {:>5d}",
-            video_decoder_ctx_->frame_number);
+        LOG(INFO) << fmt::format("[V] decoded frames = {:>5d}", video_decoder_ctx_->frame_number);
     }
     LOG(INFO) << "EXITED";
 
@@ -411,13 +389,13 @@ void Decoder::destroy()
     std::lock_guard lock(mtx_);
 
     running_ = false;
-    ready_ = false;
+    ready_   = false;
 
     eof_ = DECODING_EOF;
 
     wait();
 
-    name_ = {};
+    name_  = {};
     muted_ = false;
 
     video_stream_idx_ = -1;

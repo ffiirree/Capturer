@@ -1,25 +1,28 @@
 #include "capturer.h"
-#include <QMimeData>
-#include <QPixmap>
-#include <QKeyEvent>
-#include <QApplication>
-#include <QClipboard>
-#include <QTextEdit>
-#include <QFileInfo>
+
 #include "logging.h"
 #include "probe/system.h"
 
-#define SET_HOTKEY(X, Y)    st(if(!X->setShortcut(Y, true))  {                                              \
-                                LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();  \
-                                error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());          \
-                            })
+#include <QApplication>
+#include <QClipboard>
+#include <QFileInfo>
+#include <QKeyEvent>
+#include <QMimeData>
+#include <QPixmap>
+#include <QTextEdit>
+
+#define SET_HOTKEY(X, Y)                                                                                   \
+    st(if (!X->setShortcut(Y, true)) {                                                                     \
+        LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();                      \
+        error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());                               \
+    })
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)
 {
-    sniper_ = new ScreenShoter(this);
+    sniper_   = new ScreenShoter(this);
     recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
-    gifcptr_ = new ScreenRecorder(ScreenRecorder::GIF, this);
+    gifcptr_  = new ScreenRecorder(ScreenRecorder::GIF, this);
 
     connect(sniper_, &ScreenShoter::pinSnipped, this, &Capturer::pinPixmap);
 
@@ -66,7 +69,7 @@ Capturer::Capturer(QWidget *parent)
 
 void Capturer::updateConfig()
 {
-    auto &config = Config::instance();
+    auto& config = Config::instance();
 
     QString error = "";
     SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
@@ -74,8 +77,7 @@ void Capturer::updateConfig()
     SET_HOTKEY(show_pin_sc_, config["pin"]["visible"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
     SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
-    if(!error.isEmpty())
-        showMessage("Capturer", error, QSystemTrayIcon::Critical);
+    if (!error.isEmpty()) showMessage("Capturer", error, QSystemTrayIcon::Critical);
 
     sniper_->updateTheme();
     recorder_->updateTheme();
@@ -97,11 +99,12 @@ void Capturer::setupSystemTray()
         if (probe::system::os_name().find("Ubuntu") != std::string::npos) {
             auto ver = probe::system::os_version();
             if (ver.major == 20 && ver.minor == 4)
-                icon_color = "dark"; // ubuntu 2004, system trays are always light
+                icon_color = "dark";  // ubuntu 2004, system trays are always light
             else if (ver.major == 18 && ver.minor == 4)
-                icon_color = "light";  // ubuntu 1804, system trays are always dark
+                icon_color = "light"; // ubuntu 1804, system trays are always dark
         }
-#endif
+#endif      
+        // clang-format off
         menu->clear();
         menu->addAction(QIcon(":/icon/res/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
         menu->addAction(QIcon(":/icon/res/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record);
@@ -112,7 +115,8 @@ void Capturer::setupSystemTray()
         menu->addAction(QIcon(":/icon/res/setting-" + icon_color),      tr("Settings"),     setting_dialog_, &SettingWindow::show);
         menu->addSeparator();
         menu->addAction(QIcon(":/icon/res/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
-};
+        // clang-format on
+    };
 
     // dark / light theme
     connect(&Config::instance(), &Config::theme_changed, update_tray_menu);
@@ -122,13 +126,13 @@ void Capturer::setupSystemTray()
     sys_tray_icon_->show();
     sys_tray_icon_->setToolTip("Capturer Settings");
 
-    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) { 
-        if (r == QSystemTrayIcon::DoubleClick) 
-            sniper_->start();
+    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) {
+        if (r == QSystemTrayIcon::DoubleClick) sniper_->start();
     });
 }
 
-void Capturer::showMessage(const QString &title, const QString &msg, QSystemTrayIcon::MessageIcon icon, int msecs)
+void Capturer::showMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
+                           int msecs)
 {
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
 }
@@ -137,28 +141,30 @@ std::pair<DataFormat, std::any> Capturer::clipboard_data()
 {
     const auto mimedata = QApplication::clipboard()->mimeData();
 
-    if(mimedata->hasHtml() && mimedata->hasImage()) {
+    if (mimedata->hasHtml() && mimedata->hasImage()) {
         return { DataFormat::PIXMAP, mimedata->imageData().value<QPixmap>() };
     }
-    else if(mimedata->hasHtml()) {
+    else if (mimedata->hasHtml()) {
         return { DataFormat::HTML, mimedata->html() };
     }
-    else if(mimedata->hasFormat("application/x-snipped") && mimedata->hasImage()) {
+    else if (mimedata->hasFormat("application/x-snipped") && mimedata->hasImage()) {
         QString type = mimedata->data("application/x-snipped");
-        return (type == "copied") ? 
-            std::pair<DataFormat, std::any>{DataFormat::PIXMAP, mimedata->imageData().value<QPixmap>()} :
-            std::pair<DataFormat, std::any>{DataFormat::UNKNOWN, nullptr};
+        return (type == "copied")
+                   ? std::pair<DataFormat, std::any>{ DataFormat::PIXMAP,
+                                                      mimedata->imageData().value<QPixmap>() }
+                   : std::pair<DataFormat, std::any>{ DataFormat::UNKNOWN, nullptr };
     }
-    else if(mimedata->hasUrls() 
-        && QString("jpg;jpeg;png;bmp;ico;gif;svg").contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
+    else if (mimedata->hasUrls() &&
+             QString("jpg;jpeg;png;bmp;ico;gif;svg")
+                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
         return { DataFormat::URLS, mimedata->urls() };
     }
-    else if(mimedata->hasText()) {
+    else if (mimedata->hasText()) {
         return { DataFormat::TEXT, mimedata->text() };
     }
-    else if(mimedata->hasColor()) {
+    else if (mimedata->hasColor()) {
         return { DataFormat::COLOR, mimedata->colorData().value<QColor>() };
-    } 
+    }
     else {
         return { DataFormat::UNKNOWN, nullptr };
     }
@@ -168,11 +174,9 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
 {
     auto& [type, buffer] = data_pair;
 
-    switch (type)
-    {
-    case DataFormat::PIXMAP: return { true,  std::any_cast<QPixmap>(buffer) };
-    case DataFormat::HTML:
-    {
+    switch (type) {
+    case DataFormat::PIXMAP: return { true, std::any_cast<QPixmap>(buffer) };
+    case DataFormat::HTML: {
         QTextEdit view;
         view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -183,8 +187,7 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
 
         return { true, view.grab() };
     }
-    case DataFormat::TEXT:
-    {
+    case DataFormat::TEXT: {
         QLabel label(std::any_cast<QString>(buffer));
         label.setWordWrap(true);
         label.setMargin(10);
@@ -203,14 +206,10 @@ void Capturer::pin()
     if (clipboard_changed_) {
         auto [ok, pixmap] = to_pixmap({ fmt, value });
         if (ok) {
-            history_.append({
-                fmt,
-                value,
-                std::make_shared<ImageWindow>(
-                    pixmap,
-                    QRect(probe::graphics::displays()[0].geometry).center() - QPoint{pixmap.width(), pixmap.height()} / 2
-                )
-            });
+            history_.append({ fmt, value,
+                              std::make_shared<ImageWindow>(
+                                  pixmap, QRect(probe::graphics::displays()[0].geometry).center() -
+                                              QPoint{ pixmap.width(), pixmap.height() } / 2) });
             pin_idx_ = history_.size() - 1;
         }
     }
@@ -219,7 +218,7 @@ void Capturer::pin()
         if (win) {
             win->show();
         }
-        pin_idx_ = std::clamp<size_t>(pin_idx_-1, 0, history_.size() - 1);
+        pin_idx_ = std::clamp<size_t>(pin_idx_ - 1, 0, history_.size() - 1);
     }
 
     clipboard_changed_ = false;
@@ -234,7 +233,7 @@ void Capturer::pinPixmap(const QPixmap& image, const QPoint& pos)
 void Capturer::showImages()
 {
     images_visible_ = !images_visible_;
-    for(auto& [_1, _2, win] : history_) {
-        images_visible_ && win ? win->show(false) : win->hide();
+    for (auto& [_1, _2, win] : history_) {
+        images_visible_&& win ? win->show(false) : win->hide();
     }
 }

@@ -28,17 +28,21 @@ Magnifier::Magnifier(QWidget *parent)
 QRect Magnifier::mrect()
 {
     auto mouse_pos = QCursor::pos() - QRect(probe::graphics::virtual_screen_geometry()).topLeft();
-    return { mouse_pos.x() - msize_.width() / 2, mouse_pos.y() - msize_.height() / 2, msize_.width(),
-             msize_.height() };
+    return {
+        mouse_pos.x() - msize_.width() / 2,
+        mouse_pos.y() - msize_.height() / 2,
+        msize_.width(),
+        msize_.height(),
+    };
 }
 
 QString Magnifier::getColorStringValue()
 {
     return (color_format_ == ColorFormat::HEX) ? center_color_.name(QColor::HexRgb)
-                                             : QString("%1, %2, %3")
-                                                   .arg(center_color_.red())
-                                                   .arg(center_color_.green())
-                                                   .arg(center_color_.blue());
+                                               : QString("%1, %2, %3")
+                                                     .arg(center_color_.red())
+                                                     .arg(center_color_.green())
+                                                     .arg(center_color_.blue());
 }
 
 void Magnifier::paintEvent(QPaintEvent *e)
@@ -74,6 +78,7 @@ void Magnifier::paintEvent(QPaintEvent *e)
     painter.end();
 
     // 5. text
-    auto text = QString("POS : %1, %2\nRGB : ").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + getColorStringValue();
+    auto text = QString("POS : %1, %2\nRGB : ").arg(QCursor::pos().x()).arg(QCursor::pos().y()) +
+                getColorStringValue();
     label_->setText(text);
 }

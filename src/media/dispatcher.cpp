@@ -65,6 +65,7 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame> *encoder, AVFilterCont
     vfmt.pix_fmt = (vfmt.pix_fmt == AV_PIX_FMT_NONE) ? encoder->vfmt.pix_fmt : vfmt.pix_fmt;
     if (vfmt.pix_fmt != AV_PIX_FMT_NONE) {
         enum AVPixelFormat pix_fmts[] = { vfmt.pix_fmt, AV_PIX_FMT_NONE };
+
         if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, static_cast<uint64_t>(AV_PIX_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [V] av_opt_set_int_list";
@@ -115,6 +116,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
         // channel_counts(int list)
         // TODO: other options
         enum AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
+
         if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, static_cast<uint64_t>(AV_SAMPLE_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
@@ -582,5 +584,5 @@ int64_t Dispatcher::escaped_us()
     if (!running()) {
         return 0;
     }
-    return std::max<int64_t>(0, (os_gettime_ns() - start_time_ - paused_time()) / 1000);
+    return std::max<int64_t>(0, (os_gettime_ns() - start_time_ - paused_time()) / 1'000);
 }

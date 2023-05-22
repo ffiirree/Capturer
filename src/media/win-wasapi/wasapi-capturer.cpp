@@ -13,7 +13,7 @@
 #include <winrt/base.h>
 
 // REFERENCE_TIME time units per second and per millisecond
-#define REFTIMES_PER_SEC 10000000
+#define REFTIMES_PER_SEC 10'000'000
 
 void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
 {

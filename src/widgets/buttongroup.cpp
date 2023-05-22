@@ -1,6 +1,6 @@
 #include "buttongroup.h"
 
-void ButtonGroup::addButton(QAbstractButton* btn)
+void ButtonGroup::addButton(QAbstractButton *btn)
 {
     if (!btn) return;
 
@@ -11,7 +11,7 @@ void ButtonGroup::addButton(QAbstractButton* btn)
 
         if (checked) {
             auto last_checked = checked_;
-            checked_ = btn;
+            checked_          = btn;
             // Set last checked button unchecked
             if (last_checked) {
                 last_checked->setChecked(false);

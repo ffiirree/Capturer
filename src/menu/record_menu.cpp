@@ -1,16 +1,18 @@
 #include "record_menu.h"
-#include <QGuiApplication>
-#include <QScreen>
-#include <QMouseEvent>
-#include <QHBoxLayout>
-#include <QTime>
+
 #include "probe/graphics.h"
+
+#include <QGuiApplication>
+#include <QHBoxLayout>
+#include <QMouseEvent>
+#include <QScreen>
+#include <QTime>
 
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
-RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
+RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
@@ -27,7 +29,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
         mic_btn_ = new QCheckBox();
         mic_btn_->setChecked(mm);
         mic_btn_->setObjectName("mic-btn");
-        connect(mic_btn_, &QCheckBox::clicked, [this](bool checked) {emit muted(1, checked); });
+        connect(mic_btn_, &QCheckBox::clicked, [this](bool checked) { emit muted(1, checked); });
         layout_->addWidget(mic_btn_);
     }
 
@@ -55,15 +57,19 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget* parent)
     if (buttons & RecordMenu::PAUSE) {
         pause_btn_ = new QCheckBox();
         pause_btn_->setObjectName("pause-btn");
-        connect(pause_btn_, &QCheckBox::clicked, [this](bool checked) { checked ? emit paused() : emit resumed(); });
+        connect(pause_btn_, &QCheckBox::clicked,
+                [this](bool checked) { checked ? emit paused() : emit resumed(); });
         layout_->addWidget(pause_btn_);
     }
 
     close_btn_ = new QCheckBox();
     close_btn_->setObjectName("stop-btn");
-    connect(close_btn_, &QCheckBox::clicked, [this]() { emit stopped(); close(); });
+    connect(close_btn_, &QCheckBox::clicked, [this]() {
+        emit stopped();
+        close();
+    });
     layout_->addWidget(close_btn_);
-    
+
     window_->setLayout(layout_);
 
     auto *backgroud_layout = new QHBoxLayout();
@@ -101,24 +107,21 @@ void RecordMenu::start()
     move(probe::graphics::displays()[0].geometry.right() - width() - 5, 100);
 }
 
-void RecordMenu::mousePressEvent(QMouseEvent* event)
+void RecordMenu::mousePressEvent(QMouseEvent *event)
 {
     begin_pos_ = event->globalPos();
-    moving_ = true;
+    moving_    = true;
 }
 
-void RecordMenu::mouseMoveEvent(QMouseEvent* event)
+void RecordMenu::mouseMoveEvent(QMouseEvent *event)
 {
     if (moving_) {
-         move(event->globalPos() - begin_pos_ + pos());
+        move(event->globalPos() - begin_pos_ + pos());
         begin_pos_ = event->globalPos();
-   }
+    }
 }
 
-void RecordMenu::mouseReleaseEvent(QMouseEvent*)
-{
-    moving_ = false;
-}
+void RecordMenu::mouseReleaseEvent(QMouseEvent *) { moving_ = false; }
 
 void RecordMenu::mute(int type, bool muted)
 {
@@ -132,11 +135,10 @@ void RecordMenu::mute(int type, bool muted)
 
 void RecordMenu::camera_checked(bool v)
 {
-    if (camera_btn_)
-        camera_btn_->setChecked(v);
+    if (camera_btn_) camera_btn_->setChecked(v);
 }
 
-void RecordMenu::disable_cam(bool v) 
+void RecordMenu::disable_cam(bool v)
 {
     if (camera_btn_) {
         camera_btn_->setDisabled(v);

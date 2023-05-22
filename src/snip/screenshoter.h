@@ -1,30 +1,31 @@
 #ifndef SCREEN_SHOTER_H
 #define SCREEN_SHOTER_H
 
-#include <QPixmap>
-#include <QSystemTrayIcon>
-#include <QStandardPaths>
-#include "selector.h"
+#include "canvas.h"
+#include "circlecursor.h"
+#include "command.h"
+#include "config.h"
 #include "imageeditmenu.h"
 #include "magnifier.h"
-#include "command.h"
 #include "resizer.h"
-#include "circlecursor.h"
-#include "config.h"
-#include "canvas.h"
+#include "selector.h"
+
+#include <QPixmap>
+#include <QStandardPaths>
+#include <QSystemTrayIcon>
 
 class ScreenShoter : public Selector
 {
     Q_OBJECT
 
 public:
-    explicit ScreenShoter(QWidget* parent = nullptr);
+    explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
     void focusOnGraph(Graph);
     void pinSnipped(const QPixmap& image, const QPoint& pos);
     void SHOW_MESSAGE(const QString& title, const QString& msg,
-        QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
+                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
 
 public slots:
     void start() override;
@@ -36,37 +37,33 @@ public slots:
     QPixmap snip();
     void save2clipboard(const QPixmap&, bool);
 
-    void updateTheme()
-    {
-        Selector::updateTheme(Config::instance()["snip"]["selector"]);
-    }
+    void updateTheme() { Selector::updateTheme(Config::instance()["snip"]["selector"]); }
 
     void moveMenu();
 
 protected:
-    bool eventFilter(QObject*, QEvent*) override;
-    void mouseMoveEvent(QMouseEvent*) override;
-    void keyPressEvent(QKeyEvent*) override;
-    void keyReleaseEvent(QKeyEvent*) override;
-    void paintEvent(QPaintEvent*) override;
-    void mouseDoubleClickEvent(QMouseEvent*) override;
+    bool eventFilter(QObject *, QEvent *) override;
+    void mouseMoveEvent(QMouseEvent *) override;
+    void keyPressEvent(QKeyEvent *) override;
+    void keyReleaseEvent(QKeyEvent *) override;
+    void paintEvent(QPaintEvent *) override;
+    void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
     void registerShortcuts();
 
     void moveMagnifier();
 
-
     QPixmap captured_screen_;
 
-    ImageEditMenu* menu_{ nullptr };
-    Magnifier* magnifier_{ nullptr };
+    ImageEditMenu *menu_{ nullptr };
+    Magnifier *magnifier_{ nullptr };
 
     QPoint move_begin_{ 0, 0 };
     QPoint resize_begin_{ 0, 0 };
 
     CircleCursor circle_cursor_{ 20 };
-    Canvas* canvas_{ nullptr };
+    Canvas *canvas_{ nullptr };
 
     std::vector<hunter::prey_t> history_;
     size_t history_idx_{ 0 };

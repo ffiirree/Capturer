@@ -1,8 +1,8 @@
 #ifndef CAPTURE_HUNTER_H
 #define CAPTURE_HUNTER_H
 
-#include "probe/graphics.h"
 #include "probe/enum.h"
+#include "probe/graphics.h"
 
 #include <deque>
 

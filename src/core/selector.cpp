@@ -9,7 +9,8 @@
 #include <QScreen>
 #include <QShortcut>
 
-Selector::Selector(QWidget *parent) : QWidget(parent)
+Selector::Selector(QWidget *parent)
+    : QWidget(parent)
 {
     info_ = new QLabel(this);
     info_->setMinimumHeight(24);

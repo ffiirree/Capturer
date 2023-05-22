@@ -2,8 +2,8 @@
 
 #include "linux-v4l2.h"
 
-#include "probe/defer.h"
 #include "logging.h"
+#include "probe/defer.h"
 
 #include <dirent.h>
 #include <fcntl.h>

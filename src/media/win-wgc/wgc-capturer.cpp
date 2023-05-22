@@ -92,14 +92,15 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     frame_arrived_ =
         frame_pool_.FrameArrived(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::on_frame_arrived });
 
-    item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::on_closed });
+    closed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::on_closed });
 
     session_ = frame_pool_.CreateCaptureSession(item_);
     session_.IsCursorCaptureEnabled(draw_mouse_);
     session_.IsBorderRequired(show_region_);
 
-    if (box_.right <= box_.left || box_.bottom <= box_.top || box_.right > item_.Size().Width ||
-        box_.bottom > item_.Size().Height) {
+    if (box_.right <= box_.left || box_.bottom <= box_.top ||
+        box_.right > static_cast<UINT>(item_.Size().Width) ||
+        box_.bottom > static_cast<UINT>(item_.Size().Height)) {
         LOG(INFO) << fmt::format("[     WGC] [{}] invalid recording region <({},{}), ({},{})> in ({}x{})",
                                  name, box_.left, box_.top, box_.right, box_.bottom, item_.Size().Width,
                                  item_.Size().Height);
@@ -325,10 +326,10 @@ void WindowsGraphicsCapturer::on_frame_arrived(const Direct3D11CaptureFramePool&
     frame_->sample_aspect_ratio = { 1, 1 };
     frame_->pts                 = os_gettime_ns();
 
-    if (vfmt.height != desc.Height || vfmt.width != desc.Width) {
+    if (vfmt.height != static_cast<int>(desc.Height) || vfmt.width != static_cast<int>(desc.Width)) {
         d3d11_ctx_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
-                                          reinterpret_cast<UINT>(frame_->data[1]), 0, 0, 0,
-                                          frame_surface.get(), 0, &box_);
+                                          static_cast<UINT>(reinterpret_cast<intptr_t>(frame_->data[1])), 0,
+                                          0, 0, frame_surface.get(), 0, &box_);
     }
     else {
         d3d11_ctx_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),

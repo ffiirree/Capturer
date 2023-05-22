@@ -1,6 +1,8 @@
 #include "editmenu.h"
-#include <QHBoxLayout>
+
 #include "separator.h"
+
+#include <QHBoxLayout>
 
 EditMenu::EditMenu(QWidget *parent)
     : QWidget(parent)
@@ -15,17 +17,11 @@ EditMenu::EditMenu(QWidget *parent)
     layout()->setContentsMargins({});
 }
 
-void EditMenu::addSeparator()
-{
-    layout()->addWidget(new Separator());
-}
+void EditMenu::addSeparator() { layout()->addWidget(new Separator()); }
 
-void EditMenu::addWidget(QWidget * widget)
-{
-    layout()->addWidget(widget);
-}
+void EditMenu::addWidget(QWidget *widget) { layout()->addWidget(widget); }
 
-void EditMenu::moveEvent(QMoveEvent* event)
+void EditMenu::moveEvent(QMoveEvent *event)
 {
     Q_UNUSED(event);
     emit moved();

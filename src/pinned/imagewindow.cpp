@@ -1,17 +1,19 @@
 #include "imagewindow.h"
-#include <QKeyEvent>
-#include <QPainter>
+
+#include "logging.h"
+#include "utils.h"
+
 #include <QApplication>
 #include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
-#include <QShortcut>
-#include <QMoveEvent>
+#include <QKeyEvent>
 #include <QMimeData>
-#include "utils.h"
-#include "logging.h"
+#include <QMoveEvent>
+#include <QPainter>
+#include <QShortcut>
 
-ImageWindow::ImageWindow(QWidget* parent)
+ImageWindow::ImageWindow(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
@@ -25,7 +27,7 @@ ImageWindow::ImageWindow(QWidget* parent)
     effect_->setColor(QColor("#409eff"));
     setGraphicsEffect(effect_);
 
-    menu_ = new ImageEditMenu(this, ImageEditMenu::ALL & ~ImageEditMenu::SAVE_GROUP);
+    menu_   = new ImageEditMenu(this, ImageEditMenu::ALL & ~ImageEditMenu::SAVE_GROUP);
     canvas_ = new Canvas(menu_, this);
     installEventFilter(canvas_);
 
@@ -34,7 +36,7 @@ ImageWindow::ImageWindow(QWidget* parent)
         setMouseTracking(false);
         QWidget::repaint(QRect({ shadow_r_, shadow_r_ }, canvas_->pixmap().size()));
         pixmap_ = canvas_->pixmap().copy();
-        scale_ = 1.0;
+        scale_  = 1.0;
         canvas_->disable();
         editing_ = false;
     });
@@ -49,7 +51,7 @@ ImageWindow::ImageWindow(QWidget* parent)
 void ImageWindow::image(const QPixmap& image)
 {
     original_pixmap_ = image;
-    pixmap_ = original_pixmap_.copy();
+    pixmap_          = original_pixmap_.copy();
     canvas_->pixmap(pixmap_);
 
     scale_ = 1.0;
@@ -63,8 +65,7 @@ void ImageWindow::image(const QPixmap& image)
 
 void ImageWindow::show(bool visible)
 {
-    switch (status_)
-    {
+    switch (status_) {
     case WindowStatus::CREATED:
         status_ = WindowStatus::SHOWED;
         resize(getShadowSize(canvas_->pixmap().size()));

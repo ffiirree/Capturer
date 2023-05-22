@@ -1,27 +1,36 @@
 #include "canvas.h"
-#include <QMouseEvent>
-#include <QPainter>
-#include <QGraphicsItem>
-#include <QMimeData>
-#include <QApplication>
-#include <QClipboard>
+
 #include "logging.h"
 
-Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
+#include <QApplication>
+#include <QClipboard>
+#include <QGraphicsItem>
+#include <QMimeData>
+#include <QMouseEvent>
+#include <QPainter>
+
+Canvas::Canvas(ImageEditMenu *menu, QWidget *parent)
     : QObject(parent)
 {
     CHECK(menu);
 
     menu_ = menu;
-    connect(menu_, &ImageEditMenu::pin, [this]() { focusOn(nullptr); emit closed(); });
+    connect(menu_, &ImageEditMenu::pin, [this]() {
+        focusOn(nullptr);
+        emit closed();
+    });
     connect(menu_, &ImageEditMenu::ok, [this]() {
         // copy to clipboard
         QApplication::clipboard()->setPixmap(canvas_);
 
         focusOn(nullptr);
-        emit closed(); 
+        emit closed();
     });
-    connect(menu_, &ImageEditMenu::exit, [this]() { focusOn(nullptr); canvas_ = backup_.copy(); emit closed(); });
+    connect(menu_, &ImageEditMenu::exit, [this]() {
+        focusOn(nullptr);
+        canvas_ = backup_.copy();
+        emit closed();
+    });
 
     connect(menu_, &ImageEditMenu::undo, this, &Canvas::undo);
     connect(menu_, &ImageEditMenu::redo, this, &Canvas::redo);
@@ -45,43 +54,27 @@ Canvas::Canvas(ImageEditMenu* menu, QWidget *parent)
     connect(&redo_stack_, &CommandStack::emptied, menu_, &ImageEditMenu::disableRedo);
 }
 
-bool Canvas::eventFilter(QObject*, QEvent* event)
+bool Canvas::eventFilter(QObject *, QEvent *event)
 {
     if (!enabled_) return false;
 
-    switch (event->type())
-    {
-    case QEvent::MouseButtonPress:
-        mousePressEvent(dynamic_cast<QMouseEvent*>(event));
-        return false;
+    switch (event->type()) {
+    case QEvent::MouseButtonPress: mousePressEvent(dynamic_cast<QMouseEvent *>(event)); return false;
 
-    case QEvent::MouseButtonRelease:
-        mouseReleaseEvent(dynamic_cast<QMouseEvent*>(event));
-        return false;
+    case QEvent::MouseButtonRelease: mouseReleaseEvent(dynamic_cast<QMouseEvent *>(event)); return false;
 
     case QEvent::HoverMove:
-    case QEvent::MouseMove:
-        mouseMoveEvent(dynamic_cast<QMouseEvent*>(event));
-        return false;
+    case QEvent::MouseMove: mouseMoveEvent(dynamic_cast<QMouseEvent *>(event)); return false;
 
-    case QEvent::KeyRelease:
-        keyReleaseEvent(dynamic_cast<QKeyEvent*>(event));
-        return false;
+    case QEvent::KeyRelease: keyReleaseEvent(dynamic_cast<QKeyEvent *>(event)); return false;
 
-    case QEvent::KeyPress:
-        keyPressEvent(dynamic_cast<QKeyEvent*>(event));
-        return false;
+    case QEvent::KeyPress: keyPressEvent(dynamic_cast<QKeyEvent *>(event)); return false;
 
-    case QEvent::Wheel:
-        wheelEvent(dynamic_cast<QWheelEvent*>(event));
-        return false;
+    case QEvent::Wheel: wheelEvent(dynamic_cast<QWheelEvent *>(event)); return false;
 
-    case QEvent::Paint:
-        updateCanvas();
-        return false;
+    case QEvent::Paint: updateCanvas(); return false;
 
-    default:
-        break;
+    default: break;
     }
 
     return false;
@@ -103,16 +96,16 @@ void Canvas::changeGraph(Graph graph)
 }
 
 void Canvas::pixmap(const QPixmap& canvas)
-{ 
-    canvas_ = canvas.copy(); 
+{
+    canvas_ = canvas.copy();
     backup_ = canvas.copy();
-    modified(PaintType::REPAINT_ALL); 
+    modified(PaintType::REPAINT_ALL);
 }
 
 bool Canvas::editing()
 {
     return (edit_status_ & GRAPH_MASK) != 0 || !commands_.empty() || !redo_stack_.empty();
-} 
+}
 
 void Canvas::focusOn(const std::shared_ptr<PaintCommand>& cmd)
 {
@@ -127,7 +120,7 @@ void Canvas::focusOn(const std::shared_ptr<PaintCommand>& cmd)
     if (previous_focus_cmd) {
         previous_focus_cmd->setFocus(false);
         if (!previous_focus_cmd->isValid()) {
-            commands_.remove(previous_focus_cmd); 
+            commands_.remove(previous_focus_cmd);
         }
     }
 
@@ -147,14 +140,13 @@ void Canvas::focusOn(const std::shared_ptr<PaintCommand>& cmd)
 
     // menu
     if (!previous_focus_cmd || (focus_cmd_ && previous_focus_cmd->graph() != focus_cmd_->graph())) {
-        emit focusOnGraph(focus_cmd_->graph());  // must after focus_cmd_ = cmd
+        emit focusOnGraph(focus_cmd_->graph()); // must after focus_cmd_ = cmd
     }
 }
 
-void Canvas::mousePressEvent(QMouseEvent* event)
+void Canvas::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() != Qt::LeftButton)
-        return;
+    if (event->button() != Qt::LeftButton) return;
 
     auto mouse_pos = event->pos();
 
@@ -179,9 +171,8 @@ void Canvas::mousePressEvent(QMouseEvent* event)
         edit_status_ |= GRAPH_ROTATING;
     }
     // text
-    else if ((hover_position_ == Resizer::INSIDE) && 
-        hover_cmd_  && hover_cmd_->visible() && 
-        hover_cmd_->graph() == TEXT) {
+    else if ((hover_position_ == Resizer::INSIDE) && hover_cmd_ && hover_cmd_->visible() &&
+             hover_cmd_->graph() == TEXT) {
         // nothing
     }
 
@@ -197,7 +188,8 @@ void Canvas::mousePressEvent(QMouseEvent* event)
             pen.setBrush(QBrush(backup_));
         }
 
-        hover_cmd_ = std::make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos(), global_offset_);
+        hover_cmd_ = std::make_shared<PaintCommand>(graph, pen, menu_->font(), menu_->fill(), event->pos(),
+                                                    global_offset_);
         edit_status_ |= GRAPH_CREATING;
     }
 
@@ -205,39 +197,38 @@ void Canvas::mousePressEvent(QMouseEvent* event)
         focusOn(hover_cmd_);
         modified(PaintType::DRAW_MODIFYING);
         connect(hover_cmd_.get(), &PaintCommand::modified, this, &Canvas::modified, Qt::UniqueConnection);
-        connect(hover_cmd_.get(), &PaintCommand::styleChanged, this, [this]() {if (hover_cmd_->graph() == TEXT) menu_->font(hover_cmd_->font()); }, Qt::UniqueConnection);
+        connect(
+            hover_cmd_.get(), &PaintCommand::styleChanged, this,
+            [this]() {
+                if (hover_cmd_->graph() == TEXT) menu_->font(hover_cmd_->font());
+            },
+            Qt::UniqueConnection);
     }
 }
 
-void Canvas::mouseMoveEvent(QMouseEvent* event)
+void Canvas::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton) {
         auto mouse_pos = event->pos();
 
         switch (edit_status_ & OPERATION_MASK) {
-        case GRAPH_CREATING:
-            hover_cmd_->push_point(mouse_pos);
-            break;
+        case GRAPH_CREATING: hover_cmd_->push_point(mouse_pos); break;
 
         case GRAPH_MOVING:
             hover_cmd_->move(mouse_pos - move_begin_);
             move_begin_ = mouse_pos;
             break;
 
-        case GRAPH_RESIZING:
-            hover_cmd_->resize(hover_position_, mouse_pos);
-            break;
+        case GRAPH_RESIZING: hover_cmd_->resize(hover_position_, mouse_pos); break;
 
-        case GRAPH_ROTATING:
-            hover_cmd_->rotate(mouse_pos);
-            break;
+        case GRAPH_ROTATING: hover_cmd_->rotate(mouse_pos); break;
 
-        default:  break;
+        default: break;
         }
     }
 
-    if (event->buttons() == Qt::NoButton
-        && !(edit_status_ & Graph::ERASER) && !(edit_status_ & Graph::MOSAIC)) {
+    if (event->buttons() == Qt::NoButton && !(edit_status_ & Graph::ERASER) &&
+        !(edit_status_ & Graph::MOSAIC)) {
         updateHoverPos(event->pos());
     }
 }
@@ -250,8 +241,7 @@ QCursor Canvas::getCursorShape()
     }
 
     // TEXT
-    if (hover_cmd_ && hover_cmd_->visible() && 
-        hover_cmd_->graph() == TEXT && 
+    if (hover_cmd_ && hover_cmd_->visible() && hover_cmd_->graph() == TEXT &&
         hover_position_ == Resizer::INSIDE) {
         return Qt::IBeamCursor;
     }
@@ -259,20 +249,19 @@ QCursor Canvas::getCursorShape()
     return PaintCommand::getCursorShapeByHoverPos(hover_position_);
 }
 
-void Canvas::mouseReleaseEvent(QMouseEvent* event)
+void Canvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton
-        && edit_status_ != EditStatus::NONE) {
+    if (event->button() == Qt::LeftButton && edit_status_ != EditStatus::NONE) {
 
         CHECK(focus_cmd_);
 
-        if ((!focus_cmd_->previous() && focus_cmd_->isValid())      // created
-            || (focus_cmd_->previous() && focus_cmd_->adjusted())   // moved/resized..
-            || ((edit_status_ & GRAPH_MASK) == Graph::TEXT)) {      // check text is valid when it loses focus
+        if ((!focus_cmd_->previous() && focus_cmd_->isValid())    // created
+            || (focus_cmd_->previous() && focus_cmd_->adjusted()) // moved/resized..
+            || ((edit_status_ & GRAPH_MASK) == Graph::TEXT)) {    // check text is valid when it loses focus
             commands_.push(focus_cmd_);
             redo_stack_.clear();
         }
-        else {                                                      // Invalid, no modified. Back to the previous
+        else { // Invalid, no modified. Back to the previous
             if (focus_cmd_->previous()) {
                 focus_cmd_->visible(false);
                 focus_cmd_->previous()->visible(true);
@@ -285,17 +274,13 @@ void Canvas::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
-void Canvas::keyPressEvent(QKeyEvent*)
-{
-}
+void Canvas::keyPressEvent(QKeyEvent *) {}
 
-void Canvas::keyReleaseEvent(QKeyEvent* event)
+void Canvas::keyReleaseEvent(QKeyEvent *event)
 {
     // regularize
-    if (event->key() == Qt::Key_Shift 
-        && focus_cmd_
-        && !focus_cmd_->regularized()
-        && !(edit_status_ & OPERATION_MASK)) {
+    if (event->key() == Qt::Key_Shift && focus_cmd_ && !focus_cmd_->regularized() &&
+        !(edit_status_ & OPERATION_MASK)) {
 
         HIDE_AND_COPY_CMD(focus_cmd_);
         focus_cmd_->regularize();
@@ -307,7 +292,7 @@ void Canvas::keyReleaseEvent(QKeyEvent* event)
     }
 }
 
-void Canvas::wheelEvent(QWheelEvent* event)
+void Canvas::wheelEvent(QWheelEvent *event)
 {
     if ((edit_status_ & Graph::ERASER) || (edit_status_ & Graph::MOSAIC)) {
         auto delta = event->angleDelta().y() / 120;
@@ -319,7 +304,7 @@ void Canvas::wheelEvent(QWheelEvent* event)
 void Canvas::updateHoverPos(const QPoint& pos)
 {
     hover_position_ = Resizer::DEFAULT;
-    hover_cmd_ = nullptr;
+    hover_cmd_      = nullptr;
 
     for (auto& command : commands_.commands()) {
         if (!command->visible()) continue;
@@ -341,7 +326,7 @@ void Canvas::updateCanvas()
     if (!enabled_ || modified_ == PaintType::UNMODIFIED) return;
 
     QPainter painter;
-    
+
     painter.begin(&canvas_);
 
     switch (modified_) {
@@ -369,7 +354,7 @@ void Canvas::updateCanvas()
     }
 }
 
-void Canvas::drawModifying(QPainter * painter)
+void Canvas::drawModifying(QPainter *painter)
 {
     if (enabled_ && focus_cmd_ != nullptr && focus_cmd_->visible()) {
         if (modified_ == PaintType::DRAW_MODIFYING || modified_ == PaintType::REPAINT_ALL) {
@@ -399,14 +384,13 @@ void Canvas::clear()
 void Canvas::reset()
 {
     clear();
-    canvas_ = {};
+    canvas_   = {};
     modified_ = PaintType::REPAINT_ALL;
 }
 
 void Canvas::copy()
 {
-    if(enabled_)
-        copied_cmd_ = focus_cmd_;
+    if (enabled_) copied_cmd_ = focus_cmd_;
 }
 
 void Canvas::paste()
@@ -432,7 +416,7 @@ void Canvas::remove()
     }
 }
 
-///////////////////////////////////////////////////// UNDO / REDO ////////////////////////////////////////////////////////////
+////////////////////////////////////////////// UNDO / REDO /////////////////////////////////////////////////
 void Canvas::undo()
 {
     if (!enabled_) return;

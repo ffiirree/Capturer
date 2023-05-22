@@ -23,9 +23,11 @@ int main(int argc, char *argv[])
               << probe::to_string(probe::system::os_version()) << ")";
     LOG(INFO) << " -- Kernel           : " << probe::system::kernel_name() << " "
               << probe::to_string(probe::system::kernel_version());
+    LOG(INFO) << " -- CPU              : " << probe::cpu::info().name;
     LOG(INFO) << " -- Architecture     : " << probe::to_string(probe::cpu::architecture());
     LOG(INFO) << " -- Virtual Screen   : " << probe::to_string(probe::graphics::virtual_screen_geometry());
-    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop());
+    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop()) << " ("
+              << probe::to_string(probe::system::desktop_version()) << ")";
 
     Config::instance().load_theme(Config::theme());
 

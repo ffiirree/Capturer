@@ -3,16 +3,17 @@
 
 #ifdef _WIN32
 
-#include <vector>
+#include "devices.h"
+
 #include <optional>
 #include <string>
-#include "devices.h"
+#include <vector>
 
 namespace dshow
 {
     std::vector<av::device_t> video_devices();
     std::vector<av::device_t> audio_devices();
-}
+} // namespace dshow
 
 #endif // !_WIN32
 
