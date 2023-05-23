@@ -78,8 +78,13 @@ Config::Config()
 
     if ((settings_["devices"]["cameras"].is_null() ||
          settings_["devices"]["cameras"].get<std::string>().empty()) &&
-        !av::cameras().empty())
+        !av::cameras().empty()) {
+#ifdef _WIN32
         settings_["devices"]["cameras"] = av::cameras()[0].name;
+#else
+        settings_["devices"]["cameras"] = av::cameras()[0].id;
+#endif
+    }
 
     if (settings_["devices"]["microphones"].is_null()) {
         auto asrc = av::default_audio_source();

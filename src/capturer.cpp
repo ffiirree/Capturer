@@ -112,7 +112,7 @@ void Capturer::setupSystemTray()
         menu->addSeparator();
         menu->addAction(QIcon(":/icon/res/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
         menu->addSeparator();
-        menu->addAction(QIcon(":/icon/res/setting-" + icon_color),      tr("Settings"),     setting_dialog_, &SettingWindow::show);
+        menu->addAction(QIcon(":/icon/res/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
         menu->addSeparator();
         menu->addAction(QIcon(":/icon/res/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
         // clang-format on

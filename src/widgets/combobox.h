@@ -44,13 +44,13 @@ public:
 
     inline ComboBox& select(const QVariant& value)
     {
-        setCurrentIndex(findData(value));
+        setCurrentIndex(std::max(0, findData(value)));
         return *this;
     }
 
     inline ComboBox& select(const std::string& value)
     {
-        setCurrentIndex(findData(QString::fromUtf8(value.c_str())));
+        setCurrentIndex(std::max(0, findData(QString::fromUtf8(value.c_str()))));
         return *this;
     }
 

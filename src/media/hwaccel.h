@@ -9,6 +9,7 @@ extern "C" {
 #include <libavutil/hwcontext.h>
 }
 #include "probe/defer.h"
+#include "probe/library.h"
 
 #include <memory>
 #include <optional>
@@ -60,8 +61,28 @@ namespace hwaccel
     {
         for (auto t = av_hwdevice_iterate_types(AV_HWDEVICE_TYPE_NONE); t != AV_HWDEVICE_TYPE_NONE;
              t      = av_hwdevice_iterate_types(t)) {
-            if (t == type) {
-                return true;
+            if (t != type) continue;
+
+            switch (type) {
+            case AV_HWDEVICE_TYPE_CUDA:
+#ifdef _WIN32
+                return !!probe::library::load("nvcuda.dll");
+#elif __linux__
+                return !probe::library::load("libcuda.so");
+#else
+                return false;
+#endif
+            case AV_HWDEVICE_TYPE_VDPAU:
+            case AV_HWDEVICE_TYPE_VAAPI:
+            case AV_HWDEVICE_TYPE_QSV:
+            case AV_HWDEVICE_TYPE_DRM:
+            case AV_HWDEVICE_TYPE_OPENCL:
+            case AV_HWDEVICE_TYPE_MEDIACODEC:
+            case AV_HWDEVICE_TYPE_VULKAN:
+            case AV_HWDEVICE_TYPE_DXVA2:
+            case AV_HWDEVICE_TYPE_D3D11VA:
+            case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
+            default: return false;
             }
         }
         return false;
