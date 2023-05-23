@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="109"/>
+        <location filename="../src/capturer.cpp" line="111"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="110"/>
+        <location filename="../src/capturer.cpp" line="112"/>
         <source>Record Video</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="111"/>
+        <location filename="../src/capturer.cpp" line="113"/>
         <source>Record GIF</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="113"/>
+        <location filename="../src/capturer.cpp" line="115"/>
         <source>Open Camera</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="115"/>
+        <location filename="../src/capturer.cpp" line="117"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="117"/>
+        <location filename="../src/capturer.cpp" line="119"/>
         <source>Quit</source>
         <translation></translation>
     </message>

@@ -68,19 +68,21 @@ namespace hwaccel
 #ifdef _WIN32
                 return !!probe::library::load("nvcuda.dll");
 #elif __linux__
-                return !probe::library::load("libcuda.so");
+                return !!probe::library::load("libcuda.so");
 #else
                 return false;
 #endif
+                // Windows, no need to check
+            case AV_HWDEVICE_TYPE_D3D11VA: return true;
+
             case AV_HWDEVICE_TYPE_VDPAU:
             case AV_HWDEVICE_TYPE_VAAPI:
             case AV_HWDEVICE_TYPE_QSV:
             case AV_HWDEVICE_TYPE_DRM:
             case AV_HWDEVICE_TYPE_OPENCL:
             case AV_HWDEVICE_TYPE_MEDIACODEC:
-            case AV_HWDEVICE_TYPE_VULKAN:
+            // case AV_HWDEVICE_TYPE_VULKAN:
             case AV_HWDEVICE_TYPE_DXVA2:
-            case AV_HWDEVICE_TYPE_D3D11VA:
             case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
             default: return false;
             }

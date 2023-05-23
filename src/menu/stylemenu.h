@@ -1,7 +1,6 @@
 #ifndef CAPTURER_STYLE_MENU_H
 #define CAPTURER_STYLE_MENU_H
 
-#include "buttongroup.h"
 #include "colorpanel.h"
 #include "combobox.h"
 #include "editmenu.h"

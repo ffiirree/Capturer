@@ -3,6 +3,7 @@
 #include "combobox.h"
 #include "separator.h"
 
+#include <QButtonGroup>
 #include <QFontDatabase>
 #include <QLayout>
 #include <QLineEdit>
@@ -10,7 +11,7 @@
 StyleMenu::StyleMenu(int buttons, QWidget *parent)
     : EditMenu(parent)
 {
-    auto group = new ButtonGroup(this);
+    auto group = new QButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
         width_btn_ = new WidthButton(true, this);

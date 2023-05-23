@@ -72,11 +72,13 @@ void Capturer::updateConfig()
     auto& config = Config::instance();
 
     QString error = "";
-    SET_HOTKEY(snip_sc_, config["snip"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(pin_sc_, config["pin"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(show_pin_sc_, config["pin"]["visible"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(gif_sc_, config["gif"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(video_sc_, config["record"]["hotkey"].get<QKeySequence>());
+    // clang-format off
+    SET_HOTKEY(snip_sc_,        config["snip"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(pin_sc_,         config["pin"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(show_pin_sc_,    config["pin"]["visible"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(gif_sc_,         config["gif"]["hotkey"].get<QKeySequence>());
+    SET_HOTKEY(video_sc_,       config["record"]["hotkey"].get<QKeySequence>());
+    // clang-format on
     if (!error.isEmpty()) showMessage("Capturer", error, QSystemTrayIcon::Critical);
 
     sniper_->updateTheme();
@@ -103,7 +105,7 @@ void Capturer::setupSystemTray()
             else if (ver.major == 18 && ver.minor == 4)
                 icon_color = "light"; // ubuntu 1804, system trays are always dark
         }
-#endif      
+#endif
         // clang-format off
         menu->clear();
         menu->addAction(QIcon(":/icon/res/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
@@ -170,12 +172,12 @@ std::pair<DataFormat, std::any> Capturer::clipboard_data()
     }
 }
 
-std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::any>& data_pair)
+std::optional<QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::any>& data_pair)
 {
     auto& [type, buffer] = data_pair;
 
     switch (type) {
-    case DataFormat::PIXMAP: return { true, std::any_cast<QPixmap>(buffer) };
+    case DataFormat::PIXMAP: return std::any_cast<QPixmap>(buffer);
     case DataFormat::HTML: {
         QTextEdit view;
         view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -185,7 +187,7 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
         view.setHtml(std::any_cast<QString>(buffer));
         view.setFixedSize(view.document()->size().toSize());
 
-        return { true, view.grab() };
+        return view.grab();
     }
     case DataFormat::TEXT: {
         QLabel label(std::any_cast<QString>(buffer));
@@ -193,10 +195,10 @@ std::pair<bool, QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::an
         label.setMargin(10);
         label.setStyleSheet("background-color:white");
         label.setFont({ "Consolas", 12 });
-        return { true, label.grab() };
+        return label.grab();
     }
-    case DataFormat::URLS: return { true, QPixmap(std::any_cast<QList<QUrl>>(buffer)[0].toLocalFile()) };
-    default: LOG(WARNING) << "not support"; return { false, {} };
+    case DataFormat::URLS: return QPixmap(std::any_cast<QList<QUrl>>(buffer)[0].toLocalFile());
+    default: LOG(WARNING) << "not support"; return std::nullopt;
     }
 }
 
@@ -204,12 +206,13 @@ void Capturer::pin()
 {
     auto [fmt, value] = clipboard_data();
     if (clipboard_changed_) {
-        auto [ok, pixmap] = to_pixmap({ fmt, value });
-        if (ok) {
-            history_.append({ fmt, value,
-                              std::make_shared<ImageWindow>(
-                                  pixmap, QRect(probe::graphics::displays()[0].geometry).center() -
-                                              QPoint{ pixmap.width(), pixmap.height() } / 2) });
+        auto pixmap = to_pixmap({ fmt, value });
+        if (pixmap) {
+            history_.append(
+                { fmt, value,
+                  std::make_shared<ImageWindow>(
+                      pixmap.value(), QRect(probe::graphics::displays()[0].geometry).center() -
+                                          QPoint{ pixmap.value().width(), pixmap.value().height() } / 2) });
             pin_idx_ = history_.size() - 1;
         }
     }

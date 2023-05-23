@@ -8,6 +8,7 @@
 #include "settingdialog.h"
 
 #include <any>
+#include <optional>
 #include <QSystemTrayIcon>
 
 template<typename T, int MAX_SIZE = 32> class LimitSizeVector : public std::vector<T>
@@ -56,7 +57,7 @@ private:
     void setupSystemTray();
 
     static std::pair<DataFormat, std::any> clipboard_data();
-    static std::pair<bool, QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
+    static std::optional<QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
 
     ScreenShoter *sniper_{ nullptr };
     ScreenRecorder *recorder_{ nullptr };

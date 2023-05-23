@@ -150,6 +150,8 @@ sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice
 sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 # Ubuntu 22.04
 sudo apt install qtbase5-dev libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
+# Arch Linux
+sudo pacman -S qt5-base qt5-tools
 
 # pulse: audio
 sudo apt install libpulse-dev
