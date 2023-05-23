@@ -10,6 +10,11 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
+    ::SetConsoleOutputCP(CP_UTF8);
+    ::setvbuf(stdout, nullptr, _IONBF, 0);
+#endif
+
     Logger::init(argv[0]);
 
     probe::thread::set_name("capturer-main");

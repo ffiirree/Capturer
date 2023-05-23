@@ -44,13 +44,27 @@ public:
 
     inline ComboBox& select(const QVariant& value)
     {
-        setCurrentIndex(std::max(0, findData(value)));
+        // trigger if we force the index to be 0 while the current index also is 0.
+        auto idx = findData(value);
+        if (idx < 0 && currentIndex() == 0) {
+            idx = 0;
+            emit selected(itemData(0));
+        }
+
+        setCurrentIndex(idx);
         return *this;
     }
 
     inline ComboBox& select(const std::string& value)
     {
-        setCurrentIndex(std::max(0, findData(QString::fromUtf8(value.c_str()))));
+        // trigger if we force the index to be 0 while the current index also is 0.
+        auto idx = findData(QString::fromUtf8(value.c_str()));
+        if (idx < 0 && currentIndex() == 0) {
+            idx = 0;
+            emit selected(itemData(0));
+        }
+
+        setCurrentIndex(idx);
         return *this;
     }
 

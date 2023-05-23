@@ -36,10 +36,10 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
 {
     if (!dev) return {};
 
-    winrt::com_ptr<IPropertyStore> props = nullptr;
-    LPWSTR id                            = nullptr;
-    PROPVARIANT name                     = {};
-    PROPVARIANT desc                     = {};
+    winrt::com_ptr<IPropertyStore> props{};
+    LPWSTR id        = nullptr;
+    PROPVARIANT name = {};
+    PROPVARIANT desc = {};
 
     // Initialize container for property value.
     PropVariantInit(&name);
@@ -62,7 +62,7 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
 
     // type
     winrt::com_ptr<IMMEndpoint> endpoint{};
-    dev->QueryInterface(__uuidof(IMMEndpoint), (void **)endpoint.put());
+    dev->QueryInterface(winrt::guid_of<IMMEndpoint>(), endpoint.put_void());
 
     EDataFlow data_flow{};
     RETURN_NONE_IF_FAILED(endpoint->GetDataFlow(&data_flow));
@@ -94,12 +94,12 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/device-properties
 std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
 {
-    winrt::com_ptr<IMMDeviceEnumerator> enumerator = nullptr;
-    winrt::com_ptr<IMMDeviceCollection> collection = nullptr;
+    winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
+    winrt::com_ptr<IMMDeviceCollection> collection{};
     std::vector<av::device_t> devices{};
 
-    RETURN_NONE_IF_FAILED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
-                                           __uuidof(IMMDeviceEnumerator), (void **)enumerator.put()));
+    RETURN_NONE_IF_FAILED(CoCreateInstance(winrt::guid_of<MMDeviceEnumerator>(), nullptr, CLSCTX_ALL,
+                                           winrt::guid_of<IMMDeviceEnumerator>(), enumerator.put_void()));
 
     RETURN_NONE_IF_FAILED(enumerator->EnumAudioEndpoints(
         any(type & av::device_type_t::source) ? eCapture : eRender, DEVICE_STATE_ACTIVE, collection.put()));
@@ -107,7 +107,7 @@ std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
     UINT count = 0;
     RETURN_NONE_IF_FAILED(collection->GetCount(&count));
     for (ULONG i = 0; i < count; i++) {
-        winrt::com_ptr<IMMDevice> endpoint = nullptr;
+        winrt::com_ptr<IMMDevice> endpoint{};
         RETURN_NONE_IF_FAILED(collection->Item(i, endpoint.put()));
 
         auto dev = device_info(endpoint.get());
@@ -121,11 +121,11 @@ std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
 
 std::optional<av::device_t> wasapi::default_endpoint(av::device_type_t type)
 {
-    winrt::com_ptr<IMMDeviceEnumerator> enumerator = nullptr;
-    winrt::com_ptr<IMMDevice> endpoint             = nullptr;
+    winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
+    winrt::com_ptr<IMMDevice> endpoint{};
 
-    RETURN_NONE_IF_FAILED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
-                                           __uuidof(IMMDeviceEnumerator), (void **)enumerator.put()));
+    RETURN_NONE_IF_FAILED(CoCreateInstance(winrt::guid_of<MMDeviceEnumerator>(), nullptr, CLSCTX_ALL,
+                                           winrt::guid_of<IMMDeviceEnumerator>(), enumerator.put_void()));
 
     RETURN_NONE_IF_FAILED(enumerator->GetDefaultAudioEndpoint(
         any(type & av::device_type_t::source) ? eCapture : eRender, eConsole, endpoint.put()));

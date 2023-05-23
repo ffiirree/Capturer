@@ -31,8 +31,10 @@ public:
 
     template<typename T> void set(json& key, T value)
     {
-        key = value;
-        if (key.get<T>() != value) emit changed();
+        if (key.get<T>() != value) {
+            key = value;
+            emit changed();
+        }
     }
 
     decltype(auto) operator[](const std::string& key) { return settings_[key]; }

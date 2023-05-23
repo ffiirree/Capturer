@@ -145,7 +145,7 @@ int WasapiCapturer::run()
 
     start_time_ = os_gettime_ns();
     thread_     = std::thread([this]() {
-        probe::thread::set_name("wasapi-" + device_.name);
+        probe::thread::set_name("wasapi-" + device_.id);
         run_f();
     });
 
