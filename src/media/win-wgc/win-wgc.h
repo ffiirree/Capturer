@@ -7,6 +7,7 @@
 #include <windows.graphics.capture.h>
 #include <windows.graphics.capture.interop.h>
 #include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Metadata.h>
 #include <winrt/Windows.Graphics.Capture.h>
 
 extern "C" {
@@ -92,6 +93,28 @@ namespace wgc
             return nullptr;
         }
         return item;
+    }
+
+    inline bool is_cursor_toggle_supported()
+    {
+        try {
+            return winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(
+                L"Windows.Graphics.Capture.GraphicsCaptureSession", L"IsCursorCaptureEnabled");
+        }
+        catch (...) {
+            return false;
+        }
+    }
+
+    inline bool is_border_toggle_supported()
+    {
+        try {
+            return winrt::Windows::Foundation::Metadata::ApiInformation::IsPropertyPresent(
+                L"Windows.Graphics.Capture.GraphicsCaptureSession", L"IsBorderRequired");
+        }
+        catch (...) {
+            return false;
+        }
     }
 } // namespace wgc
 

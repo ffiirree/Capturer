@@ -60,6 +60,8 @@ private:
 
     int init_hwframes_ctx();
 
+    void parse_options(std::map<std::string, std::string>&);
+
 private:
     winrt::Windows::Graphics::Capture::GraphicsCaptureItem item_{ nullptr };
     winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice device_{ nullptr };

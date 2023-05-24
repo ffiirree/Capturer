@@ -25,13 +25,18 @@ add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
 
+# Windows SDK >= 10.0.22621.0
+if (WIN32 AND ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION} VERSION_LESS "10.0.22621.0")
+    message(FATAL_ERROR "Capturer requires Windows SDK 10.0.22621.0 and above to compile.")
+endif()
+
+# Qt 5 / 6
 if (NOT QT_DEFAULT_MAJOR_VERSION)
     set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
 endif()
 
 set(QT Qt${QT_DEFAULT_MAJOR_VERSION})
 
-# Qt5 / 6
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)

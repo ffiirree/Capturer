@@ -20,8 +20,8 @@ std::vector<av::device_t> dshow::video_devices()
 
     // Create an enumerator for the category.
     winrt::com_ptr<IEnumMoniker> enum_moniker{};
-    RETURN_NONE_IF_FAILED(
-        dev_enum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, enum_moniker.put(), 0));
+    if (dev_enum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, enum_moniker.put(), 0) != S_OK)
+        return {};
 
     std::vector<av::device_t> list;
     for (winrt::com_ptr<IMoniker> moniker{}; enum_moniker->Next(1, moniker.put(), nullptr) == S_OK;

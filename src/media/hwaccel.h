@@ -114,7 +114,7 @@ namespace hwaccel
         // freed by hwdevice_t
         if (av_hwdevice_ctx_create(&device_ref, hwtype, nullptr, nullptr, 0) < 0) {
             return nullptr;
-        };
+        }
 
         return hwdevices.emplace_back(
             std::make_shared<hwdevice_t>(av_hwdevice_get_type_name(hwtype), hwtype, device_ref));
