@@ -409,10 +409,18 @@ void Canvas::paste()
 void Canvas::remove()
 {
     if (enabled_ && focus_cmd_) {
-        HIDE_AND_COPY_CMD(focus_cmd_);
-        commands_.push(focus_cmd_);
-        redo_stack_.clear();
-        focusOn(nullptr);
+        // focus is not pseudo, then create one
+        if (!focus_cmd_->previous()) { 
+            HIDE_AND_COPY_CMD(focus_cmd_);
+        }
+
+        focus_cmd_->visible(false);
+
+        // not editing (not goto mouse release event handler)
+        if (!(edit_status_ & OPERATION_MASK)) {
+            commands_.push(focus_cmd_);
+            redo_stack_.clear();
+        }
     }
 }
 
