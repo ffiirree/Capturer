@@ -1,24 +1,33 @@
+<p align="center">
+    <img src="src/res/capturer.png"  height="96">
+</p>
 
 <h1 align="center">Capturer</h1>
 
-![image](/capturer.png)
-
-`Capturer`是使用`Qt`开发的一款**截图**、**贴图**、**录屏**和**录制GIF**软件，支持`Windows`和`Linux`系统。
-配合快捷键可以快速选择`桌面区域`或`窗口`进行快速截图/录制，并将截图快速钉在桌面上，你也可以将剪切板中的文字、图片等以图片形式钉在桌面上。
+<p>
+    <p align="center">
+        <code>Capturer</code>是一款主打快速<code>截图</code>、<code>贴图</code>、<code>录屏</code>和<code>录制GIF</code>的软件
+    </p>
+    <p align="center">
+        使用快捷键可以快速选择感兴趣的<code>桌面区域</code>或<code>窗口</code>进行截图/录制，并将截图快速<code>钉在桌面</code>上
+    </p>
+    <p align="center">
+        <img src="capturer.png">
+    </p>
+</p>
 
 ## 下载 & 安装
+
+- `>= Windows 10 1803`
+- `>= Ubuntu 20.04`
 
 从 [Releases](https://github.com/ffiirree/Capturer/releases) 下载系统对应的版本。
 
 ### Windows
 
-> `>= Windows 10 1607`
-
 下载后解压，双击 `capturer.exe` 运行。
 
 ### Ubuntu
-
-> `>= Ubuntu 18.04`
 
 下载后安装：
 
@@ -29,30 +38,38 @@ sudo apt install -f
 
 ## 快捷键
 
+|       Keys       | Actions                             |
+| :--------------: | ----------------------------------- |
+|       `F1`       | 截图                                |
+|       `F3`       | 贴图， 将剪切板中的内容贴在桌面上   |
+| `Ctrl + Alt + V` | 录制视频，选择区域，`Enter`开始录制 |
+| `Ctrl + Alt + G` | 录制GIF，选择区域，`Enter`开始录制  |
+
+> 文件保存在系统默认的图片/视频文件夹中
+
 ### 选择框通用快捷键
 
-|       Keys        | Actions        |
-| :---------------: | -------------- |
-|    `Ctrl + A`     | 全屏           |
-|  `W / A / S / D`  | 逐像素移动窗口 |
-|     `↑ ← ↓ →`     | 逐像素移动窗口 |
-| `Ctrl + ↑ ← ↓ →`  | 逐像素扩大窗口 |
-| `Shift + ↑ ← ↓ →` | 逐像素缩小窗口 |
-|       `ESC`       | 退出           |
+|             Keys             | Actions        |
+| :--------------------------: | -------------- |
+|          `Ctrl + A`          | 全屏           |
+| `W / A / S / D` or `↑ ← ↓ →` | 逐像素移动窗口 |
+|       `Ctrl + ↑ ← ↓ →`       | 逐像素扩大窗口 |
+|      `Shift + ↑ ← ↓ →`       | 逐像素缩小窗口 |
+|            `ESC`             | 退出           |
 
 ### 截图
 
-|          Keys          | Actions                        |
-| :--------------------: | ------------------------------ |
-|   `F1(默认，可修改)`   | 开始截图                       |
-|          `P`           | 截图并贴图                     |
-|       `Ctrl + S`       | 截图并保存到文件               |
-|       `Page Up`        | 上一个截图位置                 |
-|      `Page Down`       | 下一个截图位置                 |
-|       `Ctrl + C`       | 放大镜存在时，取色             |
-|         `Tab`          | 放大镜存在时，切换取色颜色格式 |
-|        `Enter`         | 截图并保存到粘贴板             |
-| `LButton` Double Click | 截图并保存到粘贴板             |
+|          Keys          | Actions                          |
+| :--------------------: | -------------------------------- |
+|          `F1`          | 开始截图                         |
+|          `P`           | 截图并贴图                       |
+|       `Ctrl + S`       | 截图并保存到文件                 |
+|        `Enter`         | 截图并保存到粘贴板               |
+| `LButton` Double Click | 截图并保存到粘贴板               |
+|       `Page Up`        | 上一次的截图位置                 |
+|      `Page Down`       | 下一次的截图位置                 |
+|       `Ctrl + C`       | 放大镜存在时，复制取色器中的颜色 |
+|         `Tab`          | 放大镜存在时，切换取色颜色格式   |
 
 ### 编辑
 
@@ -68,23 +85,22 @@ sudo apt install -f
 
 ### 贴图
 
-|          Keys          | Actions                                                                                                        |
-| :--------------------: | -------------------------------------------------------------------------------------------------------------- |
-|          `F3`          | 将粘贴板中的内容作为图片贴出<br>(文本内容也会渲染为图片)，如果粘贴板中的路径(路径为文本)为图片，则会贴出该图片 |
-|      `Shift + F3`      | 显示/隐藏所有贴出的贴图                                                                                        |
-|        `Wheel`         | 缩放贴图                                                                                                       |
-|     `Ctrl + Wheel`     | 调整贴图透明度                                                                                                 |
-|          `G`           | 灰阶显示                                                                                                       |
-|          `R`           | 顺时针旋转90                                                                                                   |
-|       `Ctrl + R`       | 逆时针旋转90                                                                                                   |
-|          `V`           | 垂直翻转                                                                                                       |
-|          `H`           | 水平翻转                                                                                                       |
-| `LButton` Double Click | 缩略图模式，贴图显示中心区域125x125的内容                                                                      |
-|      Drag & Drop       | 拖拽图片到贴图上，则打开并显示拖拽图片                                                                         |
-|         `ESC`          | 关闭贴图窗口                                                                                                   |
-|    `W / A / S / D`     | 逐像素移动窗口                                                                                                 |
-|       `↑ ← ↓ →`        | 逐像素移动窗口                                                                                                 |
-|       `LButton`        | 菜单                                                                                                           |
+|             Keys              | Actions                                                                                                        |
+| :---------------------------: | -------------------------------------------------------------------------------------------------------------- |
+|             `F3`              | 将粘贴板中的内容作为图片贴出<br>(文本内容也会渲染为图片)，如果粘贴板中的路径(路径为文本)为图片，则会贴出该图片 |
+|         `Shift + F3`          | 显示/隐藏所有贴出的贴图                                                                                        |
+|            `Wheel`            | 缩放贴图                                                                                                       |
+|        `Ctrl + Wheel`         | 调整贴图透明度                                                                                                 |
+|              `G`              | 灰阶显示                                                                                                       |
+|              `R`              | 顺时针旋转90                                                                                                   |
+|          `Ctrl + R`           | 逆时针旋转90                                                                                                   |
+|              `V`              | 垂直翻转                                                                                                       |
+|              `H`              | 水平翻转                                                                                                       |
+|    `LButton` Double Click     | 缩略图模式，贴图显示中心区域125x125的内容                                                                      |
+|          Drag & Drop          | 拖拽图片到贴图上，则打开并显示拖拽图片                                                                         |
+|             `ESC`             | 关闭贴图窗口                                                                                                   |
+| `W / A / S / D` or  `↑ ← ↓ →` | 逐像素移动窗口                                                                                                 |
+|           `LButton`           | 菜单                                                                                                           |
 
 ### 录屏
 
@@ -111,14 +127,18 @@ git clone https://github.com/ffiirree/Capturer.git --recursive
 git submodule update --init --recursive
 ```
 
-### ENV
+### Development Environment
 
 - `C++` :  `C++20`
 - `Qt` : `5.12.x` / `5.15.x`
-- `FFmpeg` : Ubuntu: `4.4.x` / `5.1.2`; Windows: `6.0`
-- `Windows` : `>= Windows 10 1607`
-- `Ubuntu` : `>= 18.04`
 - `CMake` : `>= 3.16`
+- Windows
+  - `Windows` : `>= Windows 10 1803`
+  - `Windows SDK` : `>= 10.0.22621.0`
+  - `FFmpeg` : `>= 6.0`
+- Linux
+  - `FFmpeg` : `>= 4.4`
+  - `Window System` : `X11`
 
 ### Windows
 
@@ -177,7 +197,7 @@ make package
 ### Install CMake from Source
 
 > 如果你的CMake版本过低，从源代码安装CMake
-> 
+>
 > 以CMake 3.26.1 为例
 
 ```bash
