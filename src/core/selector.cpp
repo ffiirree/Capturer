@@ -5,6 +5,7 @@
 #include <fmt/core.h>
 #include <QApplication>
 #include <QGuiApplication>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
@@ -19,33 +20,23 @@ Selector::Selector(QWidget *parent)
     info_->setObjectName("size_info");
     info_->setVisible(false);
 
-    setAttribute(Qt::WA_TranslucentBackground);
-
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
-                   Qt::BypassWindowManagerHint);
-
     connect(this, &Selector::moved, [this]() { update(); });
     connect(this, &Selector::resized, [this]() { update(); });
 
     registerShortcuts();
 }
 
-void Selector::start()
+void Selector::start(probe::graphics::window_filter_t flags)
 {
     if (status_ == SelectorStatus::INITIAL) {
         status_ = SelectorStatus::NORMAL;
         setMouseTracking(true);
 
         if (use_detect_) {
-            hunter::ready(windows_detection_flags_);
+            hunter::ready(flags);
             select(hunter::hunt(QCursor::pos()));
             info_->show();
         }
-
-        setGeometry(probe::graphics::virtual_screen_geometry());
-        show();
-        activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call
-                          //  QWidget::activateWindow()
     }
 }
 
@@ -54,8 +45,10 @@ void Selector::exit()
     status_ = SelectorStatus::INITIAL;
     setMouseTracking(false);
 
+    box_  = {};
+    prey_ = {};
+
     mask_hidden_ = false;
-    hide();
 }
 
 void Selector::mousePressEvent(QMouseEvent *event)
@@ -187,7 +180,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
         case SelectorStatus::NORMAL: break;
         case SelectorStatus::START_SELECTING:
             if (use_detect_) {
-                CAPTURED();
+                capture();
             }
             else {
                 status_ = SelectorStatus::NORMAL;
@@ -198,7 +191,7 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             if (!isValid()) {
                 if (use_detect_) { // detected window
                     select(hunter::hunt(QCursor::pos()));
-                    CAPTURED();
+                    capture();
                 }
                 else { // reset
                     info_->hide();
@@ -207,11 +200,11 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
                 }
             }
             else {
-                CAPTURED();
+                capture();
             }
             break;
         case SelectorStatus::MOVING:
-        case SelectorStatus::RESIZING: CAPTURED(); break;
+        case SelectorStatus::RESIZING: capture(); break;
         case SelectorStatus::CAPTURED:
         case SelectorStatus::LOCKED:
         default: break;
@@ -395,7 +388,7 @@ void Selector::registerShortcuts()
                 });
             }
 
-            CAPTURED();
+            capture();
         }
     });
 }
@@ -417,6 +410,13 @@ void Selector::setBorderStyle(Qt::PenStyle s) { pen_.setStyle(s); }
 void Selector::setMaskColor(const QColor& c) { mask_color_ = c; }
 
 void Selector::setUseDetectWindow(bool f) { use_detect_ = f; }
+
+void Selector::showRegion()
+{
+    info_->hide();
+    mask_hidden_ = true;
+    repaint();
+}
 
 std::string to_string(Selector::scope_t s)
 {

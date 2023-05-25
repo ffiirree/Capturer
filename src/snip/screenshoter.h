@@ -5,16 +5,23 @@
 #include "circlecursor.h"
 #include "command.h"
 #include "config.h"
-#include "imageeditmenu.h"
-#include "magnifier.h"
-#include "resizer.h"
-#include "selector.h"
+#include "hunter.h"
 
 #include <QPixmap>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
 
-class ScreenShoter : public Selector
+// Layer 1: Selector
+// Layer 2: Graphics View
+// Layer 3: Parent QWidget
+
+class Selector;
+class QGraphicsScene;
+class QGraphicsView;
+class ImageEditMenu;
+class Magnifier;
+
+class ScreenShoter : public QWidget
 {
     Q_OBJECT
 
@@ -28,8 +35,8 @@ signals:
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
 
 public slots:
-    void start() override;
-    void exit() override;
+    void start();
+    void exit();
 
     void save();
     void copy();
@@ -37,33 +44,35 @@ public slots:
     QPixmap snip();
     void save2clipboard(const QPixmap&, bool);
 
-    void updateTheme() { Selector::updateTheme(Config::instance()["snip"]["selector"]); }
+    void updateTheme() {}
 
     void moveMenu();
 
 protected:
     bool eventFilter(QObject *, QEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
-    void keyPressEvent(QKeyEvent *) override;
-    void keyReleaseEvent(QKeyEvent *) override;
-    void paintEvent(QPaintEvent *) override;
-    void mouseDoubleClickEvent(QMouseEvent *) override;
+    //void keyPressEvent(QKeyEvent *) override;
+    //void keyReleaseEvent(QKeyEvent *) override;
+    ////void paintEvent(QPaintEvent *) override;
+    //void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
     void registerShortcuts();
 
     void moveMagnifier();
 
-    QPixmap captured_screen_;
+    Selector *selector_{};    // Layer 1
+    QGraphicsScene *scene_{}; //
+    QGraphicsView *view_{};   // Layer 2
 
-    ImageEditMenu *menu_{ nullptr };
-    Magnifier *magnifier_{ nullptr };
+    ImageEditMenu *menu_{};   // Edit menu
+    Magnifier *magnifier_{};  // Magnifier
 
     QPoint move_begin_{ 0, 0 };
     QPoint resize_begin_{ 0, 0 };
 
     CircleCursor circle_cursor_{ 20 };
-    Canvas *canvas_{ nullptr };
+    //Canvas *canvas_{ nullptr };
 
     std::vector<hunter::prey_t> history_;
     size_t history_idx_{ 0 };

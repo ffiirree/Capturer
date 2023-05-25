@@ -3,12 +3,18 @@
 #include "probe/graphics.h"
 
 #include <QApplication>
+#include <QGuiApplication>
+#include <QLabel>
+#include <QMouseEvent>
 #include <QPainter>
+#include <QPixmap>
+#include <QScreen>
 
 Magnifier::Magnifier(QWidget *parent)
     : QWidget(parent)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 
     // pixmap size
     psize_ = msize_ * alpha_;
@@ -22,12 +28,15 @@ Magnifier::Magnifier(QWidget *parent)
     // size
     setFixedSize(psize_.width(), psize_.height() + label_->height());
 
+    // TODO: listen sytem level mouse move event, not just this APP
+    qApp->installEventFilter(this);
+
     hide();
 }
 
 QRect Magnifier::mrect()
 {
-    auto mouse_pos = QCursor::pos() - QRect(probe::graphics::virtual_screen_geometry()).topLeft();
+    auto mouse_pos = QCursor::pos();
     return {
         mouse_pos.x() - msize_.width() / 2,
         mouse_pos.y() - msize_.height() / 2,
@@ -45,14 +54,40 @@ QString Magnifier::getColorStringValue()
                                                      .arg(center_color_.blue());
 }
 
-void Magnifier::paintEvent(QPaintEvent *e)
+QPoint Magnifier::position()
 {
-    Q_UNUSED(e);
+    auto cx = QCursor::pos().x(), cy = QCursor::pos().y();
+    auto rg = probe::graphics::virtual_screen_geometry();
+
+    int mx = (rg.right() - cx > width()) ? cx + 16 : cx - width() - 16;
+    int my = (rg.bottom() - cy > height()) ? cy + 16 : cy - height() - 16;
+    return { mx, my };
+}
+
+bool Magnifier::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseMove) {
+        update();
+        move(position());
+    }
+    else {
+        return qApp->eventFilter(obj, event);
+    }
+}
+
+// TODO: clear the background when close
+void Magnifier::showEvent(QShowEvent *) { move(position()); }
+
+void Magnifier::paintEvent(QPaintEvent *)
+{
+    auto area   = mrect();
+    auto pixmap = QGuiApplication::primaryScreen()->grabWindow(
+        probe::graphics::virtual_screen().handle, area.x(), area.y(), area.width(), area.height());
 
     QPainter painter(this);
 
     // 0.
-    auto draw_ = pixmap_.scaled(psize_, Qt::KeepAspectRatioByExpanding);
+    auto draw_ = pixmap.scaled(psize_, Qt::KeepAspectRatioByExpanding);
 
     // 1.
     painter.fillRect(rect(), QColor(0, 0, 0, 150));

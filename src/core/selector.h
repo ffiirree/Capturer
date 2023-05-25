@@ -7,32 +7,28 @@
 #include "resizer.h"
 #include "utils.h"
 
-#include <QLabel>
 #include <QPainter>
 #include <QWidget>
 
-// clang-format off
-#define LOCKED()            do{ status_ = SelectorStatus::LOCKED;   emit locked();              } while(0)
-#define CAPTURED()          do{ status_ = SelectorStatus::CAPTURED; emit captured(); update();  } while(0)
-// clang-format on
+class QLabel;
+
+enum class SelectorStatus
+{
+    INITIAL,
+    NORMAL,
+    START_SELECTING,
+    SELECTING,
+    CAPTURED,
+    MOVING,
+    RESIZING,
+    LOCKED,
+};
 
 class Selector : public QWidget
 {
     Q_OBJECT
 
 public:
-    enum class SelectorStatus
-    {
-        INITIAL,
-        NORMAL,
-        START_SELECTING,
-        SELECTING,
-        CAPTURED,
-        MOVING,
-        RESIZING,
-        LOCKED,
-    };
-
     enum class scope_t
     {
         desktop, // virtual screen
@@ -43,34 +39,43 @@ public:
     explicit Selector(QWidget *parent = nullptr);
     ~Selector() override = default;
 
+    SelectorStatus status() const { return status_; }
+
+    hunter::prey_t prey() const { return prey_; }
+
+    // selected area
+    [[nodiscard]] inline QRect selected(bool relative = false) const
+    {
+        return relative ? box_.rect().translated(box_.range().topLeft()) : box_.rect();
+    }
+
+    void select(const hunter::prey_t&);
+    void select(const probe::graphics::display_t&);
+    void select(const QRect& rect);
+
 public slots:
-    virtual void start();
+    virtual void start(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
+
+    void lock()
+    {
+        status_ = SelectorStatus::LOCKED;
+        emit locked();
+    }
+
+    void capture()
+    {
+        status_ = SelectorStatus::CAPTURED;
+        emit captured();
+        update();
+    }
+
     void setBorderColor(const QColor&);
     void setBorderWidth(int);
     void setBorderStyle(Qt::PenStyle s);
     void setMaskColor(const QColor&);
     void setUseDetectWindow(bool);
 
-    void showRegion()
-    {
-        info_->hide();
-        mask_hidden_ = true;
-        repaint();
-    }
-
-    void resetSelected()
-    {
-        box_.coords(use_detect_ ? probe::graphics::virtual_screen_geometry() : probe::geometry_t{});
-    }
-
-    // hiding
-    void hide()
-    {
-        info_->hide();
-        resetSelected();
-        repaint();
-        QWidget::hide();
-    }
+    void showRegion();
 
     virtual void exit();
 
@@ -95,12 +100,6 @@ protected:
 
     void update_info_label();
 
-    // selected area
-    [[nodiscard]] inline QRect selected(bool relative = false) const
-    {
-        return relative ? box_.rect().translated(box_.range().topLeft()) : box_.rect();
-    }
-
     QPainter painter_;
     SelectorStatus status_             = SelectorStatus::INITIAL;
     Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
@@ -112,10 +111,6 @@ protected:
     QPoint sbegin_{ 0, 0 };
 
     // selected area @{
-    void select(const hunter::prey_t&);
-    void select(const probe::graphics::display_t&);
-    void select(const QRect& rect);
-
     void translate(int32_t dx, int32_t dy);
     void adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2);
     void margins(int32_t dt, int32_t dr, int32_t db, int32_t dl);
@@ -127,9 +122,6 @@ protected:
     // @}
 
     bool prevent_transparent_ = false;
-
-    // windows detection flags
-    probe::graphics::window_filter_t windows_detection_flags_{ probe::graphics::window_filter_t::visible };
 
 private:
     void registerShortcuts();

@@ -22,8 +22,9 @@ extern "C" {
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     : Selector(parent)
 {
-    windows_detection_flags_ =
-        probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::capturable;
+    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                   Qt::BypassWindowManagerHint);
 
 #ifdef _WIN32
     scope_ = scope_t::display;
@@ -109,7 +110,12 @@ void ScreenRecorder::start()
         filename_     = fmt::format("{}/Capturer_{}.gif", root_dir, time_str);
     }
 
-    Selector::start();
+    Selector::start(probe::graphics::window_filter_t::visible |
+                    probe::graphics::window_filter_t::capturable);
+
+    setGeometry(probe::graphics::virtual_screen_geometry());
+    show();
+    activateWindow();
 }
 
 void ScreenRecorder::open_audio_sources()
@@ -320,7 +326,8 @@ void ScreenRecorder::exit()
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
-        Selector::exit();
+        exit();
+        close();
     }
 
     if (event->key() == Qt::Key_Return) {

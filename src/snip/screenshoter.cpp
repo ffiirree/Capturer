@@ -1,5 +1,8 @@
 #include "screenshoter.h"
 
+#include "magnifier.h"
+#include "selector.h"
+
 #include <QApplication>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
@@ -9,49 +12,61 @@
 #include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
+#include <QGraphicsScene>
+#include <QGraphicsTextItem>
+#include <QGraphicsView>
 #include <QMimeData>
 #include <QMouseEvent>
+#include <QPalette>
 #include <QScreen>
 #include <QShortcut>
 
 ScreenShoter::ScreenShoter(QWidget *parent)
-    : Selector(parent)
+    : QWidget(parent)
 {
-    windows_detection_flags_ =
-        probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::children;
+    // windows_detection_flags_ =
+    //     probe::graphics::window_filter_t::visible | probe::graphics::window_filter_t::children;
 
-    menu_   = new ImageEditMenu(this);
-    canvas_ = new Canvas(menu_, this);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                   Qt::BypassWindowManagerHint);
+
+    selector_ = new Selector(this);
+    menu_     = new ImageEditMenu(this);
+    // canvas_   = new Canvas(menu_, this);
 
     magnifier_ = new Magnifier(this);
 
-    connect(canvas_, &Canvas::changed, [this]() { update(); });
-    connect(canvas_, &Canvas::cursorChanged, [this]() { setCursor(canvas_->getCursorShape()); });
+    // connect(canvas_, &Canvas::changed, [this]() { update(); });
+    // connect(canvas_, &Canvas::cursorChanged, [this]() { setCursor(canvas_->getCursorShape()); });
 
-    connect(this, &ScreenShoter::locked, canvas_, &Canvas::enable);
-    connect(this, &ScreenShoter::captured, canvas_, &Canvas::disable);
+    // connect(selector_, &Selector::locked, canvas_, &Canvas::enable);
+    // connect(selector_, &Selector::captured, canvas_, &Canvas::disable);
 
-    menu_->installEventFilter(this);
-    installEventFilter(canvas_);
+    //menu_->installEventFilter(this);
+    selector_->installEventFilter(this);
+    // installEventFilter(canvas_);
 
     connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
-    connect(menu_, &ImageEditMenu::ok,   this, &ScreenShoter::copy);
-    connect(menu_, &ImageEditMenu::pin,  this, &ScreenShoter::pin);
+    connect(menu_, &ImageEditMenu::ok, this, &ScreenShoter::copy);
+    connect(menu_, &ImageEditMenu::pin, this, &ScreenShoter::pin);
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
     connect(menu_, &ImageEditMenu::graphChanged, [this](Graph graph) {
-        if (graph != Graph::NONE)
-            LOCKED();
-        else if (!canvas_->editing())
-            CAPTURED();
+        // if (graph != Graph::NONE)
+        //     LOCKED();
+        // else if (!canvas_->editing())
+        //     CAPTURED();
     });
 
     // show menu
-    connect(this, &ScreenShoter::captured, [this]() { menu_->show(); moveMenu(); });
+    connect(selector_, &Selector::captured, [this]() {
+        menu_->show();
+        moveMenu();
+    });
 
     // move menu
-    connect(this, &ScreenShoter::moved, this, &ScreenShoter::moveMenu);
-    connect(this, &ScreenShoter::resized, this, &ScreenShoter::moveMenu);
+    connect(selector_, &Selector::moved, this, &ScreenShoter::moveMenu);
+    connect(selector_, &Selector::resized, this, &ScreenShoter::moveMenu);
 
     // shortcuts
     registerShortcuts();
@@ -59,90 +74,106 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
 void ScreenShoter::start()
 {
-    if (status_ != SelectorStatus::INITIAL) return;
+     if (selector_->status() != SelectorStatus::INITIAL) return;
 
-    auto virtual_geometry = QGuiApplication::primaryScreen()->virtualGeometry();
-    captured_screen_ = QGuiApplication::primaryScreen()->grabWindow(QApplication::desktop()->winId(),
-                                                                    virtual_geometry.left(),
-                                                                    virtual_geometry.top(),
-                                                                    virtual_geometry.width(),
-                                                                    virtual_geometry.height());
-    canvas_->pixmap(captured_screen_);
-    Selector::start();
+    auto virtual_geometry = probe::graphics::virtual_screen_geometry();
+    auto captured_pixmap  = QGuiApplication::primaryScreen()->grabWindow(
+        probe::graphics::virtual_screen().handle, virtual_geometry.x, virtual_geometry.y,
+        static_cast<int>(virtual_geometry.width), static_cast<int>(virtual_geometry.height));
+
+    setGeometry(virtual_geometry);
+    selector_->setGeometry(geometry());
+
+    QPalette palette;
+    palette.setBrush(QPalette::Window, captured_pixmap);
+    setPalette(palette);
+
+    // canvas_->pixmap(captured_screen_);
+
+    
+    selector_->start(probe::graphics::window_filter_t::visible |
+                     probe::graphics::window_filter_t::children);
+
+    show();
+    activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call
+                      //  QWidget::activateWindow()
 
     moveMagnifier();
 }
 
 void ScreenShoter::exit()
 {
-    captured_screen_ = {};
-    canvas_->reset();
-    canvas_->disable();
+    magnifier_->hide();
 
     menu_->reset();
     menu_->hide();
 
-    Selector::exit();
+    selector_->exit();
+    QWidget::close();
 }
 
-bool ScreenShoter::eventFilter(QObject *obj, QEvent *event)
+
+ bool ScreenShoter::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == menu_) {
         switch (event->type()) {
-        case QEvent::KeyPress:      keyPressEvent(dynamic_cast<QKeyEvent *>(event));    return true;
-        case QEvent::KeyRelease:    keyReleaseEvent(dynamic_cast<QKeyEvent *>(event));  return true;
-        default:                    return Selector::eventFilter(obj, event);
+        case QEvent::KeyPress: keyPressEvent(dynamic_cast<QKeyEvent *>(event)); return true;
+        case QEvent::KeyRelease:
+            keyReleaseEvent(dynamic_cast<QKeyEvent *>(event));
+            return true;
+            // default: return Selector::eventFilter(obj, event);
         }
     }
     else {
-        return Selector::eventFilter(obj, event);
+        // return Selector::eventFilter(obj, event);
     }
 }
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 {
-    if (status_ == SelectorStatus::LOCKED) {
-        setCursor(canvas_->getCursorShape());
+    if (selector_->status() == SelectorStatus::LOCKED) {
+        // setCursor(canvas_->getCursorShape());
     }
 
     moveMagnifier();
-    Selector::mouseMoveEvent(event);
+    // selector_->mouseMoveEvent(event);
 }
 
-void ScreenShoter::keyPressEvent(QKeyEvent *event)
-{
-    // hotkey 'Space': move the selector while editing.
-    if (status_ == SelectorStatus::LOCKED && event->key() == Qt::Key_Space && !event->isAutoRepeat() &&
-        canvas_->editing()) {
-        CAPTURED();
-    }
-
-    Selector::keyPressEvent(event);
-}
-
-void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
-{
-    // stop moving the selector while editing
-    if (event->key() == Qt::Key_Space && !event->isAutoRepeat() && canvas_->editing()) {
-        LOCKED();
-    }
-
-    Selector::keyReleaseEvent(event);
-}
-
-void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton && status_ >= SelectorStatus::CAPTURED) {
-        save2clipboard(snip(), false);
-        exit();
-    }
-
-    //    Selector::mouseDoubleClickEvent(event);
-}
+//
+// void ScreenShoter::keyPressEvent(QKeyEvent *event)
+//{
+//    // hotkey 'Space': move the selector while editing.
+//    if (selector_->status() == SelectorStatus::LOCKED && event->key() == Qt::Key_Space &&
+//        !event->isAutoRepeat()) {
+//        selector_->capture();
+//    }
+//
+//    // Selector::keyPressEvent(event);
+//}
+//
+// void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
+//{
+//    // stop moving the selector while editing
+//    if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
+//        selector_->lock();
+//    }
+//
+//    // Selector::keyReleaseEvent(event);
+//}
+//
+// void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
+//{
+//    if (event->button() == Qt::LeftButton && selector_->status() >= SelectorStatus::CAPTURED) {
+//        save2clipboard(snip(), false);
+//        exit();
+//    }
+//
+//    //    Selector::mouseDoubleClickEvent(event);
+//}
 
 void ScreenShoter::moveMenu()
 {
-    auto area  = selected();
+    auto area  = selector_->selected();
     auto right = area.right() - menu_->width() + 1;
     if (right < geometry().left()) right = geometry().left();
 
@@ -162,42 +193,35 @@ void ScreenShoter::moveMenu()
 
 void ScreenShoter::moveMagnifier()
 {
-    if (status_ < SelectorStatus::CAPTURED || status_ == SelectorStatus::RESIZING) {
-        magnifier_->pixmap(captured_screen_.copy(magnifier_->mrect()));
+    if (selector_->status() < SelectorStatus::CAPTURED || selector_->status() == SelectorStatus::RESIZING) {
         magnifier_->show();
-
-        auto cx = QCursor::pos().x(), cy = QCursor::pos().y();
-
-        int mx = (geometry().right() - cx > magnifier_->width()) ? cx + 10 : cx - magnifier_->width() - 10;
-        int my = (geometry().bottom() - cy > magnifier_->height()) ? cy + 10 : cy - magnifier_->height() - 10;
-        magnifier_->move(mx - geometry().left(), my - geometry().top());
     }
-    else if (magnifier_->isVisible()) {
-        magnifier_->hide();
+    else {
+        magnifier_->close();
     }
 }
 
-void ScreenShoter::paintEvent(QPaintEvent *event)
-{
-    // 2. window
-    painter_.begin(this);
-    painter_.drawPixmap(0, 0, canvas_->pixmap());
-
-    // 3. modifying
-    canvas_->drawModifying(&painter_);
-    canvas_->modified(PaintType::UNMODIFIED);
-    painter_.end();
-
-    Selector::paintEvent(event);
-}
+// void ScreenShoter::paintEvent(QPaintEvent *event)
+//{
+//     // 2. window
+//     // QPainter painter_(this);
+//     // painter_.drawPixmap(0, 0, canvas_->pixmap());
+//
+//     //// 3. modifying
+//     // canvas_->drawModifying(&painter_);
+//     // canvas_->modified(PaintType::UNMODIFIED);
+//     // painter_.end();
+//
+//     // Selector::paintEvent(event);
+// }
 
 QPixmap ScreenShoter::snip()
 {
-    history_.push_back(prey_);
+    history_.push_back(selector_->prey());
     history_idx_ = history_.size() - 1;
-
-    return canvas_->pixmap().copy(
-        selected().translated(-QRect(probe::graphics::virtual_screen_geometry()).topLeft()));
+    return {};
+    // return canvas_->pixmap().copy(
+    //     selector_->selected().translated(-QRect(probe::graphics::virtual_screen_geometry()).topLeft()));
 }
 
 void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
@@ -217,12 +241,9 @@ void ScreenShoter::save()
         "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
 
 #ifdef _WIN32
-    QString filename = QFileDialog::getSaveFileName(
-        this,
-        tr("Save Image"),
-        save_path_ + QDir::separator() + default_filename,
-        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)"
-    );
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
+                                                    save_path_ + QDir::separator() + default_filename,
+                                                    "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 #elif __linux__
     QString filename = save_path_ + QDir::separator() + default_filename;
 #endif
@@ -249,7 +270,7 @@ void ScreenShoter::pin()
 {
     auto snipped = snip();
 
-    emit pinSnipped(snipped, { selected().topLeft() });
+    emit pinSnipped(snipped, { selector_->selected().topLeft() });
 
     save2clipboard(snipped, true);
 
@@ -259,19 +280,27 @@ void ScreenShoter::pin()
 void ScreenShoter::registerShortcuts()
 {
     connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED || status_ == SelectorStatus::LOCKED) {
+        if (selector_->status() == SelectorStatus::CAPTURED ||
+            selector_->status() == SelectorStatus::LOCKED) {
             save();
         }
     });
 
     connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this]() {
-        if (status_ == SelectorStatus::CAPTURED || status_ == SelectorStatus::LOCKED) {
+        if (selector_->status() == SelectorStatus::CAPTURED ||
+            selector_->status() == SelectorStatus::LOCKED) {
             pin();
         }
     });
 
-    connect(new QShortcut(Qt::Key_Return, this), &QShortcut::activated, [this]() { copy(); exit(); });
-    connect(new QShortcut(Qt::Key_Enter, this),  &QShortcut::activated, [this]() { copy(); exit(); });
+    connect(new QShortcut(Qt::Key_Return, this), &QShortcut::activated, [this]() {
+        copy();
+        exit();
+    });
+    connect(new QShortcut(Qt::Key_Enter, this), &QShortcut::activated, [this]() {
+        copy();
+        exit();
+    });
 
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() { exit(); });
 
@@ -281,36 +310,36 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_,
-            &Canvas::redo);
+    // connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, canvas_, &Canvas::undo);
+    // connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, canvas_,
+    //         &Canvas::redo);
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this]() {
         if (history_idx_ < history_.size()) {
-            select(history_[history_idx_]);
-            CAPTURED();
+            selector_->select(history_[history_idx_]);
+            selector_->capture();
             if (history_idx_ > 0) history_idx_--;
         }
     });
 
     connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this]() {
         if (history_idx_ < history_.size()) {
-            select(history_[history_idx_]);
-            CAPTURED();
+            selector_->select(history_[history_idx_]);
+            selector_->capture();
             if (history_idx_ < history_.size() - 1) history_idx_++;
         }
     });
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this]() {
-        if (status_ < SelectorStatus::CAPTURED) {
+        if (selector_->status() < SelectorStatus::CAPTURED) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
         else {
-            canvas_->copy();
+            // canvas_->copy();
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_V, this), &QShortcut::activated, canvas_, &Canvas::paste);
+    // connect(new QShortcut(Qt::CTRL | Qt::Key_V, this), &QShortcut::activated, canvas_, &Canvas::paste);
 
-    connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, canvas_, &Canvas::remove);
+    // connect(new QShortcut(Qt::Key_Delete, this), &QShortcut::activated, canvas_, &Canvas::remove);
 }

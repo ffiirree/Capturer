@@ -1,9 +1,11 @@
 #ifndef MAGNIFIER_H
 #define MAGNIFIER_H
 
-#include <QLabel>
-#include <QPixmap>
+// #include <QLabel>
+// #include <QPixmap>
 #include <QWidget>
+
+class QLabel;
 
 class Magnifier : public QWidget
 {
@@ -16,10 +18,6 @@ public:
 
 public:
     explicit Magnifier(QWidget *parent = nullptr);
-
-    inline void pixmap(const QPixmap& p) { pixmap_ = p; }
-
-    QRect mrect();
 
     QColor getColor() const { return center_color_; }
 
@@ -36,14 +34,19 @@ public:
     }
 
 protected:
+    bool eventFilter(QObject *, QEvent *) override;
+
+    void showEvent(QShowEvent *) override;
     void paintEvent(QPaintEvent *) override;
 
 private:
-    QLabel *label_{ nullptr };
-    QPixmap pixmap_;
+    QRect mrect();
+    QPoint position();
+
+    QLabel *label_{};
 
     int alpha_{ 5 };
-    QSize msize_{ 31, 25 };
+    QSize msize_{ 31, 31 };
     QSize psize_{ 0, 0 };
     QColor center_color_;
 
