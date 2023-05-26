@@ -89,8 +89,7 @@ private:
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
 
-    std::vector<std::shared_ptr<Command>> undo_{};
-    std::vector<std::shared_ptr<Command>> redo_{};
+    CommandStack commands_{};
 };
 
 #endif // SCREEN_SHOTER_H

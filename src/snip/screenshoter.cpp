@@ -59,6 +59,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &ImageEditMenu::pin, this, &ScreenShoter::pin);
     connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
 
+    connect(menu_, &ImageEditMenu::undo, &commands_, &CommandStack::undo);
+    connect(menu_, &ImageEditMenu::redo, &commands_, &CommandStack::redo);
+
     connect(menu_, &ImageEditMenu::graphChanged, [this](graph_t graph) {
         if (graph != graph_t::none) {
             selector_->status(SelectorStatus::LOCKED);
@@ -82,6 +85,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             magnifier_->close();
     });
 
+    connect(&commands_, &CommandStack::emptied,
+            [this](auto redo, auto v) { redo ? menu_->disableRedo(v) : menu_->disableUndo(v); });
+
     // shortcuts
     registerShortcuts();
 }
@@ -99,11 +105,6 @@ void ScreenShoter::start()
     setGeometry(QRect{ virtual_geometry });
     scene()->setSceneRect(geometry());
     selector_->setGeometry(geometry());
-
-    auto item = scene()->addRect(10, 10, 1'000, 1'000);
-    item->setFlag(QGraphicsItem::ItemIsFocusable);
-    item->setFlag(QGraphicsItem::ItemIsMovable);
-    item->setFlag(QGraphicsItem::ItemIsSelectable);
 
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
 
@@ -125,6 +126,8 @@ void ScreenShoter::exit()
 
     menu_->reset();
     menu_->hide();
+
+    scene()->clear();
 
     QWidget::close();
 }
@@ -184,7 +187,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
     if ((event->button() == Qt::LeftButton) && editstatus_ == EditStatus::GRAPH_CREATING) {
-        undo_.emplace_back(std::make_shared<CreateCommand>(scene()->focusItem()));
+        commands_.push(std::make_shared<CreateCommand>(scene()->focusItem()));
         editstatus_ = EditStatus::READY;
         LOG(INFO) << "created";
     }
@@ -214,10 +217,10 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 
 void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    //if (event->button() == Qt::LeftButton && selector_->status() >= SelectorStatus::CAPTURED) {
-    //    save2clipboard(snip(), false);
-    //    exit();
-    //}
+    // if (event->button() == Qt::LeftButton && selector_->status() >= SelectorStatus::CAPTURED) {
+    //     save2clipboard(snip(), false);
+    //     exit();
+    // }
 
     QGraphicsView::mouseDoubleClickEvent(event);
 }
@@ -241,20 +244,6 @@ void ScreenShoter::moveMenu()
         menu_->setSubMenuShowAbove();
     }
 }
-
-// void ScreenShoter::paintEvent(QPaintEvent *event)
-//{
-//     // 2. window
-//     // QPainter painter_(this);
-//     // painter_.drawPixmap(0, 0, canvas_->pixmap());
-//
-//     //// 3. modifying
-//     // canvas_->drawModifying(&painter_);
-//     // canvas_->modified(PaintType::UNMODIFIED);
-//     // painter_.end();
-//
-//     // Selector::paintEvent(event);
-// }
 
 QPixmap ScreenShoter::snip()
 {
@@ -363,20 +352,8 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, [this]() {
-        if (!undo_.empty()) {
-            undo_.back()->undo();
-            redo_.push_back(undo_.back());
-            undo_.pop_back();
-        }
-    });
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, [this]() {
-        if (!redo_.empty()) {
-            redo_.back()->redo();
-            undo_.push_back(redo_.back());
-            redo_.pop_back();
-        }
-    });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this), &QShortcut::activated, &commands_, &CommandStack::undo);
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this), &QShortcut::activated, &commands_, &CommandStack::redo);
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this]() {
         if (history_idx_ < history_.size()) {

@@ -20,6 +20,9 @@ public:
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget *) override;
 
+signals:
+    void changed(const std::shared_ptr<Command>&);
+
 protected:
     void focusInEvent(QFocusEvent *);
     void focusOutEvent(QFocusEvent *);

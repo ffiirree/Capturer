@@ -72,7 +72,6 @@ private:
     QGraphicsItem *item_{};
 };
 
-
 class CommandStack : public QObject
 {
     Q_OBJECT
@@ -80,85 +79,67 @@ class CommandStack : public QObject
 public:
     CommandStack() = default;
 
-    CommandStack(const CommandStack& r)
-        : QObject()
+    inline void push(const std::shared_ptr<Command>& command)
     {
-        stack_ = r.stack_;
-    }
+        if (undo_stack_.empty()) emit emptied(0, false);
 
-    CommandStack& operator=(const CommandStack& other)
-    {
-        stack_ = other.stack_;
-        emit changed(stack_.size());
-        emit emptied(stack_.empty());
-        return *this;
-    }
+        undo_stack_.push_back(command);
 
-    inline void push(const std::shared_ptr<PaintCommand>& command)
-    {
-        if (stack_.empty()) emit emptied(false);
-
-        stack_.push_back(command);
-
-        emit changed(stack_.size());
+        emit changed(undo_stack_.size());
         emit pushed();
-        emit increased();
+
+        // clear the redo commands
+        if (!redo_stack_.empty()) {
+            redo_stack_.clear();
+            emit emptied(1, true);
+        }
     }
-
-    inline void pop()
-    {
-        stack_.pop_back();
-
-        if (stack_.empty()) emit emptied(true);
-
-        emit changed(stack_.size());
-        emit poped();
-        emit decreased();
-    }
-
-    inline void remove(const std::shared_ptr<PaintCommand>& cmd)
-    {
-        stack_.erase(std::remove(stack_.begin(), stack_.end(), cmd), stack_.end());
-
-        if (stack_.empty()) emit emptied(true);
-
-        emit changed(stack_.size());
-        emit removed();
-        emit decreased();
-    }
-
-    [[nodiscard]] inline size_t size() const { return stack_.size(); }
-
-    [[nodiscard]] inline std::shared_ptr<PaintCommand> back() const { return stack_.back(); }
-
-    [[nodiscard]] inline std::vector<std::shared_ptr<PaintCommand>> commands() const { return stack_; }
-
-    [[nodiscard]] inline bool empty() const { return stack_.empty(); }
 
 signals:
-    void increased();
-    void decreased();
     void changed(size_t);
     void pushed();
-    void poped();
-    void removed();
 
-    void emptied(bool); // emit when stack changed to be empty or not.
+    void emptied(int, bool);
 
 public slots:
+    inline void undo()
+    {
+        if (undo_stack_.empty()) return;
+
+        if (redo_stack_.empty()) emit emptied(1, false);
+
+        undo_stack_.back()->undo();
+        redo_stack_.emplace_back(undo_stack_.back());
+        undo_stack_.pop_back();
+
+        if (undo_stack_.empty()) emit emptied(0, true);
+    }
+
+    inline void redo()
+    {
+        if (redo_stack_.empty()) return;
+
+        if (undo_stack_.empty()) emit emptied(0, false);
+
+        redo_stack_.back()->redo();
+        undo_stack_.emplace_back(redo_stack_.back());
+        redo_stack_.pop_back();
+
+        if (redo_stack_.empty()) emit emptied(1, true);
+    }
+
     inline void clear()
     {
-        if (!stack_.empty()) {
-            emit changed(0);
-            emit emptied(true);
-            emit decreased();
-        }
+        undo_stack_.clear();
+        redo_stack_.clear();
 
-        stack_.clear();
+        emit emptied(0, true);
+        emit emptied(1, true);
     }
 
 private:
-    std::vector<std::shared_ptr<PaintCommand>> stack_;
+    std::vector<std::shared_ptr<Command>> redo_stack_;
+    std::vector<std::shared_ptr<Command>> undo_stack_;
 };
 
 #endif //! CAPTURER_COMMAND_H

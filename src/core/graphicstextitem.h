@@ -12,6 +12,9 @@ class GraphicsTextItem : public QGraphicsTextItem
 public:
     GraphicsTextItem(const QString&, const QPointF& vs);
 
+signals:
+    void changed(const std::shared_ptr<Command>&);
+
 protected:
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;

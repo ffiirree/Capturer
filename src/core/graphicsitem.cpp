@@ -57,12 +57,7 @@ QRectF GraphicsItem::boundingRect() const
 
 void GraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    if (hasFocus()) {
-        painter->setPen(Qt::red);
-    }
-    else {
-        painter->setPen(Qt::yellow);
-    }
+    painter->setPen(QPen{ Qt::red, 3, Qt::SolidLine });
 
     painter->setRenderHint(QPainter::Antialiasing, true);
 
@@ -81,6 +76,47 @@ void GraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
     case graph_t::text: break;
     default: break;
     }
+
+    //
+    painter->setRenderHint(QPainter::Antialiasing, false);
+
+    painter->save();
+    auto color = QColor("#969696");
+    switch (graph_) {
+    case graph_t::rectangle:
+    case graph_t::ellipse:
+        painter->setBrush(Qt::NoBrush);
+
+        // box border
+        painter->setPen(QPen(color, 1, Qt::DashLine));
+        painter->drawRect({ vertexes_[0], vertexes_[1] });
+
+        // anchors
+        painter->setBrush(Qt::white);
+        painter->setPen(QPen(color, 1, Qt::SolidLine));
+        painter->drawRects(Resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
+                                    static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) }
+                               .anchors());
+        break;
+
+    case graph_t::line:
+    case graph_t::arrow: {
+        painter->setPen(QPen(color, 1, Qt::DashLine));
+        painter->drawLine({ vertexes_[0], vertexes_[1] });
+
+        painter->setPen(QPen(color, 1, Qt::SolidLine));
+        painter->setBrush(Qt::white);
+        Resizer resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
+                         static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) };
+        painter->drawRect(resizer.X1Y1Anchor());
+        painter->drawRect(resizer.X2Y2Anchor());
+        break;
+    }
+
+    default: break;
+    }
+
+    painter->restore();
 }
 
 void GraphicsItem::pushVertex(const QPointF& v)
