@@ -1,136 +1,77 @@
-#ifndef COMMAND_H
-#define COMMAND_H
+#ifndef CAPTURER_COMMAND_H
+#define CAPTURER_COMMAND_H
 
-#include "logging.h"
-#include "resizer.h"
-#include "textedit.h"
-#include "utils.h"
+#include <QGraphicsItem>
+#include <QPoint>
 
-#include <QPen>
-#include <utility>
-
-class PaintCommand : public QObject
+struct Command
 {
-    Q_OBJECT
-public:
-    PaintCommand(Graph, const QPen&, const QFont&, bool, const QPoint&, const QPoint&);
+    virtual void redo() = 0;
+    virtual void undo() = 0;
+};
 
-    PaintCommand(const PaintCommand& cmd)
-        : QObject()
+struct MoveCommand : public Command
+{
+    MoveCommand(QGraphicsItem *item, const QPointF& offset)
+        : item_(item),
+          offset_(offset)
+    {}
+
+    void redo()
     {
-        *this = cmd;
+        if (item_) item_->moveBy(offset_.x(), offset_.y());
     }
 
-    PaintCommand& operator=(const PaintCommand&);
-
-    [[nodiscard]] inline Graph graph() const { return graph_; }
-
-    inline void pen(const QPen& pen)
+    void undo()
     {
-        if (graph_ == Graph::ERASER || graph_ == Graph::MOSAIC) return;
-        pen_ = pen;
-        emit modified(PaintType::REPAINT_ALL);
+        if (item_) item_->moveBy(-offset_.x(), -offset_.y());
     }
-
-    [[nodiscard]] inline QPen pen() const { return pen_; }
-
-    void font(const QFont& font);
-
-    [[nodiscard]] inline QFont font() const { return font_; }
-
-    inline void setFill(bool fill)
-    {
-        if (graph_ == Graph::RECTANGLE || graph_ == Graph::ELLIPSE) {
-            is_fill_ = fill;
-            emit modified(PaintType::REPAINT_ALL);
-        }
-    }
-
-    [[nodiscard]] inline bool isFill() const { return is_fill_; }
-
-    [[nodiscard]] inline QVector<QPointF> points() const { return points_; }
-
-    inline QVector<QPointF> points() { return points_; }
-
-    inline QRect geometry()
-    {
-        if (widget_) return widget_->geometry();
-        return {};
-    }
-
-    bool push_point(const QPoint& pos);
-    void move(const QPoint& diff);
-    void resize(Resizer::PointPosition, const QPoint&);
-    void rotate(const QPoint&);
-
-    inline void setFocus(bool f)
-    {
-        if (widget_) {
-            f ? widget_->show(), widget_->activateWindow() : widget_->hide();
-        }
-
-        emit modified(PaintType::UPDATE_MASK);
-    }
-
-    bool isValid();
-
-    void drawAnchors(QPainter *);
-    void draw_modified(QPainter *);
-    void repaint(QPainter *);
-
-    void regularize();
-    bool regularized();
-
-    Resizer::PointPosition hover(const QPoint&);
-    static QCursor getCursorShapeByHoverPos(Resizer::PointPosition, const QCursor& = Qt::CrossCursor);
-
-    QRect rect() { return resizer_.rect(); }
-
-    QSize size() { return rect().size(); }
-
-    [[nodiscard]] Resizer resizer() const { return resizer_; }
-
-    void visible(bool v)
-    {
-        if (visible_ != v) {
-            emit modified(v ? PaintType::DRAW_FINISHED : PaintType::REPAINT_ALL);
-            visible_ = v;
-        }
-    }
-
-    [[nodiscard]] bool visible() const { return visible_; }
-
-    void previous(std::shared_ptr<PaintCommand> pre) { pre_ = std::move(pre); }
-
-    [[nodiscard]] std::shared_ptr<PaintCommand> previous() const { return pre_; }
-
-    [[nodiscard]] bool adjusted() const { return adjusted_; }
-
-signals:
-    void modified(PaintType);
-    void styleChanged();
 
 private:
-    void updateArrowPoints(QPoint, QPoint);
-    void draw(QPainter *, bool modified);
-
-    Graph graph_{ Graph::NONE };
-    QPen pen_;
-    QFont font_;
-    float theta_{ 0 };
-    bool is_fill_{ false };
-    QVector<QPointF> points_;
-    QVector<QPointF> points_buff_;
-    std::shared_ptr<TextEdit> widget_{ nullptr };
-
-    Resizer resizer_{};
-
-    bool visible_{ true };
-    std::shared_ptr<PaintCommand> pre_{ nullptr };
-
-    bool adjusted_ = false;
-    QPoint offset_{ 0, 0 };
+    QGraphicsItem *item_{};
+    QPointF offset_{};
 };
+
+struct DeleteCommand : public Command
+{
+    DeleteCommand(QGraphicsItem *item)
+        : item_(item)
+    {}
+
+    void redo()
+    {
+        if (item_) item_->setVisible(false);
+    }
+
+    void undo()
+    {
+        if (item_) item_->setVisible(true);
+    }
+
+private:
+    QGraphicsItem *item_{};
+};
+
+struct CreateCommand : public Command
+{
+    CreateCommand(QGraphicsItem *item)
+        : item_(item)
+    {}
+
+    void redo()
+    {
+        if (item_) item_->setVisible(true);
+    }
+
+    void undo()
+    {
+        if (item_) item_->setVisible(false);
+    }
+
+private:
+    QGraphicsItem *item_{};
+};
+
 
 class CommandStack : public QObject
 {
@@ -220,4 +161,4 @@ private:
     std::vector<std::shared_ptr<PaintCommand>> stack_;
 };
 
-#endif // COMMAND_H
+#endif //! CAPTURER_COMMAND_H

@@ -27,7 +27,7 @@ public:
 
     void reset();
 
-    Graph graph() const { return graph_; }
+    graph_t graph() const { return graph_; }
 
     QColor color() override;
     void color(const QColor& c) override;
@@ -51,7 +51,7 @@ signals:
     void ok();
     void exit();
 
-    void graphChanged(Graph); // start painting
+    void graphChanged(graph_t); // start painting
 
     void undo();
     void redo();
@@ -62,7 +62,7 @@ public slots:
 
     void disableRedo(bool val) { redo_btn_->setDisabled(val); }
 
-    void paintGraph(Graph graph)
+    void paintGraph(graph_t graph)
     {
         graph_ = graph;
         btn_menus_[graph].first->setChecked(true);
@@ -74,8 +74,8 @@ private:
 
     ButtonGroup *group_{ nullptr };
 
-    Graph graph_{ Graph::NONE };
-    std::map<Graph, std::pair<QAbstractButton *, EditMenu *>> btn_menus_; // bind graph with buttons
+    graph_t graph_{ graph_t::none };
+    std::map<graph_t, std::pair<QAbstractButton *, EditMenu *>> btn_menus_; // bind graph with buttons
 
     bool sub_menu_show_pos_{ false };
 };

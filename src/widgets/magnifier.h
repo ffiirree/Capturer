@@ -1,8 +1,6 @@
 #ifndef MAGNIFIER_H
 #define MAGNIFIER_H
 
-// #include <QLabel>
-// #include <QPixmap>
 #include <QWidget>
 
 class QLabel;
@@ -46,7 +44,7 @@ private:
     QLabel *label_{};
 
     int alpha_{ 5 };
-    QSize msize_{ 31, 31 };
+    QSize msize_{ 29, 29 };
     QSize psize_{ 0, 0 };
     QColor center_color_;
 

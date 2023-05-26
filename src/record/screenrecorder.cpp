@@ -51,7 +51,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     dispatcher_ = std::make_unique<Dispatcher>();
 
     connect(menu_, &RecordMenu::opened, [this](bool) { switchCamera(); });
-    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::exit);
+    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::close);
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
     connect(menu_, &RecordMenu::paused, [this]() { dispatcher_->pause(); });
@@ -87,7 +87,10 @@ void ScreenRecorder::switchCamera()
     }
 }
 
-void ScreenRecorder::record() { status_ == SelectorStatus::INITIAL ? start() : exit(); }
+void ScreenRecorder::record()
+{
+    status_ == SelectorStatus::READY ? start() : [this]() { close(); }();
+}
 
 void ScreenRecorder::start()
 {
@@ -239,7 +242,7 @@ void ScreenRecorder::setup()
 
     if (desktop_capturer_->open(name, options) < 0) {
         desktop_capturer_->reset();
-        exit();
+        close();
         return;
     }
 
@@ -282,7 +285,7 @@ void ScreenRecorder::setup()
     dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
     if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
-        exit();
+        close();
         return;
     }
 
@@ -292,7 +295,7 @@ void ScreenRecorder::setup()
     if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();
-        exit();
+        close();
         return;
     }
 
@@ -300,7 +303,7 @@ void ScreenRecorder::setup()
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECORDING!! Please exit first.";
         dispatcher_->reset();
-        exit();
+        close();
         return;
     }
 
@@ -308,7 +311,7 @@ void ScreenRecorder::setup()
     timer_->start(50);
 }
 
-void ScreenRecorder::exit()
+void ScreenRecorder::hideEvent(QHideEvent *)
 {
     menu_->close();
 
@@ -319,14 +322,11 @@ void ScreenRecorder::exit()
                           tr("Path: ") + QString::fromStdString(filename_));
         timer_->stop();
     }
-
-    Selector::exit();
 }
 
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
-        exit();
         close();
     }
 

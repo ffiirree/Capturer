@@ -1,7 +1,6 @@
 #ifndef IMAGE_WINDOW_H
 #define IMAGE_WINDOW_H
 
-#include "canvas.h"
 #include "imageeditmenu.h"
 
 #include <QGraphicsDropShadowEffect>
@@ -107,7 +106,6 @@ private:
 
     bool ctrl_{ false };
 
-    Canvas *canvas_{ nullptr };
     static const int DEFAULT_SHADOW_R_{ 10 };
     static const int THUMBNAIL_WIDTH_{ 125 };
     int shadow_r_ = DEFAULT_SHADOW_R_;

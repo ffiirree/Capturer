@@ -12,7 +12,7 @@
 #include <QTextStream>
 #include <streambuf>
 
-#define IF_NULL_SET(X, default_value) st(if (X.is_null()) X = default_value;)
+#define IF_NULL_SET(X, default_value) if (X.is_null()) X = default_value;
 
 Config::Config()
 {

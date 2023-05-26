@@ -12,10 +12,10 @@
 #include <QTextEdit>
 
 #define SET_HOTKEY(X, Y)                                                                                   \
-    st(if (!X->setShortcut(Y, true)) {                                                                     \
+    if (!X->setShortcut(Y, true)) {                                                                        \
         LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();                      \
         error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());                               \
-    })
+    }
 
 Capturer::Capturer(QWidget *parent)
     : QWidget(parent)

@@ -46,9 +46,7 @@ signals:
                       QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10'000);
 
 public slots:
-    void exit() override;
-
-    void start() override;
+    void start();
     void record();
 
     void switchCamera();
@@ -67,14 +65,22 @@ public slots:
 
     void updateTheme()
     {
-        Selector::updateTheme(Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"]);
+        const auto& style = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"];
+        Selector::setBorderStyle(QPen{
+            style["border"]["color"].get<QColor>(),
+            static_cast<qreal>(style["border"]["width"].get<int>()),
+            style["border"]["style"].get<Qt::PenStyle>(),
+        });
+
+        Selector::setMaskStyle(style["mask"]["color"].get<QColor>());
     }
 
 private:
+    void keyPressEvent(QKeyEvent *) override;
+    void hideEvent(QHideEvent *) override;
+
     void open_audio_sources();
     void setup();
-
-    void keyPressEvent(QKeyEvent *) override;
 
     int recording_type_{ VIDEO };
 

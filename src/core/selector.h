@@ -14,14 +14,16 @@ class QLabel;
 
 enum class SelectorStatus
 {
-    INITIAL,
-    NORMAL,
-    START_SELECTING,
-    SELECTING,
-    CAPTURED,
-    MOVING,
-    RESIZING,
-    LOCKED,
+    INVALID        = 0x00,
+    READY          = 0x01,
+    PREY_SELECTING = 0x02,
+    FREE_SELECTING = 0x04,
+    CAPTURED       = 0x08,
+    MOVING         = 0x10,
+    RESIZING       = 0x20,
+    LOCKED         = 0x40,
+
+    ENABLE_BITMASK_OPERATORS()
 };
 
 class Selector : public QWidget
@@ -56,30 +58,12 @@ public:
 public slots:
     virtual void start(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
 
-    void lock()
-    {
-        status_ = SelectorStatus::LOCKED;
-        emit locked();
-    }
+    void status(SelectorStatus);
 
-    void capture()
-    {
-        status_ = SelectorStatus::CAPTURED;
-        emit captured();
-        update();
-    }
-
-    void setBorderColor(const QColor&);
-    void setBorderWidth(int);
-    void setBorderStyle(Qt::PenStyle s);
-    void setMaskColor(const QColor&);
-    void setUseDetectWindow(bool);
+    void setBorderStyle(const QPen&);
+    void setMaskStyle(const QColor&);
 
     void showRegion();
-
-    virtual void exit();
-
-    void updateTheme(json& setting);
 
     // minimum size of selected area
     void setMinValidSize(const QSize& size) { min_size_ = size; }
@@ -91,24 +75,19 @@ signals:
     void moved();
     void resized();
     void locked();
+    void statusChanged(SelectorStatus);
 
 protected:
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
     void paintEvent(QPaintEvent *) override;
+    void hideEvent(QHideEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+
+    void reset();
 
     void update_info_label();
-
-    QPainter painter_;
-    SelectorStatus status_             = SelectorStatus::INITIAL;
-    Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
-
-    // move
-    QPoint mbegin_{ 0, 0 }, mend_{ 0, 0 };
-
-    // selecting
-    QPoint sbegin_{ 0, 0 };
 
     // selected area @{
     void translate(int32_t dx, int32_t dy);
@@ -121,7 +100,18 @@ protected:
     hunter::prey_t prey_{};             // capture object
     // @}
 
-    bool prevent_transparent_ = false;
+    QPainter painter_{};
+    SelectorStatus status_             = SelectorStatus::INVALID;
+    Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
+
+    // move
+    QPoint move_spos_{ 0, 0 };
+    QPoint move_epos_{ 0, 0 };
+
+    // selecting
+    QPoint sbegin_{ 0, 0 };
+
+    bool prevent_transparent_ = true;
 
 private:
     void registerShortcuts();
@@ -130,12 +120,9 @@ private:
 
     QPen pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
     QColor mask_color_{ 0, 0, 0, 100 };
-    bool use_detect_{ true };
     bool mask_hidden_{ false };
 
     QSize min_size_{ 2, 2 };
 };
-
-std::string to_string(Selector::scope_t);
 
 #endif // !SELECTOR_H
