@@ -67,7 +67,6 @@ public slots:
 private:
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
     void wheelEvent(QWheelEvent *) override;
@@ -75,12 +74,10 @@ private:
     void keyReleaseEvent(QKeyEvent *) override;
     void paintEvent(QPaintEvent *) override;
     void contextMenuEvent(QContextMenuEvent *) override;
-    void moveEvent(QMoveEvent *) override;
     void dropEvent(QDropEvent *) override;
     void dragEnterEvent(QDragEnterEvent *) override;
 
     void registerShortcuts();
-    void moveMenu();
     void initContextMenu();
 
     void update(Modified);
@@ -96,7 +93,6 @@ private:
 
     QPixmap original_pixmap_;
     QPixmap pixmap_;
-    // QPixmap canvas_;
     QPoint original_pos_{ 0, 0 };
 
     bool thumbnail_{ false };
@@ -109,10 +105,7 @@ private:
     static const int DEFAULT_SHADOW_R_{ 10 };
     static const int THUMBNAIL_WIDTH_{ 125 };
     int shadow_r_ = DEFAULT_SHADOW_R_;
-    ImageEditMenu *menu_{ nullptr };
     QGraphicsDropShadowEffect *effect_{ nullptr };
-
-    bool editing_{ false };
 
     QMenu *context_menu_{ nullptr };
     QAction *shadow_action_{ nullptr };
