@@ -4,50 +4,51 @@
 #include "resizer.h"
 
 #include <numbers>
+#include <QAbstractTextDocumentLayout>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <QPainter>
-
-inline std::ostream& operator<<(std::ostream& out, const QRectF& rect)
-{
-    return out << "<<" << rect.left() << ", " << rect.top() << ">, <" << rect.width() << " x "
-               << rect.height() << ">>";
-}
+#include <QTextDocument>
 
 GraphicsTextItem::GraphicsTextItem(const QString& text, const QPointF& vs)
     : QGraphicsTextItem(text)
 {
     setFlag(QGraphicsItem::ItemIsFocusable);
     setFlag(QGraphicsItem::ItemIsMovable);
+    setTextInteractionFlags(Qt::TextEditorInteraction);
     setAcceptHoverEvents(true);
 
     setPos(vs.x(), vs.y());
 }
 
-void GraphicsTextItem::focusInEvent(QFocusEvent *)
+void GraphicsTextItem::focusInEvent(QFocusEvent *event)
 {
-    LOG(INFO) << "TextItem focusInEvent: " << boundingRect();
+    if (onfocus) onfocus();
+    QGraphicsTextItem::focusInEvent(event);
 }
 
-void GraphicsTextItem::focusOutEvent(QFocusEvent *)
+void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
 {
-    LOG(INFO) << "TextItem focusOutEvent: " << boundingRect();
     setTextInteractionFlags(Qt::NoTextInteraction);
+    if (onblur) onblur();
+    QGraphicsTextItem::focusOutEvent(event);
 }
 
-void GraphicsTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *)
+void GraphicsTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    LOG(INFO) << "TextItem hoverEnterEvent: " << boundingRect();
+    if (onhovered) onhovered(Resizer::EDITAREA);
+    QGraphicsTextItem::hoverEnterEvent(event);
 }
 
-void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *)
+void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent * event)
 {
-    // LOG(INFO) << "hoverMoveEvent: " << boundingRect();
+    QGraphicsTextItem::hoverMoveEvent(event);
 }
 
-void GraphicsTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *)
+void GraphicsTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    LOG(INFO) << "TextItem hoverLeaveEvent: " << boundingRect();
+    if (onhovered) onhovered(Resizer::OUTSIDE);
+    QGraphicsTextItem::hoverLeaveEvent(event);
 }
 
 void GraphicsTextItem::keyPressEvent(QKeyEvent *event)
@@ -55,36 +56,35 @@ void GraphicsTextItem::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Delete) {
         setVisible(false);
     }
-    LOG(INFO) << "TextItem keyPressEvent";
+
+    QGraphicsTextItem::keyPressEvent(event);
 }
 
-void GraphicsTextItem::keyReleaseEvent(QKeyEvent *) { LOG(INFO) << "TextItem keyReleaseEvent"; }
+void GraphicsTextItem::keyReleaseEvent(QKeyEvent *event) { QGraphicsTextItem::keyReleaseEvent(event); }
 
 void GraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    spos_ = event->pos();
-
-    LOG(INFO) << "TextItem mousePressEvent";
     QGraphicsTextItem::mousePressEvent(event);
 }
 
 void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    auto offset = event->pos() - spos_;
-    // moveBy(offset.x(), offset.y());
-
-    //LOG(INFO) << "TextItem mouseMoveEvent: (" << boundingRect();
-
     QGraphicsTextItem::mouseMoveEvent(event);
 }
 
 void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    LOG(INFO) << "TextItem mouseReleaseEvent ";
     QGraphicsTextItem::mouseReleaseEvent(event);
 }
 
-void GraphicsTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *)
+void GraphicsTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-    setTextInteractionFlags(Qt::TextEditorInteraction);
+    if (textInteractionFlags() != Qt::TextEditorInteraction) {
+        setTextInteractionFlags(Qt::TextEditorInteraction);
+        setFocus();
+    }
+
+    auto cursor = textCursor();
+    cursor.setPosition(document()->documentLayout()->hitTest(event->pos(), Qt::FuzzyHit));
+    setTextCursor(cursor);
 }

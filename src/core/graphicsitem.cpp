@@ -33,12 +33,6 @@ static QVector<QPointF> compute_arrow_vertexes(QPointF begin, QPointF end)
     return points;
 }
 
-inline std::ostream& operator<<(std::ostream& out, const QRectF& rect)
-{
-    return out << "<<" << rect.left() << ", " << rect.top() << ">, <" << rect.width() << " x "
-               << rect.height() << ">>";
-}
-
 GraphicsItem::GraphicsItem(graph_t graph, const QVector<QPointF>& vs)
     : graph_(graph),
       vertexes_(vs),
@@ -52,12 +46,25 @@ GraphicsItem::GraphicsItem(graph_t graph, const QVector<QPointF>& vs)
 
 QRectF GraphicsItem::boundingRect() const
 {
-    return QRectF(vertexes_[0] - QPointF{ 2, 2 }, vertexes_[1] + QPointF{ 2, 2 });
+    int margin = 4;
+    if (graph_ == graph_t::arrow) margin = 30;
+
+    return QRectF(QPointF(std::min(vertexes_[0].x(), vertexes_[1].x()),
+                          std::min(vertexes_[0].y(), vertexes_[1].y())),
+                  QPointF(std::max(vertexes_[0].x(), vertexes_[1].x()),
+                          std::max(vertexes_[0].y(), vertexes_[1].y())))
+        .adjusted(-margin, -margin, margin, margin);
 }
 
-void GraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+void GraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
-    painter->setPen(QPen{ Qt::red, 3, Qt::SolidLine });
+    painter->save();
+
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+
+    painter->setPen(pen_);
+    painter->setBrush(brush_);
 
     painter->setRenderHint(QPainter::Antialiasing, true);
 
@@ -66,57 +73,61 @@ void GraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
     case graph_t::rectangle: painter->drawRect({ vertexes_[0], vertexes_[1] }); break;
     case graph_t::ellipse: painter->drawEllipse({ vertexes_[0], vertexes_[1] }); break;
     case graph_t::arrow:
-        painter->setBrush(painter->pen().color());
+        painter->setPen(QPen(pen_.color(), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin));
+        painter->setBrush(pen_.color());
         painter->drawPolygon(compute_arrow_vertexes(vertexes_[0], vertexes_[1]));
         break;
     case graph_t::line: painter->drawLine({ vertexes_[0], vertexes_[1] }); break;
     case graph_t::curve:
     case graph_t::mosaic:
     case graph_t::eraser: painter->drawPolyline(vertexes_);
-    case graph_t::text: break;
     default: break;
     }
+    painter->restore();
 
     //
-    painter->setRenderHint(QPainter::Antialiasing, false);
+    if (hasFocus()) {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, false);
 
-    painter->save();
-    auto color = QColor("#969696");
-    switch (graph_) {
-    case graph_t::rectangle:
-    case graph_t::ellipse:
-        painter->setBrush(Qt::NoBrush);
+        auto color = QColor("#969696");
+        switch (graph_) {
+        case graph_t::rectangle:
+        case graph_t::ellipse:
+            painter->setBrush(Qt::NoBrush);
 
-        // box border
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->drawRect({ vertexes_[0], vertexes_[1] });
+            // box border
+            painter->setPen(QPen(color, 1, Qt::DashLine));
+            painter->drawRect({ vertexes_[0], vertexes_[1] });
 
-        // anchors
-        painter->setBrush(Qt::white);
-        painter->setPen(QPen(color, 1, Qt::SolidLine));
-        painter->drawRects(Resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
-                                    static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) }
-                               .anchors());
-        break;
+            // anchors
+            painter->setBrush(Qt::white);
+            painter->setPen(QPen(color, 1, Qt::SolidLine));
+            painter->drawRects(
+                Resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
+                         static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) }
+                    .anchors());
+            break;
 
-    case graph_t::line:
-    case graph_t::arrow: {
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->drawLine({ vertexes_[0], vertexes_[1] });
+        case graph_t::line:
+        case graph_t::arrow: {
+            painter->setPen(QPen(color, 1, Qt::DashLine));
+            painter->drawLine({ vertexes_[0], vertexes_[1] });
 
-        painter->setPen(QPen(color, 1, Qt::SolidLine));
-        painter->setBrush(Qt::white);
-        Resizer resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
-                         static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) };
-        painter->drawRect(resizer.X1Y1Anchor());
-        painter->drawRect(resizer.X2Y2Anchor());
-        break;
+            painter->setPen(QPen(color, 1, Qt::SolidLine));
+            painter->setBrush(Qt::white);
+            Resizer resizer{ static_cast<int>(vertexes_[0].x()), static_cast<int>(vertexes_[0].y()),
+                             static_cast<int>(vertexes_[1].x()), static_cast<int>(vertexes_[1].y()) };
+            painter->drawRect(resizer.X1Y1Anchor());
+            painter->drawRect(resizer.X2Y2Anchor());
+            break;
+        }
+
+        default: break;
+        }
+
+        painter->restore();
     }
-
-    default: break;
-    }
-
-    painter->restore();
 }
 
 void GraphicsItem::pushVertex(const QPointF& v)
@@ -125,7 +136,7 @@ void GraphicsItem::pushVertex(const QPointF& v)
     case graph_t::rectangle:
     case graph_t::ellipse:
     case graph_t::arrow:
-    case graph_t::line: vertexes_.back() = v; break;
+    case graph_t::line: vertexes_[1] = v; break;
     case graph_t::curve:
     case graph_t::mosaic:
     case graph_t::eraser: vertexes_.push_back(v); break;
@@ -135,65 +146,172 @@ void GraphicsItem::pushVertex(const QPointF& v)
     update();
 }
 
-void GraphicsItem::focusInEvent(QFocusEvent *)
+bool GraphicsItem::invalid()
+{
+    switch (graph_) {
+    case graph_t::rectangle:
+    case graph_t::ellipse:
+    case graph_t::arrow:
+    case graph_t::line:
+        if (vertexes_.size() >= 2) {
+            auto offset = vertexes_[1] - vertexes_[0];
+            return std::abs(offset.x()) < 4 && std::abs(offset.y()) < 4;
+        }
+        return true;
+    case graph_t::curve:
+    case graph_t::mosaic:
+    case graph_t::eraser: return false;
+    default: return true;
+    }
+}
+
+Resizer::PointPosition GraphicsItem::location(const QPoint& pos)
+{
+    Resizer::PointPosition location = Resizer::DEFAULT;
+
+    switch (graph_) {
+    case graph_t::rectangle: return Resizer({ vertexes_[0], vertexes_[1] }).absolutePos(pos);
+    case graph_t::ellipse: {
+        QRect rect{ vertexes_[0].toPoint(), vertexes_[1].toPoint() };
+
+        QRegion r1(rect.adjusted(-2, -2, 2, 2), QRegion::Ellipse);
+        QRegion r2(rect.adjusted(2, 2, -2, -2), QRegion::Ellipse);
+
+        auto hover_pos = Resizer({ vertexes_[0], vertexes_[1] }).absolutePos(pos);
+        if (!(hover_pos & Resizer::ADJUST_AREA) && r1.contains(pos) && !r2.contains(pos)) {
+            return Resizer::BORDER;
+        }
+
+        return hover_pos;
+    }
+    case graph_t::line:
+    case graph_t::arrow: {
+        Resizer resizer({ vertexes_[0], vertexes_[1] });
+
+        auto x1y1_anchor = resizer.X1Y1Anchor();
+        auto x2y2_anchor = resizer.X2Y2Anchor();
+        QPolygon polygon;
+        polygon.push_back(x1y1_anchor.topLeft());
+        polygon.push_back(x1y1_anchor.bottomRight());
+        polygon.push_back(x2y2_anchor.bottomRight());
+        polygon.push_back(x2y2_anchor.topLeft());
+
+        if (x1y1_anchor.contains(pos)) {
+            return Resizer::X1Y1_ANCHOR;
+        }
+        else if (x2y2_anchor.contains(pos)) {
+            return Resizer::X2Y2_ANCHOR;
+        }
+        else if (polygon.containsPoint(pos, Qt::OddEvenFill)) {
+            return Resizer::BORDER;
+        }
+        return Resizer::DEFAULT;
+    }
+    default: return Resizer::DEFAULT;
+    }
+}
+
+void GraphicsItem::focusInEvent(QFocusEvent *event)
 {
     update();
-    LOG(INFO) << vertexes_[0].x() << ": focusInEvent: " << boundingRect();
+    QGraphicsItem::focusInEvent(event);
 }
 
-void GraphicsItem::focusOutEvent(QFocusEvent *)
+void GraphicsItem::focusOutEvent(QFocusEvent *event)
 {
     update();
-    LOG(INFO) << vertexes_[0].x() << ": focusOutEvent: " << boundingRect();
+    QGraphicsItem::focusOutEvent(event);
 }
 
-void GraphicsItem::hoverEnterEvent(QGraphicsSceneHoverEvent *)
+void GraphicsItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    LOG(INFO) << "hoverEnterEvent: " << boundingRect();
+    QGraphicsItem::hoverEnterEvent(event);
 }
 
-void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *)
+void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-    // LOG(INFO) << "hoverMoveEvent: " << boundingRect();
+    if (status_ == NORMAL) {
+        auto hpos = location(event->pos().toPoint());
+
+        if (hpos != hover_location_ && onhovered) onhovered(hpos);
+
+        hover_location_ = hpos;
+    }
+    QGraphicsItem::hoverMoveEvent(event);
 }
 
-void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *)
+void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    LOG(INFO) << "hoverLeaveEvent: " << boundingRect();
+    hover_location_ = Resizer::OUTSIDE;
+    onhovered(Resizer::OUTSIDE);
+
+    QGraphicsItem::hoverLeaveEvent(event);
 }
 
 void GraphicsItem::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete) {
         setVisible(false);
+        if (ondeleted) ondeleted();
     }
-    LOG(INFO) << vertexes_[0].x() << ": keyPressEvent";
+    QGraphicsItem::keyPressEvent(event);
 }
 
-void GraphicsItem::keyReleaseEvent(QKeyEvent *) { LOG(INFO) << vertexes_[0].x() << ": keyReleaseEvent"; }
+void GraphicsItem::keyReleaseEvent(QKeyEvent *event) { QGraphicsItem::keyReleaseEvent(event); }
 
 void GraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    spos_ = event->pos();
+    if (status_ == SHIELDED) return;
 
-    LOG(INFO) << vertexes_[0].x() << ": mousePressEvent";
-
-    QGraphicsItem::mousePressEvent(event);
+    location_ = location(event->pos().toPoint());
+    if (location_ & Resizer::ANCHOR) {
+        status_ = RESIZING;
+        spos_   = event->pos();
+    }
+    else if (location_ & Resizer::BORDER) {
+        status_ = MOVING;
+        QGraphicsItem::mousePressEvent(event);
+    }
 }
 
 void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    auto offset = event->pos() - spos_;
-    // moveBy(offset.x(), offset.y());
+    auto cursor_pos = event->pos().toPoint();
 
-    LOG(INFO) << vertexes_[0].x() << ": mouseMoveEvent: (" << boundingRect().x() << ", "
-              << boundingRect().y() << "), " << boundingRect().width() << "x" << boundingRect().height();
+    switch (status_) {
+    case MOVING: QGraphicsItem::mouseMoveEvent(event); break;
+    case RESIZING: {
+        Resizer resizer(vertexes_[0], vertexes_[1]);
+        // clang-format off
+        switch (location_) {
+        case Resizer::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case Resizer::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case Resizer::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case Resizer::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case Resizer::X1_ANCHOR:    resizer.x1(cursor_pos.x()); break;
+        case Resizer::X2_ANCHOR:    resizer.x2(cursor_pos.x()); break;
+        case Resizer::Y1_ANCHOR:    resizer.y1(cursor_pos.y()); break;
+        case Resizer::Y2_ANCHOR:    resizer.y2(cursor_pos.y()); break;
+        default: break;
+        }
+        // clang-format on
+        vertexes_[0] = resizer.point1();
+        vertexes_[1] = resizer.point2();
 
-    QGraphicsItem::mouseMoveEvent(event);
+        prepareGeometryChange();
+
+        update();
+
+        break;
+    }
+    default: break;
+    }
 }
 
 void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    LOG(INFO) << vertexes_[0].x() << ": mouseReleaseEvent";
+    if (status_ == MOVING || status_ == RESIZING) {
+        status_ = NORMAL;
+    }
     QGraphicsItem::mouseReleaseEvent(event);
 }

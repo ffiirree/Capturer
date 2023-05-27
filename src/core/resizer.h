@@ -35,6 +35,8 @@ public:
 
         INSIDE      = 0x00010000,
         OUTSIDE     = 0x00020000,
+        EDITAREA    = 0x00040000,
+
         ADJUST_AREA = BORDER | ANCHOR | ROTATE_ANCHOR
     };
 
@@ -49,6 +51,11 @@ public:
 
     Resizer(const QPoint& p1, const QPoint& p2, int resize_border_width = 5)
         : Resizer(p1.x(), p1.y(), p2.x(), p2.y(), resize_border_width) { }
+
+    Resizer(const QPointF& p1, const QPointF& p2, int resize_border_width = 5)
+        : Resizer(static_cast<int>(p1.x()), static_cast<int>(p1.y()), static_cast<int>(p2.x()),
+                  static_cast<int>(p2.y()), resize_border_width)
+    {}
 
     Resizer(const QPoint& p1, const QSize& s, int resize_border_width = 5)
         : Resizer(p1.x(), p1.y(), p1.x() + s.width() - 1, p1.y() + s.height() - 1, resize_border_width) { }
@@ -380,5 +387,32 @@ protected:
 
     int ADJUST_BORDER_W_ = 1;
 };
+
+
+inline QCursor getCursorByLocation(Resizer::PointPosition pos, const QCursor& default_cursor = Qt::CrossCursor)
+{
+    switch (pos) {
+    // clang-format off
+    case Resizer::EDITAREA:      return Qt::IBeamCursor;
+    case Resizer::X1_ANCHOR:
+    case Resizer::X2_ANCHOR:     return Qt::SizeHorCursor;
+    case Resizer::Y1_ANCHOR:
+    case Resizer::Y2_ANCHOR:     return Qt::SizeVerCursor;
+    case Resizer::X1Y1_ANCHOR:
+    case Resizer::X2Y2_ANCHOR:   return Qt::SizeFDiagCursor;
+    case Resizer::X1Y2_ANCHOR:
+    case Resizer::X2Y1_ANCHOR:   return Qt::SizeBDiagCursor;
+
+    case Resizer::BORDER:
+    case Resizer::X1_BORDER:
+    case Resizer::X2_BORDER:
+    case Resizer::Y1_BORDER:
+    case Resizer::Y2_BORDER:     return Qt::SizeAllCursor;
+    case Resizer::ROTATE_ANCHOR: return QCursor{ QPixmap(":/icon/res/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
+
+    default:                     return default_cursor;
+    // clang-format on
+    }
+}
 
 #endif // RESIZER_H

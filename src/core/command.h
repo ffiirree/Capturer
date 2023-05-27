@@ -52,9 +52,9 @@ private:
     QGraphicsItem *item_{};
 };
 
-struct CreateCommand : public Command
+struct CreatedCommand : public Command
 {
-    CreateCommand(QGraphicsItem *item)
+    CreatedCommand(QGraphicsItem *item)
         : item_(item)
     {}
 

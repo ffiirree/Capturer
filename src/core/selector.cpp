@@ -32,17 +32,15 @@ void Selector::status(SelectorStatus status)
     if (status_ == status) return;
 
     status_ = status;
+    setAttribute(Qt::WA_TransparentForMouseEvents, status == SelectorStatus::LOCKED);
 
     switch (status) {
     case SelectorStatus::CAPTURED:
         update();
         emit captured();
         break;
-    case SelectorStatus::LOCKED:
-        setAttribute(Qt::WA_TransparentForMouseEvents, true);
-        emit locked();
-        break;
-    default: setAttribute(Qt::WA_TransparentForMouseEvents, false); break;
+    case SelectorStatus::LOCKED: emit locked(); break;
+    default: break;
     }
 
     emit statusChanged(status_);

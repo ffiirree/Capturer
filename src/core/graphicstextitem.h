@@ -2,6 +2,7 @@
 #define CAPTURER_GRAPHICS_TEXT_ITEM_H
 
 #include "command.h"
+#include "resizer.h"
 #include "utils.h"
 
 #include <QGraphicsTextItem>
@@ -11,6 +12,14 @@ class GraphicsTextItem : public QGraphicsTextItem
 {
 public:
     GraphicsTextItem(const QString&, const QPointF& vs);
+
+    Resizer::PointPosition location(const QPoint&);
+    std::function<void(Resizer::PointPosition)> onhovered;
+    std::function<void()> ondeleted;
+    std::function<void()> onresized;
+    std::function<void(const QPoint&)> onmoved;
+    std::function<void()> onfocus;
+    std::function<void()> onblur;
 
 signals:
     void changed(const std::shared_ptr<Command>&);

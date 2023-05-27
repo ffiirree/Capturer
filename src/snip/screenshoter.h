@@ -5,6 +5,7 @@
 #include "command.h"
 #include "config.h"
 #include "hunter.h"
+#include "resizer.h"
 
 #include <QGraphicsView>
 #include <QPixmap>
@@ -51,7 +52,7 @@ public slots:
     void save();
     void copy();
     void pin();
-    QPixmap snip();
+    std::pair<QPixmap, QPoint> snip();
     void save2clipboard(const QPixmap&, bool);
 
     void updateTheme();
@@ -59,10 +60,12 @@ public slots:
     void moveMenu();
 
 protected:
-    // bool eventFilter(QObject *, QEvent *) override;
+    //bool eventFilter(QObject *, QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
+    void wheelEvent(QWheelEvent *) override;
 
     void keyPressEvent(QKeyEvent *) override;
     void keyReleaseEvent(QKeyEvent *) override;
@@ -71,10 +74,16 @@ protected:
 
 private:
     void registerShortcuts();
+    void updateCursor();
+    QBrush mosaicBrush();
 
     Selector *selector_{}; // Layer 1
 
     uint32_t editstatus_{};
+
+    Resizer::PointPosition hover_postion_{};
+
+    std::pair<QGraphicsItem *, graph_t> created_item_;
 
     ImageEditMenu *menu_{};  // Edit menu
     Magnifier *magnifier_{}; // Magnifier

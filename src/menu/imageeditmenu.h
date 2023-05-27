@@ -57,7 +57,6 @@ signals:
     void redo();
 
 public slots:
-
     void disableUndo(bool val) { undo_btn_->setDisabled(val); }
 
     void disableRedo(bool val) { redo_btn_->setDisabled(val); }
