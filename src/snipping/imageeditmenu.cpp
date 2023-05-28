@@ -1,5 +1,10 @@
 #include "imageeditmenu.h"
 
+#include "buttongroup.h"
+#include "stylemenu.h"
+
+#include <map>
+#include <QBrush>
 #include <QCheckBox>
 #include <QHBoxLayout>
 #include <QMoveEvent>
@@ -55,13 +60,13 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
         btn_menus_[graph_t::mosaic].first->setObjectName("mosaic-btn");
         btn_menus_[graph_t::mosaic].first->setToolTip(tr("Mosaic"));
         btn_menus_[graph_t::mosaic].second = new StyleMenu(StyleMenu::WIDTH_BTN, this);
-        btn_menus_[graph_t::mosaic].second->lineWidth(15);
+        // btn_menus_[graph_t::mosaic].second->lineWidth(15);
 
         btn_menus_[graph_t::eraser].first = new QCheckBox(this);
         btn_menus_[graph_t::eraser].first->setObjectName("eraser-btn");
         btn_menus_[graph_t::eraser].first->setToolTip(tr("Eraser"));
         btn_menus_[graph_t::eraser].second = new StyleMenu(StyleMenu::WIDTH_BTN, this);
-        btn_menus_[graph_t::eraser].second->lineWidth(15);
+        // btn_menus_[graph_t::eraser].second->lineWidth(15);
 
         for (auto&& [g, bm] : btn_menus_) {
             auto graph = g;
@@ -71,7 +76,11 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             group_->addButton(btn);
             addWidget(btn);
 
-            connect(menu, &EditMenu::changed, this, &ImageEditMenu::changed);
+            connect(menu, &EditMenu::penChanged, this, &ImageEditMenu::penChanged);
+            connect(menu, &EditMenu::brushChanged, this, &ImageEditMenu::brushChanged);
+            connect(menu, &EditMenu::fontChanged, this, &ImageEditMenu::fontChanged);
+            connect(menu, &EditMenu::fillChanged, this, &ImageEditMenu::fillChanged);
+
             connect(this, &EditMenu::moved, [=, this]() {
                 if (menu->isVisible())
                     menu->move(pos().x(), pos().y() + (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));
@@ -157,28 +166,44 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
     }
 }
 
-QColor ImageEditMenu::color() { return any(graph_) ? btn_menus_[graph_].second->color() : Qt::red; }
+void ImageEditMenu::disableUndo(bool val) { undo_btn_->setDisabled(val); }
 
-void ImageEditMenu::color(const QColor& c)
+void ImageEditMenu::disableRedo(bool val) { redo_btn_->setDisabled(val); }
+
+void ImageEditMenu::paintGraph(graph_t graph)
 {
-    if (any(graph_)) btn_menus_[graph_].second->color(c);
+    graph_ = graph;
+    btn_menus_[graph].first->setChecked(true);
 }
 
-int ImageEditMenu::lineWidth() { return any(graph_) ? btn_menus_[graph_].second->lineWidth() : 3; }
-
-void ImageEditMenu::lineWidth(int w)
+QPen ImageEditMenu::pen() const
 {
-    if (any(graph_)) btn_menus_[graph_].second->lineWidth(w);
+    return any(graph_) ? btn_menus_.at(graph_).second->pen() : QPen{ Qt::red };
 }
 
-bool ImageEditMenu::fill() { return any(graph_) ? btn_menus_[graph_].second->fill() : false; }
-
-void ImageEditMenu::fill(bool fill)
+void ImageEditMenu::pen(const QPen& pen)
 {
-    if (any(graph_)) btn_menus_[graph_].second->fill(fill);
+    if (any(graph_)) btn_menus_.at(graph_).second->pen(pen);
 }
 
-QFont ImageEditMenu::font() { return any(graph_) ? btn_menus_[graph_].second->font() : QFont(); }
+QBrush ImageEditMenu::brush() const
+{
+    return any(graph_) ? btn_menus_.at(graph_).second->brush() : QBrush{};
+}
+
+void ImageEditMenu::brush(const QBrush& brush)
+{
+    if (any(graph_)) btn_menus_.at(graph_).second->brush(brush);
+}
+
+bool ImageEditMenu::fill() const { return any(graph_) ? btn_menus_.at(graph_).second->fill() : false; }
+
+void ImageEditMenu::fill(bool v)
+{
+    if (any(graph_)) btn_menus_[graph_].second->fill(v);
+}
+
+QFont ImageEditMenu::font() const { return any(graph_) ? btn_menus_.at(graph_).second->font() : QFont{}; }
 
 void ImageEditMenu::font(const QFont& font)
 {

@@ -109,13 +109,11 @@ target_link_libraries(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         3rdparty
-        src/core
-        src/media
+        src/common
+        src/multimedia
         src/widgets
-        src/menu
-        src/pinned
-        src/snip
-        src/record
+        src/preview
+        src/snipping
         src/setting
         ${PULSEAUDIO_INCLUDE_DIR}
         ${PROJECT_BINARY_DIR} # Generated header files
@@ -143,8 +141,8 @@ elseif(UNIX AND NOT APPLE)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/capturer/translations")
     install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
-    install(FILES "${PROJECT_SOURCE_DIR}/src/res/capturer.png" DESTINATION "/usr/share/pixmaps")
-    install(FILES "${PROJECT_SOURCE_DIR}/src/res/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
+    install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/pixmaps")
+    install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
 endif()
 
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake")

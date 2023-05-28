@@ -26,7 +26,7 @@ Capturer::Capturer(QWidget *parent)
 
     connect(sniper_, &ScreenShoter::pinSnipped, this, &Capturer::pinPixmap);
 
-    sys_tray_icon_ = new QSystemTrayIcon(QIcon(":/icon/res/capturer.png"), this);
+    sys_tray_icon_ = new QSystemTrayIcon(QIcon(":/icons/capturer"), this);
 
     snip_sc_ = new QHotkey(this);
     connect(snip_sc_, &QHotkey::activated, sniper_, &ScreenShoter::start);
@@ -54,7 +54,7 @@ Capturer::Capturer(QWidget *parent)
 
     updateConfig();
 
-    setWindowIcon(QIcon(":/icon/res/capturer.png"));
+    setWindowIcon(QIcon(":/icons/capturer"));
 
     // show message
     connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
@@ -108,15 +108,15 @@ void Capturer::setupSystemTray()
 #endif
         // clang-format off
         menu->clear();
-        menu->addAction(QIcon(":/icon/res/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
-        menu->addAction(QIcon(":/icon/res/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record);
-        menu->addAction(QIcon(":/icon/res/gif-" + icon_color),          tr("Record GIF"),   gifcptr_, &ScreenRecorder::record);
+        menu->addAction(QIcon(":/icons/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
+        menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record);
+        menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_, &ScreenRecorder::record);
         menu->addSeparator();
-        menu->addAction(QIcon(":/icon/res/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
+        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
         menu->addSeparator();
-        menu->addAction(QIcon(":/icon/res/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
+        menu->addAction(QIcon(":/icons/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
         menu->addSeparator();
-        menu->addAction(QIcon(":/icon/res/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
+        menu->addAction(QIcon(":/icons/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
         // clang-format on
     };
 

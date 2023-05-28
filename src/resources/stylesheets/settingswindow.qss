@@ -7,7 +7,7 @@ TitleBar QCheckBox#logo {
 }
 
 TitleBar QCheckBox#logo::indicator {
-    image: url(:/icon/res/capturer);
+    image: url(:/icons/capturer);
     font-size: 9pt;
     height: 2.25em;
     width: 2.25em;
@@ -25,7 +25,7 @@ TitleBar QCheckBox#close-btn::indicator {
 
 TitleBar QCheckBox#close-btn::indicator:hover {
     background-color: #e81123;
-    image: url(:/icon/res/close-light);
+    image: url(:/icons/close-light);
 }
 
 SettingWindow QListWidget {

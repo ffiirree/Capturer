@@ -58,9 +58,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::changed, [this]() {
-        if (scene()->focusItem()) {}
-    });
+    //connect(menu_, &ImageEditMenu::changed, [this]() {
+    //    if (scene()->focusItem()) {}
+    //});
 
     // show menu
     connect(selector_, &Selector::captured, [this]() {
@@ -170,7 +170,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         if (menu_->graph() == graph_t::text) {
             auto item = new GraphicsTextItem("", pos);
             item->setFont(menu_->font());
-            item->setDefaultTextColor(menu_->color());
+            item->setDefaultTextColor(menu_->pen().color());
             scene()->addItem(item);
             item->setFocus();
             created_item_   = { item, graph_t::text };
@@ -183,7 +183,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         else {
             editstatus_ = EditStatus::GRAPH_CREATING;
 
-            QPen pen(menu_->color(), menu_->lineWidth());
+            QPen pen = menu_->pen();
 
             if (menu_->graph() == graph_t::mosaic) {
                 auto background = backgroundBrush().textureImage();
@@ -195,7 +195,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
             auto item = new GraphicsItem(menu_->graph(), { pos, pos });
             item->setPen(pen);
-            if (menu_->fill()) item->setBrush(menu_->color());
+            if (menu_->fill()) item->setBrush(menu_->brush());
             scene()->addItem(item);
             item->setFocus();
             item->onhovered = [this](auto p) {
@@ -211,7 +211,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 void ScreenShoter::updateCursor()
 {
     if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
-        circle_cursor_.setWidth(menu_->lineWidth());
+        circle_cursor_.setWidth(menu_->pen().width());
         setCursor(QCursor(circle_cursor_.cursor()));
     }
     else {
@@ -257,8 +257,9 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
     if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
         auto delta = event->angleDelta().y() / 120;
-        menu_->lineWidth(std::min(menu_->lineWidth() + delta, 49));
-        circle_cursor_.setWidth(menu_->lineWidth());
+        auto width = std::min(menu_->pen().width() + delta, 49);
+        menu_->pen(QPen(QBrush{}, width));
+        circle_cursor_.setWidth(width);
         setCursor(QCursor(circle_cursor_.cursor()));
     }
 }
@@ -303,15 +304,15 @@ void ScreenShoter::moveMenu()
 
     if (area.bottom() + (menu_->height() * 2 + 8 /*margin*/) < geometry().bottom()) {
         menu_->move(right, area.bottom() + 6);
-        menu_->setSubMenuShowBelow();
+        menu_->setSubMenuShowAbove(false);
     }
     else if (area.top() - (menu_->height() * 2 + 8) > 0) {
         menu_->move(right, area.top() - menu_->height() - 6);
-        menu_->setSubMenuShowAbove();
+        menu_->setSubMenuShowAbove(true);
     }
     else {
         menu_->move(right, area.bottom() - menu_->height() - 6);
-        menu_->setSubMenuShowAbove();
+        menu_->setSubMenuShowAbove(true);
     }
 }
 

@@ -11,7 +11,7 @@ TitleBar QCheckBox#logo {
 }
 
 TitleBar QCheckBox#close-btn::indicator {
-    image: url(:/icon/res/close-light);
+    image: url(:/icons/close-light);
 }
 
 SettingWindow QListWidget {

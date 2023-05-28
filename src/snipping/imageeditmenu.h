@@ -1,11 +1,12 @@
 #ifndef IMAGE_EDIT_MENU_H
 #define IMAGE_EDIT_MENU_H
 
-#include "buttongroup.h"
-#include "stylemenu.h"
+#include "editmenu.h"
 #include "utils.h"
 
-#include <QCheckBox>
+class QAbstractButton;
+class ButtonGroup;
+class QCheckBox;
 
 class ImageEditMenu : public EditMenu
 {
@@ -29,21 +30,28 @@ public:
 
     graph_t graph() const { return graph_; }
 
-    QColor color() override;
-    void color(const QColor& c) override;
+    // pen
+    QPen pen() const override;
 
-    int lineWidth() override;
-    void lineWidth(int w) override;
+    void pen(const QPen&) override;
 
-    bool fill() override;
-    void fill(bool fill) override;
+    // brush
+    QBrush brush() const override;
 
-    QFont font() override;
+    void brush(const QBrush&) override;
+
+    // fill: pen | brush
+    bool fill() const override;
+
+    void fill(bool) override;
+
+    // font
+    QFont font() const override;
+
     void font(const QFont& font) override;
 
-    void setSubMenuShowAbove() { sub_menu_show_pos_ = true; }
-
-    void setSubMenuShowBelow() { sub_menu_show_pos_ = false; }
+    // submenu position
+    void setSubMenuShowAbove(bool v) { sub_menu_show_pos_ = v; }
 
 signals:
     void save();
@@ -57,15 +65,10 @@ signals:
     void redo();
 
 public slots:
-    void disableUndo(bool val) { undo_btn_->setDisabled(val); }
+    void disableUndo(bool val);
+    void disableRedo(bool val);
 
-    void disableRedo(bool val) { redo_btn_->setDisabled(val); }
-
-    void paintGraph(graph_t graph)
-    {
-        graph_ = graph;
-        btn_menus_[graph].first->setChecked(true);
-    }
+    void paintGraph(graph_t graph);
 
 private:
     QCheckBox *undo_btn_{ nullptr };

@@ -1,6 +1,6 @@
 /*///////////////////////////////////////////////////////////////*/
 QCheckBox::indicator {
-    image: url(:/icon/res/checkbox-unchecked-light);
+    image: url(:/icons/checkbox-unchecked-light);
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -11,11 +11,11 @@ QComboBox {
 }
 
 QComboBox::down-arrow {
-    image: url(:/icon/res/arrow_down-light.png);
+    image: url(:/icons/arrow-down-light);
 }
 
 QComboBox::down-arrow:on {
-    image: url(:/icon/res/arrow_up-light.png);
+    image: url(:/icons/arrow-up-light);
 }
 
 QComboBox:hover {
@@ -92,11 +92,11 @@ QSpinBox::down-button:pressed {
 }
 
 QSpinBox::up-arrow {
-    image: url(:/icon/res/arrow_up-light);
+    image: url(:/icons/arrow-up-light);
 }
 
 QSpinBox::down-arrow {
-    image: url(:/icon/res/arrow_down-light);
+    image: url(:/icons/arrow-down-light);
 }
 
 /*///////////////////////////////////////////////////////////////*/

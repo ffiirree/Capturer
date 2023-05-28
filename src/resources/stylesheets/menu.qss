@@ -22,7 +22,7 @@ RecordMenu QLabel#time {
 }
 
 RecordMenu QCheckBox#stop-btn::indicator {
-    image: url(:/icon/res/stop.png);
+    image: url(:/icons/stop);
 }
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
@@ -40,43 +40,43 @@ ImageEditMenu QCheckBox::indicator::checked {
 }
 
 ImageEditMenu QCheckBox#rect-btn::indicator:checked {
-    image: url(:/icon/res/rectangle);
+    image: url(:/icons/rectangle);
 }
 
 ImageEditMenu QCheckBox#circle-btn::indicator:checked {
-    image: url(:/icon/res/circle);
+    image: url(:/icons/circle);
 }
 
 ImageEditMenu QCheckBox#arrow-btn::indicator:checked {
-    image: url(:/icon/res/arrow);
+    image: url(:/icons/arrow);
 }
 
 ImageEditMenu QCheckBox#line-btn::indicator:checked {
-    image: url(:/icon/res/line);
+    image: url(:/icons/line);
 }
 
 ImageEditMenu QCheckBox#pen-btn::indicator:checked {
-    image: url(:/icon/res/feather);
+    image: url(:/icons/feather);
 }
 
 ImageEditMenu QCheckBox#text-btn::indicator:checked {
-    image: url(:/icon/res/text);
+    image: url(:/icons/text);
 }
 
 ImageEditMenu QCheckBox#eraser-btn::indicator:checked {
-    image: url(:/icon/res/eraser);
+    image: url(:/icons/eraser);
 }
 
 ImageEditMenu QCheckBox#mosaic-btn::indicator:checked {
-    image: url(:/icon/res/mosaic);
+    image: url(:/icons/mosaic);
 }
 
 ImageEditMenu QCheckBox#close-btn::indicator {
-    image: url(:/icon/res/wrong);
+    image: url(:/icons/wrong);
 }
 
 ImageEditMenu QCheckBox#ok-btn::indicator {
-    image: url(:/icon/res/right);
+    image: url(:/icons/right);
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
@@ -99,39 +99,39 @@ StyleMenu QCheckBox#width-btn::indicator {
     width: 1.5em;
     padding: 0.5em;
 
-    image: url(:/icon/res/dot-2);
+    image: url(:/icons/dot-2);
 }
 
 StyleMenu QCheckBox#width-btn[width="1"]::indicator:checked {
-    image: url(:/icon/res/dot-1);
+    image: url(:/icons/dot-1);
 }
 
 StyleMenu QCheckBox#width-btn[width="2"]::indicator:checked {
-    image: url(:/icon/res/dot-2);
+    image: url(:/icons/dot-2);
 }
 
 StyleMenu QCheckBox#width-btn[width="3"]::indicator:checked {
-    image: url(:/icon/res/dot-3);
+    image: url(:/icons/dot-3);
 }
 
 StyleMenu QCheckBox#width-btn[width="4"]::indicator:checked {
-    image: url(:/icon/res/dot-4);
+    image: url(:/icons/dot-4);
 }
 
 StyleMenu QCheckBox#width-btn[width="5"]::indicator:checked {
-    image: url(:/icon/res/dot-5);
+    image: url(:/icons/dot-5);
 }
 
 StyleMenu QCheckBox#width-btn[width="6"]::indicator:checked {
-    image: url(:/icon/res/dot-6);
+    image: url(:/icons/dot-6);
 }
 
 StyleMenu QCheckBox#width-btn[width="7"]::indicator:checked {
-    image: url(:/icon/res/dot-7);
+    image: url(:/icons/dot-7);
 }
 
 StyleMenu QCheckBox#width-btn[width="8"]::indicator:checked {
-    image: url(:/icon/res/dot-8);
+    image: url(:/icons/dot-8);
 }
 
 StyleMenu QCheckBox#fill-btn::indicator {
@@ -141,7 +141,7 @@ StyleMenu QCheckBox#fill-btn::indicator {
 }
 
 StyleMenu QCheckBox#fill-btn::indicator:checked {
-    image: url(:/icon/res/fill);
+    image: url(:/icons/fill);
 }
 
 StyleMenu ColorPanel {

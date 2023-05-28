@@ -13,11 +13,11 @@ QCheckBox::indicator {
 }
 
 QCheckBox::indicator:checked {
-    image: url(:/icon/res/checkbox-checked);
+    image: url(:/icons/checkbox-checked);
 }
 
 QCheckBox::indicator:unchecked:hover {
-    image: url(:/icon/res/checkbox-unchecked-hover);
+    image: url(:/icons/checkbox-unchecked-hover);
 }
 
 /*///////////////////////////////////////////////////////////////*/

@@ -408,7 +408,7 @@ inline QCursor getCursorByLocation(Resizer::PointPosition pos, const QCursor& de
     case Resizer::X2_BORDER:
     case Resizer::Y1_BORDER:
     case Resizer::Y2_BORDER:     return Qt::SizeAllCursor;
-    case Resizer::ROTATE_ANCHOR: return QCursor{ QPixmap(":/icon/res/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
+    case Resizer::ROTATE_ANCHOR: return QCursor{ QPixmap(":/icons/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
 
     default:                     return default_cursor;
     // clang-format on

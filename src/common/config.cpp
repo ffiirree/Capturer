@@ -221,12 +221,12 @@ void Config::load_theme(const std::string& theme)
         emit theme_changed();
 
         std::vector<QString> files{
-            ":/qss/capturer.qss",
-            ":/qss/capturer-" + QString::fromStdString(theme) + ".qss",
-            ":/qss/menu/menu.qss",
-            ":/qss/menu/menu-" + QString::fromStdString(theme) + ".qss",
-            ":/qss/setting/settingswindow.qss",
-            ":/qss/setting/settingswindow-" + QString::fromStdString(theme) + ".qss",
+            ":/stylesheets/capturer",
+            ":/stylesheets/capturer-" + QString::fromStdString(theme),
+            ":/stylesheets/menu",
+            ":/stylesheets/menu-" + QString::fromStdString(theme),
+            ":/stylesheets/settingswindow",
+            ":/stylesheets/settingswindow-" + QString::fromStdString(theme),
         };
 
         QString style{};
