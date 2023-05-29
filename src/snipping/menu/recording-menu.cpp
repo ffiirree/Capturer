@@ -1,4 +1,4 @@
-#include "record_menu.h"
+#include "recording-menu.h"
 
 #include "probe/graphics.h"
 

@@ -32,9 +32,9 @@ private:
     QPointF offset_{};
 };
 
-struct DeleteCommand : public Command
+struct DeletedCommand : public Command
 {
-    DeleteCommand(QGraphicsItem *item)
+    DeletedCommand(QGraphicsItem *item)
         : item_(item)
     {}
 
@@ -70,6 +70,50 @@ struct CreatedCommand : public Command
 
 private:
     QGraphicsItem *item_{};
+};
+
+struct MovedCommand : public Command
+{
+    MovedCommand(QGraphicsItem *item, const QPointF& offset)
+        : item_(item),
+          offset_(offset)
+    {}
+
+    void redo()
+    {
+        if (item_) item_->moveBy(offset_.x(), offset_.y());
+    }
+
+    void undo()
+    {
+        if (item_) item_->moveBy(-offset_.x(), -offset_.y());
+    }
+
+private:
+    QGraphicsItem *item_{};
+    QPointF offset_{};
+};
+
+struct ResizedCommand : public Command
+{
+    ResizedCommand(QGraphicsItem *item, const QMarginsF& margins)
+        : item_(item),
+          margins_(margins)
+    {}
+
+    void redo()
+    {
+        //if (item_) item_->
+    }
+
+    void undo()
+    {
+        //if (item_) item_->moveBy(-offset_.x(), -offset_.y());
+    }
+
+private:
+    QGraphicsItem *item_{};
+    QMarginsF margins_{};
 };
 
 class CommandStack : public QObject

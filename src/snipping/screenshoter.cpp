@@ -1,10 +1,9 @@
 #include "screenshoter.h"
 
-#include "graphicsitem.h"
-#include "graphicstextitem.h"
-#include "imageeditmenu.h"
+#include "canvas/graphicsitems.h"
 #include "logging.h"
 #include "magnifier.h"
+#include "menu/editing-menu.h"
 #include "selector.h"
 
 #include <QApplication>
@@ -58,9 +57,17 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    //connect(menu_, &ImageEditMenu::changed, [this]() {
-    //    if (scene()->focusItem()) {}
-    //});
+    connect(menu_, &ImageEditMenu::styleChanged, [this]() {
+        if (!scene()->focusItem()) return;
+
+        auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+        if (menu_->graph() != item->graph()) return;
+
+        item->fill(menu_->fill());
+        item->setPen(menu_->pen());
+        item->setBrush(menu_->brush());
+        item->setFont(menu_->font());
+    });
 
     // show menu
     connect(selector_, &Selector::captured, [this]() {
@@ -124,7 +131,7 @@ void ScreenShoter::exit()
     scene()->clear();
 
     hover_postion_ = Resizer::DEFAULT;
-    created_item_  = {};
+    creating_item_ = {};
 
     commands_.clear();
 
@@ -157,57 +164,6 @@ QBrush ScreenShoter::mosaicBrush()
         .scaled(pixmap.size());
 }
 
-void ScreenShoter::mousePressEvent(QMouseEvent *event)
-{
-    created_item_ = {};
-
-    QGraphicsView::mousePressEvent(event);
-
-    if (event->button() == Qt::LeftButton && !(hover_postion_ & Resizer::ADJUST_AREA) &&
-        !(hover_postion_ & Resizer::EDITAREA)) {
-        auto pos = event->pos();
-
-        if (menu_->graph() == graph_t::text) {
-            auto item = new GraphicsTextItem("", pos);
-            item->setFont(menu_->font());
-            item->setDefaultTextColor(menu_->pen().color());
-            scene()->addItem(item);
-            item->setFocus();
-            created_item_   = { item, graph_t::text };
-            item->onhovered = [this](auto p) {
-                hover_postion_ = p;
-                updateCursor();
-            };
-            commands_.push(std::make_shared<CreatedCommand>(item));
-        }
-        else {
-            editstatus_ = EditStatus::GRAPH_CREATING;
-
-            QPen pen = menu_->pen();
-
-            if (menu_->graph() == graph_t::mosaic) {
-                auto background = backgroundBrush().textureImage();
-                pen.setBrush(mosaicBrush());
-            }
-            else if (menu_->graph() == graph_t::eraser) {
-                pen.setBrush(QBrush(backgroundBrush().textureImage()));
-            }
-
-            auto item = new GraphicsItem(menu_->graph(), { pos, pos });
-            item->setPen(pen);
-            if (menu_->fill()) item->setBrush(menu_->brush());
-            scene()->addItem(item);
-            item->setFocus();
-            item->onhovered = [this](auto p) {
-                hover_postion_ = p;
-                updateCursor();
-            };
-            item->ondeleted = [item, this]() { commands_.push(std::make_shared<DeleteCommand>(item)); };
-            created_item_   = { item, menu_->graph() };
-        }
-    }
-}
-
 void ScreenShoter::updateCursor()
 {
     if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
@@ -219,45 +175,108 @@ void ScreenShoter::updateCursor()
     }
 }
 
+void ScreenShoter::mousePressEvent(QMouseEvent *event)
+{
+    creating_item_ = {};
+
+    if (event->button() == Qt::LeftButton && !(hover_postion_ & Resizer::ADJUST_AREA) &&
+        !(hover_postion_ & Resizer::EDITAREA)) {
+        auto pos = event->pos();
+
+        editstatus_ = EditStatus::GRAPH_CREATING;
+
+        QGraphicsItem *item = nullptr;
+        QPen pen            = menu_->pen();
+
+        switch (menu_->graph()) {
+        case graph_t::text: item = new GraphicsTextItem(pos); break;
+        case graph_t::rectangle: item = new GraphicsRectItem(pos, pos); break;
+        case graph_t::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
+        case graph_t::arrow: item = new GraphicsArrowItem(pos, pos); break;
+        case graph_t::line: item = new GraphicsLineItem(pos, pos); break;
+
+        case graph_t::eraser:
+            item = new GraphicsEraserItem(pos);
+            pen.setBrush(QBrush(backgroundBrush().textureImage()));
+
+            dynamic_cast<GraphicsEraserItem *>(item)->setPen(pen);
+            break;
+
+        case graph_t::mosaic:
+            pen.setBrush(mosaicBrush());
+            item = new GraphicsMosaicItem(pos);
+            dynamic_cast<GraphicsMosaicItem *>(item)->setPen(pen);
+            break;
+        case graph_t::curve: item = new GraphicsCurveItem(pos); break;
+
+        default: break;
+        }
+
+        creating_item_ = { dynamic_cast<GraphicsItemInterface *>(item), menu_->graph() };
+
+        creating_item_.first->setPen(pen);
+        creating_item_.first->setBrush(menu_->brush());
+        creating_item_.first->setFont(menu_->font());
+        creating_item_.first->fill(menu_->fill());
+
+        creating_item_.first->onhovered([this](auto p) { hover_postion_ = p; });
+        creating_item_.first->onfocused([citem = creating_item_.first, this]() {
+            menu_->paintGraph(citem->graph());
+            menu_->fill(citem->filled());
+            menu_->pen(citem->pen());
+            menu_->brush(citem->brush());
+            menu_->font(citem->font());
+        });
+        creating_item_.first->onchanged([this](auto cmd) { commands_.push(cmd); });
+
+        scene()->addItem(item);
+        item->setFocus();
+    }
+    else {
+        QGraphicsView::mousePressEvent(event);
+    }
+}
+
 void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
 
-    if ((event->buttons() & Qt::LeftButton) && editstatus_ == EditStatus::GRAPH_CREATING) {
-        if (scene()->focusItem() == created_item_.first) {
-            reinterpret_cast<GraphicsItem *>(scene()->focusItem())->pushVertex(pos);
+    if ((event->buttons() & Qt::LeftButton) && creating_item_.first &&
+        editstatus_ == EditStatus::GRAPH_CREATING) {
+        switch (creating_item_.second) {
+        case graph_t::text: break;
+        default: creating_item_.first->push(pos); break;
         }
     }
 
+    // updateCursor();
     QGraphicsView::mouseMoveEvent(event);
 }
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton) && editstatus_ == EditStatus::GRAPH_CREATING) {
-        if (created_item_.first && scene()->focusItem() == created_item_.first &&
-            created_item_.second != graph_t::none) {
-            if (created_item_.second != graph_t::text) {
-                auto item = reinterpret_cast<GraphicsItem *>(scene()->focusItem());
-                if (!item->invalid()) {
-                    commands_.push(std::make_shared<CreatedCommand>(scene()->focusItem()));
-                }
-                else {
-                    scene()->removeItem(item);
-                }
-            }
+    if ((event->button() == Qt::LeftButton) && creating_item_.first &&
+        editstatus_ == EditStatus::GRAPH_CREATING) {
+        if (creating_item_.first->invalid() && creating_item_.second != graph_t::text) {
+            scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_.first));
         }
-        editstatus_ = EditStatus::READY;
+        else {
+            commands_.push(
+                std::make_shared<CreatedCommand>(dynamic_cast<QGraphicsItem *>(creating_item_.first)));
+        }
     }
+
+    editstatus_    = EditStatus::READY;
+    creating_item_ = {};
+
     QGraphicsView::mouseReleaseEvent(event);
-    created_item_ = {};
 }
 
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
     if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
         auto delta = event->angleDelta().y() / 120;
-        auto width = std::min(menu_->pen().width() + delta, 49);
+        auto width = std::clamp(menu_->pen().width() + delta, 5, 49);
         menu_->pen(QPen(QBrush{}, width));
         circle_cursor_.setWidth(width);
         setCursor(QCursor(circle_cursor_.cursor()));

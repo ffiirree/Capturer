@@ -1,8 +1,6 @@
 #ifndef CAPTURER_UTILS_H
 #define CAPTURER_UTILS_H
 
-#include "probe/enum.h"
-
 #ifdef _WIN32
 #define RETURN_NONE_IF_FAILED(HR)                                                                          \
     if (FAILED(HR)) return {};
@@ -22,8 +20,6 @@ enum class graph_t
     text      = 0x0020,
     mosaic    = 0x0040,
     eraser    = 0x0080,
-
-    ENABLE_BITMASK_OPERATORS(),
 };
 
 enum PaintType : uint32_t

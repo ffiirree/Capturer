@@ -1,7 +1,7 @@
-#include "imageeditmenu.h"
+#include "editing-menu.h"
 
 #include "buttongroup.h"
-#include "stylemenu.h"
+#include "editing-submenu.h"
 
 #include <map>
 #include <QBrush>
@@ -76,10 +76,10 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             group_->addButton(btn);
             addWidget(btn);
 
-            connect(menu, &EditMenu::penChanged, this, &ImageEditMenu::penChanged);
-            connect(menu, &EditMenu::brushChanged, this, &ImageEditMenu::brushChanged);
-            connect(menu, &EditMenu::fontChanged, this, &ImageEditMenu::fontChanged);
-            connect(menu, &EditMenu::fillChanged, this, &ImageEditMenu::fillChanged);
+            connect(menu, &EditMenu::penChanged, [this]() { emit styleChanged(); });
+            connect(menu, &EditMenu::brushChanged, [this]() { emit styleChanged(); });
+            connect(menu, &EditMenu::fontChanged, [this]() { emit styleChanged(); });
+            connect(menu, &EditMenu::fillChanged, [this]() { emit styleChanged(); });
 
             connect(this, &EditMenu::moved, [=, this]() {
                 if (menu->isVisible())
@@ -178,36 +178,42 @@ void ImageEditMenu::paintGraph(graph_t graph)
 
 QPen ImageEditMenu::pen() const
 {
-    return any(graph_) ? btn_menus_.at(graph_).second->pen() : QPen{ Qt::red };
+    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->pen() : QPen{ Qt::red };
 }
 
 void ImageEditMenu::pen(const QPen& pen)
 {
-    if (any(graph_)) btn_menus_.at(graph_).second->pen(pen);
+    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->pen(pen);
 }
 
 QBrush ImageEditMenu::brush() const
 {
-    return any(graph_) ? btn_menus_.at(graph_).second->brush() : QBrush{};
+    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->brush() : QBrush{};
 }
 
 void ImageEditMenu::brush(const QBrush& brush)
 {
-    if (any(graph_)) btn_menus_.at(graph_).second->brush(brush);
+    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->brush(brush);
 }
 
-bool ImageEditMenu::fill() const { return any(graph_) ? btn_menus_.at(graph_).second->fill() : false; }
+bool ImageEditMenu::fill() const
+{
+    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->fill() : false;
+}
 
 void ImageEditMenu::fill(bool v)
 {
-    if (any(graph_)) btn_menus_[graph_].second->fill(v);
+    if (graph_ != graph_t::none) btn_menus_[graph_].second->fill(v);
 }
 
-QFont ImageEditMenu::font() const { return any(graph_) ? btn_menus_.at(graph_).second->font() : QFont{}; }
+QFont ImageEditMenu::font() const
+{
+    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->font() : QFont{};
+}
 
 void ImageEditMenu::font(const QFont& font)
 {
-    if (any(graph_)) btn_menus_[graph_].second->font(font);
+    if (graph_ != graph_t::none) btn_menus_[graph_].second->font(font);
 }
 
 void ImageEditMenu::reset() { group_->uncheckAll(); }

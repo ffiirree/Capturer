@@ -1,7 +1,7 @@
 #ifndef IMAGE_WINDOW_H
 #define IMAGE_WINDOW_H
 
-#include "imageeditmenu.h"
+#include "menu/editing-menu.h"
 
 #include <QGraphicsDropShadowEffect>
 #include <QMenu>

@@ -60,6 +60,7 @@ signals:
     void exit();
 
     void graphChanged(graph_t); // start painting
+    void styleChanged();
 
     void undo();
     void redo();

@@ -5,7 +5,7 @@
 #include "decoder.h"
 #include "dispatcher.h"
 #include "encoder.h"
-#include "record_menu.h"
+#include "menu/recording-menu.h"
 #include "selector.h"
 #include "videoplayer.h"
 
@@ -110,15 +110,18 @@ private:
 
     // TODO: wgc bgra -> transparent / black frames.
     std::map<std::string, std::string> gif_filters_{
-        { "high",   "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1" },
-        { "medium", "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none" },
-        { "low",    "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=96  [p];[b][p] paletteuse=new=1:dither=none" },
+        { "high",
+          "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1" },
+        { "medium",
+          "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none" },
+        { "low",
+          "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=96  [p];[b][p] paletteuse=new=1:dither=none" },
     };
 
     std::map<std::string, std::string> video_qualities_ = {
-        { "high",   "18" },
+        { "high", "18" },
         { "medium", "23" },
-        { "low",    "28" },
+        { "low", "28" },
     };
 };
 

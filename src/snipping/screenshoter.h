@@ -2,7 +2,8 @@
 #define SCREEN_SHOTER_H
 
 #include "circlecursor.h"
-#include "command.h"
+#include "canvas/command.h"
+#include "canvas/graphicsitems.h"
 #include "config.h"
 #include "hunter.h"
 #include "resizer.h"
@@ -83,7 +84,7 @@ private:
 
     Resizer::PointPosition hover_postion_{};
 
-    std::pair<QGraphicsItem *, graph_t> created_item_;
+    std::pair<GraphicsItemInterface *, graph_t> creating_item_;
 
     ImageEditMenu *menu_{};  // Edit menu
     Magnifier *magnifier_{}; // Magnifier

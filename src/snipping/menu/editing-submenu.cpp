@@ -1,4 +1,4 @@
-#include "stylemenu.h"
+#include "editing-submenu.h"
 
 #include "colorpanel.h"
 #include "combobox.h"
@@ -20,7 +20,10 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
         width_btn_ = new WidthButton(true, this);
         width_btn_->setObjectName("width-btn");
         width_btn_->setChecked(true);
-        connect(width_btn_, &WidthButton::changed, [this](int w) { pen_.setWidth(w); emit penChanged(pen_); });
+        connect(width_btn_, &WidthButton::changed, [this](int w) {
+            pen_.setWidth(w);
+            emit penChanged(pen_);
+        });
         addWidget(width_btn_);
         group->addButton(width_btn_);
 
@@ -54,14 +57,15 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
 
         QFontDatabase font_db;
 #if WIN32
-        QString family = "微软雅黑";
-
+        font_.setFamily("微软雅黑");
 #else
-        QString family = "宋体";
+        font_.setFamily("宋体");
 #endif
+        font_.setPointSizeF(16);
+
         // font family
         font_family_->addItems(font_db.families());
-        font_family_->setCurrentText(family);
+        font_family_->setCurrentText(font_.family());
         connect(font_family_, &QComboBox::currentTextChanged, [=, this](const QString& family) {
             font_.setFamily(family);
             font_style_->clear();
@@ -70,7 +74,8 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
         });
 
         // font style
-        font_style_->addItems(font_db.styles(family));
+        font_style_->addItems(font_db.styles(font_.family()));
+        font_style_->setCurrentText(font_.styleName());
         connect(font_style_, &QComboBox::currentTextChanged, [=, this](const QString& style) {
             font_.setStyleName(style);
             emit fontChanged(font_);
@@ -113,16 +118,14 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
 void StyleMenu::pen(const QPen& pen)
 {
     pen_ = pen;
-    if (color_panel_) color_panel_->setColor(pen_.color());
+    if (!fill() && color_panel_) color_panel_->setColor(pen_.color());
     if (width_btn_) width_btn_->setValue(pen_.width());
 }
 
 void StyleMenu::brush(const QBrush& brush)
 {
     brush_ = brush;
-
-    if (fill_btn_) fill_btn_->setChecked(brush != QBrush{});
-    if (width_btn_) width_btn_->setChecked(brush == QBrush{});
+    if (fill() && color_panel_) color_panel_->setColor(brush.color());
 }
 
 void StyleMenu::font(const QFont& font)
@@ -137,5 +140,8 @@ bool StyleMenu::fill() const { return fill_btn_ ? fill_btn_->isChecked() : false
 
 void StyleMenu::fill(bool s)
 {
-    if (fill_btn_) fill_btn_->setCheckState(s ? Qt::Checked : Qt::Unchecked);
+    fill_ = s;
+
+    if (fill_btn_) fill_btn_->setChecked(fill_);
+    if (width_btn_) width_btn_->setChecked(!fill_);
 }

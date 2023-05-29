@@ -23,9 +23,9 @@ public:
     virtual void brush(const QBrush& brush) { brush_ = brush; }
 
     // fill
-    virtual bool fill() const = 0;
+    virtual bool fill() const { return fill_; }
 
-    virtual void fill(bool) = 0;
+    virtual void fill(bool f) { fill_ = f; }
 
     // font
     virtual QFont font() const { return font_; }
@@ -46,9 +46,10 @@ protected:
     void addSeparator();
     void addWidget(QWidget *);
 
-    QPen pen_{Qt::red, 3};
-    QBrush brush_{};
-    QFont font_;
+    QPen pen_{ Qt::red, 3 };
+    QBrush brush_{ Qt::NoBrush };
+    QFont font_{};
+    bool fill_{};
 };
 
 #endif // EDIT_MENU_H

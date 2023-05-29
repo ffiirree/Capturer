@@ -108,8 +108,8 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
         break;
 
     case SelectorStatus::PREY_SELECTING | SelectorStatus::FREE_SELECTING:
-        if (std::abs(mouse_pos.x() - sbegin_.x()) >= std::min(min_size_.width(), 4) &&
-            std::abs(mouse_pos.y() - sbegin_.y()) >= std::min(min_size_.height(), 4)) {
+        if (std::abs(mouse_pos.x() - sbegin_.x()) >= std::min(min_size_.width(), 6) &&
+            std::abs(mouse_pos.y() - sbegin_.y()) >= std::min(min_size_.height(), 6)) {
             select({ sbegin_, mouse_pos });
             info_->show();
             status(SelectorStatus::FREE_SELECTING);
