@@ -48,10 +48,10 @@ public:
     virtual bool invalid() const = 0;
 
     //
-    virtual Resizer::PointPosition location(const QPointF&) const = 0;
+    virtual ResizerLocation location(const QPointF&) const = 0;
 
     // callbacks
-    virtual void onhovered(const std::function<void(Resizer::PointPosition)>& fn) { onhover = fn; }
+    virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
 
     virtual void onfocused(const std::function<void()>& fn) { onfocus = fn; }
 
@@ -63,12 +63,12 @@ public:
     }
 
 protected:
-    std::function<void(Resizer::PointPosition)> onhover           = [](auto) {};
+    std::function<void(ResizerLocation)> onhover                  = [](auto) {};
     std::function<void()> onfocus                                 = []() {};
     std::function<void()> onblur                                  = []() {};
     std::function<void(const std::shared_ptr<Command>&)> onchange = [](auto) {};
 
-    Resizer::PointPosition hover_location_ = Resizer::DEFAULT;
+    ResizerLocation hover_location_        = ResizerLocation::DEFAULT;
     adjusting_t adjusting_                 = adjusting_t::none;
     qreal adjusting_min_w_                 = 12.0;
 };
@@ -122,7 +122,7 @@ public:
 
     void push(const QPointF&) override;
 
-    Resizer::PointPosition location(const QPointF&) const override;
+    ResizerLocation location(const QPointF&) const override;
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
@@ -168,7 +168,7 @@ public:
 
     bool invalid() const override { return QLineF(polygon_[0], polygon_[3]).length() < 25; }
 
-    Resizer::PointPosition location(const QPointF&) const override;
+    ResizerLocation location(const QPointF&) const override;
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
@@ -217,7 +217,7 @@ public:
 
     bool invalid() const override { return std::abs(v2_.x() - v1_.x()) * std::abs(v2_.y() - v1_.y()) < 16; }
 
-    Resizer::PointPosition location(const QPointF&) const override;
+    ResizerLocation location(const QPointF&) const override;
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
@@ -270,7 +270,7 @@ public:
 
     bool invalid() const override { return std::abs(v2_.x() - v1_.x()) * std::abs(v2_.y() - v1_.y()) < 16; }
 
-    Resizer::PointPosition location(const QPointF&) const override;
+    ResizerLocation location(const QPointF&) const override;
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
@@ -315,7 +315,7 @@ public:
 
     bool invalid() const override { return false; }
 
-    Resizer::PointPosition location(const QPointF&) const override { return Resizer::DEFAULT; }
+    ResizerLocation location(const QPointF&) const override { return ResizerLocation::DEFAULT; }
 
 private:
     QPainterPath path_{};
@@ -375,7 +375,7 @@ public:
 
     bool invalid() const override { return toPlainText().isEmpty(); }
 
-    Resizer::PointPosition location(const QPointF&) const override;
+    ResizerLocation location(const QPointF&) const override;
 
     //
     QRectF paddingRect() const;
@@ -395,6 +395,7 @@ protected:
 
 private:
     const float padding = 5;
+    QPointF mpos_{};
 };
 
 #endif //! CAPTURER_GRAPHICS_ITEMS_H

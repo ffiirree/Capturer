@@ -101,8 +101,8 @@ protected:
     // @}
 
     QPainter painter_{};
-    SelectorStatus status_             = SelectorStatus::INVALID;
-    Resizer::PointPosition cursor_pos_ = Resizer::OUTSIDE;
+    SelectorStatus status_      = SelectorStatus::INVALID;
+    ResizerLocation cursor_pos_ = ResizerLocation::OUTSIDE;
 
     // move
     QPoint move_spos_{ 0, 0 };

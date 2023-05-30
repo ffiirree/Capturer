@@ -21,7 +21,15 @@ public:
 
     inline ComboBox& add(const std::vector<std::pair<QVariant, QString>>& items)
     {
-        for (auto& [value, text] : items) {
+        for (const auto& [value, text] : items) {
+            insertItem(count(), text, value);
+        }
+        return *this;
+    }
+
+    inline ComboBox& add(const std::vector<std::pair<int, QString>>& items)
+    {
+        for (const auto& [value, text] : items) {
             insertItem(count(), text, value);
         }
         return *this;
@@ -29,7 +37,7 @@ public:
 
     inline ComboBox& add(const QStringList& texts)
     {
-        for (auto& text : texts) {
+        for (const auto& text : texts) {
             auto index = count();
             insertItem(index, text, index);
         }

@@ -61,7 +61,6 @@ public slots:
     void moveMenu();
 
 protected:
-    //bool eventFilter(QObject *, QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -70,7 +69,6 @@ protected:
 
     void keyPressEvent(QKeyEvent *) override;
     void keyReleaseEvent(QKeyEvent *) override;
-    // void paintEvent(QPaintEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
@@ -81,8 +79,6 @@ private:
     Selector *selector_{}; // Layer 1
 
     uint32_t editstatus_{};
-
-    Resizer::PointPosition hover_postion_{};
 
     std::pair<GraphicsItemInterface *, graph_t> creating_item_;
 

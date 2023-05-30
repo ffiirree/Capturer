@@ -1,8 +1,14 @@
 #ifndef CAPTURER_COMMAND_H
 #define CAPTURER_COMMAND_H
 
-#include <QGraphicsItem>
+#include <QPen>
 #include <QPoint>
+#include <QFont>
+
+class QGraphicsItem;
+class GraphicsItemInterface;
+
+////
 
 struct Command
 {
@@ -10,111 +16,134 @@ struct Command
     virtual void undo() = 0;
 };
 
+////
+
 struct MoveCommand : public Command
 {
-    MoveCommand(QGraphicsItem *item, const QPointF& offset)
-        : item_(item),
-          offset_(offset)
-    {}
+    MoveCommand(QGraphicsItem *item, const QPointF& offset);
 
-    void redo()
-    {
-        if (item_) item_->moveBy(offset_.x(), offset_.y());
-    }
-
-    void undo()
-    {
-        if (item_) item_->moveBy(-offset_.x(), -offset_.y());
-    }
+    void redo() override;
+    void undo() override;
 
 private:
     QGraphicsItem *item_{};
     QPointF offset_{};
 };
+
+////
 
 struct DeletedCommand : public Command
 {
-    DeletedCommand(QGraphicsItem *item)
-        : item_(item)
-    {}
+    DeletedCommand(QGraphicsItem *item);
 
-    void redo()
-    {
-        if (item_) item_->setVisible(false);
-    }
-
-    void undo()
-    {
-        if (item_) item_->setVisible(true);
-    }
+    void redo() override;
+    void undo() override;
 
 private:
     QGraphicsItem *item_{};
 };
+
+////
 
 struct CreatedCommand : public Command
 {
-    CreatedCommand(QGraphicsItem *item)
-        : item_(item)
-    {}
+    CreatedCommand(QGraphicsItem *item);
 
-    void redo()
-    {
-        if (item_) item_->setVisible(true);
-    }
-
-    void undo()
-    {
-        if (item_) item_->setVisible(false);
-    }
+    void redo() override;
+    void undo() override;
 
 private:
     QGraphicsItem *item_{};
 };
 
+////
+
+struct PenChangedCommand : public Command
+{
+    PenChangedCommand(GraphicsItemInterface *item, const QPen& open, const QPen& npen);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    GraphicsItemInterface *item_{};
+    QPen open_{};
+    QPen npen_{};
+};
+
+////
+
+struct FillChangedCommand : public Command
+{
+    FillChangedCommand(GraphicsItemInterface *item, bool filled_);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    GraphicsItemInterface *item_{};
+    bool filled_{};
+};
+
+////
+
+struct BrushChangedCommand : public Command
+{
+    BrushChangedCommand(GraphicsItemInterface *item, const QBrush& open, const QBrush& npen);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    GraphicsItemInterface *item_{};
+    QBrush obrush_{};
+    QBrush nbrush_{};
+};
+
+////
+
+struct FontChangedCommand : public Command
+{
+    FontChangedCommand(GraphicsItemInterface *item, const QFont& open, const QFont& npen);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    GraphicsItemInterface *item_{};
+    QFont ofont_{};
+    QFont nfont_{};
+};
+
+////
+
 struct MovedCommand : public Command
 {
-    MovedCommand(QGraphicsItem *item, const QPointF& offset)
-        : item_(item),
-          offset_(offset)
-    {}
+    MovedCommand(QGraphicsItem *item, const QPointF& offset);
 
-    void redo()
-    {
-        if (item_) item_->moveBy(offset_.x(), offset_.y());
-    }
-
-    void undo()
-    {
-        if (item_) item_->moveBy(-offset_.x(), -offset_.y());
-    }
+    void redo() override;
+    void undo() override;
 
 private:
     QGraphicsItem *item_{};
     QPointF offset_{};
 };
 
+////
+
 struct ResizedCommand : public Command
 {
-    ResizedCommand(QGraphicsItem *item, const QMarginsF& margins)
-        : item_(item),
-          margins_(margins)
-    {}
+    ResizedCommand(QGraphicsItem *item, const QMarginsF& margins);
 
-    void redo()
-    {
-        //if (item_) item_->
-    }
-
-    void undo()
-    {
-        //if (item_) item_->moveBy(-offset_.x(), -offset_.y());
-    }
+    void redo() override;
+    void undo() override;
 
 private:
     QGraphicsItem *item_{};
     QMarginsF margins_{};
 };
+
+////
 
 class CommandStack : public QObject
 {
@@ -146,6 +175,7 @@ signals:
     void emptied(int, bool);
 
 public slots:
+
     inline void undo()
     {
         if (undo_stack_.empty()) return;

@@ -166,7 +166,7 @@ int WasapiCapturer::run_f()
 
     buffer_.clear();
     while (running_) {
-        switch (::WaitForMultipleObjects(std::size(events), events, false, INFINITE)) {
+        switch (::WaitForMultipleObjects(static_cast<DWORD>(std::size(events)), events, false, INFINITE)) {
         case WAIT_OBJECT_0 + 0: // STOP_EVENT
             running_ = false;
             break;

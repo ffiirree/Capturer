@@ -2,6 +2,7 @@
 
 #include "buttongroup.h"
 #include "editing-submenu.h"
+#include "separator.h"
 
 #include <map>
 #include <QBrush>
@@ -11,8 +12,17 @@
 #include <QPixmap>
 
 ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
-    : EditMenu(parent)
+    : QWidget(parent)
 {
+    setCursor(Qt::ArrowCursor);
+
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
+
+    setLayout(new QHBoxLayout(this));
+    layout()->setSpacing(0);
+    layout()->setContentsMargins({});
+
     group_ = new ButtonGroup(this);
     connect(group_, &ButtonGroup::uncheckedAll, [this]() {
         graph_ = graph_t::none;
@@ -74,14 +84,16 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             auto menu  = bm.second;
 
             group_->addButton(btn);
-            addWidget(btn);
+            layout()->addWidget(btn);
 
-            connect(menu, &EditMenu::penChanged, [this]() { emit styleChanged(); });
-            connect(menu, &EditMenu::brushChanged, [this]() { emit styleChanged(); });
-            connect(menu, &EditMenu::fontChanged, [this]() { emit styleChanged(); });
-            connect(menu, &EditMenu::fillChanged, [this]() { emit styleChanged(); });
+            // clang-format off
+            connect(menu, &StyleMenu::penChanged,   [graph, this](auto pen) { penChanged(graph, pen); });
+            connect(menu, &StyleMenu::brushChanged, [graph, this](auto brush) { emit brushChanged(graph, brush); });
+            connect(menu, &StyleMenu::fontChanged,  [graph, this](auto font) { emit fontChanged(graph, font); });
+            connect(menu, &StyleMenu::fillChanged,  [graph, this](auto filled) { emit fillChanged(graph, filled); });
+            // clang-format on
 
-            connect(this, &EditMenu::moved, [=, this]() {
+            connect(this, &ImageEditMenu::moved, [=, this]() {
                 if (menu->isVisible())
                     menu->move(pos().x(), pos().y() + (height() + 3) * (sub_menu_show_pos_ ? -1 : 1));
             });
@@ -101,26 +113,26 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & REDO_UNDO_GROUP) {
-        addSeparator();
+        layout()->addWidget(new Separator());
 
         undo_btn_ = new QCheckBox(this);
         undo_btn_->setCheckable(false);
         undo_btn_->setObjectName("undo-btn");
         undo_btn_->setDisabled(true);
         connect(undo_btn_, &QCheckBox::clicked, this, &ImageEditMenu::undo);
-        addWidget(undo_btn_);
+        layout()->addWidget(undo_btn_);
 
         redo_btn_ = new QCheckBox(this);
         redo_btn_->setCheckable(false);
         redo_btn_->setObjectName("redo-btn");
         redo_btn_->setDisabled(true);
         connect(redo_btn_, &QCheckBox::clicked, this, &ImageEditMenu::redo);
-        addWidget(redo_btn_);
+        layout()->addWidget(redo_btn_);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & SAVE_GROUP) {
-        addSeparator();
+        layout()->addWidget(new Separator());
 
         auto pin_btn = new QCheckBox(this);
         pin_btn->setCheckable(false);
@@ -130,19 +142,19 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             pin();
             hide();
         });
-        addWidget(pin_btn);
+        layout()->addWidget(pin_btn);
 
         auto save_btn = new QCheckBox(this);
         save_btn->setCheckable(false);
         save_btn->setObjectName("save-btn");
         connect(save_btn, &QCheckBox::clicked, this, &ImageEditMenu::save);
         connect(save_btn, &QCheckBox::clicked, [this]() { group_->uncheckAll(); });
-        addWidget(save_btn);
+        layout()->addWidget(save_btn);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & EXIT_GROUP) {
-        addSeparator();
+        layout()->addWidget(new Separator());
 
         auto close_btn = new QCheckBox(this);
         close_btn->setCheckable(false);
@@ -152,7 +164,7 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             exit();
             hide();
         });
-        addWidget(close_btn);
+        layout()->addWidget(close_btn);
 
         auto ok_btn = new QCheckBox(this);
         ok_btn->setCheckable(false);
@@ -162,7 +174,7 @@ ImageEditMenu::ImageEditMenu(QWidget *parent, uint32_t groups)
             ok();
             hide();
         });
-        addWidget(ok_btn);
+        layout()->addWidget(ok_btn);
     }
 }
 
@@ -181,9 +193,9 @@ QPen ImageEditMenu::pen() const
     return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->pen() : QPen{ Qt::red };
 }
 
-void ImageEditMenu::pen(const QPen& pen)
+void ImageEditMenu::setPen(const QPen& pen)
 {
-    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->pen(pen);
+    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->setPen(pen);
 }
 
 QBrush ImageEditMenu::brush() const
@@ -191,14 +203,14 @@ QBrush ImageEditMenu::brush() const
     return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->brush() : QBrush{};
 }
 
-void ImageEditMenu::brush(const QBrush& brush)
+void ImageEditMenu::setBrush(const QBrush& brush)
 {
-    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->brush(brush);
+    if (graph_ != graph_t::none) btn_menus_.at(graph_).second->setBrush(brush);
 }
 
-bool ImageEditMenu::fill() const
+bool ImageEditMenu::filled() const
 {
-    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->fill() : false;
+    return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->filled() : false;
 }
 
 void ImageEditMenu::fill(bool v)
@@ -211,9 +223,11 @@ QFont ImageEditMenu::font() const
     return (graph_ != graph_t::none) ? btn_menus_.at(graph_).second->font() : QFont{};
 }
 
-void ImageEditMenu::font(const QFont& font)
+void ImageEditMenu::setFont(const QFont& font)
 {
-    if (graph_ != graph_t::none) btn_menus_[graph_].second->font(font);
+    if (graph_ != graph_t::none) btn_menus_[graph_].second->setFont(font);
 }
 
 void ImageEditMenu::reset() { group_->uncheckAll(); }
+
+void ImageEditMenu::moveEvent(QMoveEvent *) { emit moved(); }

@@ -20,6 +20,7 @@ namespace av
         vfr,
     };
 
+    // video format options
     struct vformat_t
     {
         int width{ 0 };
@@ -33,6 +34,7 @@ namespace av
         AVHWDeviceType hwaccel{ AV_HWDEVICE_TYPE_NONE };
     };
 
+    // audio format options
     struct aformat_t
     {
         int sample_rate{ 48'000 };
@@ -43,6 +45,7 @@ namespace av
         AVRational time_base{ 1, OS_TIME_BASE };
     };
 
+    // wrapper to AVFrame
     struct frame
     {
         frame() { ptr_ = av_frame_alloc(); }
@@ -104,6 +107,7 @@ namespace av
         AVFrame *ptr_{ nullptr };
     };
 
+    // convert <T> to string
 #if LIBAVUTIL_VERSION_MAJOR >= 57
     inline std::string to_string(const AVChannelLayout& channel_layout)
     {

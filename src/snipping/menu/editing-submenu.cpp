@@ -11,8 +11,17 @@
 #include <QLineEdit>
 
 StyleMenu::StyleMenu(int buttons, QWidget *parent)
-    : EditMenu(parent)
+    : QWidget(parent)
 {
+    setCursor(Qt::ArrowCursor);
+
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
+
+    setLayout(new QHBoxLayout(this));
+    layout()->setSpacing(0);
+    layout()->setContentsMargins({});
+
     auto group = new QButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
@@ -24,7 +33,7 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
             pen_.setWidth(w);
             emit penChanged(pen_);
         });
-        addWidget(width_btn_);
+        layout()->addWidget(width_btn_);
         group->addButton(width_btn_);
 
         // brush
@@ -33,7 +42,7 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
             fill_btn_->setObjectName("fill-btn");
             connect(fill_btn_, &QCheckBox::toggled, [this](bool checked) { emit fillChanged(checked); });
 
-            addWidget(fill_btn_);
+            layout()->addWidget(fill_btn_);
             group->addButton(fill_btn_);
         }
     }
@@ -41,7 +50,7 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
     // font
     if (buttons & FONT_BTNS) {
         if (buttons & (FILL_BTN | WIDTH_BTN)) {
-            addSeparator();
+            layout()->addWidget(new Separator());
         }
 
         layout()->setSpacing(3);
@@ -51,9 +60,9 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
         font_family_ = new ComboBox(this);
         font_style_  = new ComboBox(this);
         font_size_   = new ComboBox(this);
-        addWidget(font_family_);
-        addWidget(font_style_);
-        addWidget(font_size_);
+        layout()->addWidget(font_family_);
+        layout()->addWidget(font_style_);
+        layout()->addWidget(font_size_);
 
         QFontDatabase font_db;
 #if WIN32
@@ -97,12 +106,12 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
     // pen: color
     if (buttons & COLOR_PENAL) {
         if (buttons & ~COLOR_PENAL) {
-            addSeparator();
+            layout()->addWidget(new Separator());
         }
 
         color_panel_ = new ColorPanel();
         connect(color_panel_, &ColorPanel::changed, [this](const QColor& c) {
-            if (fill()) {
+            if (filled()) {
                 brush_ = c;
                 emit brushChanged(brush_);
             }
@@ -111,24 +120,24 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
                 emit penChanged(pen_);
             }
         });
-        addWidget(color_panel_);
+        layout()->addWidget(color_panel_);
     }
 }
 
-void StyleMenu::pen(const QPen& pen)
+void StyleMenu::setPen(const QPen& pen)
 {
     pen_ = pen;
-    if (!fill() && color_panel_) color_panel_->setColor(pen_.color());
+    if (!filled() && color_panel_) color_panel_->setColor(pen_.color());
     if (width_btn_) width_btn_->setValue(pen_.width());
 }
 
-void StyleMenu::brush(const QBrush& brush)
+void StyleMenu::setBrush(const QBrush& brush)
 {
     brush_ = brush;
-    if (fill() && color_panel_) color_panel_->setColor(brush.color());
+    if (filled() && color_panel_) color_panel_->setColor(brush.color());
 }
 
-void StyleMenu::font(const QFont& font)
+void StyleMenu::setFont(const QFont& font)
 {
     font_ = font;
     if (font_family_) font_family_->setCurrentText(font.family());
@@ -136,7 +145,7 @@ void StyleMenu::font(const QFont& font)
     if (font_style_) font_style_->setCurrentText(font.styleName());
 }
 
-bool StyleMenu::fill() const { return fill_btn_ ? fill_btn_->isChecked() : false; }
+bool StyleMenu::filled() const { return fill_btn_ ? fill_btn_->isChecked() : false; }
 
 void StyleMenu::fill(bool s)
 {

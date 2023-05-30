@@ -70,9 +70,7 @@ bool Magnifier::eventFilter(QObject *obj, QEvent *event)
         update();
         move(position());
     }
-    else {
-        return qApp->eventFilter(obj, event);
-    }
+    return qApp->eventFilter(obj, event);
 }
 
 // TODO: clear the background when close

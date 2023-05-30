@@ -21,7 +21,8 @@ GraphicsItem::GraphicsItem(QGraphicsItem *parent)
 
 void GraphicsItem::focusInEvent(QFocusEvent *event)
 {
-    if (event->reason() == Qt::MouseFocusReason) onfocus();
+    if (event->reason() == Qt::MouseFocusReason && (hover_location_ != ResizerLocation::EMPTY_INSIDE))
+        onfocus();
 
     QGraphicsItem::focusInEvent(event);
 }
@@ -62,8 +63,8 @@ void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    onhover(Resizer::DEFAULT);
-    hover_location_ = Resizer::DEFAULT;
+    onhover(ResizerLocation::DEFAULT);
+    hover_location_ = ResizerLocation::DEFAULT;
     unsetCursor();
 
     QGraphicsItem::hoverLeaveEvent(event);
@@ -72,15 +73,17 @@ void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 void GraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (hover_location_ & Resizer::ANCHOR) {
+        if (!!(hover_location_ & ResizerLocation::ANCHOR)) {
             adjusting_ = adjusting_t::resizing;
         }
-        else if (hover_location_ & Resizer::BORDER) {
+        else if (!!(hover_location_ & ResizerLocation::BORDER) ||
+                 !!(hover_location_ & ResizerLocation::FILLED_INSIDE)) {
             adjusting_ = adjusting_t::moving;
         }
     }
 
-    QGraphicsItem::mousePressEvent(event);
+    hover_location_ != ResizerLocation::EMPTY_INSIDE ? QGraphicsItem::mouseReleaseEvent(event)
+                                                     : event->ignore();
 }
 
 void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) { QGraphicsItem::mouseMoveEvent(event); }
@@ -88,7 +91,8 @@ void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) { QGraphicsIt
 void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     adjusting_ = adjusting_t::none;
-    QGraphicsItem::mouseReleaseEvent(event);
+    hover_location_ != ResizerLocation::EMPTY_INSIDE ? QGraphicsItem::mouseReleaseEvent(event)
+                                                     : event->ignore();
 }
 
 void GraphicsItem::keyPressEvent(QKeyEvent *event)
@@ -145,6 +149,7 @@ void GraphicsLineItem::setVertexes(const QPointF& p1, const QPointF& p2)
 void GraphicsLineItem::push(const QPointF& point)
 {
     if (v2_ == point) return;
+
     prepareGeometryChange();
     v2_ = point;
     update();
@@ -155,6 +160,7 @@ QPen GraphicsLineItem::pen() const { return pen_; }
 void GraphicsLineItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -185,20 +191,20 @@ QPainterPath GraphicsLineItem::shape() const
     return shape_from_path(path, _pen);
 }
 
-Resizer::PointPosition GraphicsLineItem::location(const QPointF& p) const
+ResizerLocation GraphicsLineItem::location(const QPointF& p) const
 {
     ResizerF resizer{ v1_, v2_, std::max<float>(pen_.widthF(), adjusting_min_w_) };
     if (resizer.isX1Y1Anchor(p)) {
-        return Resizer::X1Y1_ANCHOR;
+        return ResizerLocation::X1Y1_ANCHOR;
     }
     else if (resizer.isX2Y2Anchor(p)) {
-        return Resizer::X2Y2_ANCHOR;
+        return ResizerLocation::X2Y2_ANCHOR;
     }
     else if (shape().contains(p)) {
-        return Resizer::BORDER;
+        return ResizerLocation::BORDER;
     }
 
-    return Resizer::OUTSIDE;
+    return ResizerLocation::OUTSIDE;
 }
 
 bool GraphicsLineItem::contains(const QPointF& point) const { return QGraphicsItem::contains(point); }
@@ -213,7 +219,7 @@ void GraphicsLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     painter->setPen(pen_);
     painter->drawLine(v1_, v2_);
 
-    if (option->state & QStyle::State_HasFocus) {
+    if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
@@ -249,8 +255,8 @@ void GraphicsLineItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         ResizerF resizer(v1_, v2_);
         // clang-format off
         switch (hover_location_) {
-        case Resizer::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
         default: break;
         }
         // clang-format on
@@ -343,18 +349,20 @@ QPainterPath GraphicsArrowItem::shape() const
     return shape_from_path(path, { pen_.color(), 3, Qt::SolidLine });
 }
 
-Resizer::PointPosition GraphicsArrowItem::location(const QPointF& p) const
+ResizerLocation GraphicsArrowItem::location(const QPointF& p) const
 {
     ResizerF resizer{ polygon_[0], polygon_[3], std::max<float>(pen_.widthF(), adjusting_min_w_) };
     if (resizer.isX1Y1Anchor(p)) {
-        return Resizer::X1Y1_ANCHOR;
+        return ResizerLocation::X1Y1_ANCHOR;
     }
     else if (resizer.isX2Y2Anchor(p)) {
-        return Resizer::X2Y2_ANCHOR;
+        return ResizerLocation::X2Y2_ANCHOR;
     }
     else if (shape().contains(p)) {
-        return Resizer::BORDER;
+        return ResizerLocation::BORDER;
     }
+
+    return ResizerLocation::OUTSIDE;
 }
 
 bool GraphicsArrowItem::contains(const QPointF& point) const { return QGraphicsItem::contains(point); }
@@ -370,7 +378,7 @@ void GraphicsArrowItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setBrush(pen_.color());
     painter->drawPolygon(polygon_);
 
-    if (option->state & QStyle::State_HasFocus) {
+    if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
@@ -406,8 +414,8 @@ void GraphicsArrowItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         ResizerF resizer(polygon_[0], polygon_[3]);
         // clang-format off
         switch (hover_location_) {
-        case Resizer::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
         default: break;
         }
         // clang-format on
@@ -467,13 +475,13 @@ QPainterPath GraphicsRectItem::shape() const
     return shape_from_path(path, _pen);
 }
 
-Resizer::PointPosition GraphicsRectItem::location(const QPointF& p) const
+ResizerLocation GraphicsRectItem::location(const QPointF& p) const
 {
     ResizerF resizer{ v1_, v2_, std::max<float>(pen_.widthF(), adjusting_min_w_) };
 
-    ResizerF::PointPosition l = resizer.absolutePos(p);
-    if (l == ResizerF::INSIDE && filled()) return Resizer::BORDER;
-    return static_cast<Resizer::PointPosition>(l);
+    ResizerLocation l = resizer.absolutePos(p);
+    if (l == ResizerLocation::EMPTY_INSIDE && filled()) return ResizerLocation::BORDER;
+    return l;
 }
 
 bool GraphicsRectItem::contains(const QPointF& point) const { return QGraphicsItem::contains(point); }
@@ -515,13 +523,16 @@ void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+
     painter->setPen(pen_);
     auto _brush = filled() ? ((brush_ == Qt::NoBrush) ? pen_.color() : brush_) : Qt::NoBrush;
     painter->setBrush(_brush);
 
     painter->drawRect({ v1_, v2_ });
 
-    if (option->state & QStyle::State_HasFocus) {
+    if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
@@ -557,14 +568,14 @@ void GraphicsRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         ResizerF resizer(v1_, v2_);
         // clang-format off
         switch (hover_location_) {
-        case Resizer::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
-        case Resizer::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
-        case Resizer::X1_ANCHOR:    resizer.x1(cursor_pos.x()); break;
-        case Resizer::X2_ANCHOR:    resizer.x2(cursor_pos.x()); break;
-        case Resizer::Y1_ANCHOR:    resizer.y1(cursor_pos.y()); break;
-        case Resizer::Y2_ANCHOR:    resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1_ANCHOR:    resizer.x1(cursor_pos.x()); break;
+        case ResizerLocation::X2_ANCHOR:    resizer.x2(cursor_pos.x()); break;
+        case ResizerLocation::Y1_ANCHOR:    resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::Y2_ANCHOR:    resizer.y2(cursor_pos.y()); break;
         default: break;
         }
         // clang-format on
@@ -629,15 +640,15 @@ QPainterPath GraphicsEllipseleItem::shape() const
     return shape_from_path(path, _pen);
 }
 
-Resizer::PointPosition GraphicsEllipseleItem::location(const QPointF& p) const
+ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
 {
     ResizerF resizer{ v1_, v2_, std::max<float>(pen_.widthF(), adjusting_min_w_) };
 
     if (resizer.isAnchor(p) || resizer.isRotateAnchor(p)) {
-        return static_cast<Resizer::PointPosition>(resizer.absolutePos(p));
+        return resizer.absolutePos(p);
     }
     else if (filled()) {
-        return shape().contains(p) ? Resizer::BORDER : Resizer::OUTSIDE;
+        return shape().contains(p) ? ResizerLocation::BORDER : ResizerLocation::OUTSIDE;
     }
     else {
         auto half = std::max(pen_.widthF(), adjusting_min_w_);
@@ -648,11 +659,11 @@ Resizer::PointPosition GraphicsEllipseleItem::location(const QPointF& p) const
                    QRegion::Ellipse);
 
         if (r2.contains(p.toPoint()))
-            return Resizer::INSIDE;
+            return ResizerLocation::EMPTY_INSIDE;
         else if (r1.contains(p.toPoint()) && !r2.contains(p.toPoint()))
-            return Resizer::BORDER;
+            return ResizerLocation::BORDER;
         else
-            return Resizer::OUTSIDE;
+            return ResizerLocation::OUTSIDE;
     }
 }
 
@@ -701,7 +712,7 @@ void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 
     painter->drawEllipse({ v1_, v2_ });
 
-    if (option->state & QStyle::State_HasFocus) {
+    if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
@@ -737,14 +748,14 @@ void GraphicsEllipseleItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         ResizerF resizer(v1_, v2_);
         // clang-format off
         switch (hover_location_) {
-        case Resizer::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
-        case Resizer::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
-        case Resizer::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
-        case Resizer::X1_ANCHOR:    resizer.x1(cursor_pos.x()); break;
-        case Resizer::X2_ANCHOR:    resizer.x2(cursor_pos.x()); break;
-        case Resizer::Y1_ANCHOR:    resizer.y1(cursor_pos.y()); break;
-        case Resizer::Y2_ANCHOR:    resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X1_ANCHOR:    resizer.x1(cursor_pos.x()); break;
+        case ResizerLocation::X2_ANCHOR:    resizer.x2(cursor_pos.x()); break;
+        case ResizerLocation::Y1_ANCHOR:    resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::Y2_ANCHOR:    resizer.y2(cursor_pos.y()); break;
         default: break;
         }
         // clang-format on
@@ -769,6 +780,11 @@ void GraphicsEllipseleItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 GraphicsPathItem::GraphicsPathItem(const QPointF& p, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
+    setFlag(QGraphicsItem::ItemIsMovable, false);
+    setFlag(QGraphicsItem::ItemIsSelectable, false);
+    setAcceptHoverEvents(false);
+    setAcceptedMouseButtons(Qt::NoButton);
+
     path_.moveTo(p);
 }
 
@@ -824,11 +840,15 @@ GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, QGraphicsItem *parent)
 
 GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, QGraphicsItem *parent)
     : GraphicsPathItem(p, parent)
-{}
+{
+    setFlag(QGraphicsItem::ItemIsFocusable, false);
+}
 
 GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, QGraphicsItem *parent)
     : GraphicsPathItem(p, parent)
-{}
+{
+    setFlag(QGraphicsItem::ItemIsFocusable, false);
+}
 
 ///
 
@@ -856,37 +876,39 @@ QRectF GraphicsTextItem::paddingRect() const
 
 QRectF GraphicsTextItem::boundingRect() const
 {
-    const auto anchor_hw = 7.0 / 2.0;
-    return paddingRect().adjusted(-anchor_hw, -anchor_hw, anchor_hw, anchor_hw);
+    const auto hw = adjusting_min_w_ / 2.0;
+    return paddingRect().adjusted(-hw, -hw, hw, hw);
 }
 
-QPainterPath GraphicsTextItem::shape() const 
+QPainterPath GraphicsTextItem::shape() const
 {
     QPainterPath path;
     path.addRect(boundingRect());
     return path;
 }
 
-Resizer::PointPosition GraphicsTextItem::location(const QPointF& p) const
+ResizerLocation GraphicsTextItem::location(const QPointF& p) const
 {
     ResizerF resizer{ paddingRect(), static_cast<float>(adjusting_min_w_) };
 
-    ResizerF::PointPosition l = resizer.absolutePos(p);
+    ResizerLocation loc = resizer.absolutePos(p, true, false);
 
-    if (l == ResizerF::INSIDE && filled()) {
-        return hasFocus() ? Resizer::EDITAREA : Resizer::BORDER;
+    if (loc == ResizerLocation::FILLED_INSIDE && textInteractionFlags() != Qt::NoTextInteraction) {
+        loc = ResizerLocation::EDITING_INSIDE;
     }
 
-    return static_cast<Resizer::PointPosition>(l);
+    return loc;
 }
 
 void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
-    auto txt_option  = *option;
-    txt_option.state = option->state & ~(QStyle::State_Selected | QStyle::State_HasFocus);
+    // render text
+    QStyleOptionGraphicsItem text_render_option = *option;
+    text_render_option.state = option->state & ~(QStyle::State_Selected | QStyle::State_HasFocus);
 
-    QGraphicsTextItem::paint(painter, &txt_option, nullptr);
+    QGraphicsTextItem::paint(painter, &text_render_option, nullptr);
 
+    // render resizer
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
@@ -897,7 +919,7 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
         painter->setBrush(Qt::white);
 
         ResizerF resizer{ paddingRect() };
-        painter->drawRects(resizer.anchors());
+        painter->drawRects(resizer.cornerAnchors());
     }
 }
 
@@ -912,15 +934,21 @@ void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
 {
     onblur();
     setTextInteractionFlags(Qt::NoTextInteraction);
+    setFlag(QGraphicsItem::ItemIsFocusable);
 
     QGraphicsTextItem::focusOutEvent(event);
 }
 
 void GraphicsTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    onhover(Resizer::EDITAREA);
+    auto hpos = location(event->pos());
 
-    setCursor(hasFocus() ? Qt::IBeamCursor : Qt::SizeAllCursor);
+    if (hover_location_ != hpos) {
+        onhover(hpos);
+        hover_location_ = hpos;
+        setCursor(getCursorByLocation(hover_location_));
+    }
+
     QGraphicsTextItem::hoverEnterEvent(event);
 }
 
@@ -929,16 +957,9 @@ void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
     auto hpos = location(event->pos());
 
     if (hover_location_ != hpos) {
-        if (hpos & Resizer::BORDER || hpos & Resizer::ANCHOR) {
-            onhover(hover_location_);
-            hover_location_ = hpos;
-            setCursor(getCursorByLocation(hover_location_));
-        }
-        else if (hpos == Resizer::INSIDE || hpos == Resizer::EDITAREA) {
-            onhover(Resizer::EDITAREA);
-            hover_location_ = hpos;
-            setCursor(hasFocus() ? Qt::IBeamCursor : Qt::SizeAllCursor);
-        }
+        onhover(hpos);
+        hover_location_ = hpos;
+        setCursor(getCursorByLocation(hover_location_));
     }
 
     QGraphicsTextItem::hoverMoveEvent(event);
@@ -946,28 +967,115 @@ void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 void GraphicsTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    onhover(Resizer::DEFAULT);
-    hover_location_ = Resizer::DEFAULT;
+    onhover(ResizerLocation::DEFAULT);
+    hover_location_ = ResizerLocation::DEFAULT;
     unsetCursor();
     QGraphicsTextItem::hoverLeaveEvent(event);
 }
 
-void GraphicsTextItem::keyPressEvent(QKeyEvent *event) { QGraphicsTextItem::keyPressEvent(event); }
+void GraphicsTextItem::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete && textInteractionFlags() == Qt::NoTextInteraction) {
+        setVisible(false);
+        onchange(std::make_shared<DeletedCommand>(this));
+    }
+    QGraphicsTextItem::keyPressEvent(event);
+}
 
 void GraphicsTextItem::keyReleaseEvent(QKeyEvent *event) { QGraphicsTextItem::keyReleaseEvent(event); }
 
 void GraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+    setFocus();
+
+    if (event->button() == Qt::LeftButton) {
+        if (!!(hover_location_ & ResizerLocation::ANCHOR) && !toPlainText().isEmpty()) {
+            adjusting_ = adjusting_t::resizing;
+        }
+        else if (!!(hover_location_ & ResizerLocation::BORDER) ||
+                 hover_location_ == ResizerLocation::FILLED_INSIDE) {
+            adjusting_ = adjusting_t::moving;
+            mpos_      = event->pos();
+        }
+    }
     QGraphicsTextItem::mousePressEvent(event);
 }
 
 void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    QGraphicsTextItem::mouseMoveEvent(event);
+    auto cursor_pos = mapToScene(event->pos());
+
+    switch (adjusting_) {
+    case adjusting_t::moving: {
+        auto offset = event->pos() - mpos_;
+        moveBy(offset.x(), offset.y());
+        break;
+    }
+    case adjusting_t::resizing: {
+        auto textrect_1 = mapRectToScene(QGraphicsTextItem::boundingRect());
+        auto textsize_1 = textrect_1.size();
+
+        ResizerF resizer(textrect_1);
+        // clang-format off
+        switch (hover_location_) {
+        case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X2Y1_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y1(cursor_pos.y()); break;
+        case ResizerLocation::X1Y2_ANCHOR:  resizer.x1(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  resizer.x2(cursor_pos.x()); resizer.y2(cursor_pos.y()); break;
+        default: break;
+        }
+        // clang-format on
+
+        auto resized_rect = resizer.rect();
+        QSizeF textsize_2 =
+            resized_rect.contains(resized_rect.united(textrect_1))
+                ? textsize_1.scaled(resized_rect.united(textrect_1).size(), Qt::KeepAspectRatio)
+                : textsize_1.scaled(resized_rect.intersected(textrect_1).size(), Qt::KeepAspectRatio);
+
+        auto scaled_fontsize =
+            std::max(font().pointSizeF() * (textsize_2.width() / textsize_1.width()), 5.0);
+
+        if (scaled_fontsize == font().pointSizeF()) return;
+
+        prepareGeometryChange();
+
+        // resized font size
+        auto textfont = font();
+        textfont.setPointSizeF(scaled_fontsize);
+        setFont(textfont);
+
+        // resized bounding
+        auto textrect_2 = mapRectToScene(QGraphicsTextItem::boundingRect());
+
+        setPos(resized_rect.topLeft());
+
+        // position
+        // clang-format off
+        switch (hover_location_) {
+        case ResizerLocation::X1Y1_ANCHOR:  setPos(resizer.x2() - textrect_2.width(), resizer.y2() - textrect_2.height()); break;
+        case ResizerLocation::X2Y1_ANCHOR:  setPos(resizer.x1(), resizer.y2() - textrect_2.height()); break;
+        case ResizerLocation::X1Y2_ANCHOR:  setPos(resizer.x2() - textrect_2.width(), resizer.y1()); break;
+        case ResizerLocation::X2Y2_ANCHOR:  break;
+        case ResizerLocation::X1_ANCHOR:    setPos(resizer.x2() - textrect_2.width(), resizer.y1()); break;
+        case ResizerLocation::X2_ANCHOR:    break;
+        case ResizerLocation::Y1_ANCHOR:    setPos(resizer.x1(), resizer.y2() - textrect_2.height()); break;
+        case ResizerLocation::Y2_ANCHOR:    break;
+        default: break;
+        }
+        // clang-format on
+
+        update();
+
+        break;
+    }
+    default: break;
+    }
 }
 
 void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+    adjusting_ = adjusting_t::none;
+    mpos_      = {};
     QGraphicsTextItem::mouseReleaseEvent(event);
 }
 

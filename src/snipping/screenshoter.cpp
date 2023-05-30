@@ -57,16 +57,44 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::styleChanged, [this]() {
-        if (!scene()->focusItem()) return;
+    connect(menu_, &ImageEditMenu::penChanged, [this](auto graph, auto pen) {
+        if (scene()->focusItem()) {
+            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            if (graph != item->graph() || item->pen() == pen) return;
 
-        auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-        if (menu_->graph() != item->graph()) return;
+            commands_.push(std::make_shared<PenChangedCommand>(item, item->pen(), pen));
+            item->setPen(pen);
+        }
+    });
 
-        item->fill(menu_->fill());
-        item->setPen(menu_->pen());
-        item->setBrush(menu_->brush());
-        item->setFont(menu_->font());
+    connect(menu_, &ImageEditMenu::brushChanged, [this](auto graph, auto brush) {
+        if (scene()->focusItem()) {
+            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            if (graph != item->graph() || item->brush() == brush) return;
+
+            commands_.push(std::make_shared<BrushChangedCommand>(item, item->brush(), brush));
+            item->setBrush(brush);
+        }
+    });
+
+    connect(menu_, &ImageEditMenu::fontChanged, [this](auto graph, auto font) {
+        if (scene()->focusItem()) {
+            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            if (graph != item->graph() || font == item->font()) return;
+
+            commands_.push(std::make_shared<FontChangedCommand>(item, item->font(), font));
+            item->setFont(menu_->font());
+        }
+    });
+
+    connect(menu_, &ImageEditMenu::fillChanged, [this](auto graph, auto filled) {
+        if (scene()->focusItem()) {
+            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            if (graph != item->graph() || filled == item->filled()) return;
+
+            commands_.push(std::make_shared<FillChangedCommand>(item, filled));
+            item->fill(menu_->filled());
+        }
     });
 
     // show menu
@@ -130,7 +158,6 @@ void ScreenShoter::exit()
 
     scene()->clear();
 
-    hover_postion_ = Resizer::DEFAULT;
     creating_item_ = {};
 
     commands_.clear();
@@ -139,19 +166,6 @@ void ScreenShoter::exit()
 
     QWidget::close();
 }
-
-// bool ScreenShoter::eventFilter(QObject *obj, QEvent *event)
-//{
-//     if (obj == menu_) {
-//         switch (event->type()) {
-//         case QEvent::KeyPress:
-//         case QEvent::KeyRelease: return eventFilter(this, event);
-//         }
-//     }
-//
-//     // return QGraphicsView::eventFilter(this, event);
-//     return QGraphicsView::eventFilter(obj, event);
-// }
 
 QBrush ScreenShoter::mosaicBrush()
 {
@@ -170,17 +184,15 @@ void ScreenShoter::updateCursor()
         circle_cursor_.setWidth(menu_->pen().width());
         setCursor(QCursor(circle_cursor_.cursor()));
     }
-    else {
-        setCursor(getCursorByLocation(hover_postion_, Qt::CrossCursor));
-    }
 }
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     creating_item_ = {};
 
-    if (event->button() == Qt::LeftButton && !(hover_postion_ & Resizer::ADJUST_AREA) &&
-        !(hover_postion_ & Resizer::EDITAREA)) {
+    QGraphicsView::mousePressEvent(event);
+
+    if (!event->isAccepted() && event->button() == Qt::LeftButton) {
         auto pos = event->pos();
 
         editstatus_ = EditStatus::GRAPH_CREATING;
@@ -217,23 +229,19 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         creating_item_.first->setPen(pen);
         creating_item_.first->setBrush(menu_->brush());
         creating_item_.first->setFont(menu_->font());
-        creating_item_.first->fill(menu_->fill());
+        creating_item_.first->fill(menu_->filled());
 
-        creating_item_.first->onhovered([this](auto p) { hover_postion_ = p; });
         creating_item_.first->onfocused([citem = creating_item_.first, this]() {
             menu_->paintGraph(citem->graph());
             menu_->fill(citem->filled());
-            menu_->pen(citem->pen());
-            menu_->brush(citem->brush());
-            menu_->font(citem->font());
+            menu_->setPen(citem->pen());
+            menu_->setBrush(citem->brush());
+            menu_->setFont(citem->font());
         });
         creating_item_.first->onchanged([this](auto cmd) { commands_.push(cmd); });
 
         scene()->addItem(item);
         item->setFocus();
-    }
-    else {
-        QGraphicsView::mousePressEvent(event);
     }
 }
 
@@ -277,7 +285,7 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
     if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
         auto delta = event->angleDelta().y() / 120;
         auto width = std::clamp(menu_->pen().width() + delta, 5, 49);
-        menu_->pen(QPen(QBrush{}, width));
+        menu_->setPen(QPen(QBrush{}, width));
         circle_cursor_.setWidth(width);
         setCursor(QCursor(circle_cursor_.cursor()));
     }
@@ -306,13 +314,13 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
 
 void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && selector_->status() >= SelectorStatus::CAPTURED &&
-        hover_postion_ != Resizer::EDITAREA) {
+    QGraphicsView::mouseDoubleClickEvent(event);
+
+    if (!event->isAccepted() && event->button() == Qt::LeftButton &&
+        selector_->status() >= SelectorStatus::CAPTURED) {
         save2clipboard(snip().first, false);
         exit();
     }
-
-    QGraphicsView::mouseDoubleClickEvent(event);
 }
 
 void ScreenShoter::moveMenu()

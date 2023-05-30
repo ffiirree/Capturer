@@ -59,44 +59,48 @@ struct qmargins_trait<T>
     using type = QMarginsF;
 };
 
+// clang-format off
+enum class ResizerLocation {
+    DEFAULT         = 0x0000'0000,
+
+    BORDER          = 0x0000'0001 | 0x0000'0002 | 0x0000'0004 | 0x0000'0008,
+
+    X1_BORDER       = 0x0000'0001,  L_BORDER    = 0x1000'0001,
+    X2_BORDER       = 0x0000'0002,  R_BORDER    = 0x1000'0002,
+    Y1_BORDER       = 0x0000'0004,  T_BORDER    = 0x1000'0003,
+    Y2_BORDER       = 0x0000'0008,  B_BORDER    = 0x1000'0004,
+
+    ANCHOR          = 0x0000'0010 | 0x0000'0020 | 0x0000'0040 | 0x0000'0080 | 0x0000'0100 | 0x0000'0200 | 0x0000'0400 | 0x0000'0800,
+
+    X1_ANCHOR       = 0x0000'0010,  L_ANCHOR    = 0x1000'0010,
+    X2_ANCHOR       = 0x0000'0020,  R_ANCHOR    = 0x1000'0020,
+    Y1_ANCHOR       = 0x0000'0040,  T_ANCHOR    = 0x1000'0030,
+    Y2_ANCHOR       = 0x0000'0080,  B_ANCHOR    = 0x1000'0040,
+    
+    X1Y1_ANCHOR     = 0x0000'0100,  TL_ANCHOR   = 0x1000'0100,
+    X1Y2_ANCHOR     = 0x0000'0200,  BL_ANCHOR   = 0x1000'0200,
+    X2Y1_ANCHOR     = 0x0000'0400,  TR_ANCHOR   = 0x1000'0300,
+    X2Y2_ANCHOR     = 0x0000'0800,  BR_ANCHOR   = 0x1000'0400,
+
+    ROTATE_ANCHOR   = 0x0000'1000,
+    EMPTY_INSIDE    = 0x0010'0000, // inside: such as a QGraphicsRectItem without brush
+    OUTSIDE         = 0x0020'0000, // outside
+    EDITING_INSIDE  = 0x0040'0000, // inside: QGraphicsTextItem with focus
+    FILLED_INSIDE   = 0x0080'0000, // inside: QGraphicsTextItem with focus, QGraphicsRectItem with brush
+
+    ADJUST_AREA = BORDER | ANCHOR | ROTATE_ANCHOR | FILLED_INSIDE, // move, resize ...
+
+   ENABLE_BITMASK_OPERATORS(),
+};
+
+// clang-format on
+
 ///
 template<typename T>
 requires((std::is_integral_v<T> || std::is_floating_point_v<T>) && !std::is_same_v<T, bool>)
 class _Resizer
 {
 public:
-    // clang-format off
-    enum PointPosition {
-        DEFAULT = 0x0000,
-        BORDER  = 0x0001 | 0x0002 | 0x0004 | 0x0008,
-        ANCHOR  = 0x0010 | 0x0020 | 0x0040 | 0x0080 | 0x0100 | 0x0200 | 0x0400 | 0x0800,
-
-        X1_BORDER   = 0x00000001,  L_BORDER = 0x10000001,
-        X2_BORDER   = 0x00000002,  R_BORDER = 0x10000002,
-        Y1_BORDER   = 0x00000004,  T_BORDER = 0x10000003,
-        Y2_BORDER   = 0x00000008,  B_BORDER = 0x10000004,
-
-        X1_ANCHOR   = 0x00000010,  L_ANCHOR = 0x10000010,
-        X2_ANCHOR   = 0x00000020,  R_ANCHOR = 0x10000020,
-        Y1_ANCHOR   = 0x00000040,  T_ANCHOR = 0x10000030,
-        Y2_ANCHOR   = 0x00000080,  B_ANCHOR = 0x10000040,
-
-        X1Y1_ANCHOR = 0x00000100,  TL_ANCHOR = 0x10000100,
-        X1Y2_ANCHOR = 0x00000200,  BL_ANCHOR = 0x10000200,
-        X2Y1_ANCHOR = 0x00000400,  TR_ANCHOR = 0x10000300,
-        X2Y2_ANCHOR = 0x00000800,  BR_ANCHOR = 0x10000400,
-
-        ROTATE_ANCHOR = 0x00001000,
-
-        INSIDE      = 0x00010000,
-        OUTSIDE     = 0x00020000,
-        EDITAREA    = 0x00040000,
-
-        ADJUST_AREA = BORDER | ANCHOR | ROTATE_ANCHOR
-    };
-
-    // clang-format on
-
     using qpoint_t   = qpoint_trait<T>::type;
     using qrect_t    = qrect_trait<T>::type;
     using qsize_t    = qsize_trait<T>::type;
@@ -340,12 +344,15 @@ public:
     inline qrect_t rect()           const { return { qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }; }
 
 
-    PointPosition absolutePos(const qpoint_t& p) const
+    ResizerLocation absolutePos(const qpoint_t& p, bool filled = false, bool border_anchors = true) const
     {
-        if (isX1Anchor(p))          return X1_ANCHOR;
-        if (isX2Anchor(p))          return X2_ANCHOR;
-        if (isY2Anchor(p))          return Y2_ANCHOR;
-        if (isY1Anchor(p))          return Y1_ANCHOR;
+        using enum ResizerLocation;
+        if (border_anchors) {
+            if (isX1Anchor(p))      return X1_ANCHOR;
+            if (isX2Anchor(p))      return X2_ANCHOR;
+            if (isY2Anchor(p))      return Y2_ANCHOR;
+            if (isY1Anchor(p))      return Y1_ANCHOR;
+        }
 
         if (isX1Y1Anchor(p))        return X1Y1_ANCHOR;
         if (isX2Y1Anchor(p))        return X2Y1_ANCHOR;
@@ -359,15 +366,18 @@ public:
 
         if (isRotateAnchor(p))      return ROTATE_ANCHOR;
 
-        return contains(p) ? INSIDE : OUTSIDE;
+        return contains(p) ? (filled ? FILLED_INSIDE : EMPTY_INSIDE) : OUTSIDE;
     }
 
-    PointPosition relativePos(const qpoint_t& p) const
+    ResizerLocation relativePos(const qpoint_t& p, bool filled = false, bool border_anchors = true) const
     {
-        if (isLeftAnchor(p))        return L_ANCHOR;
-        if (isRightAnchor(p))       return R_ANCHOR;
-        if (isTopAnchor(p))         return T_ANCHOR;
-        if (isBottomAnchor(p))      return B_ANCHOR;
+        using enum ResizerLocation;
+        if (border_anchors) {
+            if (isLeftAnchor(p))    return L_ANCHOR;
+            if (isRightAnchor(p))   return R_ANCHOR;
+            if (isTopAnchor(p))     return T_ANCHOR;
+            if (isBottomAnchor(p))  return B_ANCHOR;
+        }
 
         if (isTopLeftAnchor(p))     return TL_ANCHOR;
         if (isTopRightAnchor(p))    return TR_ANCHOR;
@@ -381,7 +391,7 @@ public:
 
         if (isRotateAnchor(p))      return ROTATE_ANCHOR;
 
-        return contains(p) ? INSIDE : OUTSIDE;
+        return contains(p) ? (filled ? FILLED_INSIDE : EMPTY_INSIDE) : OUTSIDE;
     }
 
     // clang-format on
@@ -406,29 +416,32 @@ protected:
 using Resizer  = _Resizer<int>;
 using ResizerF = _Resizer<qreal>;
 
-inline QCursor getCursorByLocation(Resizer::PointPosition pos,
-                                   const QCursor& default_cursor = Qt::CrossCursor)
+inline QCursor getCursorByLocation(ResizerLocation pos, const QCursor& default_cursor = Qt::CrossCursor)
 {
     switch (pos) {
     // clang-format off
-    case Resizer::EDITAREA:      return Qt::IBeamCursor;
-    case Resizer::X1_ANCHOR:
-    case Resizer::X2_ANCHOR:     return Qt::SizeHorCursor;
-    case Resizer::Y1_ANCHOR:
-    case Resizer::Y2_ANCHOR:     return Qt::SizeVerCursor;
-    case Resizer::X1Y1_ANCHOR:
-    case Resizer::X2Y2_ANCHOR:   return Qt::SizeFDiagCursor;
-    case Resizer::X1Y2_ANCHOR:
-    case Resizer::X2Y1_ANCHOR:   return Qt::SizeBDiagCursor;
+    case ResizerLocation::EDITING_INSIDE:   return Qt::IBeamCursor;
 
-    case Resizer::BORDER:
-    case Resizer::X1_BORDER:
-    case Resizer::X2_BORDER:
-    case Resizer::Y1_BORDER:
-    case Resizer::Y2_BORDER:     return Qt::SizeAllCursor;
-    case Resizer::ROTATE_ANCHOR: return QCursor{ QPixmap(":/icons/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
+    case ResizerLocation::X1_ANCHOR:
+    case ResizerLocation::X2_ANCHOR:        return Qt::SizeHorCursor;
+    case ResizerLocation::Y1_ANCHOR:
+    case ResizerLocation::Y2_ANCHOR:        return Qt::SizeVerCursor;
+    case ResizerLocation::X1Y1_ANCHOR:
+    case ResizerLocation::X2Y2_ANCHOR:      return Qt::SizeFDiagCursor;
+    case ResizerLocation::X1Y2_ANCHOR:
+    case ResizerLocation::X2Y1_ANCHOR:      return Qt::SizeBDiagCursor;
 
-    default:                     return default_cursor;
+    case ResizerLocation::BORDER:
+    case ResizerLocation::FILLED_INSIDE:
+    case ResizerLocation::X1_BORDER:
+    case ResizerLocation::X2_BORDER:
+    case ResizerLocation::Y1_BORDER:
+    case ResizerLocation::Y2_BORDER:        return Qt::SizeAllCursor;
+
+    case ResizerLocation::ROTATE_ANCHOR:    
+        return QCursor{ QPixmap(":/icons/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
+
+    default:                                return default_cursor;
         // clang-format on
     }
 }

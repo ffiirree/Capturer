@@ -82,12 +82,12 @@ void Selector::mousePressEvent(QMouseEvent *event)
             break;
 
         case SelectorStatus::CAPTURED:
-            if (cursor_pos_ == Resizer::INSIDE) {
+            if (cursor_pos_ == ResizerLocation::EMPTY_INSIDE) {
                 move_spos_ = move_epos_ = pos;
 
                 status(SelectorStatus::MOVING);
             }
-            else if (cursor_pos_ & Resizer::ADJUST_AREA) {
+            else if (!!(cursor_pos_ & ResizerLocation::ADJUST_AREA)) {
                 status(SelectorStatus::RESIZING);
             }
             break;
@@ -123,23 +123,23 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
     case SelectorStatus::CAPTURED:
         // clang-format off
         switch (box_.relativePos(mouse_pos)) {
-        case Resizer::INSIDE:       setCursor(Qt::SizeAllCursor); break;
-        case Resizer::OUTSIDE:      setCursor(Qt::ForbiddenCursor); break;
+        case ResizerLocation::EMPTY_INSIDE: setCursor(Qt::SizeAllCursor);   break;
+        case ResizerLocation::OUTSIDE:      setCursor(Qt::ForbiddenCursor); break;
 
-        case Resizer::T_ANCHOR:
-        case Resizer::B_ANCHOR:
-        case Resizer::T_BORDER:
-        case Resizer::B_BORDER:     setCursor(Qt::SizeVerCursor); break;
+        case ResizerLocation::T_ANCHOR:
+        case ResizerLocation::B_ANCHOR:
+        case ResizerLocation::T_BORDER:
+        case ResizerLocation::B_BORDER:     setCursor(Qt::SizeVerCursor);   break;
 
-        case Resizer::L_ANCHOR:
-        case Resizer::R_ANCHOR:
-        case Resizer::L_BORDER:
-        case Resizer::R_BORDER:     setCursor(Qt::SizeHorCursor); break;
+        case ResizerLocation::L_ANCHOR:
+        case ResizerLocation::R_ANCHOR:
+        case ResizerLocation::L_BORDER:
+        case ResizerLocation::R_BORDER:     setCursor(Qt::SizeHorCursor);   break;
 
-        case Resizer::TL_ANCHOR:
-        case Resizer::BR_ANCHOR:    setCursor(Qt::SizeFDiagCursor); break;
-        case Resizer::BL_ANCHOR:
-        case Resizer::TR_ANCHOR:    setCursor(Qt::SizeBDiagCursor); break;
+        case ResizerLocation::TL_ANCHOR:
+        case ResizerLocation::BR_ANCHOR:    setCursor(Qt::SizeFDiagCursor); break;
+        case ResizerLocation::BL_ANCHOR:
+        case ResizerLocation::TR_ANCHOR:    setCursor(Qt::SizeBDiagCursor); break;
         default: break;
             // clang-format on
         }
@@ -159,15 +159,15 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
     case SelectorStatus::RESIZING:
         // clang-format off
         switch (cursor_pos_) {
-        case Resizer::Y1_BORDER: case Resizer::Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), 0, 0); break;
-        case Resizer::Y2_BORDER: case Resizer::Y2_ANCHOR: adjust(0, 0, 0, mouse_pos.y() - box_.y2()); break;
-        case Resizer::X1_BORDER: case Resizer::X1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, 0); break;
-        case Resizer::X2_BORDER: case Resizer::X2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), 0); break;
+        case ResizerLocation::Y1_BORDER: case ResizerLocation::Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), 0, 0); break;
+        case ResizerLocation::Y2_BORDER: case ResizerLocation::Y2_ANCHOR: adjust(0, 0, 0, mouse_pos.y() - box_.y2()); break;
+        case ResizerLocation::X1_BORDER: case ResizerLocation::X1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, 0); break;
+        case ResizerLocation::X2_BORDER: case ResizerLocation::X2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), 0); break;
 
-        case Resizer::X1Y1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), mouse_pos.y() - box_.y1(), 0, 0); break;
-        case Resizer::X1Y2_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, mouse_pos.y() - box_.y2()); break;
-        case Resizer::X2Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), mouse_pos.x() - box_.x2(), 0); break;
-        case Resizer::X2Y2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), mouse_pos.y() - box_.y2()); break;
+        case ResizerLocation::X1Y1_ANCHOR: adjust(mouse_pos.x() - box_.x1(), mouse_pos.y() - box_.y1(), 0, 0); break;
+        case ResizerLocation::X1Y2_ANCHOR: adjust(mouse_pos.x() - box_.x1(), 0, 0, mouse_pos.y() - box_.y2()); break;
+        case ResizerLocation::X2Y1_ANCHOR: adjust(0, mouse_pos.y() - box_.y1(), mouse_pos.x() - box_.x2(), 0); break;
+        case ResizerLocation::X2Y2_ANCHOR: adjust(0, 0, mouse_pos.x() - box_.x2(), mouse_pos.y() - box_.y2()); break;
 
         default: break;
         }

@@ -22,14 +22,4 @@ enum class graph_t
     eraser    = 0x0080,
 };
 
-enum PaintType : uint32_t
-{
-    UNMODIFIED     = 0x0000,
-    UPDATE_MASK    = 0x0001,
-    DRAW_MODIFYING = 0x0010,
-    DRAW_MODIFIED  = 0x0020 | UPDATE_MASK,
-    DRAW_FINISHED  = 0x0040 | UPDATE_MASK,
-    REPAINT_ALL    = 0x0100 | DRAW_MODIFIED | DRAW_FINISHED,
-};
-
 #endif //! CAPTURER_UTILS_H

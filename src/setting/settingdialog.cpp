@@ -20,6 +20,14 @@
 #include <QStackedWidget>
 #include <QVBoxLayout>
 
+static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString>> PENSTYLES = {
+    { Qt::SolidLine, "SolidLine" },
+    { Qt::DashLine, "DashLine" },
+    { Qt::DotLine, "DotLine" },
+    { Qt::DashDotLine, "DashDotLine" },
+    { Qt::DashDotDotLine, "DashDotDotLine" },
+};
+
 SettingWindow::SettingWindow(QWidget *parent)
     : QWidget(parent)
 {
@@ -170,8 +178,7 @@ QWidget *SettingWindow::setupSnipWidget()
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected([this](auto value) {
             config.set(config["snip"]["selector"]["border"]["style"], value.toInt());
         })
@@ -219,8 +226,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected([this](auto value) {
             config.set(config["record"]["selector"]["border"]["style"], value.toInt());
         })
@@ -324,8 +330,7 @@ QWidget *SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected(
             [this](auto value) { config.set(config["gif"]["selector"]["border"]["style"], value.toInt()); })
         .select(config["gif"]["selector"]["border"]["style"].get<int>());
@@ -519,14 +524,13 @@ QWidget *SettingWindow::setupAboutWidget()
     return about_widget;
 }
 
-void SettingWindow::setAutoRun(int statue)
+void SettingWindow::setAutoRun(int state)
 {
-    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-
 #ifdef _WIN32
+    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
     QSettings settings(R"(HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run)",
                        QSettings::NativeFormat);
-    settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
+    settings.setValue("capturer_run", state == Qt::Checked ? exec_path : "");
 #elif __linux__
     std::string desktop_file = "/usr/share/applications/capturer.desktop";
     std::string autorun_dir  = std::string{ ::getenv("HOME") } + "/.config/autostart";
@@ -534,11 +538,11 @@ void SettingWindow::setAutoRun(int statue)
 
     if (!std::filesystem::exists(desktop_file)) {
         LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";
-        statue = Qt::Unchecked;
+        state = Qt::Unchecked;
         autorun_->setCheckState(Qt::Unchecked);
     }
 
-    if (statue == Qt::Checked) {
+    if (state == Qt::Checked) {
         if (std::filesystem::exists(desktop_file) && !std::filesystem::exists(autorun_file)) {
             if (!std::filesystem::exists(autorun_dir)) {
                 std::filesystem::create_directories(autorun_dir);
@@ -551,5 +555,5 @@ void SettingWindow::setAutoRun(int statue)
     }
 #endif
 
-    config.set(config["autorun"], statue == Qt::Checked);
+    config.set(config["autorun"], state == Qt::Checked);
 }

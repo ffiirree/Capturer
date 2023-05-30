@@ -3,9 +3,10 @@
 
 #include "config.h"
 
-#include <QStackedWidget>
+#include <QWidget>
 
 class QCheckBox;
+class QStackedWidget;
 
 class SettingWindow : public QWidget
 {

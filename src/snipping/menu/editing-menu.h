@@ -1,14 +1,17 @@
 #ifndef IMAGE_EDIT_MENU_H
 #define IMAGE_EDIT_MENU_H
 
-#include "editmenu.h"
 #include "utils.h"
+
+#include <QWidget>
 
 class QAbstractButton;
 class ButtonGroup;
 class QCheckBox;
 
-class ImageEditMenu : public EditMenu
+class StyleMenu;
+
+class ImageEditMenu : public QWidget
 {
     Q_OBJECT
 
@@ -31,24 +34,24 @@ public:
     graph_t graph() const { return graph_; }
 
     // pen
-    QPen pen() const override;
+    QPen pen() const;
 
-    void pen(const QPen&) override;
+    void setPen(const QPen&);
 
     // brush
-    QBrush brush() const override;
+    QBrush brush() const;
 
-    void brush(const QBrush&) override;
+    void setBrush(const QBrush&);
 
     // fill: pen | brush
-    bool fill() const override;
+    bool filled() const;
 
-    void fill(bool) override;
+    void fill(bool);
 
     // font
-    QFont font() const override;
+    QFont font() const;
 
-    void font(const QFont& font) override;
+    void setFont(const QFont& font);
 
     // submenu position
     void setSubMenuShowAbove(bool v) { sub_menu_show_pos_ = v; }
@@ -60,16 +63,25 @@ signals:
     void exit();
 
     void graphChanged(graph_t); // start painting
-    void styleChanged();
 
     void undo();
     void redo();
+
+    void penChanged(graph_t, const QPen&);
+    void brushChanged(graph_t, const QBrush&);
+    void fontChanged(graph_t, const QFont&);
+    void fillChanged(graph_t, bool);
+
+    void moved();
 
 public slots:
     void disableUndo(bool val);
     void disableRedo(bool val);
 
     void paintGraph(graph_t graph);
+
+protected:
+    void moveEvent(QMoveEvent *);
 
 private:
     QCheckBox *undo_btn_{ nullptr };
@@ -78,7 +90,7 @@ private:
     ButtonGroup *group_{ nullptr };
 
     graph_t graph_{ graph_t::none };
-    std::map<graph_t, std::pair<QAbstractButton *, EditMenu *>> btn_menus_; // bind graph with buttons
+    std::map<graph_t, std::pair<QAbstractButton *, StyleMenu *>> btn_menus_; // bind graph with buttons
 
     bool sub_menu_show_pos_{ false };
 };
