@@ -71,6 +71,7 @@ signals:
     void brushChanged(graph_t, const QBrush&);
     void fontChanged(graph_t, const QFont&);
     void fillChanged(graph_t, bool);
+    void imageArrived(const QPixmap&);
 
     void moved();
 

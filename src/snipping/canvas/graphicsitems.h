@@ -50,6 +50,11 @@ public:
     //
     virtual ResizerLocation location(const QPointF&) const = 0;
 
+    //
+    virtual void rotate(qreal) {}
+
+    virtual void resize(const ResizerF&, ResizerLocation) {}
+
     // callbacks
     virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
 
@@ -68,9 +73,20 @@ protected:
     std::function<void()> onblur                                  = []() {};
     std::function<void(const std::shared_ptr<Command>&)> onchange = [](auto) {};
 
-    ResizerLocation hover_location_        = ResizerLocation::DEFAULT;
-    adjusting_t adjusting_                 = adjusting_t::none;
-    qreal adjusting_min_w_                 = 12.0;
+    ResizerLocation hover_location_ = ResizerLocation::DEFAULT;
+    adjusting_t adjusting_          = adjusting_t::none;
+    qreal adjusting_min_w_          = 12.0;
+
+    //
+    qreal angle_{};
+
+    //
+    QPointF mpos_{};
+
+    // for recording adjusted command
+    ResizerF before_resizing_;
+    qreal before_rotating_;
+    QPointF before_moving_;
 };
 
 class GraphicsItem : public GraphicsItemInterface, public QGraphicsItem
@@ -124,6 +140,9 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
+    //
+    void resize(const ResizerF&, ResizerLocation) override;
+
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
@@ -170,6 +189,8 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
+    void resize(const ResizerF&, ResizerLocation) override;
+
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
@@ -181,7 +202,7 @@ private:
     QPen pen_{ Qt::red, 1, Qt::SolidLine };
 };
 
-/// GraphicsRectItem
+/// Rectangle Item
 
 class GraphicsRectItem : public GraphicsItem
 {
@@ -219,6 +240,8 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
+    void resize(const ResizerF& g, ResizerLocation) override;
+
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
@@ -232,6 +255,52 @@ private:
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
+};
+
+/// Pixmap Item
+
+class GraphicsPixmapItem : public GraphicsItem
+{
+public:
+    explicit GraphicsPixmapItem(const QPixmap&, const QPointF& center, QGraphicsItem * = nullptr);
+
+    ~GraphicsPixmapItem() {}
+
+    // QGraphicsItem
+    QRectF boundingRect() const override;
+    QPainterPath shape() const override;
+
+    void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
+
+    //
+    void setPixmap(const QPixmap&);
+
+    // GraphicsItemInterface
+    graph_t graph() const override { return graph_t::image; }
+
+    void push(const QPointF&) override {}
+
+    bool filled() const override { return true; }
+
+    bool invalid() const override { return pixmap_.size() == QSize{ 0, 0 }; }
+
+    ResizerLocation location(const QPointF&) const override;
+
+    void resize(const ResizerF& g, ResizerLocation) override;
+
+    void rotate(qreal) override;
+
+protected:
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+
+private:
+    QPointF v1_{};
+    QPointF v2_{};
+
+    QPixmap pixmap_{};
 };
 
 /// GraphicsEllipseleItem
@@ -272,6 +341,8 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
+    void resize(const ResizerF&, ResizerLocation) override;
+
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
@@ -285,6 +356,51 @@ private:
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
+};
+
+/// Counter Item
+
+class GraphicsCounterleItem : public GraphicsItem
+{
+public:
+    explicit GraphicsCounterleItem(const QPointF&, int, QGraphicsItem * = nullptr);
+
+    ~GraphicsCounterleItem() {}
+
+    // QGraphicsItem
+    QRectF boundingRect() const override;
+    QPainterPath shape() const override;
+
+    void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
+
+    //
+    void setCounter(int);
+
+    // GraphicsItemInterface
+    graph_t graph() const override { return graph_t::ellipse; }
+
+    //QPen pen() const override;
+    //void setPen(const QPen&) override;
+
+    bool filled() const override { return true; }
+
+    void push(const QPointF&) override {}
+
+    bool invalid() const override { return false; }
+
+    ResizerLocation location(const QPointF&) const override;
+
+    //void resize(const ResizerF&, ResizerLocation) override;
+
+private:
+    QPointF v1_{};
+    QPointF v2_{};
+
+    QPen pen_{ Qt::red, 3, Qt::SolidLine };
+
+    int counter_{};
+
+    static int counter;
 };
 
 /// GraphicsPathItem
@@ -380,6 +496,11 @@ public:
     //
     QRectF paddingRect() const;
 
+    //
+    void resize(const ResizerF&, ResizerLocation) override;
+
+    void rotate(qreal) override;
+
 protected:
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;
@@ -395,7 +516,6 @@ protected:
 
 private:
     const float padding = 5;
-    QPointF mpos_{};
 };
 
 #endif //! CAPTURER_GRAPHICS_ITEMS_H

@@ -59,6 +59,14 @@ ImageEditMenu QCheckBox#pen-btn::indicator:checked {
     image: url(:/icons/feather);
 }
 
+ImageEditMenu QCheckBox#image-btn::indicator:checked {
+    image: url(:/icons/image);
+}
+
+ImageEditMenu QCheckBox#counter-btn::indicator:checked {
+    image: url(:/icons/counter);
+}
+
 ImageEditMenu QCheckBox#text-btn::indicator:checked {
     image: url(:/icons/text);
 }

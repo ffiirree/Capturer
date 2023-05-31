@@ -87,6 +87,14 @@ ImageEditMenu QCheckBox#pen-btn::indicator {
     image: url(:/icons/feather-dark);
 }
 
+ImageEditMenu QCheckBox#image-btn::indicator {
+    image: url(:/icons/image-dark);
+}
+
+ImageEditMenu QCheckBox#counter-btn::indicator {
+    image: url(:/icons/counter-dark);
+}
+
 ImageEditMenu QCheckBox#text-btn::indicator {
     image: url(:/icons/text-dark);
 }

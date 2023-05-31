@@ -145,20 +145,3 @@ void MovedCommand::undo()
 {
     if (item_) item_->moveBy(-offset_.x(), -offset_.y());
 }
-
-////
-
-ResizedCommand::ResizedCommand(QGraphicsItem *item, const QMarginsF& margins)
-    : item_(item),
-      margins_(margins)
-{}
-
-void ResizedCommand::redo()
-{
-    // if (item_) item_->
-}
-
-void ResizedCommand::undo()
-{
-    // if (item_) item_->moveBy(-offset_.x(), -offset_.y());
-}

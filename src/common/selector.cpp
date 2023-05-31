@@ -51,6 +51,8 @@ void Selector::start(probe::graphics::window_filter_t flags)
     if (status_ == SelectorStatus::READY) {
         setMouseTracking(true);
 
+        box_.range(probe::graphics::virtual_screen_geometry());
+
         hunter::ready(flags);
         select(hunter::hunt(QCursor::pos()));
         info_->show();
@@ -372,6 +374,8 @@ void Selector::registerShortcuts()
     // fullscreen
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
         if (status_ <= SelectorStatus::CAPTURED) {
+
+            status(SelectorStatus::PREY_SELECTING);
 
             // rectangle / window -> display
             if (prey_.type < hunter::prey_type_t::display) {

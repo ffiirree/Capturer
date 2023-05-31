@@ -106,6 +106,12 @@
         <file alias="checkbox-unchecked-dark">resources/icons/checkbox-unchecked-dark.png</file>
         <file alias="checkbox-unchecked-hover">resources/icons/checkbox-unchecked-hover.png</file>
         <file alias="checkbox-unchecked-light">resources/icons/checkbox-unchecked-light.png</file>
+        <file alias="counter">resources/icons/counter.png</file>
+        <file alias="counter-light">resources/icons/counter-light.png</file>
+        <file alias="counter-dark">resources/icons/counter-dark.png</file>
+        <file alias="image">resources/icons/image.png</file>
+        <file alias="image-light">resources/icons/image-light.png</file>
+        <file alias="image-dark">resources/icons/image-dark.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

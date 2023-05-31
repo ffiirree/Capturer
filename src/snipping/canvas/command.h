@@ -1,9 +1,10 @@
 #ifndef CAPTURER_COMMAND_H
 #define CAPTURER_COMMAND_H
 
+#include <memory>
+#include <QFont>
 #include <QPen>
 #include <QPoint>
-#include <QFont>
 
 class QGraphicsItem;
 class GraphicsItemInterface;
@@ -14,6 +15,24 @@ struct Command
 {
     virtual void redo() = 0;
     virtual void undo() = 0;
+};
+
+////
+
+struct LambdaCommand : public Command
+{
+    LambdaCommand(const std::function<void()>& r, const std::function<void()>& u)
+        : onredo(r),
+          onundo(u)
+    {}
+
+    void redo() override { onredo(); }
+
+    void undo() override { onundo(); }
+
+private:
+    std::function<void()> onredo = []() {};
+    std::function<void()> onundo = []() {};
 };
 
 ////
@@ -129,19 +148,6 @@ private:
     QPointF offset_{};
 };
 
-////
-
-struct ResizedCommand : public Command
-{
-    ResizedCommand(QGraphicsItem *item, const QMarginsF& margins);
-
-    void redo() override;
-    void undo() override;
-
-private:
-    QGraphicsItem *item_{};
-    QMarginsF margins_{};
-};
 
 ////
 

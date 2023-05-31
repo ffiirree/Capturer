@@ -23,7 +23,7 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : QGraphicsView(parent)
 {
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint /*| Qt::WindowStaysOnTopHint*/ |
                    Qt::BypassWindowManagerHint);
 
     // setAttribute(Qt::WA_TranslucentBackground);
@@ -55,6 +55,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         if (graph != graph_t::none) {
             selector_->status(SelectorStatus::LOCKED);
         }
+
+        updateCursor();
     });
 
     connect(menu_, &ImageEditMenu::penChanged, [this](auto graph, auto pen) {
@@ -95,6 +97,14 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             commands_.push(std::make_shared<FillChangedCommand>(item, filled));
             item->fill(menu_->filled());
         }
+    });
+
+    connect(menu_, &ImageEditMenu::imageArrived, [this](auto pixmap) {
+        QGraphicsItem *item = new GraphicsPixmapItem(pixmap, scene()->sceneRect().center());
+        dynamic_cast<GraphicsItemInterface *>(item)->onchanged([this](auto cmd) { commands_.push(cmd); });
+
+        scene()->addItem(item);
+        item->setFocus();
     });
 
     // show menu
@@ -160,9 +170,11 @@ void ScreenShoter::exit()
 
     creating_item_ = {};
 
+    counter_ = 0;
+
     commands_.clear();
 
-    setCursor(Qt::CrossCursor);
+    unsetCursor();
 
     QWidget::close();
 }
@@ -180,9 +192,12 @@ QBrush ScreenShoter::mosaicBrush()
 
 void ScreenShoter::updateCursor()
 {
-    if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
+    if (!!(menu_->graph() & (graph_t::eraser | graph_t::mosaic))) {
         circle_cursor_.setWidth(menu_->pen().width());
         setCursor(QCursor(circle_cursor_.cursor()));
+    }
+    else {
+        setCursor(Qt::CrossCursor);
     }
 }
 
@@ -192,7 +207,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     QGraphicsView::mousePressEvent(event);
 
-    if (!event->isAccepted() && event->button() == Qt::LeftButton) {
+    if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != graph_t::none) {
         auto pos = event->pos();
 
         editstatus_ = EditStatus::GRAPH_CREATING;
@@ -206,6 +221,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         case graph_t::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
         case graph_t::arrow: item = new GraphicsArrowItem(pos, pos); break;
         case graph_t::line: item = new GraphicsLineItem(pos, pos); break;
+        case graph_t::counter: item = new GraphicsCounterleItem(pos, ++counter_); break;
 
         case graph_t::eraser:
             item = new GraphicsEraserItem(pos);
@@ -232,6 +248,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         creating_item_.first->fill(menu_->filled());
 
         creating_item_.first->onfocused([citem = creating_item_.first, this]() {
+            scene()->clearSelection(); // clear selection of text items
             menu_->paintGraph(citem->graph());
             menu_->fill(citem->filled());
             menu_->setPen(citem->pen());
@@ -282,7 +299,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
-    if (menu_->graph() == graph_t::eraser || menu_->graph() == graph_t::mosaic) {
+    if (!!(menu_->graph() & (graph_t::eraser | graph_t::mosaic))) {
         auto delta = event->angleDelta().y() / 120;
         auto width = std::clamp(menu_->pen().width() + delta, 5, 49);
         menu_->setPen(QPen(QBrush{}, width));
@@ -350,6 +367,8 @@ std::pair<QPixmap, QPoint> ScreenShoter::snip()
 
     auto rect = selector_->selected();
     selector_->close();
+    scene()->clearFocus();
+    scene()->clearSelection();
     return { QGraphicsView::grab(rect), rect.topLeft() };
 }
 

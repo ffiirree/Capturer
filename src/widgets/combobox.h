@@ -27,7 +27,9 @@ public:
         return *this;
     }
 
-    inline ComboBox& add(const std::vector<std::pair<int, QString>>& items)
+    template<typename T>
+    requires std::integral<T>
+    inline ComboBox& add(const std::vector<std::pair<T, QString>>& items)
     {
         for (const auto& [value, text] : items) {
             insertItem(count(), text, value);

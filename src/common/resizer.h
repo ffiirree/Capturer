@@ -118,9 +118,7 @@ public:
           y2_(y2),
           border_w_(border_w),
           anchor_w_(anchor_w)
-    {
-        range(probe::graphics::virtual_screen_geometry());
-    }
+    {}
 
     _Resizer(const qpoint_t& p1, const qpoint_t& p2, T border_width = 5, T anchor_w = 7)
         : _Resizer(p1.x(), p1.y(), p2.x(), p2.y(), border_width, anchor_w)
@@ -133,6 +131,13 @@ public:
     explicit _Resizer(const qrect_t& rect, T border_width = 5, T anchor_w = 7)
         : _Resizer(rect.topLeft(), rect.bottomRight(), border_width, anchor_w)
     {}
+
+    bool operator==(const _Resizer<T>& rhs)
+    {
+        return x1_ == rhs.x1_ && y1_ == rhs.y1_ && x2_ == rhs.x2_ && y2_ == rhs.y2_;
+    }
+
+    bool operator!=(const _Resizer<T>& rhs) { return !(*this == rhs); }
 
     // TODO: constrain the box coordinates by range
     inline void range(const qrect_t& r) { range_ = r; }
@@ -404,8 +409,8 @@ protected:
     T x2_ = 0;
     T y2_ = 0;
 
-    qrect_t range_{ std::numeric_limits<T>::min(), std::numeric_limits<T>::min(),
-                    std::numeric_limits<T>::max(), std::numeric_limits<T>::max() };
+    qrect_t range_{ qpoint_t{ std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest() },
+                    qpoint_t{ std::numeric_limits<T>::max(), std::numeric_limits<T>::max() } };
 
     bool rotate_f_{};
 

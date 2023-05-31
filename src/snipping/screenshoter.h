@@ -81,6 +81,7 @@ private:
     uint32_t editstatus_{};
 
     std::pair<GraphicsItemInterface *, graph_t> creating_item_;
+    int counter_{ 0 };
 
     ImageEditMenu *menu_{};  // Edit menu
     Magnifier *magnifier_{}; // Magnifier

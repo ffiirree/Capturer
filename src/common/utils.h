@@ -17,9 +17,11 @@ enum class graph_t
     arrow     = 0x0004,
     line      = 0x0008,
     curve     = 0x0010,
-    text      = 0x0020,
-    mosaic    = 0x0040,
-    eraser    = 0x0080,
+    image     = 0x0020,
+    counter   = 0x0040,
+    text      = 0x0080,
+    mosaic    = 0x0100,
+    eraser    = 0x0200,
 };
 
 #endif //! CAPTURER_UTILS_H

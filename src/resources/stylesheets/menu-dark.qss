@@ -87,6 +87,14 @@ ImageEditMenu QCheckBox#pen-btn::indicator {
     image: url(:/icons/feather-light);
 }
 
+ImageEditMenu QCheckBox#image-btn::indicator {
+    image: url(:/icons/image-light);
+}
+
+ImageEditMenu QCheckBox#counter-btn::indicator {
+    image: url(:/icons/counter-light);
+}
+
 ImageEditMenu QCheckBox#text-btn::indicator {
     image: url(:/icons/text-light);
 }
