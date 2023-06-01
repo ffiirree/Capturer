@@ -1,9 +1,9 @@
 #ifndef SCREEN_SHOTER_H
 #define SCREEN_SHOTER_H
 
-#include "circlecursor.h"
 #include "canvas/command.h"
 #include "canvas/graphicsitems.h"
+#include "circlecursor.h"
 #include "config.h"
 #include "hunter.h"
 #include "resizer.h"
@@ -14,7 +14,7 @@
 #include <QSystemTrayIcon>
 
 class Selector;
-class ImageEditMenu;
+class EditingMenu;
 class Magnifier;
 
 class ScreenShoter : public QGraphicsView
@@ -41,7 +41,7 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
-    void focusOnGraph(graph_t);
+    void focusOnGraph(canvas::graphics_t);
     void pinSnipped(const QPixmap& image, const QPoint& pos);
     void SHOW_MESSAGE(const QString& title, const QString& msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
@@ -60,6 +60,8 @@ public slots:
 
     void moveMenu();
 
+    void updateCursor(ResizerLocation);
+
 protected:
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
@@ -73,28 +75,31 @@ protected:
 
 private:
     void registerShortcuts();
-    void updateCursor();
     QBrush mosaicBrush();
 
     Selector *selector_{}; // Layer 1
 
     uint32_t editstatus_{};
 
-    std::pair<GraphicsItemInterface *, graph_t> creating_item_;
+    std::pair<GraphicsItemInterface *, canvas::graphics_t> creating_item_;
     int counter_{ 0 };
 
-    ImageEditMenu *menu_{};  // Edit menu
-    Magnifier *magnifier_{}; // Magnifier
+    EditingMenu *menu_{};    // editing menu
+    Magnifier *magnifier_{}; // magnifier
 
     QPoint move_begin_{ 0, 0 };
     QPoint resize_begin_{ 0, 0 };
 
     CircleCursor circle_cursor_{ 20 };
 
+    // history
     std::vector<hunter::prey_t> history_;
     size_t history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
+
+    //
+    std::pair<QGraphicsItem *, int> copied_{}; // item, paste times
 
     CommandStack commands_{};
 };

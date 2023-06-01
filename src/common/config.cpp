@@ -3,7 +3,6 @@
 #include "devices.h"
 #include "logging.h"
 #include "probe/system.h"
-#include "utils.h"
 
 #include <fstream>
 #include <QApplication>
@@ -46,12 +45,12 @@ Config::Config()
 
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["width"],   2);
     IF_NULL_SET(settings_["snip"]["selector"]["border"]["color"],   "#409EFF");
-    IF_NULL_SET(settings_["snip"]["selector"]["border"]["style"],   Qt::DashDotLine);
+    IF_NULL_SET(settings_["snip"]["selector"]["border"]["style"],   Qt::SolidLine);
     IF_NULL_SET(settings_["snip"]["selector"]["mask"]["color"],     "#88000000");
 
     IF_NULL_SET(settings_["record"]["selector"]["border"]["width"], 2);
     IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
-    IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::DashDotLine);
+    IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::SolidLine);
     IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
     IF_NULL_SET(settings_["record"]["encoder"],                     "libx264");
     IF_NULL_SET(settings_["record"]["quality"],                     "medium");
@@ -60,7 +59,7 @@ Config::Config()
 
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    2);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");
-    IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"],    Qt::DashDotLine);
+    IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"],    Qt::SolidLine);
     IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],      "#88000000");
     IF_NULL_SET(settings_["gif"]["quality"],                        "medium");
     IF_NULL_SET(settings_["gif"]["box"],                            false);

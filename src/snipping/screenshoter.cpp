@@ -23,11 +23,10 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : QGraphicsView(parent)
 {
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint /*| Qt::WindowStaysOnTopHint*/ |
-                   Qt::BypassWindowManagerHint);
-
-    // setAttribute(Qt::WA_TranslucentBackground);
-    // setStyleSheet("background: transparent");
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint);
+#ifdef NDEBUG
+    setWindowFlag(Qt::WindowStaysOnTopHint, true);
+#endif
 
     setFrameStyle(QGraphicsView::NoFrame);
     setContentsMargins({ 0, 0, 0, 0 });
@@ -37,29 +36,29 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     selector_  = new Selector(this);
-    menu_      = new ImageEditMenu(this);
+    menu_      = new EditingMenu(this);
     magnifier_ = new Magnifier(this);
     setScene(new QGraphicsScene(this));
 
     menu_->installEventFilter(this);
 
-    connect(menu_, &ImageEditMenu::save, this, &ScreenShoter::save);
-    connect(menu_, &ImageEditMenu::ok, this, &ScreenShoter::copy);
-    connect(menu_, &ImageEditMenu::pin, this, &ScreenShoter::pin);
-    connect(menu_, &ImageEditMenu::exit, this, &ScreenShoter::exit);
+    connect(menu_, &EditingMenu::save, this, &ScreenShoter::save);
+    connect(menu_, &EditingMenu::copy, this, &ScreenShoter::copy);
+    connect(menu_, &EditingMenu::pin, this, &ScreenShoter::pin);
+    connect(menu_, &EditingMenu::exit, this, &ScreenShoter::exit);
 
-    connect(menu_, &ImageEditMenu::undo, &commands_, &CommandStack::undo);
-    connect(menu_, &ImageEditMenu::redo, &commands_, &CommandStack::redo);
+    connect(menu_, &EditingMenu::undo, &commands_, &CommandStack::undo);
+    connect(menu_, &EditingMenu::redo, &commands_, &CommandStack::redo);
 
-    connect(menu_, &ImageEditMenu::graphChanged, [this](graph_t graph) {
-        if (graph != graph_t::none) {
+    connect(menu_, &EditingMenu::graphChanged, [this](auto graph) {
+        if (graph != canvas::none) {
             selector_->status(SelectorStatus::LOCKED);
         }
 
-        updateCursor();
+        updateCursor(ResizerLocation::DEFAULT);
     });
 
-    connect(menu_, &ImageEditMenu::penChanged, [this](auto graph, auto pen) {
+    connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
             if (graph != item->graph() || item->pen() == pen) return;
@@ -69,7 +68,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::brushChanged, [this](auto graph, auto brush) {
+    connect(menu_, &EditingMenu::brushChanged, [this](auto graph, auto brush) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
             if (graph != item->graph() || item->brush() == brush) return;
@@ -79,7 +78,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::fontChanged, [this](auto graph, auto font) {
+    connect(menu_, &EditingMenu::fontChanged, [this](auto graph, auto font) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
             if (graph != item->graph() || font == item->font()) return;
@@ -89,7 +88,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::fillChanged, [this](auto graph, auto filled) {
+    connect(menu_, &EditingMenu::fillChanged, [this](auto graph, auto filled) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
             if (graph != item->graph() || filled == item->filled()) return;
@@ -99,12 +98,14 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &ImageEditMenu::imageArrived, [this](auto pixmap) {
+    connect(menu_, &EditingMenu::imageArrived, [this](auto pixmap) {
         QGraphicsItem *item = new GraphicsPixmapItem(pixmap, scene()->sceneRect().center());
-        dynamic_cast<GraphicsItemInterface *>(item)->onchanged([this](auto cmd) { commands_.push(cmd); });
 
         scene()->addItem(item);
         item->setFocus();
+
+        dynamic_cast<GraphicsItemInterface *>(item)->onchanged([this](auto cmd) { commands_.push(cmd); });
+        dynamic_cast<GraphicsItemInterface *>(item)->onhovered([this](auto rl) { updateCursor(rl); });
     });
 
     // show menu
@@ -161,12 +162,14 @@ void ScreenShoter::start()
 
 void ScreenShoter::exit()
 {
-    magnifier_->hide();
+    magnifier_->close();
 
-    menu_->reset();
-    menu_->hide();
+    menu_->close();
+
+    copied_ = {};
 
     scene()->clear();
+    setBackgroundBrush(Qt::NoBrush);
 
     creating_item_ = {};
 
@@ -190,14 +193,14 @@ QBrush ScreenShoter::mosaicBrush()
         .scaled(pixmap.size());
 }
 
-void ScreenShoter::updateCursor()
+void ScreenShoter::updateCursor(ResizerLocation location)
 {
-    if (!!(menu_->graph() & (graph_t::eraser | graph_t::mosaic))) {
+    if (menu_->graph() & (canvas::eraser | canvas::mosaic)) {
         circle_cursor_.setWidth(menu_->pen().width());
         setCursor(QCursor(circle_cursor_.cursor()));
     }
     else {
-        setCursor(Qt::CrossCursor);
+        setCursor(getCursorByLocation(location, Qt::CrossCursor));
     }
 }
 
@@ -207,7 +210,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     QGraphicsView::mousePressEvent(event);
 
-    if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != graph_t::none) {
+    if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != canvas::none) {
         auto pos = event->pos();
 
         editstatus_ = EditStatus::GRAPH_CREATING;
@@ -216,28 +219,34 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         QPen pen            = menu_->pen();
 
         switch (menu_->graph()) {
-        case graph_t::text: item = new GraphicsTextItem(pos); break;
-        case graph_t::rectangle: item = new GraphicsRectItem(pos, pos); break;
-        case graph_t::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
-        case graph_t::arrow: item = new GraphicsArrowItem(pos, pos); break;
-        case graph_t::line: item = new GraphicsLineItem(pos, pos); break;
-        case graph_t::counter: item = new GraphicsCounterleItem(pos, ++counter_); break;
+        case canvas::text: {
+            item = new GraphicsTextItem(pos);
 
-        case graph_t::eraser:
+            auto iif = dynamic_cast<GraphicsItemInterface *>(item);
+            iif->onresized([iif, this](auto) { menu_->setFont(iif->font()); });
+            break;
+        }
+        case canvas::rectangle: item = new GraphicsRectItem(pos, pos); break;
+        case canvas::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
+        case canvas::arrow: item = new GraphicsArrowItem(pos, pos); break;
+        case canvas::line: item = new GraphicsLineItem(pos, pos); break;
+        case canvas::counter: item = new GraphicsCounterleItem(pos, ++counter_); break;
+
+        case canvas::eraser:
             item = new GraphicsEraserItem(pos);
             pen.setBrush(QBrush(backgroundBrush().textureImage()));
 
             dynamic_cast<GraphicsEraserItem *>(item)->setPen(pen);
             break;
 
-        case graph_t::mosaic:
+        case canvas::mosaic:
             pen.setBrush(mosaicBrush());
             item = new GraphicsMosaicItem(pos);
             dynamic_cast<GraphicsMosaicItem *>(item)->setPen(pen);
             break;
-        case graph_t::curve: item = new GraphicsCurveItem(pos); break;
+        case canvas::curve: item = new GraphicsCurveItem(pos); break;
 
-        default: break;
+        default: return;
         }
 
         creating_item_ = { dynamic_cast<GraphicsItemInterface *>(item), menu_->graph() };
@@ -256,6 +265,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             menu_->setFont(citem->font());
         });
         creating_item_.first->onchanged([this](auto cmd) { commands_.push(cmd); });
+        creating_item_.first->onhovered([this](ResizerLocation location) { updateCursor(location); });
 
         scene()->addItem(item);
         item->setFocus();
@@ -269,7 +279,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
     if ((event->buttons() & Qt::LeftButton) && creating_item_.first &&
         editstatus_ == EditStatus::GRAPH_CREATING) {
         switch (creating_item_.second) {
-        case graph_t::text: break;
+        case canvas::text: break;
         default: creating_item_.first->push(pos); break;
         }
     }
@@ -282,7 +292,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
     if ((event->button() == Qt::LeftButton) && creating_item_.first &&
         editstatus_ == EditStatus::GRAPH_CREATING) {
-        if (creating_item_.first->invalid() && creating_item_.second != graph_t::text) {
+        if (creating_item_.first->invalid() && creating_item_.second != canvas::text) {
             scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_.first));
         }
         else {
@@ -299,7 +309,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
-    if (!!(menu_->graph() & (graph_t::eraser | graph_t::mosaic))) {
+    if (menu_->graph() & (canvas::eraser | canvas::mosaic)) {
         auto delta = event->angleDelta().y() / 120;
         auto width = std::clamp(menu_->pen().width() + delta, 5, 49);
         menu_->setPen(QPen(QBrush{}, width));
@@ -343,14 +353,14 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 void ScreenShoter::moveMenu()
 {
     auto area  = selector_->selected();
-    auto right = area.right() - menu_->width() + 1;
+    auto right = area.right() - menu_->width() - 2;
     if (right < geometry().left()) right = geometry().left();
 
-    if (area.bottom() + (menu_->height() * 2 + 8 /*margin*/) < geometry().bottom()) {
+    if (area.bottom() + (menu_->height() * 2 + 6 /*margin*/) < geometry().bottom()) {
         menu_->move(right, area.bottom() + 6);
         menu_->setSubMenuShowAbove(false);
     }
-    else if (area.top() - (menu_->height() * 2 + 8) > 0) {
+    else if (area.top() - (menu_->height() * 2 + 6) > 0) {
         menu_->move(right, area.top() - menu_->height() - 6);
         menu_->setSubMenuShowAbove(true);
     }
@@ -397,8 +407,7 @@ void ScreenShoter::save()
 #endif
 
     if (!filename.isEmpty()) {
-        QFileInfo fileinfo(filename);
-        save_path_ = fileinfo.absoluteDir().path();
+        save_path_ = QFileInfo(filename).absolutePath();
 
         auto [pixmap, _] = snip();
         pixmap.save(filename);
@@ -490,7 +499,21 @@ void ScreenShoter::registerShortcuts()
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
         }
         else {
-            // TODO: copy
+            if (auto focused = scene()->focusItem(); focused) {
+                copied_ = { focused, 1 };
+            }
+        }
+    });
+
+    connect(new QShortcut(Qt::CTRL | Qt::Key_V, this), &QShortcut::activated, [this]() {
+        if (copied_.first) {
+            if (auto copied = dynamic_cast<GraphicsItemInterface *>(copied_.first)->copy(); copied) {
+                copied->moveBy(copied_.second * 10, copied_.second * (-10));
+                copied_.second++;
+                scene()->addItem(copied);
+                commands_.push(std::make_shared<CreatedCommand>(copied));
+                copied->setFocus();
+            }
         }
     });
 }

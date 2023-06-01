@@ -5,7 +5,7 @@
 #include "logging.h"
 #include "probe/defer.h"
 #include "probe/util.h"
-#include "utils.h"
+#include "platform.h"
 
 #include <dshow.h>
 #include <fmt/format.h>

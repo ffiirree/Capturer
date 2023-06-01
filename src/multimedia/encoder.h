@@ -9,7 +9,6 @@ extern "C" {
 #include "consumer.h"
 #include "logging.h"
 #include "ringvector.h"
-#include "utils.h"
 
 class Encoder : public Consumer<AVFrame>
 {

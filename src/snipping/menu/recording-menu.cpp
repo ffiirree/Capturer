@@ -72,7 +72,7 @@ RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
 
     window_->setLayout(layout_);
 
-    auto *backgroud_layout = new QHBoxLayout();
+    auto backgroud_layout = new QHBoxLayout();
     backgroud_layout->setSpacing(0);
     backgroud_layout->setContentsMargins({});
     backgroud_layout->addWidget(window_);
@@ -104,7 +104,7 @@ void RecordMenu::start()
 
     show();
     // global position, primary display monitor
-    move(probe::graphics::displays()[0].geometry.right() - width() - 5, 100);
+    move(probe::graphics::displays()[0].geometry.right() - width() - 12, 100);
 }
 
 void RecordMenu::mousePressEvent(QMouseEvent *event)

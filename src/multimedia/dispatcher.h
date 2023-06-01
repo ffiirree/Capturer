@@ -5,7 +5,6 @@
 #include "hwaccel.h"
 #include "media.h"
 #include "producer.h"
-#include "utils.h"
 
 #include <future>
 #include <thread>

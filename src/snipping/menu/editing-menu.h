@@ -1,17 +1,15 @@
 #ifndef IMAGE_EDIT_MENU_H
 #define IMAGE_EDIT_MENU_H
 
-#include "utils.h"
+#include "canvas/types.h"
 
 #include <QWidget>
 
-class QAbstractButton;
 class ButtonGroup;
 class QCheckBox;
+class EditingSubmenu;
 
-class StyleMenu;
-
-class ImageEditMenu : public QWidget
+class EditingMenu : public QWidget
 {
     Q_OBJECT
 
@@ -27,11 +25,11 @@ public:
     };
 
 public:
-    explicit ImageEditMenu(QWidget * = nullptr, uint32_t = MenuGroups::ALL);
+    explicit EditingMenu(QWidget * = nullptr, uint32_t = MenuGroups::ALL);
 
     void reset();
 
-    graph_t graph() const { return graph_; }
+    canvas::graphics_t graph() const { return graph_; }
 
     // pen
     QPen pen() const;
@@ -59,18 +57,17 @@ public:
 signals:
     void save();
     void pin();
-    void ok();
+    void copy();
     void exit();
-
-    void graphChanged(graph_t); // start painting
-
     void undo();
     void redo();
 
-    void penChanged(graph_t, const QPen&);
-    void brushChanged(graph_t, const QBrush&);
-    void fontChanged(graph_t, const QFont&);
-    void fillChanged(graph_t, bool);
+    void graphChanged(canvas::graphics_t); // start painting
+
+    void penChanged(canvas::graphics_t, const QPen&);
+    void brushChanged(canvas::graphics_t, const QBrush&);
+    void fontChanged(canvas::graphics_t, const QFont&);
+    void fillChanged(canvas::graphics_t, bool);
     void imageArrived(const QPixmap&);
 
     void moved();
@@ -79,19 +76,22 @@ public slots:
     void disableUndo(bool val);
     void disableRedo(bool val);
 
-    void paintGraph(graph_t graph);
+    void paintGraph(canvas::graphics_t graph);
 
 protected:
-    void moveEvent(QMoveEvent *);
+    void moveEvent(QMoveEvent *) override;
+    void closeEvent(QCloseEvent *) override;
 
 private:
-    QCheckBox *undo_btn_{ nullptr };
-    QCheckBox *redo_btn_{ nullptr };
+    QCheckBox *undo_btn_{};
+    QCheckBox *redo_btn_{};
 
-    ButtonGroup *group_{ nullptr };
+    ButtonGroup *group_{};
+    std::map<canvas::graphics_t, EditingSubmenu *> submenus_; // bind graph with buttons
 
-    graph_t graph_{ graph_t::none };
-    std::map<graph_t, std::pair<QAbstractButton *, StyleMenu *>> btn_menus_; // bind graph with buttons
+    QString pictures_path_ {};
+
+    canvas::graphics_t graph_{ canvas::none };
 
     bool sub_menu_show_pos_{ false };
 };

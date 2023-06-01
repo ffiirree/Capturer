@@ -10,7 +10,7 @@
 #include <QLayout>
 #include <QLineEdit>
 
-StyleMenu::StyleMenu(int buttons, QWidget *parent)
+EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
     : QWidget(parent)
 {
     setCursor(Qt::ArrowCursor);
@@ -124,20 +124,20 @@ StyleMenu::StyleMenu(int buttons, QWidget *parent)
     }
 }
 
-void StyleMenu::setPen(const QPen& pen)
+void EditingSubmenu::setPen(const QPen& pen)
 {
     pen_ = pen;
     if (!filled() && color_panel_) color_panel_->setColor(pen_.color());
     if (width_btn_) width_btn_->setValue(pen_.width());
 }
 
-void StyleMenu::setBrush(const QBrush& brush)
+void EditingSubmenu::setBrush(const QBrush& brush)
 {
     brush_ = brush;
     if (filled() && color_panel_) color_panel_->setColor(brush.color());
 }
 
-void StyleMenu::setFont(const QFont& font)
+void EditingSubmenu::setFont(const QFont& font)
 {
     font_ = font;
     if (font_family_) font_family_->setCurrentText(font.family());
@@ -145,9 +145,9 @@ void StyleMenu::setFont(const QFont& font)
     if (font_style_) font_style_->setCurrentText(font.styleName());
 }
 
-bool StyleMenu::filled() const { return fill_btn_ ? fill_btn_->isChecked() : false; }
+bool EditingSubmenu::filled() const { return fill_btn_ ? fill_btn_->isChecked() : false; }
 
-void StyleMenu::fill(bool s)
+void EditingSubmenu::fill(bool s)
 {
     fill_ = s;
 

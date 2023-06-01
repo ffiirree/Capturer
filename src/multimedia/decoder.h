@@ -8,7 +8,6 @@ extern "C" {
 #include "logging.h"
 #include "producer.h"
 #include "ringvector.h"
-#include "utils.h"
 
 class Decoder : public Producer<AVFrame>
 {

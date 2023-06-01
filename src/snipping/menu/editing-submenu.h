@@ -1,16 +1,16 @@
-#ifndef CAPTURER_STYLE_MENU_H
-#define CAPTURER_STYLE_MENU_H
+#ifndef CAPTURER_EDITING_SUBMENU_H
+#define CAPTURER_EDITING_SUBMENU_H
 
-#include <QWidget>
-#include <QPen>
 #include <QFont>
+#include <QPen>
+#include <QWidget>
 
 class QCheckBox;
 class ComboBox;
 class ColorPanel;
 class WidthButton;
 
-class StyleMenu : public QWidget
+class EditingSubmenu : public QWidget
 {
     Q_OBJECT
 public:
@@ -23,14 +23,14 @@ public:
     };
 
 public:
-    explicit StyleMenu(int buttons, QWidget *parent = nullptr);
+    explicit EditingSubmenu(int buttons, QWidget *parent = nullptr);
 
-    // 
+    //
     void setPen(const QPen& pen);
 
     QPen pen() const { return pen_; }
 
-    // 
+    //
     void setBrush(const QBrush& brush);
 
     QBrush brush() const { return brush_; }

@@ -27,7 +27,7 @@ RecordMenu QCheckBox#stop-btn::indicator {
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
-ImageEditMenu QCheckBox::indicator {
+EditingMenu QCheckBox::indicator {
     font-size: 9pt;
     
     height: 1.5em;
@@ -35,74 +35,74 @@ ImageEditMenu QCheckBox::indicator {
     padding: 0.5em;
 }
 
-ImageEditMenu QCheckBox::indicator::checked {
+EditingMenu QCheckBox::indicator::checked {
     background-color: #409eff;
 }
 
-ImageEditMenu QCheckBox#rect-btn::indicator:checked {
+EditingMenu QCheckBox#rect-btn::indicator:checked {
     image: url(:/icons/rectangle);
 }
 
-ImageEditMenu QCheckBox#circle-btn::indicator:checked {
+EditingMenu QCheckBox#ellipse-btn::indicator:checked {
     image: url(:/icons/circle);
 }
 
-ImageEditMenu QCheckBox#arrow-btn::indicator:checked {
+EditingMenu QCheckBox#arrow-btn::indicator:checked {
     image: url(:/icons/arrow);
 }
 
-ImageEditMenu QCheckBox#line-btn::indicator:checked {
+EditingMenu QCheckBox#line-btn::indicator:checked {
     image: url(:/icons/line);
 }
 
-ImageEditMenu QCheckBox#pen-btn::indicator:checked {
+EditingMenu QCheckBox#pencil-btn::indicator:checked {
     image: url(:/icons/feather);
 }
 
-ImageEditMenu QCheckBox#image-btn::indicator:checked {
+EditingMenu QCheckBox#image-btn::indicator:checked {
     image: url(:/icons/image);
 }
 
-ImageEditMenu QCheckBox#counter-btn::indicator:checked {
+EditingMenu QCheckBox#counter-btn::indicator:checked {
     image: url(:/icons/counter);
 }
 
-ImageEditMenu QCheckBox#text-btn::indicator:checked {
+EditingMenu QCheckBox#text-btn::indicator:checked {
     image: url(:/icons/text);
 }
 
-ImageEditMenu QCheckBox#eraser-btn::indicator:checked {
+EditingMenu QCheckBox#eraser-btn::indicator:checked {
     image: url(:/icons/eraser);
 }
 
-ImageEditMenu QCheckBox#mosaic-btn::indicator:checked {
+EditingMenu QCheckBox#mosaic-btn::indicator:checked {
     image: url(:/icons/mosaic);
 }
 
-ImageEditMenu QCheckBox#close-btn::indicator {
+EditingMenu QCheckBox#close-btn::indicator {
     image: url(:/icons/wrong);
 }
 
-ImageEditMenu QCheckBox#ok-btn::indicator {
+EditingMenu QCheckBox#ok-btn::indicator {
     image: url(:/icons/right);
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
-StyleMenu QComboBox {
+EditingSubmenu QComboBox {
     font-size: 9pt;
     max-width: 10em;
     min-width: 4em;
 }
 
-StyleMenu QCheckBox::indicator {
+EditingSubmenu QCheckBox::indicator {
     font-size: 9pt;
 }
 
-StyleMenu QCheckBox#width-btn:checked {
+EditingSubmenu QCheckBox#width-btn:checked {
     background-color: #409eff;
 }
 
-StyleMenu QCheckBox#width-btn::indicator {
+EditingSubmenu QCheckBox#width-btn::indicator {
     height: 1.5em;
     width: 1.5em;
     padding: 0.5em;
@@ -110,49 +110,49 @@ StyleMenu QCheckBox#width-btn::indicator {
     image: url(:/icons/dot-2);
 }
 
-StyleMenu QCheckBox#width-btn[width="1"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="1"]::indicator:checked {
     image: url(:/icons/dot-1);
 }
 
-StyleMenu QCheckBox#width-btn[width="2"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="2"]::indicator:checked {
     image: url(:/icons/dot-2);
 }
 
-StyleMenu QCheckBox#width-btn[width="3"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="3"]::indicator:checked {
     image: url(:/icons/dot-3);
 }
 
-StyleMenu QCheckBox#width-btn[width="4"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="4"]::indicator:checked {
     image: url(:/icons/dot-4);
 }
 
-StyleMenu QCheckBox#width-btn[width="5"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="5"]::indicator:checked {
     image: url(:/icons/dot-5);
 }
 
-StyleMenu QCheckBox#width-btn[width="6"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="6"]::indicator:checked {
     image: url(:/icons/dot-6);
 }
 
-StyleMenu QCheckBox#width-btn[width="7"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="7"]::indicator:checked {
     image: url(:/icons/dot-7);
 }
 
-StyleMenu QCheckBox#width-btn[width="8"]::indicator:checked {
+EditingSubmenu QCheckBox#width-btn[width="8"]::indicator:checked {
     image: url(:/icons/dot-8);
 }
 
-StyleMenu QCheckBox#fill-btn::indicator {
+EditingSubmenu QCheckBox#fill-btn::indicator {
     height: 1.5em;
     width: 1.5em;
     padding: 0.5em;
 }
 
-StyleMenu QCheckBox#fill-btn::indicator:checked {
+EditingSubmenu QCheckBox#fill-btn::indicator:checked {
     image: url(:/icons/fill);
 }
 
-StyleMenu ColorPanel {
+EditingSubmenu ColorPanel {
     font-size: 9pt;
     padding: 0.5em;
     background-color: blue;

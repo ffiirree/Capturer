@@ -59,122 +59,122 @@ RecordMenu QCheckBox#pause-btn::indicator:checked {
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
-EditMenu {
+EditingMenu, EditingSubmenu {
     background-color: #f9f9f9;
 }
 
-ImageEditMenu QCheckBox::indicator:unchecked:hover {
+EditingMenu QCheckBox::indicator:unchecked:hover {
     background-color: #e6e6e6;
 }
 
-ImageEditMenu QCheckBox#rect-btn::indicator {
+EditingMenu QCheckBox#rect-btn::indicator {
     image: url(:/icons/rectangle-dark);
 }
 
-ImageEditMenu QCheckBox#circle-btn::indicator {
+EditingMenu QCheckBox#ellipse-btn::indicator {
     image: url(:/icons/circle-dark);
 }
 
-ImageEditMenu QCheckBox#arrow-btn::indicator {
+EditingMenu QCheckBox#arrow-btn::indicator {
     image: url(:/icons/arrow-dark);
 }
 
-ImageEditMenu QCheckBox#line-btn::indicator {
+EditingMenu QCheckBox#line-btn::indicator {
     image: url(:/icons/line-dark);
 }
 
-ImageEditMenu QCheckBox#pen-btn::indicator {
+EditingMenu QCheckBox#pencil-btn::indicator {
     image: url(:/icons/feather-dark);
 }
 
-ImageEditMenu QCheckBox#image-btn::indicator {
+EditingMenu QCheckBox#image-btn::indicator {
     image: url(:/icons/image-dark);
 }
 
-ImageEditMenu QCheckBox#counter-btn::indicator {
+EditingMenu QCheckBox#counter-btn::indicator {
     image: url(:/icons/counter-dark);
 }
 
-ImageEditMenu QCheckBox#text-btn::indicator {
+EditingMenu QCheckBox#text-btn::indicator {
     image: url(:/icons/text-dark);
 }
 
-ImageEditMenu QCheckBox#eraser-btn::indicator {
+EditingMenu QCheckBox#eraser-btn::indicator {
     image: url(:/icons/eraser-dark);
 }
 
-ImageEditMenu QCheckBox#mosaic-btn::indicator {
+EditingMenu QCheckBox#mosaic-btn::indicator {
     image: url(:/icons/mosaic-dark);
 }
 
-ImageEditMenu QCheckBox#undo-btn::indicator {
+EditingMenu QCheckBox#undo-btn::indicator {
     image: url(:/icons/undo-dark);
 }
 
-ImageEditMenu QCheckBox#redo-btn::indicator {
+EditingMenu QCheckBox#redo-btn::indicator {
     image: url(:/icons/redo-dark);
 }
 
-ImageEditMenu QCheckBox#undo-btn::indicator:disabled {
+EditingMenu QCheckBox#undo-btn::indicator:disabled {
     image: url(:/icons/undo-light);
     background-color: #bdbdbd;
 }
 
-ImageEditMenu QCheckBox#redo-btn::indicator:disabled {
+EditingMenu QCheckBox#redo-btn::indicator:disabled {
     image: url(:/icons/redo-light);
     background-color: #bdbdbd;
 }
 
-ImageEditMenu QCheckBox#pin-btn::indicator {
+EditingMenu QCheckBox#pin-btn::indicator {
     image: url(:/icons/pin-dark);
 }
 
-ImageEditMenu QCheckBox#save-btn::indicator {
+EditingMenu QCheckBox#save-btn::indicator {
     image: url(:/icons/save-dark);
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
 
-StyleMenu QCheckBox#width-btn {
+EditingSubmenu QCheckBox#width-btn {
     background-color: #f9f9f9;
 }
 
-StyleMenu QCheckBox#width-btn:unchecked:hover {
+EditingSubmenu QCheckBox#width-btn:unchecked:hover {
     background-color: #e6e6e6;
 }
 
-StyleMenu QCheckBox#width-btn[width="1"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="1"]::indicator {
     image: url(:/icons/dot-1-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="2"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="2"]::indicator {
     image: url(:/icons/dot-2-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="3"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="3"]::indicator {
     image: url(:/icons/dot-3-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="4"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="4"]::indicator {
     image: url(:/icons/dot-4-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="5"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="5"]::indicator {
     image: url(:/icons/dot-5-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="6"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="6"]::indicator {
     image: url(:/icons/dot-6-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="7"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="7"]::indicator {
     image: url(:/icons/dot-7-dark);
 }
 
-StyleMenu QCheckBox#width-btn[width="8"]::indicator {
+EditingSubmenu QCheckBox#width-btn[width="8"]::indicator {
     image: url(:/icons/dot-8-dark);
 }
 
-StyleMenu QCheckBox#fill-btn::indicator {
+EditingSubmenu QCheckBox#fill-btn::indicator {
     image: url(:/icons/fill-dark)
 }

@@ -5,7 +5,6 @@
 #include "json.h"
 #include "probe/graphics.h"
 #include "resizer.h"
-#include "utils.h"
 
 #include <QPainter>
 #include <QWidget>
@@ -18,6 +17,7 @@ enum class SelectorStatus
     READY          = 0x01,
     PREY_SELECTING = 0x02,
     FREE_SELECTING = 0x04,
+    __RESERVERD__  = PREY_SELECTING | FREE_SELECTING,
     CAPTURED       = 0x08,
     MOVING         = 0x10,
     RESIZING       = 0x20,

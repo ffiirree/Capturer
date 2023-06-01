@@ -163,7 +163,7 @@ QWidget *SettingWindow::setupSnipWidget()
 
     auto _1_2 = new QSpinBox();
     _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setMaximum(6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["snip"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -211,7 +211,7 @@ QWidget *SettingWindow::setupRecordWidget()
 
     auto _1_2 = new QSpinBox();
     _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setMaximum(6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["record"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -316,7 +316,7 @@ QWidget *SettingWindow::setupGIFWidget()
 
     auto _1_2 = new QSpinBox();
     _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setMaximum(6);
     _1_2->setValue(config["gif"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             [this](int w) { config.set(config["gif"]["selector"]["border"]["width"], w); });

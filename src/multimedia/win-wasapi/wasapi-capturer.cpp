@@ -6,7 +6,7 @@
 #include "logging.h"
 #include "probe/defer.h"
 #include "probe/util.h"
-#include "utils.h"
+#include "platform.h"
 #include "win-wasapi.h"
 
 #include <iterator>

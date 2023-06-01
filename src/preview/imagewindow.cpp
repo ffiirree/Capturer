@@ -1,7 +1,6 @@
 #include "imagewindow.h"
 
 #include "logging.h"
-#include "utils.h"
 
 #include <QApplication>
 #include <QClipboard>

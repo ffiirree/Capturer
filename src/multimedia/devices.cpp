@@ -2,15 +2,11 @@
 
 #include "logging.h"
 #include "probe/defer.h"
-#include "utils.h"
 
-// #include <QSet>
 
 #ifdef __linux__
-
 #include "linux-pulse/linux-pulse.h"
 #include "linux-v4l2/linux-v4l2.h"
-
 #elif _WIN32
 #include "win-dshow/win-dshow.h"
 #include "win-wasapi/win-wasapi.h"

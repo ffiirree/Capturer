@@ -3,7 +3,6 @@
 #include "linux-pulse.h"
 
 #include "probe/defer.h"
-#include "utils.h"
 
 #include <fmt/format.h>
 #include <logging.h>
