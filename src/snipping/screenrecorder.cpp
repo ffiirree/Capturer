@@ -20,25 +20,23 @@ extern "C" {
 #endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : Selector(parent)
+    : QWidget(parent)
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
-                   Qt::BypassWindowManagerHint);
-
-#ifdef _WIN32
-    scope_ = scope_t::display;
-#endif
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
+                   Qt::WindowStaysOnTopHint);
 
     recording_type_ = type;
-    setMinValidSize({ 16, 16 });
 
     menu_ = new RecordMenu(m_mute_, s_mute_,
                            (type == GIF ? 0x00 : (RecordMenu::MICROPHONE | RecordMenu::SPEAKER)) |
                                RecordMenu::CAMERA | RecordMenu::PAUSE,
                            this);
 
-    prevent_transparent_ = true;
+    selector_ = new Selector(this);
+#ifdef _WIN32
+    selector_->scope(Selector::scope_t::display);
+#endif
 
     player_ = new VideoPlayer(this);
 
@@ -51,7 +49,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     dispatcher_ = std::make_unique<Dispatcher>();
 
     connect(menu_, &RecordMenu::opened, [this](bool) { switchCamera(); });
-    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::close);
+    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::stop);
     connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
     connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
     connect(menu_, &RecordMenu::paused, [this]() { dispatcher_->pause(); });
@@ -89,11 +87,13 @@ void ScreenRecorder::switchCamera()
 
 void ScreenRecorder::record()
 {
-    status_ == SelectorStatus::READY ? start() : [this]() { close(); }();
+    !recording_ ? start() : [this]() { stop(); }();
 }
 
 void ScreenRecorder::start()
 {
+    recording_ = true;
+
     auto time_str = QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
     if (recording_type_ == VIDEO) {
         pix_fmt_                  = AV_PIX_FMT_YUV420P;
@@ -113,10 +113,13 @@ void ScreenRecorder::start()
         filename_     = fmt::format("{}/Capturer_{}.gif", root_dir, time_str);
     }
 
-    Selector::start(probe::graphics::window_filter_t::visible |
-                    probe::graphics::window_filter_t::capturable);
+    selector_->start(probe::graphics::window_filter_t::visible |
+                     probe::graphics::window_filter_t::capturable);
 
     setGeometry(probe::graphics::virtual_screen_geometry());
+    selector_->setGeometry(rect());
+    selector_->coordinate(geometry());
+
     show();
     activateWindow();
 }
@@ -188,12 +191,13 @@ set_pix_fmt(const std::unique_ptr<Producer<AVFrame>>& producer,
 
 void ScreenRecorder::setup()
 {
-    status_ = SelectorStatus::LOCKED;
+    selector_->status(SelectorStatus::LOCKED);
 
-    QRect region = selected(scope_ != scope_t::desktop);
+    QRect region = selector_->selected(selector_->scope() != Selector::scope_t::desktop);
 
-    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>() ? showRegion()
-                                                                                       : hide();
+    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>()
+        ? selector_->showRegion()
+        : hide();
 
     menu_->disable_mic(av::audio_sources().empty());
     menu_->disable_speaker(av::audio_sinks().empty());
@@ -227,22 +231,22 @@ void ScreenRecorder::setup()
     //   4. display  mode: OK
     //   5. desktop  mode: NO, not supported
     options["show_region"] = "false";
-    switch (prey_.type) {
+    switch (selector_->prey().type) {
     case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
     case hunter::prey_type_t::widget:
     case hunter::prey_type_t::window: {
-        auto display = probe::graphics::display_contains(selected().center()).value();
+        auto display = probe::graphics::display_contains(selector_->selected().center()).value();
         name         = "display=" + std::to_string(display.handle);
         break;
     }
-    case hunter::prey_type_t::display: name = "display=" + std::to_string(prey_.handle); break;
+    case hunter::prey_type_t::display: name = "display=" + std::to_string(selector_->prey().handle); break;
     default: LOG(ERROR) << "unsuppored mode"; return;
     }
 #endif
 
     if (desktop_capturer_->open(name, options) < 0) {
         desktop_capturer_->reset();
-        close();
+        stop();
         return;
     }
 
@@ -285,7 +289,7 @@ void ScreenRecorder::setup()
     dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
     if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
-        close();
+        stop();
         return;
     }
 
@@ -295,7 +299,7 @@ void ScreenRecorder::setup()
     if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";
         encoder_->reset();
-        close();
+        stop();
         return;
     }
 
@@ -303,7 +307,7 @@ void ScreenRecorder::setup()
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECORDING!! Please exit first.";
         dispatcher_->reset();
-        close();
+        stop();
         return;
     }
 
@@ -311,7 +315,7 @@ void ScreenRecorder::setup()
     timer_->start(50);
 }
 
-void ScreenRecorder::hideEvent(QHideEvent *)
+void ScreenRecorder::stop()
 {
     menu_->close();
 
@@ -322,12 +326,15 @@ void ScreenRecorder::hideEvent(QHideEvent *)
                           tr("Path: ") + QString::fromStdString(filename_));
         timer_->stop();
     }
+
+    recording_ = false;
+    QWidget::close();
 }
 
 void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
-        close();
+        stop();
     }
 
     if (event->key() == Qt::Key_Return) {

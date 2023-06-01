@@ -25,7 +25,7 @@ using DesktopCapturer = Decoder;
 using AudioCapturer   = Decoder;
 #endif
 
-class ScreenRecorder : public Selector
+class ScreenRecorder : public QWidget
 {
     Q_OBJECT
 
@@ -48,6 +48,7 @@ signals:
 public slots:
     void start();
     void record();
+    void stop();
 
     void switchCamera();
 
@@ -66,23 +67,26 @@ public slots:
     void updateTheme()
     {
         const auto& style = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"];
-        Selector::setBorderStyle(QPen{
+        selector_->setBorderStyle(QPen{
             style["border"]["color"].get<QColor>(),
             static_cast<qreal>(style["border"]["width"].get<int>()),
             style["border"]["style"].get<Qt::PenStyle>(),
         });
 
-        Selector::setMaskStyle(style["mask"]["color"].get<QColor>());
+        selector_->setMaskStyle(style["mask"]["color"].get<QColor>());
     }
 
 private:
     void keyPressEvent(QKeyEvent *) override;
-    void hideEvent(QHideEvent *) override;
 
     void open_audio_sources();
     void setup();
 
     int recording_type_{ VIDEO };
+
+    Selector *selector_{};
+
+    bool recording_{ false };
 
     int framerate_{ 30 };
     AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };

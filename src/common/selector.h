@@ -45,10 +45,16 @@ public:
 
     hunter::prey_t prey() const { return prey_; }
 
+    void coordinate(const QRect& window) { coordinate_ = window; }
+
+    void scope(scope_t scope) { scope_ = scope; }
+
+    scope_t scope() const { return scope_; }
+
     // selected area
     [[nodiscard]] inline QRect selected(bool relative = false) const
     {
-        return relative ? box_.rect().translated(box_.range().topLeft()) : box_.rect();
+        return relative ? box_.rect().translated(-box_.range().topLeft()) : box_.rect();
     }
 
     void select(const hunter::prey_t&);
@@ -94,6 +100,8 @@ protected:
     void adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2);
     void margins(int32_t dt, int32_t dr, int32_t db, int32_t dl);
 
+    QRect coordinate_{};
+
     Resizer box_;                       // TODO: do not use this variable directly
 
     scope_t scope_{ scope_t::desktop }; // selection scope
@@ -111,7 +119,7 @@ protected:
     // selecting
     QPoint sbegin_{ 0, 0 };
 
-    bool prevent_transparent_ = false;
+    bool prevent_transparent_ = true;
 
 private:
     void registerShortcuts();

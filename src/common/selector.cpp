@@ -247,7 +247,9 @@ void Selector::update_info_label()
 void Selector::paintEvent(QPaintEvent *)
 {
     painter_.begin(this);
-    painter_.translate(-geometry().topLeft()); // (0, 0) at primary screen (0, 0)
+
+    if (coordinate_ != QRect{}) painter_.setWindow(coordinate_);
+
     auto srect = selected();
 
     if (!mask_hidden_) {
@@ -255,8 +257,8 @@ void Selector::paintEvent(QPaintEvent *)
 
         painter_.setBrush(mask_color_);
         painter_.setClipping(true);
-        painter_.setClipRegion(QRegion(geometry()).subtracted(QRegion(srect)));
-        painter_.drawRect(geometry());
+        painter_.setClipRegion(QRegion(painter_.window()).subtracted(QRegion(srect)));
+        painter_.drawRect(painter_.window());
         painter_.setClipping(false);
 
         painter_.restore();
@@ -382,10 +384,13 @@ void Selector::registerShortcuts()
                 for (const auto& display : probe::graphics::displays()) {
                     if (QRect(display.geometry).contains(box_.rect(), false)) {
                         select(display);
+                        status(SelectorStatus::CAPTURED);
+                        return;
                     }
                 }
             }
-            else if (prey_.type == hunter::prey_type_t::display && scope_ == scope_t::desktop) {
+
+            if (prey_.type <= hunter::prey_type_t::display && scope_ == scope_t::desktop) {
                 auto desktop = probe::graphics::virtual_screen();
                 select(hunter::prey_t{
                     .type     = hunter::prey_type_t::desktop,
@@ -394,9 +399,9 @@ void Selector::registerShortcuts()
                     .name     = desktop.name,
                     .codename = desktop.classname,
                 });
+                status(SelectorStatus::CAPTURED);
+                return;
             }
-
-            status(SelectorStatus::CAPTURED);
         }
     });
 }

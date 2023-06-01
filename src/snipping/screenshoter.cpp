@@ -142,9 +142,10 @@ void ScreenShoter::start()
         static_cast<int>(virtual_geometry.width), static_cast<int>(virtual_geometry.height));
 
     // geometry
-    setGeometry(QRect{ virtual_geometry });
-    scene()->setSceneRect(geometry());
-    selector_->setGeometry(geometry());
+    setGeometry(QRect{ virtual_geometry });  // window geometry == virtual geometry, absolute coordinate
+    scene()->setSceneRect(rect());           // relative coordinate, start at (0, 0)
+    selector_->setGeometry(rect());          // relative coordinate, start at (0, 0)
+    selector_->coordinate(virtual_geometry); // painter coordinate, absolute coordinate
 
     // background
     setBackgroundBrush(captured_pixmap);
@@ -375,11 +376,12 @@ std::pair<QPixmap, QPoint> ScreenShoter::snip()
     history_.push_back(selector_->prey());
     history_idx_ = history_.size() - 1;
 
-    auto rect = selector_->selected();
+    auto rect = selector_->selected(); // absolute coordinate
     selector_->close();
     scene()->clearFocus();
     scene()->clearSelection();
-    return { QGraphicsView::grab(rect), rect.topLeft() };
+
+    return { QGraphicsView::grab(rect.translated(-geometry().topLeft())), rect.topLeft() };
 }
 
 void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)

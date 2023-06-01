@@ -168,7 +168,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/snipping/screenrecorder.cpp" line="322"/>
+        <location filename="../src/snipping/screenrecorder.cpp" line="326"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -176,7 +176,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="402"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="404"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
