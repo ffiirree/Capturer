@@ -18,9 +18,6 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
 }
-#ifdef __linux__
-#include <cstdlib>
-#endif
 
 #if _WIN32
 #include "libcap/win-wasapi/wasapi-capturer.h"
@@ -36,41 +33,42 @@ using AudioCapturer   = Decoder;
 #endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent),
+      recording_type_(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
                    Qt::WindowStaysOnTopHint);
 
-    recording_type_ = type;
-
-    menu_ = new RecordMenu(m_mute_, s_mute_,
-                           (type == GIF ? 0x00 : (RecordMenu::MICROPHONE | RecordMenu::SPEAKER)) |
-                               RecordMenu::CAMERA | RecordMenu::PAUSE,
-                           this);
-
     selector_ = new Selector(this);
+    selector_->setMinValidSize(128, 128);
 #ifdef _WIN32
     selector_->scope(Selector::scope_t::display);
 #endif
 
-    player_ = new VideoPlayer(this);
-
-    desktop_capturer_ = std::make_unique<DesktopCapturer>();
-    if (recording_type_ != GIF) {
+    // sources & dispatcher & encoder
+    if (recording_type_ == VIDEO) {
         microphone_capturer_ = std::make_unique<AudioCapturer>();
         speaker_capturer_    = std::make_unique<AudioCapturer>();
     }
-    encoder_    = std::make_unique<Encoder>();
-    dispatcher_ = std::make_unique<Dispatcher>();
 
-    connect(menu_, &RecordMenu::opened, [this](bool) { switchCamera(); });
-    connect(menu_, &RecordMenu::stopped, this, &ScreenRecorder::stop);
-    connect(menu_, &RecordMenu::stopped, player_, &VideoPlayer::close);
-    connect(menu_, &RecordMenu::muted, this, &ScreenRecorder::mute);
-    connect(menu_, &RecordMenu::paused, [this]() { dispatcher_->pause(); });
-    connect(menu_, &RecordMenu::resumed, [this]() { dispatcher_->resume(); });
+    desktop_capturer_ = std::make_unique<DesktopCapturer>();
+    dispatcher_       = std::make_unique<Dispatcher>();
+    encoder_          = std::make_unique<Encoder>();
 
+    // recording menu
+    menu_ = new RecordingMenu(m_mute_, s_mute_,
+                              (type == GIF ? 0x00 : RecordingMenu::AUDIO) | RecordingMenu::CAMERA, this);
+    connect(menu_, &RecordingMenu::stopped, this, &ScreenRecorder::stop);
+    connect(menu_, &RecordingMenu::muted, this, &ScreenRecorder::mute);
+    connect(menu_, &RecordingMenu::paused, [this]() { dispatcher_->pause(); });
+    connect(menu_, &RecordingMenu::resumed, [this]() { dispatcher_->resume(); });
+
+    // preview camera
+    player_ = new VideoPlayer(this);
+
+    connect(menu_, &RecordingMenu::opened, [this](bool) { switchCamera(); });
+    connect(menu_, &RecordingMenu::stopped, player_, &VideoPlayer::close);
     connect(player_, &VideoPlayer::started, [this]() { menu_->camera_checked(true); });
     connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });
 
@@ -149,6 +147,7 @@ void ScreenRecorder::start()
     selector_->setGeometry(rect());
     selector_->coordinate(geometry());
 
+    selector_->show();
     show();
     activateWindow();
 }
@@ -346,6 +345,8 @@ void ScreenRecorder::setup()
 
 void ScreenRecorder::stop()
 {
+    selector_->close();
+
     menu_->close();
 
     dispatcher_->stop();
@@ -357,6 +358,7 @@ void ScreenRecorder::stop()
     }
 
     recording_ = false;
+
     QWidget::close();
 }
 

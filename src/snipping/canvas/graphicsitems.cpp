@@ -172,6 +172,8 @@ void GraphicsLineItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
 
+    onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -365,6 +367,9 @@ QPen GraphicsArrowItem::pen() const { return pen_; }
 void GraphicsArrowItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
+    
+    onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -547,6 +552,9 @@ QPen GraphicsRectItem::pen() const { return pen_; }
 void GraphicsRectItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
+    
+    onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -558,6 +566,8 @@ void GraphicsRectItem::setBrush(const QBrush& brush)
 {
     if (brush_ == brush) return;
 
+    onchange(std::make_shared<BrushChangedCommand>(this, brush_, brush));
+
     brush_ = brush;
     update();
 }
@@ -567,6 +577,8 @@ bool GraphicsRectItem::filled() const { return filled_; }
 void GraphicsRectItem::fill(bool f)
 {
     if (filled_ == f) return;
+
+    onchange(std::make_shared<FillChangedCommand>(this, f));
 
     filled_ = f;
     update();
@@ -756,6 +768,9 @@ QPen GraphicsEllipseleItem::pen() const { return pen_; }
 void GraphicsEllipseleItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
+    
+    onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -767,6 +782,8 @@ void GraphicsEllipseleItem::setBrush(const QBrush& brush)
 {
     if (brush_ == brush) return;
 
+    onchange(std::make_shared<BrushChangedCommand>(this, brush_, brush));
+
     brush_ = brush;
     update();
 }
@@ -776,6 +793,8 @@ bool GraphicsEllipseleItem::filled() const { return filled_; }
 void GraphicsEllipseleItem::fill(bool f)
 {
     if (filled_ == f) return;
+
+    onchange(std::make_shared<FillChangedCommand>(this, f));
 
     filled_ = f;
     update();
@@ -1167,6 +1186,9 @@ QPen GraphicsPathItem::pen() const { return pen_; }
 void GraphicsPathItem::setPen(const QPen& pen)
 {
     if (pen_ == pen) return;
+
+    onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
+
     prepareGeometryChange();
     pen_ = pen;
     update();
@@ -1268,6 +1290,14 @@ ResizerLocation GraphicsTextItem::location(const QPointF& p) const
     }
 
     return loc;
+}
+
+void GraphicsTextItem::setFont(const QFont& f)
+{
+    if (adjusting_ != canvas::adjusting_t::resizing && f != font()) {
+        onchange(std::make_shared<FontChangedCommand>(this, font(), f));
+        QGraphicsTextItem::setFont(f);
+    }
 }
 
 void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
@@ -1428,7 +1458,8 @@ void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     switch (adjusting_) {
     case canvas::adjusting_t::moving: {
-        onchange(std::make_shared<MoveCommand>(this, event->scenePos() - before_moving_));
+        if (event->scenePos() != before_moving_)
+            onchange(std::make_shared<MoveCommand>(this, event->scenePos() - before_moving_));
         before_moving_ = {};
         break;
     }
@@ -1436,6 +1467,8 @@ void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         auto r1       = ResizerF(before_resizing_);
         auto r2       = ResizerF(QGraphicsTextItem::boundingRect());
         auto location = hover_location_;
+
+        // FIXME: onresize -> FontChangedCommand
         onchange(std::make_shared<LambdaCommand>([=, this]() { resize(r2, location); },
                                                  [=, this]() { resize(r1, location); }));
         before_resizing_ = {};
@@ -1479,9 +1512,9 @@ void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
     prepareGeometryChange();
 
     // resized font size
-    auto textfont = font();
-    textfont.setPointSizeF(scaled_fontsize);
-    setFont(textfont);
+    auto scaledfont = font();
+    scaledfont.setPointSizeF(scaled_fontsize);
+    QGraphicsTextItem::setFont(scaledfont);
 
     // update rotation origin point
     auto center = QGraphicsTextItem::boundingRect().center();

@@ -110,8 +110,7 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
         break;
 
     case SelectorStatus::PREY_SELECTING | SelectorStatus::FREE_SELECTING:
-        if (std::abs(mouse_pos.x() - sbegin_.x()) >= std::min(min_size_.width(), 6) &&
-            std::abs(mouse_pos.y() - sbegin_.y()) >= std::min(min_size_.height(), 6)) {
+        if (std::abs(mouse_pos.x() - sbegin_.x()) >= 4 && std::abs(mouse_pos.y() - sbegin_.y()) >= 4) {
             select({ sbegin_, mouse_pos });
             info_->show();
             status(SelectorStatus::FREE_SELECTING);
@@ -190,39 +189,40 @@ void Selector::mouseReleaseEvent(QMouseEvent *event)
             status(SelectorStatus::CAPTURED);
             break;
         case SelectorStatus::FREE_SELECTING:
-            // invalid size
-            if (!isValid()) {
+        case SelectorStatus::MOVING:
+        case SelectorStatus::RESIZING:
+            if (invalid()) {
                 select(hunter::hunt(QCursor::pos()));
             }
             status(SelectorStatus::CAPTURED);
             break;
-        case SelectorStatus::MOVING:
-        case SelectorStatus::RESIZING: status(SelectorStatus::CAPTURED); break;
         default: break;
         }
     }
 }
 
-void Selector::reset()
+void Selector::closeEvent(QCloseEvent *event)
 {
     status(SelectorStatus::READY);
     setMouseTracking(false);
 
-    box_  = {};
+    info_->hide();
+
+    box_.coords(box_.range());
     prey_ = {};
 
+    repaint();
+
     mask_hidden_ = false;
+
+    QWidget::closeEvent(event);
 }
-
-void Selector::hideEvent(QHideEvent *) { reset(); }
-
-void Selector::closeEvent(QCloseEvent *) { reset(); }
 
 void Selector::update_info_label()
 {
     std::string str{ "-- x --" };
 
-    if (isValid()) {
+    if (!invalid()) {
         str = fmt::format("{} x {}", selected().width(), selected().height());
         if (prey_.type == hunter::prey_type_t::window || prey_.type == hunter::prey_type_t::desktop) {
             str += prey_.name.empty()

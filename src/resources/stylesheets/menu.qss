@@ -1,10 +1,10 @@
 /*///////////////////////////////// Record Menu //////////////////////////////*/
 
-RecordMenu QWidget#menu {
+RecordingMenu QWidget#recording-menu {
     border-radius: 5px;
 }
 
-RecordMenu QCheckBox::indicator {
+RecordingMenu QCheckBox::indicator {
     font-size: 9pt;
 
     height: 1.35em;
@@ -13,7 +13,7 @@ RecordMenu QCheckBox::indicator {
     border-radius: 5px;
 }
 
-RecordMenu QLabel#time {
+RecordingMenu QLabel#time {
     background-color: transparent;
     font-family: "Microsoft YaHei";
     font-size: 10pt;
@@ -21,7 +21,7 @@ RecordMenu QLabel#time {
     padding: 0em 1em 0em 1em;
 }
 
-RecordMenu QCheckBox#stop-btn::indicator {
+RecordingMenu QCheckBox#stop-btn::indicator {
     image: url(:/icons/stop);
 }
 
@@ -91,7 +91,7 @@ EditingMenu QCheckBox#ok-btn::indicator {
 EditingSubmenu QComboBox {
     font-size: 9pt;
     max-width: 10em;
-    min-width: 4em;
+    min-width: 3.5em;
 }
 
 EditingSubmenu QCheckBox::indicator {

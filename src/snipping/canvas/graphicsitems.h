@@ -496,7 +496,7 @@ public:
 
     QFont font() const override { return QGraphicsTextItem::font(); }
 
-    void setFont(const QFont& f) override { QGraphicsTextItem::setFont(f); }
+    void setFont(const QFont&) override;
 
     void push(const QPointF&) override {}
 

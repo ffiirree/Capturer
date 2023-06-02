@@ -37,7 +37,7 @@
 <context>
     <name>EditingMenu</name>
     <message>
-        <location filename="../src/snipping/menu/editing-menu.cpp" line="82"/>
+        <location filename="../src/snipping/menu/editing-menu.cpp" line="90"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
@@ -168,7 +168,7 @@
 <context>
     <name>ScreenRecorder</name>
     <message>
-        <location filename="../src/snipping/screenrecorder.cpp" line="355"/>
+        <location filename="../src/snipping/screenrecorder.cpp" line="356"/>
         <source>Path: </source>
         <translation></translation>
     </message>
@@ -176,7 +176,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="398"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="389"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

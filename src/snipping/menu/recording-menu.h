@@ -4,22 +4,20 @@
 #include <QCheckBox>
 #include <QLabel>
 
-class RecordMenu : public QWidget
+class RecordingMenu : public QWidget
 {
     Q_OBJECT
 
 public:
     enum : uint8_t
     {
-        NONE       = 0x00,
-        MICROPHONE = 0x01,
-        SPEAKER    = 0x02,
-        CAMERA     = 0x04,
-        PAUSE      = 0x08,
-        ALL        = 0xff
+        DEFAULT = 0x00,
+        AUDIO   = 0x01,
+        CAMERA  = 0x04,
+        ALL     = 0xff
     };
 
-    explicit RecordMenu(bool, bool, uint8_t = ALL, QWidget *parent = nullptr);
+    explicit RecordingMenu(bool, bool, uint8_t = ALL, QWidget *parent = nullptr);
 
 signals:
     void started();
@@ -45,8 +43,6 @@ private:
     void mouseReleaseEvent(QMouseEvent *) override;
 
 private:
-    QWidget *window_{ nullptr };
-
     QCheckBox *mic_btn_{ nullptr };
     QCheckBox *speaker_btn_{ nullptr };
     QCheckBox *camera_btn_{ nullptr };

@@ -65,12 +65,12 @@ private:
     std::string filename_{};
 
     // preview camera
-    VideoPlayer *player_{ nullptr };
+    VideoPlayer *player_{};
 
     // recording menu
-    RecordMenu *menu_{ nullptr };
-    bool m_mute_{ false };
-    bool s_mute_{ false };
+    RecordingMenu *menu_{};
+    bool m_mute_{};
+    bool s_mute_{};
 
     // sources
     std::unique_ptr<Producer<AVFrame>> desktop_capturer_{};

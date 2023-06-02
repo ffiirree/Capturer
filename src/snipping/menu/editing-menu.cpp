@@ -11,17 +11,25 @@
 #include <QStandardPaths>
 
 EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
-    : QWidget(parent)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
 {
     setCursor(Qt::ArrowCursor);
-
-    setAttribute(Qt::WA_ShowWithoutActivating);
-    setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
     setFocusPolicy(Qt::NoFocus);
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_TranslucentBackground);
 
-    setLayout(new QHBoxLayout(this));
-    layout()->setSpacing(0);
-    layout()->setContentsMargins({});
+    // frameless: background & border
+    auto backgroud_layout = new QHBoxLayout(this);
+    backgroud_layout->setSpacing(0);
+    backgroud_layout->setContentsMargins({});
+
+    auto background = new QWidget(this);
+    background->setObjectName("editing-menu");
+    backgroud_layout->addWidget(background);
+
+    auto layout = new QHBoxLayout(background);
+    layout->setSpacing(0);
+    layout->setContentsMargins({});
 
     //
     pictures_path_ = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
@@ -119,7 +127,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         for (const auto button : group_->buttons()) {
             auto gtype = static_cast<canvas::graphics_t>(group_->id(button));
 
-            layout()->addWidget(button);
+            layout->addWidget(button);
 
             // style changed event
             if (submenus_.contains(gtype)) {
@@ -159,26 +167,26 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & REDO_UNDO_GROUP) {
-        layout()->addWidget(new Separator());
+        layout->addWidget(new Separator());
 
         undo_btn_ = new QCheckBox(this);
         undo_btn_->setCheckable(false);
         undo_btn_->setObjectName("undo-btn");
         undo_btn_->setDisabled(true);
         connect(undo_btn_, &QCheckBox::clicked, this, &EditingMenu::undo);
-        layout()->addWidget(undo_btn_);
+        layout->addWidget(undo_btn_);
 
         redo_btn_ = new QCheckBox(this);
         redo_btn_->setCheckable(false);
         redo_btn_->setObjectName("redo-btn");
         redo_btn_->setDisabled(true);
         connect(redo_btn_, &QCheckBox::clicked, this, &EditingMenu::redo);
-        layout()->addWidget(redo_btn_);
+        layout->addWidget(redo_btn_);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & SAVE_GROUP) {
-        layout()->addWidget(new Separator());
+        layout->addWidget(new Separator());
 
         auto pin_btn = new QCheckBox(this);
         pin_btn->setCheckable(false);
@@ -187,19 +195,19 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             emit pin();
             hide();
         });
-        layout()->addWidget(pin_btn);
+        layout->addWidget(pin_btn);
 
         auto save_btn = new QCheckBox(this);
         save_btn->setCheckable(false);
         save_btn->setObjectName("save-btn");
         connect(save_btn, &QCheckBox::clicked, this, &EditingMenu::save);
         connect(save_btn, &QCheckBox::clicked, group_, &ButtonGroup::clear);
-        layout()->addWidget(save_btn);
+        layout->addWidget(save_btn);
     }
 
     /////////////////////////////////////////////////////////////////////////////////
     if (groups & EXIT_GROUP) {
-        layout()->addWidget(new Separator());
+        layout->addWidget(new Separator());
 
         auto close_btn = new QCheckBox(this);
         close_btn->setCheckable(false);
@@ -208,7 +216,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             emit exit();
             close();
         });
-        layout()->addWidget(close_btn);
+        layout->addWidget(close_btn);
 
         auto ok_btn = new QCheckBox(this);
         ok_btn->setCheckable(false);
@@ -217,7 +225,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             emit copy();
             close();
         });
-        layout()->addWidget(ok_btn);
+        layout->addWidget(ok_btn);
     }
 }
 

@@ -45,8 +45,10 @@ public:
 
     hunter::prey_t prey() const { return prey_; }
 
+    // painter window
     void coordinate(const QRect& window) { coordinate_ = window; }
 
+    // scope: display or desktop
     void scope(scope_t scope) { scope_ = scope; }
 
     scope_t scope() const { return scope_; }
@@ -57,6 +59,15 @@ public:
         return relative ? box_.rect().translated(-box_.range().topLeft()) : box_.rect();
     }
 
+    // set minium valid size
+    void setMinValidSize(int x, int y) { min_size_ = QSize{ std::max(2, x), std::max(2, y) }; }
+
+    [[nodiscard]] bool invalid() const
+    {
+        return box_.width() < min_size_.width() || box_.height() < min_size_.height();
+    }
+
+    // region selection
     void select(const hunter::prey_t&);
     void select(const probe::graphics::display_t&);
     void select(const QRect& rect);
@@ -71,11 +82,6 @@ public slots:
 
     void showRegion();
 
-    // minimum size of selected area
-    void setMinValidSize(const QSize& size) { min_size_ = size; }
-
-    bool isValid() { return box_.width() >= min_size_.width() && box_.height() >= min_size_.height(); }
-
 signals:
     void captured();
     void moved();
@@ -88,10 +94,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
     void paintEvent(QPaintEvent *) override;
-    void hideEvent(QHideEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
-
-    void reset();
 
     void update_info_label();
 
@@ -130,6 +133,7 @@ private:
     QColor mask_color_{ 0, 0, 0, 100 };
     bool mask_hidden_{ false };
 
+    // minimum valid size for selection
     QSize min_size_{ 2, 2 };
 };
 

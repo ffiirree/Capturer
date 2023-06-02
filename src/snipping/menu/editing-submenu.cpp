@@ -4,21 +4,30 @@
 
 #include <QButtonGroup>
 #include <QFontDatabase>
-#include <QLayout>
+#include <QHBoxLayout>
 #include <QLineEdit>
 
 EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
 {
     setCursor(Qt::ArrowCursor);
-
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setWindowFlags(windowFlags() | Qt::ToolTip | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
 
-    setLayout(new QHBoxLayout(this));
-    layout()->setSpacing(0);
-    layout()->setContentsMargins({});
+    // frameless: background & border
+    auto backgroud_layout = new QHBoxLayout(this);
+    backgroud_layout->setSpacing(0);
+    backgroud_layout->setContentsMargins({});
 
+    auto background = new QWidget(this);
+    background->setObjectName("editing-submenu");
+    backgroud_layout->addWidget(background);
+
+    auto layout = new QHBoxLayout(background);
+    layout->setSpacing(0);
+    layout->setContentsMargins({});
+
+    //
     auto group = new QButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
@@ -30,7 +39,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
             pen_.setWidth(w);
             emit penChanged(pen_);
         });
-        layout()->addWidget(width_btn_);
+        layout->addWidget(width_btn_);
         group->addButton(width_btn_);
 
         // brush
@@ -39,7 +48,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
             fill_btn_->setObjectName("fill-btn");
             connect(fill_btn_, &QCheckBox::toggled, [this](bool checked) { emit fillChanged(checked); });
 
-            layout()->addWidget(fill_btn_);
+            layout->addWidget(fill_btn_);
             group->addButton(fill_btn_);
         }
     }
@@ -47,19 +56,19 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
     // font
     if (buttons & FONT_BTNS) {
         if (buttons & (FILL_BTN | WIDTH_BTN)) {
-            layout()->addWidget(new Separator());
+            layout->addWidget(new Separator());
         }
 
-        layout()->setSpacing(3);
-        layout()->setContentsMargins({ 5, 0, 0, 0 });
+        layout->setSpacing(3);
+        layout->setContentsMargins({ 5, 0, 0, 0 });
 
         // foont
         font_family_ = new ComboBox(this);
         font_style_  = new ComboBox(this);
         font_size_   = new ComboBox(this);
-        layout()->addWidget(font_family_);
-        layout()->addWidget(font_style_);
-        layout()->addWidget(font_size_);
+        layout->addWidget(font_family_);
+        layout->addWidget(font_style_);
+        layout->addWidget(font_size_);
 
         QFontDatabase font_db;
 #if WIN32
@@ -103,7 +112,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
     // pen: color
     if (buttons & COLOR_PENAL) {
         if (buttons & ~COLOR_PENAL) {
-            layout()->addWidget(new Separator());
+            layout->addWidget(new Separator());
         }
 
         color_panel_ = new ColorPanel();
@@ -117,7 +126,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
                 emit penChanged(pen_);
             }
         });
-        layout()->addWidget(color_panel_);
+        layout->addWidget(color_panel_);
     }
 }
 

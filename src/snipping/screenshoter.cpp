@@ -55,40 +55,28 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph != item->graph() || item->pen() == pen) return;
-
-            commands_.push(std::make_shared<PenChangedCommand>(item, item->pen(), pen));
-            item->setPen(pen);
+            if (graph == item->graph()) item->setPen(pen);
         }
     });
 
     connect(menu_, &EditingMenu::brushChanged, [this](auto graph, auto brush) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph != item->graph() || item->brush() == brush) return;
-
-            commands_.push(std::make_shared<BrushChangedCommand>(item, item->brush(), brush));
-            item->setBrush(brush);
+            if (graph == item->graph()) item->setBrush(brush);
         }
     });
 
     connect(menu_, &EditingMenu::fontChanged, [this](auto graph, auto font) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph != item->graph() || font == item->font()) return;
-
-            commands_.push(std::make_shared<FontChangedCommand>(item, item->font(), font));
-            item->setFont(menu_->font());
+            if (graph == item->graph()) item->setFont(font);
         }
     });
 
     connect(menu_, &EditingMenu::fillChanged, [this](auto graph, auto filled) {
         if (scene()->focusItem()) {
             auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph != item->graph() || filled == item->filled()) return;
-
-            commands_.push(std::make_shared<FillChangedCommand>(item, filled));
-            item->fill(menu_->filled());
+            if (graph == item->graph()) item->fill(filled);
         }
     });
 
@@ -151,8 +139,9 @@ void ScreenShoter::start()
     selector_->show();
 
     show();
-    activateWindow(); //  Qt::BypassWindowManagerHint: no keyboard input unless call
-                      //  QWidget::activateWindow()
+
+    // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
+    activateWindow();
 }
 
 void ScreenShoter::exit()
@@ -160,6 +149,8 @@ void ScreenShoter::exit()
     magnifier_->close();
 
     menu_->close();
+
+    selector_->close();
 
     copied_ = {};
 

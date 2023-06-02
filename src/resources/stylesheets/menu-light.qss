@@ -1,66 +1,67 @@
 /*///////////////////////////////// Record Menu //////////////////////////////*/
 
-RecordMenu QWidget#menu {
+RecordingMenu QWidget#recording-menu {
     background-color: #f9f9f9;
     border: 1px solid #dfdfdf;
 }
 
-RecordMenu QCheckBox::indicator::hover {
+RecordingMenu QCheckBox::indicator::hover {
     background-color: #e6e6e6;
 }
 
-RecordMenu QCheckBox#mic-btn::indicator:unchecked {
+RecordingMenu QCheckBox#mic-btn::indicator:unchecked {
     image: url(:/icons/microphone-dark);
 }
 
-RecordMenu QCheckBox#mic-btn::indicator:checked {
+RecordingMenu QCheckBox#mic-btn::indicator:checked {
     image: url(:/icons/microphone-mute-dark);
 }
 
-RecordMenu QCheckBox#mic-btn::indicator:disabled {
+RecordingMenu QCheckBox#mic-btn::indicator:disabled {
     image: url(:/icons/microphone-mute-light);
 }
 
-RecordMenu QCheckBox#speaker-btn::indicator:unchecked {
+RecordingMenu QCheckBox#speaker-btn::indicator:unchecked {
     image: url(:/icons/speaker-dark);
 }
 
-RecordMenu QCheckBox#speaker-btn::indicator:checked {
+RecordingMenu QCheckBox#speaker-btn::indicator:checked {
     image: url(:/icons/speaker-mute-dark);
 }
 
-RecordMenu QCheckBox#speaker-btn::indicator:disabled {
+RecordingMenu QCheckBox#speaker-btn::indicator:disabled {
     image: url(:/icons/speaker-mute-light);
 }
 
-RecordMenu QCheckBox#camera-btn::indicator:checked {
+RecordingMenu QCheckBox#camera-btn::indicator:checked {
     image: url(:/icons/camera-fill-dark);
 }
 
-RecordMenu QCheckBox#camera-btn::indicator:unchecked {
+RecordingMenu QCheckBox#camera-btn::indicator:unchecked {
     image: url(:/icons/camera-dark);
 }
 
-RecordMenu QCheckBox#camera-btn::indicator:disabled {
+RecordingMenu QCheckBox#camera-btn::indicator:disabled {
     image: url(:/icons/camera-light);
 }
 
-RecordMenu QLabel#time {
+RecordingMenu QLabel#time {
     color: #2c2c2c;
 }
 
-RecordMenu QCheckBox#pause-btn::indicator:unchecked {
+RecordingMenu QCheckBox#pause-btn::indicator:unchecked {
     image: url(:/icons/pause-dark);
 }
 
-RecordMenu QCheckBox#pause-btn::indicator:checked {
+RecordingMenu QCheckBox#pause-btn::indicator:checked {
     image: url(:/icons/play-dark);
 }
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
-EditingMenu, EditingSubmenu {
+EditingMenu QWidget#editing-menu, EditingMenu QWidget#editing-submenu {
     background-color: #f9f9f9;
+    border: 1px solid #dfdfdf;
 }
 
 EditingMenu QCheckBox::indicator:unchecked:hover {
