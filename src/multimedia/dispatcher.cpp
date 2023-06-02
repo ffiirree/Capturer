@@ -195,7 +195,7 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
         if (video_graph_) avfilter_graph_free(&video_graph_);
-        if (!(video_graph_ = avfilter_graph_alloc())) {
+        if (video_graph_ = avfilter_graph_alloc(); !video_graph_) {
             LOG(ERROR) << "[DISPATCHER] failed to create video filter graph.";
             return -1;
         }
@@ -203,7 +203,7 @@ int Dispatcher::create_filter_graph_for(std::vector<ProducerContext>& producer_c
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (audio_graph_) avfilter_graph_free(&audio_graph_);
-        if (!(audio_graph_ = avfilter_graph_alloc())) {
+        if (audio_graph_ = avfilter_graph_alloc(); !audio_graph_) {
             LOG(ERROR) << "[DISPATCHER] failed to create auido filter graph.";
             return -1;
         }

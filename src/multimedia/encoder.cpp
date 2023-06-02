@@ -317,7 +317,7 @@ std::pair<int, int> Encoder::video_sync_process()
 
     // 1. pass
     if (delta_l < 0 && delta_r > 0) {
-        floating_pts = expected_pts_;
+        floating_pts = static_cast<double>(expected_pts_);
         duration += delta_l;
         delta_l = 0;
     }
