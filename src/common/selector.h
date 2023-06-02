@@ -1,5 +1,5 @@
-#ifndef SELECTOR_H
-#define SELECTOR_H
+#ifndef CAPTURER_SELECTOR_H
+#define CAPTURER_SELECTOR_H
 
 #include "hunter.h"
 #include "json.h"
@@ -133,4 +133,4 @@ private:
     QSize min_size_{ 2, 2 };
 };
 
-#endif // !SELECTOR_H
+#endif //! CAPTURER_SELECTOR_H

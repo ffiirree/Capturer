@@ -1,5 +1,5 @@
-#ifndef IMAGE_WINDOW_H
-#define IMAGE_WINDOW_H
+#ifndef CAPTURER_IMAGE_WINDOW_H
+#define CAPTURER_IMAGE_WINDOW_H
 
 #include "menu/editing-menu.h"
 
@@ -115,4 +115,4 @@ private:
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
 };
 
-#endif // IMAGE_WINDOW_H
+#endif //! CAPTURER_IMAGE_WINDOW_H

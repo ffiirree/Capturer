@@ -1,7 +1,10 @@
 #include "screenrecorder.h"
 
 #include "config.h"
-#include "devices.h"
+#include "libcap/decoder.h"
+#include "libcap/devices.h"
+#include "libcap/dispatcher.h"
+#include "libcap/encoder.h"
 #include "logging.h"
 
 #include <fmt/core.h>
@@ -10,13 +13,26 @@
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QStandardPaths>
+
 extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
-#include <libavutil/pixdesc.h>
 }
 #ifdef __linux__
 #include <cstdlib>
+#endif
+
+#if _WIN32
+#include "libcap/win-wasapi/wasapi-capturer.h"
+#include "libcap/win-wgc/wgc-capturer.h"
+#endif
+
+#ifdef _WIN32
+using DesktopCapturer = WindowsGraphicsCapturer;
+using AudioCapturer   = WasapiCapturer;
+#elif __linux__
+using DesktopCapturer = Decoder;
+using AudioCapturer   = Decoder;
 #endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
@@ -85,6 +101,18 @@ void ScreenRecorder::switchCamera()
     }
 }
 
+void ScreenRecorder::mute(int type, bool v)
+{
+    switch (type) {
+    case 1:
+        m_mute_ = v;
+        microphone_capturer_->mute(v);
+        break;
+    case 2: s_mute_ = v; speaker_capturer_->mute(v);
+    default: break;
+    }
+}
+
 void ScreenRecorder::record()
 {
     !recording_ ? start() : [this]() { stop(); }();
@@ -113,6 +141,7 @@ void ScreenRecorder::start()
         filename_     = fmt::format("{}/Capturer_{}.gif", root_dir, time_str);
     }
 
+    // window selector
     selector_->start(probe::graphics::window_filter_t::visible |
                      probe::graphics::window_filter_t::capturable);
 
@@ -340,4 +369,16 @@ void ScreenRecorder::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Return) {
         setup();
     }
+}
+
+void ScreenRecorder::updateTheme()
+{
+    const auto& style = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"];
+    selector_->setBorderStyle(QPen{
+        style["border"]["color"].get<QColor>(),
+        static_cast<qreal>(style["border"]["width"].get<int>()),
+        style["border"]["style"].get<Qt::PenStyle>(),
+    });
+
+    selector_->setMaskStyle(style["mask"]["color"].get<QColor>());
 }

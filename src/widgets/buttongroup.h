@@ -1,5 +1,5 @@
-#ifndef BUTTONGROUP_H
-#define BUTTONGROUP_H
+#ifndef CAPTURER_BUTTONGROUP_H
+#define CAPTURER_BUTTONGROUP_H
 
 #include <QAbstractButton>
 #include <QHash>
@@ -65,4 +65,4 @@ private:
     exclusive_t exclusive_{ exclusive_t::simiexclusive };
 };
 
-#endif // BUTTONGROUP_H
+#endif //! CAPTURER_BUTTONGROUP_H

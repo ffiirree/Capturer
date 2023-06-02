@@ -33,9 +33,13 @@ namespace hunter
         static prey_t from(const probe::graphics::display_t&);
     };
 
+    // return the prey at the point, world coordinate system
     prey_t hunt(const QPoint&);
 
+    // refresh
     void ready(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
+
+    // clear
     void clear();
 
     std::string to_string(prey_type_t);

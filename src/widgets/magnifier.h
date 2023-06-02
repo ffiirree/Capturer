@@ -1,9 +1,7 @@
-#ifndef MAGNIFIER_H
-#define MAGNIFIER_H
+#ifndef CAPTURER_MAGNIFIER_H
+#define CAPTURER_MAGNIFIER_H
 
-#include <QWidget>
-
-class QLabel;
+#include <QLabel>
 
 class Magnifier : public QWidget
 {
@@ -51,4 +49,4 @@ private:
     ColorFormat color_format_{ ColorFormat::HEX };
 };
 
-#endif // MAGNIFIER_H
+#endif //! CAPTURER_MAGNIFIER_H

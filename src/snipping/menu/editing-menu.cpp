@@ -1,12 +1,9 @@
 #include "editing-menu.h"
 
-#include "buttongroup.h"
-#include "editing-submenu.h"
 #include "separator.h"
 
 #include <map>
 #include <QBrush>
-#include <QCheckBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QMoveEvent>
@@ -186,7 +183,10 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         auto pin_btn = new QCheckBox(this);
         pin_btn->setCheckable(false);
         pin_btn->setObjectName("pin-btn");
-        connect(pin_btn, &QCheckBox::clicked, [this]() { emit pin(); hide(); });
+        connect(pin_btn, &QCheckBox::clicked, [this]() {
+            emit pin();
+            hide();
+        });
         layout()->addWidget(pin_btn);
 
         auto save_btn = new QCheckBox(this);
@@ -204,13 +204,19 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         auto close_btn = new QCheckBox(this);
         close_btn->setCheckable(false);
         close_btn->setObjectName("close-btn");
-        connect(close_btn, &QCheckBox::clicked, [this]() { emit exit(); close(); });
+        connect(close_btn, &QCheckBox::clicked, [this]() {
+            emit exit();
+            close();
+        });
         layout()->addWidget(close_btn);
 
         auto ok_btn = new QCheckBox(this);
         ok_btn->setCheckable(false);
         ok_btn->setObjectName("ok-btn");
-        connect(ok_btn, &QCheckBox::clicked, [this]() { emit copy(); close(); });
+        connect(ok_btn, &QCheckBox::clicked, [this]() {
+            emit copy();
+            close();
+        });
         layout()->addWidget(ok_btn);
     }
 }

@@ -1,5 +1,5 @@
-#ifndef LOGGING_H
-#define LOGGING_H
+#ifndef CAPTURER_LOGGING_H
+#define CAPTURER_LOGGING_H
 
 #include "probe/thread.h"
 
@@ -86,4 +86,4 @@ private:
     }
 };
 
-#endif // LOGGING_H
+#endif //! CAPTURER_LOGGING_H

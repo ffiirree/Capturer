@@ -1,18 +1,12 @@
 #include "screenshoter.h"
 
-#include "canvas/graphicsitems.h"
 #include "logging.h"
-#include "magnifier.h"
-#include "menu/editing-menu.h"
-#include "selector.h"
 
 #include <QApplication>
 #include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QGraphicsScene>
-#include <QGraphicsTextItem>
-#include <QGraphicsView>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPalette>

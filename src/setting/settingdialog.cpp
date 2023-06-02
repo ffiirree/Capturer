@@ -2,14 +2,13 @@
 
 #include "colorpanel.h"
 #include "combobox.h"
-#include "devices.h"
-#include "hwaccel.h"
+#include "libcap/devices.h"
+#include "libcap/hwaccel.h"
 #include "logging.h"
 #include "shortcutinput.h"
 #include "titlebar.h"
 #include "version.h"
 
-#include <QCheckBox>
 #include <QCoreApplication>
 #include <QDir>
 #include <QGraphicsDropShadowEffect>
@@ -17,7 +16,6 @@
 #include <QListWidget>
 #include <QSettings>
 #include <QSpinBox>
-#include <QStackedWidget>
 #include <QVBoxLayout>
 
 static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString>> PENSTYLES = {
@@ -162,8 +160,7 @@ QWidget *SettingWindow::setupSnipWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(6);
+    _1_2->setRange(1, 6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["snip"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -210,8 +207,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(6);
+    _1_2->setRange(1, 6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["record"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -254,7 +250,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_5, 7, 1, 1, 1);
 
     auto _6_2 = new QSpinBox();
-    _6_2->setMaximum(144);
+    _6_2->setRange(1, 144);
     _6_2->setContextMenuPolicy(Qt::NoContextMenu);
     _6_2->setValue(config["record"]["framerate"].get<int>());
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -315,8 +311,7 @@ QWidget *SettingWindow::setupGIFWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(6);
+    _1_2->setRange(1, 6);
     _1_2->setValue(config["gif"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             [this](int w) { config.set(config["gif"]["selector"]["border"]["width"], w); });

@@ -1,5 +1,5 @@
-#ifndef COMBOBOX_H
-#define COMBOBOX_H
+#ifndef CAPTURER_COMBOBOX_H
+#define CAPTURER_COMBOBOX_H
 
 #include <QComboBox>
 
@@ -36,4 +36,4 @@ signals:
     void selected(const QVariant& value);
 };
 
-#endif // !COMBOBOX_H
+#endif //! CAPTURER_COMBOBOX_H

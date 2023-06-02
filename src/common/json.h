@@ -1,5 +1,5 @@
-#ifndef JSON_H
-#define JSON_H
+#ifndef CAPTURER_JSON_H
+#define CAPTURER_JSON_H
 
 #include <QKeySequence>
 #include <QColor>
@@ -19,4 +19,4 @@ inline void to_json(json& j, const QKeySequence& key)       { j = key.toString()
 inline void from_json(const json& j, Qt::PenStyle& style)   { style = Qt::PenStyle(j.get<int>()); }
 inline void to_json(json& j, const Qt::PenStyle& style)     { j = style; }
 
-#endif // JSON_H
+#endif //! CAPTURER_JSON_H

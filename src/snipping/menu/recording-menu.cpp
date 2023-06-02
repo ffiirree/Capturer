@@ -9,7 +9,7 @@
 #include <QTime>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include "libcap/win-wgc/win-wgc.h"
 #endif
 
 RecordMenu::RecordMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)

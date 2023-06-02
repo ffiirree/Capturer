@@ -1,5 +1,5 @@
-#ifndef TITLE_BAR_H
-#define TITLE_BAR_H
+#ifndef CAPTURER_TITLE_BAR_H
+#define CAPTURER_TITLE_BAR_H
 
 #include <QCheckBox>
 
@@ -28,4 +28,4 @@ private:
     bool moving_{ false };
     bool is_maximized_{ false };
 };
-#endif // TITLE_BAR_H
+#endif //! CAPTURER_TITLE_BAR_H

@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "devices.h"
+#include "libcap/devices.h"
 #include "logging.h"
 #include "probe/system.h"
 
@@ -11,7 +11,8 @@
 #include <QTextStream>
 #include <streambuf>
 
-#define IF_NULL_SET(X, default_value) if (X.is_null()) X = default_value;
+#define IF_NULL_SET(X, default_value)                                                                      \
+    if (X.is_null()) X = default_value;
 
 Config::Config()
 {
@@ -220,12 +221,9 @@ void Config::load_theme(const std::string& theme)
         emit theme_changed();
 
         std::vector<QString> files{
-            ":/stylesheets/capturer",
-            ":/stylesheets/capturer-" + QString::fromStdString(theme),
-            ":/stylesheets/menu",
-            ":/stylesheets/menu-" + QString::fromStdString(theme),
-            ":/stylesheets/settingswindow",
-            ":/stylesheets/settingswindow-" + QString::fromStdString(theme),
+            ":/stylesheets/capturer",       ":/stylesheets/capturer-" + QString::fromStdString(theme),
+            ":/stylesheets/menu",           ":/stylesheets/menu-" + QString::fromStdString(theme),
+            ":/stylesheets/settingswindow", ":/stylesheets/settingswindow-" + QString::fromStdString(theme),
         };
 
         QString style{};

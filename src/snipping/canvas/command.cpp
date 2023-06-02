@@ -3,8 +3,6 @@
 #include "graphicsitems.h"
 #include "logging.h"
 
-#include <QGraphicsItem>
-
 ////
 
 MoveCommand::MoveCommand(QGraphicsItem *item, const QPointF& offset)

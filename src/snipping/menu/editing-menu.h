@@ -1,13 +1,12 @@
-#ifndef IMAGE_EDIT_MENU_H
-#define IMAGE_EDIT_MENU_H
+#ifndef CAPTURER_EDITING_MENU_H
+#define CAPTURER_EDITING_MENU_H
 
+#include "buttongroup.h"
 #include "canvas/types.h"
+#include "editing-submenu.h"
 
+#include <QCheckBox>
 #include <QWidget>
-
-class ButtonGroup;
-class QCheckBox;
-class EditingSubmenu;
 
 class EditingMenu : public QWidget
 {
@@ -89,11 +88,11 @@ private:
     ButtonGroup *group_{};
     std::map<canvas::graphics_t, EditingSubmenu *> submenus_; // bind graph with buttons
 
-    QString pictures_path_ {};
+    QString pictures_path_{};
 
     canvas::graphics_t graph_{ canvas::none };
 
     bool sub_menu_show_pos_{ false };
 };
 
-#endif // IMAGE_EDIT_MENU_H
+#endif //! CAPTURER_EDITING_MENU_H

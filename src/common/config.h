@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CAPTURER_CONFIG_H
+#define CAPTURER_CONFIG_H
 
 #include "json.h"
 #include "probe/util.h"
@@ -59,4 +59,4 @@ private:
     std::shared_ptr<probe::Listener> theme_monitor_{ nullptr };
 };
 
-#endif // CONFIG_H
+#endif //! CAPTURER_CONFIG_H

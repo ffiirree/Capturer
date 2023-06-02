@@ -1,5 +1,5 @@
-#ifndef RESIZER_H
-#define RESIZER_H
+#ifndef CAPTURER_RESIZER_H
+#define CAPTURER_RESIZER_H
 
 #include "probe/graphics.h"
 
@@ -14,7 +14,7 @@ template<typename T> struct qpoint_trait
 };
 
 template<typename T>
-requires(std::is_floating_point_v<T>)
+requires std::floating_point<T>
 struct qpoint_trait<T>
 {
     using type = QPointF;
@@ -27,7 +27,7 @@ template<typename T> struct qrect_trait
 };
 
 template<typename T>
-requires(std::is_floating_point_v<T>)
+requires std::floating_point<T>
 struct qrect_trait<T>
 {
     using type = QRectF;
@@ -40,7 +40,7 @@ template<typename T> struct qsize_trait
 };
 
 template<typename T>
-requires(std::is_floating_point_v<T>)
+requires std::floating_point<T>
 struct qsize_trait<T>
 {
     using type = QSizeF;
@@ -53,7 +53,7 @@ template<typename T> struct qmargins_trait
 };
 
 template<typename T>
-requires(std::is_floating_point_v<T>)
+requires std::floating_point<T>
 struct qmargins_trait<T>
 {
     using type = QMarginsF;
@@ -92,12 +92,11 @@ enum class ResizerLocation {
 
    ENABLE_BITMASK_OPERATORS(),
 };
-
 // clang-format on
 
 ///
 template<typename T>
-requires((std::is_integral_v<T> || std::is_floating_point_v<T>) && !std::is_same_v<T, bool>)
+requires((std::integral<T> || std::floating_point<T>) && !std::same_as<T, bool>)
 class _Resizer
 {
 public:
@@ -451,4 +450,4 @@ inline QCursor getCursorByLocation(ResizerLocation pos, const QCursor& default_c
     }
 }
 
-#endif // RESIZER_H
+#endif //! CAPTURER_RESIZER_H

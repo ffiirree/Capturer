@@ -1,21 +1,20 @@
-#ifndef SCREEN_SHOTER_H
-#define SCREEN_SHOTER_H
+#ifndef CAPTURER_SCREEN_SHOTER_H
+#define CAPTURER_SCREEN_SHOTER_H
 
 #include "canvas/command.h"
 #include "canvas/graphicsitems.h"
 #include "circlecursor.h"
 #include "config.h"
 #include "hunter.h"
+#include "magnifier.h"
+#include "menu/editing-menu.h"
 #include "resizer.h"
+#include "selector.h"
 
 #include <QGraphicsView>
 #include <QPixmap>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
-
-class Selector;
-class EditingMenu;
-class Magnifier;
 
 class ScreenShoter : public QGraphicsView
 {
@@ -104,4 +103,4 @@ private:
     CommandStack commands_{};
 };
 
-#endif // SCREEN_SHOTER_H
+#endif //! CAPTURER_SCREEN_SHOTER_H

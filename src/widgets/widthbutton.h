@@ -1,5 +1,5 @@
-#ifndef WIDTH_BUTTON_H
-#define WIDTH_BUTTON_H
+#ifndef CAPTURER_WIDTH_BUTTON_H
+#define CAPTURER_WIDTH_BUTTON_H
 
 #include <QCheckBox>
 
@@ -45,4 +45,4 @@ private:
     int __attr_width{ 2 };
 };
 
-#endif // !WIDTH_BUTTON_H
+#endif //! CAPTURER_WIDTH_BUTTON_H

@@ -1,9 +1,6 @@
 #include "editing-submenu.h"
 
-#include "colorpanel.h"
-#include "combobox.h"
 #include "separator.h"
-#include "widthbutton.h"
 
 #include <QButtonGroup>
 #include <QFontDatabase>

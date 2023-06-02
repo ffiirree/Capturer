@@ -1,14 +1,14 @@
 #ifndef CAPTURER_EDITING_SUBMENU_H
 #define CAPTURER_EDITING_SUBMENU_H
 
+#include "colorpanel.h"
+#include "combobox.h"
+#include "widthbutton.h"
+
+#include <QCheckBox>
 #include <QFont>
 #include <QPen>
 #include <QWidget>
-
-class QCheckBox;
-class ComboBox;
-class ColorPanel;
-class WidthButton;
 
 class EditingSubmenu : public QWidget
 {
@@ -60,9 +60,6 @@ private:
     ComboBox *font_size_{ nullptr };
     ComboBox *font_style_{ nullptr };
     ColorPanel *color_panel_{ nullptr };
-
-    const int HEIGHT = 35;
-    const int ICON_W = 21;
 
     QPen pen_{ Qt::red, 3 };
     QBrush brush_{ Qt::NoBrush };

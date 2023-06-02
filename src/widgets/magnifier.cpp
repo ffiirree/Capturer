@@ -4,7 +4,6 @@
 
 #include <QApplication>
 #include <QGuiApplication>
-#include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
@@ -66,6 +65,7 @@ QPoint Magnifier::position()
 
 bool Magnifier::eventFilter(QObject *obj, QEvent *event)
 {
+    // FIXME: grab the system-wide mouse event
     if (event->type() == QEvent::MouseMove) {
         update();
         move(position());
