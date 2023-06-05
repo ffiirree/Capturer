@@ -29,9 +29,11 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    selector_  = new Selector(this);
-    menu_      = new EditingMenu(this);
-    magnifier_ = new Magnifier(this);
+    selector_   = new Selector(this);
+    menu_       = new EditingMenu(this);
+    magnifier_  = new Magnifier(this);
+    undo_stack_ = new QUndoStack(this);
+
     setScene(new QGraphicsScene(this));
 
     menu_->installEventFilter(this);
@@ -41,8 +43,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &EditingMenu::pin, this, &ScreenShoter::pin);
     connect(menu_, &EditingMenu::exit, this, &ScreenShoter::exit);
 
-    connect(menu_, &EditingMenu::undo, &commands_, &CommandStack::undo);
-    connect(menu_, &EditingMenu::redo, &commands_, &CommandStack::redo);
+    connect(menu_, &EditingMenu::undo, undo_stack_, &QUndoStack::undo);
+    connect(menu_, &EditingMenu::redo, undo_stack_, &QUndoStack::redo);
 
     connect(menu_, &EditingMenu::graphChanged, [this](auto graph) {
         if (graph != canvas::none) {
@@ -53,30 +55,34 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     });
 
     connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
-        if (scene()->focusItem()) {
-            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph == item->graph()) item->setPen(pen);
+        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            item && item->graph() == graph && item->pen() != pen) {
+            undo_stack_->push(new PenChangedCommand(item, item->pen(), pen));
         }
     });
 
     connect(menu_, &EditingMenu::brushChanged, [this](auto graph, auto brush) {
-        if (scene()->focusItem()) {
-            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph == item->graph()) item->setBrush(brush);
+        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            item && item->graph() == graph && item->brush() != brush) {
+            undo_stack_->push(new BrushChangedCommand(item, item->brush(), brush));
         }
     });
 
     connect(menu_, &EditingMenu::fontChanged, [this](auto graph, auto font) {
-        if (scene()->focusItem()) {
-            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph == item->graph()) item->setFont(font);
+        auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+        if (!item) {
+            auto list = scene()->selectedItems();
+            item      = dynamic_cast<GraphicsItemInterface *>(list.first());
+        }
+        if (item && item->graph() == graph && item->font() != font) {
+            undo_stack_->push(new FontChangedCommand(item, item->font(), font));
         }
     });
 
     connect(menu_, &EditingMenu::fillChanged, [this](auto graph, auto filled) {
-        if (scene()->focusItem()) {
-            auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            if (graph == item->graph()) item->fill(filled);
+        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
+            item && item->graph() == graph && item->filled() != filled) {
+            undo_stack_->push(new FillChangedCommand(item, filled));
         }
     });
 
@@ -85,8 +91,6 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
         scene()->addItem(item);
         item->setFocus();
-
-        dynamic_cast<GraphicsItemInterface *>(item)->onchanged([this](auto cmd) { commands_.push(cmd); });
         dynamic_cast<GraphicsItemInterface *>(item)->onhovered([this](auto rl) { updateCursor(rl); });
     });
 
@@ -107,8 +111,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             magnifier_->close();
     });
 
-    connect(&commands_, &CommandStack::emptied,
-            [this](auto redo, auto v) { redo ? menu_->disableRedo(v) : menu_->disableUndo(v); });
+    //
+    connect(undo_stack_, &QUndoStack::canRedoChanged, menu_, &EditingMenu::canRedo);
+    connect(undo_stack_, &QUndoStack::canUndoChanged, menu_, &EditingMenu::canUndo);
 
     // shortcuts
     registerShortcuts();
@@ -185,13 +190,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         QPen pen            = menu_->pen();
 
         switch (menu_->graph()) {
-        case canvas::text: {
-            item = new GraphicsTextItem(pos);
-
-            auto iif = dynamic_cast<GraphicsItemInterface *>(item);
-            iif->onresized([iif, this](auto) { menu_->setFont(iif->font()); });
-            break;
-        }
+        case canvas::text: item = new GraphicsTextItem(pos); break;
         case canvas::rectangle: item = new GraphicsRectItem(pos, pos); break;
         case canvas::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
         case canvas::arrow: item = new GraphicsArrowItem(pos, pos); break;
@@ -215,14 +214,14 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         default: return;
         }
 
-        creating_item_ = { dynamic_cast<GraphicsItemInterface *>(item), menu_->graph() };
+        creating_item_ = dynamic_cast<GraphicsItemInterface *>(item);
 
-        creating_item_.first->setPen(pen);
-        creating_item_.first->setBrush(menu_->brush());
-        creating_item_.first->setFont(menu_->font());
-        creating_item_.first->fill(menu_->filled());
+        creating_item_->setPen(pen);
+        creating_item_->setBrush(menu_->brush());
+        creating_item_->setFont(menu_->font());
+        creating_item_->fill(menu_->filled());
 
-        creating_item_.first->onfocused([citem = creating_item_.first, this]() {
+        creating_item_->onfocused([citem = creating_item_, this]() {
             scene()->clearSelection(); // clear selection of text items
             menu_->paintGraph(citem->graph());
             menu_->fill(citem->filled());
@@ -230,8 +229,19 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             menu_->setBrush(citem->brush());
             menu_->setFont(citem->font());
         });
-        creating_item_.first->onchanged([this](auto cmd) { commands_.push(cmd); });
-        creating_item_.first->onhovered([this](ResizerLocation location) { updateCursor(location); });
+        creating_item_->onhovered([this](ResizerLocation location) { updateCursor(location); });
+
+        creating_item_->onmoved(
+            [=, this](const QPointF& opos) { undo_stack_->push(new MoveCommand(item, opos)); });
+
+        creating_item_->onresized([item = creating_item_, this](auto g, auto l) {
+            undo_stack_->push(new ResizeCommand(item, g, l));
+            if (item->graph() == canvas::text) menu_->setFont(item->font());
+        });
+
+        creating_item_->onrotated([item = creating_item_, this](auto angle) {
+            undo_stack_->push(new RotateCommand(item, angle));
+        });
 
         scene()->addItem(item);
         item->setFocus();
@@ -242,11 +252,11 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 {
     auto pos = event->pos();
 
-    if ((event->buttons() & Qt::LeftButton) && creating_item_.first &&
+    if ((event->buttons() & Qt::LeftButton) && creating_item_ &&
         editstatus_ == EditStatus::GRAPH_CREATING) {
-        switch (creating_item_.second) {
+        switch (creating_item_->graph()) {
         case canvas::text: break;
-        default: creating_item_.first->push(pos); break;
+        default: creating_item_->push(pos); break;
         }
     }
 
@@ -256,14 +266,13 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton) && creating_item_.first &&
+    if ((event->button() == Qt::LeftButton) && creating_item_ &&
         editstatus_ == EditStatus::GRAPH_CREATING) {
-        if (creating_item_.first->invalid() && creating_item_.second != canvas::text) {
-            scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_.first));
+        if (creating_item_->invalid() && creating_item_->graph() != canvas::text) {
+            scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_));
         }
         else {
-            commands_.push(
-                std::make_shared<CreatedCommand>(dynamic_cast<QGraphicsItem *>(creating_item_.first)));
+            undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(creating_item_)));
         }
     }
 
@@ -419,13 +428,12 @@ void ScreenShoter::exit()
 
     counter_ = 0;
 
-    commands_.clear();
+    undo_stack_->clear();
 
     unsetCursor();
 
     QWidget::close();
 }
-
 
 void ScreenShoter::updateTheme()
 {
@@ -466,9 +474,15 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::Key_Enter,  this), &QShortcut::activated, [this]() { copy(); exit(); });
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() { exit(); });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Z, this),              &QShortcut::activated, &commands_, &CommandStack::undo);
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, this),  &QShortcut::activated, &commands_, &CommandStack::redo);
+    connect(new QShortcut(QKeySequence::Undo, this), &QShortcut::activated, undo_stack_, &QUndoStack::undo);
+    connect(new QShortcut(QKeySequence::Redo, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
     // clang-format on
+
+    connect(new QShortcut(QKeySequence::Delete, this), &QShortcut::activated, [this]() {
+        if (!scene()->selectedItems().isEmpty() || scene()->focusItem()) {
+            undo_stack_->push(new DeleteCommand(scene()));
+        }
+    });
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this]() {
         if (history_idx_ < history_.size()) {
@@ -502,9 +516,10 @@ void ScreenShoter::registerShortcuts()
             if (auto copied = dynamic_cast<GraphicsItemInterface *>(copied_.first)->copy(); copied) {
                 copied->moveBy(copied_.second * 10, copied_.second * (-10));
                 copied_.second++;
-                scene()->addItem(copied);
-                commands_.push(std::make_shared<CreatedCommand>(copied));
+                undo_stack_->push(new CreatedCommand(scene(), copied));
                 copied->setFocus();
+
+                // TODO: callbacks
             }
         }
     });

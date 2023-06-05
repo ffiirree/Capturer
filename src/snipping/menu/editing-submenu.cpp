@@ -103,8 +103,8 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
             font_size_->addItem(QString::number(s));
         }
         font_size_->setCurrentText("16");
-        connect(font_size_, &QComboBox::currentTextChanged, [=, this](const QString& size) {
-            font_.setPointSizeF(size.toFloat());
+        connect(font_size_, QOverload<int>::of(&QComboBox::currentIndexChanged), [=, this](auto idx) {
+            font_.setPointSizeF(font_size_->currentText().toFloat());
             emit fontChanged(font_);
         });
     }
@@ -133,14 +133,15 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 void EditingSubmenu::setPen(const QPen& pen)
 {
     pen_ = pen;
-    if (!filled() && color_panel_) color_panel_->setColor(pen_.color());
+    if ((!filled() || (filled() && brush() == Qt::NoBrush)) && color_panel_)
+        color_panel_->setColor(pen_.color());
     if (width_btn_) width_btn_->setValue(pen_.width());
 }
 
 void EditingSubmenu::setBrush(const QBrush& brush)
 {
     brush_ = brush;
-    if (filled() && color_panel_) color_panel_->setColor(brush.color());
+    if (filled() && brush != Qt::NoBrush && color_panel_) color_panel_->setColor(brush.color());
 }
 
 void EditingSubmenu::setFont(const QFont& font)

@@ -72,8 +72,8 @@ signals:
     void moved();
 
 public slots:
-    void disableUndo(bool val);
-    void disableRedo(bool val);
+    void canUndo(bool val);
+    void canRedo(bool val);
 
     void paintGraph(canvas::graphics_t graph);
 

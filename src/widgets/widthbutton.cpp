@@ -4,7 +4,7 @@
 #include <QStyle>
 #include <QWheelEvent>
 
-void WidthButton::setValue(int width)
+void WidthButton::setValue(int width, bool silence)
 {
     width_ = std::clamp(width, min_, max_);
 
@@ -13,7 +13,8 @@ void WidthButton::setValue(int width)
         setProperty("width", QVariant::fromValue(__width));
         style()->polish(this);
 
-        emit changed(__width * 2 - 1);
+        if (!silence) 
+            emit changed(__width * 2 - 1);
     }
 }
 
@@ -23,5 +24,5 @@ void WidthButton::wheelEvent(QWheelEvent *event)
 
     width_ += event->angleDelta().y() / 120;
 
-    setValue(width_);
+    setValue(width_, false);
 }

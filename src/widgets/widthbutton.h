@@ -26,8 +26,7 @@ signals:
     void changed(int);
 
 public slots:
-    // Don't emit changed signal
-    void setValue(int width);
+    void setValue(int width, bool silence = true);
 
 protected:
     void wheelEvent(QWheelEvent *) override;

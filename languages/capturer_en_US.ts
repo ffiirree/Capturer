@@ -176,7 +176,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="369"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="378"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

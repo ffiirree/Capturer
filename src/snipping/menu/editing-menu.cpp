@@ -229,9 +229,9 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
     }
 }
 
-void EditingMenu::disableUndo(bool val) { undo_btn_->setDisabled(val); }
+void EditingMenu::canUndo(bool val) { undo_btn_->setDisabled(!val); }
 
-void EditingMenu::disableRedo(bool val) { redo_btn_->setDisabled(val); }
+void EditingMenu::canRedo(bool val) { redo_btn_->setDisabled(!val); }
 
 void EditingMenu::paintGraph(canvas::graphics_t graph)
 {

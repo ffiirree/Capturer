@@ -47,6 +47,10 @@ public:
     //
     virtual QGraphicsItem *copy() const = 0;
 
+    virtual ResizerF geometry() const { return geometry_; }
+
+    virtual qreal angle() const { return angle_; }
+
     virtual void resize(const ResizerF&, ResizerLocation) {}
 
     // callbacks
@@ -56,33 +60,38 @@ public:
 
     virtual void onblurred(const std::function<void()>& fn) { onblur = fn; }
 
-    virtual void onchanged(const std::function<void(const std::shared_ptr<Command>&)>& fn)
+    virtual void onresized(const std::function<void(const ResizerF&, ResizerLocation)>& fn)
     {
-        onchange = fn;
+        onresize = fn;
     }
 
-    virtual void onresized(const std::function<void(const ResizerF&)>& fn) { onresize = fn; }
+    virtual void onmoved(const std::function<void(const QPointF&)>& fn) { onmove = fn; }
+
+    virtual void onrotated(const std::function<void(qreal)>& fn) { onrotate = fn; }
 
 protected:
     // callbacks
-    std::function<void(ResizerLocation)> onhover                  = [](auto) {};
-    std::function<void()> onfocus                                 = []() {};
-    std::function<void()> onblur                                  = []() {};
-    std::function<void(const std::shared_ptr<Command>&)> onchange = [](auto) {};
-    std::function<void(const ResizerF&)> onresize                 = [](auto) {};
+    std::function<void(ResizerLocation)> onhover                   = [](auto) {};
+    std::function<void()> onfocus                                  = []() {};
+    std::function<void()> onblur                                   = []() {};
+    std::function<void(const ResizerF&, ResizerLocation)> onresize = [](auto, auto) {};
+    std::function<void(const QPointF&)> onmove                     = [](auto) {};
+    std::function<void(qreal)> onrotate                            = [](auto) {};
 
     // hovering
     ResizerLocation hover_location_ = ResizerLocation::DEFAULT;
 
     //
     canvas::adjusting_t adjusting_ = canvas::adjusting_t::none;
-    qreal adjusting_min_w_         = 12.0;
 
     // rotation
     qreal angle_{};
 
     // used by moving / rotating
     QPointF mpos_{};
+
+    //
+    ResizerF geometry_{ 0.0, 0.0, 0.0, 0.0, 12.0 };
 
     // for recording adjusted command
     ResizerF before_resizing_{}; // rectangle
@@ -100,7 +109,6 @@ protected:
     void focusOutEvent(QFocusEvent *) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
-    void keyPressEvent(QKeyEvent *) override;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
@@ -115,12 +123,9 @@ public:
     explicit GraphicsLineItem(QGraphicsItem * = nullptr);
     explicit GraphicsLineItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
-    ~GraphicsLineItem() {}
-
     // QGraphicsItem
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    bool contains(const QPointF&) const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
@@ -134,7 +139,7 @@ public:
 
     void setPen(const QPen&) override;
 
-    bool invalid() const override { return QLineF(v1_, v2_).length() < 4; }
+    bool invalid() const override { return QLineF(geometry_.point1(), geometry_.point2()).length() < 4; }
 
     void push(const QPointF&) override;
 
@@ -145,15 +150,7 @@ public:
 
     QGraphicsItem *copy() const override;
 
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-
 private:
-    QPointF v1_{};
-    QPointF v2_{};
-
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
 };
 
@@ -165,12 +162,9 @@ public:
     explicit GraphicsArrowItem(QGraphicsItem * = nullptr);
     explicit GraphicsArrowItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
-    ~GraphicsArrowItem() {}
-
     // QGraphicsItem
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    bool contains(const QPointF&) const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
@@ -194,11 +188,6 @@ public:
 
     QGraphicsItem *copy() const;
 
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-
 private:
     QPolygonF polygon_{ 6 };
     QPen pen_{ Qt::red, 1, Qt::SolidLine };
@@ -212,12 +201,9 @@ public:
     explicit GraphicsRectItem(QGraphicsItem * = nullptr);
     explicit GraphicsRectItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
-    ~GraphicsRectItem() {}
-
     // QGraphicsItem
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    bool contains(const QPointF&) const override;
 
     bool filled() const override;
     void fill(bool) override;
@@ -238,7 +224,7 @@ public:
 
     void push(const QPointF&) override;
 
-    bool invalid() const override { return std::abs(v2_.x() - v1_.x()) * std::abs(v2_.y() - v1_.y()) < 16; }
+    bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
 
     ResizerLocation location(const QPointF&) const override;
 
@@ -246,15 +232,7 @@ public:
 
     QGraphicsItem *copy() const override;
 
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-
 private:
-    QPointF v1_{};
-    QPointF v2_{};
-
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
@@ -265,9 +243,7 @@ private:
 class GraphicsPixmapItem : public GraphicsItem
 {
 public:
-    explicit GraphicsPixmapItem(const QPixmap&, const QPointF& center, QGraphicsItem * = nullptr);
-
-    ~GraphicsPixmapItem() {}
+    explicit GraphicsPixmapItem(const QPixmap&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
     QRectF boundingRect() const override;
@@ -296,14 +272,9 @@ public:
     QGraphicsItem *copy() const override;
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
 
 private:
-    QPointF v1_{};
-    QPointF v2_{};
-
     QPixmap pixmap_{};
 };
 
@@ -320,7 +291,6 @@ public:
     // QGraphicsItem
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    bool contains(const QPointF&) const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
@@ -341,7 +311,7 @@ public:
 
     void push(const QPointF&) override;
 
-    bool invalid() const override { return std::abs(v2_.x() - v1_.x()) * std::abs(v2_.y() - v1_.y()) < 16; }
+    bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
 
     ResizerLocation location(const QPointF&) const override;
 
@@ -349,15 +319,7 @@ public:
 
     QGraphicsItem *copy() const override;
 
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-
 private:
-    QPointF v1_{};
-    QPointF v2_{};
-
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
@@ -514,12 +476,13 @@ public:
 
     QGraphicsItem *copy() const override;
 
+    ResizerF geometry() const override { return ResizerF{ QGraphicsTextItem::boundingRect() }; }
+
 protected:
     void focusInEvent(QFocusEvent *) override;
     void focusOutEvent(QFocusEvent *) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
-    void keyPressEvent(QKeyEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;

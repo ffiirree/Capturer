@@ -101,11 +101,11 @@ void Magnifier::paintEvent(QPaintEvent *)
     QPainter painter(this);
 
     // 0.
-    auto draw_ = grab().scaled(psize_, Qt::KeepAspectRatioByExpanding);
+    auto draw = grab().scaled(psize_, Qt::KeepAspectRatioByExpanding);
 
     // 1.
     painter.fillRect(rect(), QColor(0, 0, 0, 150));
-    painter.drawPixmap(0, 0, draw_);
+    painter.drawPixmap(0, 0, draw);
 
     // 2.
     painter.setPen(QPen(QColor(0, 100, 250, 125), 5, Qt::SolidLine, Qt::FlatCap));
@@ -114,7 +114,7 @@ void Magnifier::paintEvent(QPaintEvent *)
     painter.drawLine(QPoint(psize_.width() / 2, 0), QPoint(psize_.width() / 2, psize_.height()));
 
     // 3.
-    center_color_ = QColor(draw_.toImage().pixel(psize_.width() / 2, psize_.height() / 2));
+    center_color_ = QColor(draw.toImage().pixel(psize_.width() / 2, psize_.height() / 2));
     painter.setPen(QPen(center_color_, 5, Qt::SolidLine, Qt::FlatCap));
     painter.drawLine(QPoint(psize_.width() / 2 - 2, psize_.height() / 2),
                      QPoint(psize_.width() / 2 + 3, psize_.height() / 2));

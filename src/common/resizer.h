@@ -131,12 +131,27 @@ public:
         : _Resizer(rect.topLeft(), rect.bottomRight(), border_width, anchor_w)
     {}
 
-    bool operator==(const _Resizer<T>& rhs)
+    _Resizer& operator=(const _Resizer& r)
+    {
+        x1_ = r.x1_;
+        x2_ = r.x2_;
+        y1_ = r.y1_;
+        y2_ = r.y2_;
+
+        range_ = r.range_;
+
+        rotate_f_ = rotate_f_;
+
+        border_w_ = border_w_;
+        anchor_w_ = anchor_w_;
+
+        return *this;
+    }
+
+    bool operator==(const _Resizer& rhs)
     {
         return x1_ == rhs.x1_ && y1_ == rhs.y1_ && x2_ == rhs.x2_ && y2_ == rhs.y2_;
     }
-
-    bool operator!=(const _Resizer<T>& rhs) { return !(*this == rhs); }
 
     // TODO: constrain the box coordinates by range
     inline void range(const qrect_t& r) { range_ = r; }
@@ -173,29 +188,34 @@ public:
     }
 
     // clang-format off
-    inline T clamp_x(T v)       { return std::clamp(v, range_.left(), range_.right()); }
-    inline T clamp_y(T v)       { return std::clamp(v, range_.top(), range_.bottom()); }
+    inline T clamp_x(T v)           { return std::clamp(v, range_.left(), range_.right()); }
+    inline T clamp_y(T v)           { return std::clamp(v, range_.top(), range_.bottom()); }
     
-    inline T x1()     const     { return x1_; }
-    inline T x2()     const     { return x2_; }
-    inline T y1()     const     { return y1_; }
-    inline T y2()     const     { return y2_; }
+    inline T x1()     const         { return x1_; }
+    inline T x2()     const         { return x2_; }
+    inline T y1()     const         { return y1_; }
+    inline T y2()     const         { return y2_; }
 
-    inline void x1(T v)         { x1_ = clamp_x(v); }
-    inline void x2(T v)         { x2_ = clamp_x(v); }
-    inline void y1(T v)         { y1_ = clamp_y(v); }
-    inline void y2(T v)         { y2_ = clamp_y(v); }
+    inline void x1(T v)             { x1_ = clamp_x(v); }
+    inline void x2(T v)             { x2_ = clamp_x(v); }
+    inline void y1(T v)             { y1_ = clamp_y(v); }
+    inline void y2(T v)             { y2_ = clamp_y(v); }
 
-    inline T left()   const     { return x1_ < x2_ ? x1_ : x2_; }
-    inline T right()  const     { return x1_ > x2_ ? x1_ : x2_; }
-    inline T top()    const     { return y1_ < y2_ ? y1_ : y2_; }
-    inline T bottom() const     { return y1_ > y2_ ? y1_ : y2_; }
+    inline void point1(T x1, T y1)  { x1_ = clamp_x(x1), y1_ = clamp_y(y1); }
+    inline void point2(T x2, T y2)  { x2_ = clamp_x(x2), y2_ = clamp_y(y2); }
 
-    inline void left(int v)     { x1_ < x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
-    inline void right(int v)    { x1_ > x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
-    inline void top(int v)      { y1_ < y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
-    inline void bottom(int v)   { y1_ > y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    inline void point1(const qpoint_t& p)  { x1_ = clamp_x(p.x()), y1_ = clamp_y(p.y()); }
+    inline void point2(const qpoint_t& p)  { x2_ = clamp_x(p.x()), y2_ = clamp_y(p.y()); }
 
+    inline T left()   const         { return x1_ < x2_ ? x1_ : x2_; }
+    inline T right()  const         { return x1_ > x2_ ? x1_ : x2_; }
+    inline T top()    const         { return y1_ < y2_ ? y1_ : y2_; }
+    inline T bottom() const         { return y1_ > y2_ ? y1_ : y2_; }
+
+    inline void left(int v)         { x1_ < x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    inline void right(int v)        { x1_ > x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    inline void top(int v)          { y1_ < y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    inline void bottom(int v)       { y1_ > y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
     // clang-format on
 
     void adjust(T dx1, T dy1, T dx2, T dy2)
@@ -347,6 +367,12 @@ public:
 
     inline qrect_t rect()           const { return { qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }; }
 
+    inline qrect_t boundingRect()   const 
+    {
+        auto half = std::max(anchor_w_ / 2, border_w_ / 2);
+        auto rect = qrect_t{ qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }.adjusted(-half, -half, half, half);
+        return rotate_f_ ? rect.united(rotateAnchor()) : rect;
+    }
 
     ResizerLocation absolutePos(const qpoint_t& p, bool filled = false, bool border_anchors = true) const
     {
@@ -397,16 +423,18 @@ public:
 
         return contains(p) ? (filled ? FILLED_INSIDE : EMPTY_INSIDE) : OUTSIDE;
     }
-
     // clang-format on
+
+    T borderWidth() const { return border_w_; }
+    T anchorWidth() const { return anchor_w_; }
 
 protected:
     // point 1
-    T x1_ = 0;
-    T y1_ = 0;
+    T x1_{};
+    T y1_{};
     // point 2
-    T x2_ = 0;
-    T y2_ = 0;
+    T x2_{};
+    T y2_{};
 
     qrect_t range_{ qpoint_t{ std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest() },
                     qpoint_t{ std::numeric_limits<T>::max(), std::numeric_limits<T>::max() } };

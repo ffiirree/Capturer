@@ -1,26 +1,23 @@
 #ifndef CAPTURER_COMMAND_H
 #define CAPTURER_COMMAND_H
 
+#include "resizer.h"
+
 #include <memory>
 #include <QFont>
 #include <QPen>
 #include <QPoint>
+#include <QUndoCommand>
 
+class QGraphicsScene;
 class QGraphicsItem;
 class GraphicsItemInterface;
 
 ////
 
-struct Command
+class LambdaCommand : public QUndoCommand
 {
-    virtual void redo() = 0;
-    virtual void undo() = 0;
-};
-
-////
-
-struct LambdaCommand : public Command
-{
+public:
     LambdaCommand(const std::function<void()>& r, const std::function<void()>& u)
         : onredo(r),
           onundo(u)
@@ -37,63 +34,107 @@ private:
 
 ////
 
-struct MoveCommand : public Command
+class CreatedCommand : public QUndoCommand
 {
-    MoveCommand(QGraphicsItem *item, const QPointF& offset);
+public:
+    CreatedCommand(QGraphicsScene *scene, QGraphicsItem *item);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    QGraphicsScene *scene_{};
+    QGraphicsItem *item_{};
+};
+
+////
+
+class MoveCommand : public QUndoCommand
+{
+public:
+    MoveCommand(QGraphicsItem *item, const QPointF& opos);
 
     void redo() override;
     void undo() override;
 
 private:
     QGraphicsItem *item_{};
-    QPointF offset_{};
+    QPointF opos_{};
+    QPointF npos_{};
 };
 
 ////
 
-struct DeletedCommand : public Command
+class ResizeCommand : public QUndoCommand
 {
-    DeletedCommand(QGraphicsItem *item);
-
-    void redo() override;
-    void undo() override;
-
-private:
-    QGraphicsItem *item_{};
-};
-
-////
-
-struct CreatedCommand : public Command
-{
-    CreatedCommand(QGraphicsItem *item);
-
-    void redo() override;
-    void undo() override;
-
-private:
-    QGraphicsItem *item_{};
-};
-
-////
-
-struct PenChangedCommand : public Command
-{
-    PenChangedCommand(GraphicsItemInterface *item, const QPen& open, const QPen& npen);
+public:
+    ResizeCommand(GraphicsItemInterface *item, const ResizerF& osize, ResizerLocation);
 
     void redo() override;
     void undo() override;
 
 private:
     GraphicsItemInterface *item_{};
-    QPen open_{};
-    QPen npen_{};
+    ResizerLocation location_{};
+    ResizerF osize_{};
+    ResizerF nsize_{};
 };
 
 ////
 
-struct FillChangedCommand : public Command
+class RotateCommand : public QUndoCommand
 {
+public:
+    RotateCommand(GraphicsItemInterface *item, qreal oangle);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    GraphicsItemInterface *item_{};
+    qreal oangle_{};
+    qreal nangle_{};
+};
+
+////
+
+class DeleteCommand : public QUndoCommand
+{
+public:
+    DeleteCommand(QGraphicsScene *scene);
+
+    void redo() override;
+    void undo() override;
+
+private:
+    QGraphicsScene *scene_{};
+    QGraphicsItem *item_{};
+};
+
+////
+
+class PenChangedCommand : public QUndoCommand
+{
+public:
+    PenChangedCommand(GraphicsItemInterface *item, const QPen& open, const QPen& npen);
+
+    void redo() override;
+    void undo() override;
+
+    bool mergeWith(const QUndoCommand *) override;
+    int id() const override { return 1'234; }
+
+private:
+    GraphicsItemInterface *item_{};
+    QPen open_{ Qt::NoPen };
+    QPen npen_{ Qt::NoPen };
+};
+
+////
+
+class FillChangedCommand : public QUndoCommand
+{
+public:
     FillChangedCommand(GraphicsItemInterface *item, bool filled_);
 
     void redo() override;
@@ -106,8 +147,9 @@ private:
 
 ////
 
-struct BrushChangedCommand : public Command
+class BrushChangedCommand : public QUndoCommand
 {
+public:
     BrushChangedCommand(GraphicsItemInterface *item, const QBrush& open, const QBrush& npen);
 
     void redo() override;
@@ -120,9 +162,9 @@ private:
 };
 
 ////
-
-struct FontChangedCommand : public Command
+class FontChangedCommand : public QUndoCommand
 {
+public:
     FontChangedCommand(GraphicsItemInterface *item, const QFont& open, const QFont& npen);
 
     void redo() override;
@@ -132,94 +174,6 @@ private:
     GraphicsItemInterface *item_{};
     QFont ofont_{};
     QFont nfont_{};
-};
-
-////
-
-struct MovedCommand : public Command
-{
-    MovedCommand(QGraphicsItem *item, const QPointF& offset);
-
-    void redo() override;
-    void undo() override;
-
-private:
-    QGraphicsItem *item_{};
-    QPointF offset_{};
-};
-
-
-////
-
-class CommandStack : public QObject
-{
-    Q_OBJECT
-
-public:
-    CommandStack() = default;
-
-    inline void push(const std::shared_ptr<Command>& command)
-    {
-        if (undo_stack_.empty()) emit emptied(0, false);
-
-        undo_stack_.push_back(command);
-
-        emit changed(undo_stack_.size());
-        emit pushed();
-
-        // clear the redo commands
-        if (!redo_stack_.empty()) {
-            redo_stack_.clear();
-            emit emptied(1, true);
-        }
-    }
-
-signals:
-    void changed(size_t);
-    void pushed();
-
-    void emptied(int, bool);
-
-public slots:
-
-    inline void undo()
-    {
-        if (undo_stack_.empty()) return;
-
-        if (redo_stack_.empty()) emit emptied(1, false);
-
-        undo_stack_.back()->undo();
-        redo_stack_.emplace_back(undo_stack_.back());
-        undo_stack_.pop_back();
-
-        if (undo_stack_.empty()) emit emptied(0, true);
-    }
-
-    inline void redo()
-    {
-        if (redo_stack_.empty()) return;
-
-        if (undo_stack_.empty()) emit emptied(0, false);
-
-        redo_stack_.back()->redo();
-        undo_stack_.emplace_back(redo_stack_.back());
-        redo_stack_.pop_back();
-
-        if (redo_stack_.empty()) emit emptied(1, true);
-    }
-
-    inline void clear()
-    {
-        undo_stack_.clear();
-        redo_stack_.clear();
-
-        emit emptied(0, true);
-        emit emptied(1, true);
-    }
-
-private:
-    std::vector<std::shared_ptr<Command>> redo_stack_;
-    std::vector<std::shared_ptr<Command>> undo_stack_;
 };
 
 #endif //! CAPTURER_COMMAND_H

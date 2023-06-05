@@ -80,7 +80,7 @@ private:
 
     uint32_t editstatus_{};
 
-    std::pair<GraphicsItemInterface *, canvas::graphics_t> creating_item_;
+    GraphicsItemInterface *creating_item_;
     int counter_{ 0 };
 
     EditingMenu *menu_{};    // editing menu
@@ -100,7 +100,7 @@ private:
     //
     std::pair<QGraphicsItem *, int> copied_{}; // item, paste times
 
-    CommandStack commands_{};
+    QUndoStack *undo_stack_{};
 };
 
 #endif //! CAPTURER_SCREEN_SHOTER_H
