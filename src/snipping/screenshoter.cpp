@@ -133,6 +133,10 @@ void ScreenShoter::start()
     setBackgroundBrush(captured_pixmap);
     setCacheMode(QGraphicsView::CacheBackground);
 
+    //
+    magnifier_->setGrabPixmap(captured_pixmap);
+
+    //
     selector_->start(probe::graphics::window_filter_t::visible |
                      probe::graphics::window_filter_t::children);
 
@@ -142,30 +146,6 @@ void ScreenShoter::start()
 
     // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     activateWindow();
-}
-
-void ScreenShoter::exit()
-{
-    magnifier_->close();
-
-    menu_->close();
-
-    selector_->close();
-
-    copied_ = {};
-
-    scene()->clear();
-    setBackgroundBrush(Qt::NoBrush);
-
-    creating_item_ = {};
-
-    counter_ = 0;
-
-    commands_.clear();
-
-    unsetCursor();
-
-    QWidget::close();
 }
 
 QBrush ScreenShoter::mosaicBrush()
@@ -421,6 +401,31 @@ void ScreenShoter::pin()
 
     exit();
 }
+
+void ScreenShoter::exit()
+{
+    magnifier_->close();
+
+    menu_->close();
+
+    selector_->close();
+
+    copied_ = {};
+
+    scene()->clear();
+    setBackgroundBrush(Qt::NoBrush);
+
+    creating_item_ = {};
+
+    counter_ = 0;
+
+    commands_.clear();
+
+    unsetCursor();
+
+    QWidget::close();
+}
+
 
 void ScreenShoter::updateTheme()
 {

@@ -25,6 +25,7 @@ namespace canvas
         resizing = 0x02,
         rotating = 0x04,
         editing  = 0x08, // text
+        creating = 0x10,
     };
 } // namespace canvas
 

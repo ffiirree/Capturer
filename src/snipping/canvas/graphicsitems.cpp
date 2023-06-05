@@ -1171,6 +1171,7 @@ GraphicsPathItem::GraphicsPathItem(const QPointF& p, QGraphicsItem *parent)
     setFlag(QGraphicsItem::ItemIsSelectable, false);
     setAcceptHoverEvents(false);
     setAcceptedMouseButtons(Qt::NoButton);
+    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
     path_.moveTo(p);
 }

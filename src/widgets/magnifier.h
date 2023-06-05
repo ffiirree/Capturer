@@ -29,15 +29,23 @@ public:
         update();
     }
 
+    // 
+    void setGrabPixmap(const QPixmap&);
+
 protected:
     bool eventFilter(QObject *, QEvent *) override;
 
     void showEvent(QShowEvent *) override;
     void paintEvent(QPaintEvent *) override;
 
+    void closeEvent(QCloseEvent *) override;
+
 private:
-    QRect mrect();
+    QRect grabRect();
+    QPixmap grab();
     QPoint position();
+
+    QPixmap pixmap_{};
 
     QLabel *label_{};
 

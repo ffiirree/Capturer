@@ -33,9 +33,15 @@ Magnifier::Magnifier(QWidget *parent)
     hide();
 }
 
-QRect Magnifier::mrect()
+QRect Magnifier::grabRect()
 {
     auto mouse_pos = QCursor::pos();
+
+    if (!pixmap_.isNull()) {
+        auto offset = probe::graphics::virtual_screen_geometry();
+        mouse_pos -= QPoint{ offset.x, offset.y };
+    }
+
     return {
         mouse_pos.x() - msize_.width() / 2,
         mouse_pos.y() - msize_.height() / 2,
@@ -76,16 +82,26 @@ bool Magnifier::eventFilter(QObject *obj, QEvent *event)
 // TODO: clear the background when close
 void Magnifier::showEvent(QShowEvent *) { move(position()); }
 
+void Magnifier::setGrabPixmap(const QPixmap& pixmap) { pixmap_ = pixmap; }
+
+QPixmap Magnifier::grab()
+{
+    auto rect = grabRect();
+    if (pixmap_.isNull()) {
+        return QGuiApplication::primaryScreen()->grabWindow(
+            probe::graphics::virtual_screen().handle, rect.x(), rect.y(), rect.width(), rect.height());
+    }
+    else {
+        return pixmap_.copy(rect);
+    }
+}
+
 void Magnifier::paintEvent(QPaintEvent *)
 {
-    auto area   = mrect();
-    auto pixmap = QGuiApplication::primaryScreen()->grabWindow(
-        probe::graphics::virtual_screen().handle, area.x(), area.y(), area.width(), area.height());
-
     QPainter painter(this);
 
     // 0.
-    auto draw_ = pixmap.scaled(psize_, Qt::KeepAspectRatioByExpanding);
+    auto draw_ = grab().scaled(psize_, Qt::KeepAspectRatioByExpanding);
 
     // 1.
     painter.fillRect(rect(), QColor(0, 0, 0, 150));
@@ -114,4 +130,10 @@ void Magnifier::paintEvent(QPaintEvent *)
     auto text = QString("POS : %1, %2\nRGB : ").arg(QCursor::pos().x()).arg(QCursor::pos().y()) +
                 getColorStringValue();
     label_->setText(text);
+}
+
+void Magnifier::closeEvent(QCloseEvent *event)
+{
+    pixmap_ = {};
+    QWidget::closeEvent(event);
 }
