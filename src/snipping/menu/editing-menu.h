@@ -24,7 +24,7 @@ public:
     };
 
 public:
-    explicit EditingMenu(QWidget * = nullptr, uint32_t = MenuGroups::ALL);
+    explicit EditingMenu(QWidget *, uint32_t = MenuGroups::ALL);
 
     void reset();
 

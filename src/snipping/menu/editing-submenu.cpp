@@ -103,7 +103,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
             font_size_->addItem(QString::number(s));
         }
         font_size_->setCurrentText("16");
-        connect(font_size_, QOverload<int>::of(&QComboBox::currentIndexChanged), [=, this](auto idx) {
+        connect(font_size_, QOverload<int>::of(&QComboBox::currentIndexChanged), [=, this](auto) {
             font_.setPointSizeF(font_size_->currentText().toFloat());
             emit fontChanged(font_);
         });

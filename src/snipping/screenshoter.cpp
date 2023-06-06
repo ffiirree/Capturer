@@ -6,10 +6,8 @@
 #include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
-#include <QGraphicsScene>
 #include <QMimeData>
 #include <QMouseEvent>
-#include <QPalette>
 #include <QScreen>
 #include <QShortcut>
 #include <QWheelEvent>
@@ -34,7 +32,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     magnifier_  = new Magnifier(this);
     undo_stack_ = new QUndoStack(this);
 
-    setScene(new QGraphicsScene(this));
+    scene_ = new canvas::Canvas(this);
+    setScene(scene_);
 
     menu_->installEventFilter(this);
 
@@ -55,43 +54,45 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     });
 
     connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
-        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            item && item->graph() == graph && item->pen() != pen) {
+        if (auto item = scene_->focusItem(); item && item->graph() == graph && item->pen() != pen) {
             undo_stack_->push(new PenChangedCommand(item, item->pen(), pen));
         }
     });
 
     connect(menu_, &EditingMenu::brushChanged, [this](auto graph, auto brush) {
-        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            item && item->graph() == graph && item->brush() != brush) {
+        if (auto item = scene_->focusItem(); item && item->graph() == graph && item->brush() != brush) {
             undo_stack_->push(new BrushChangedCommand(item, item->brush(), brush));
         }
     });
 
     connect(menu_, &EditingMenu::fontChanged, [this](auto graph, auto font) {
-        auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-        if (!item) {
-            auto list = scene()->selectedItems();
-            item      = dynamic_cast<GraphicsItemInterface *>(list.first());
-        }
-        if (item && item->graph() == graph && item->font() != font) {
+        if (auto item = scene_->focusOrFirstSelectedItem();
+            item && item->graph() == graph && item->font() != font) {
             undo_stack_->push(new FontChangedCommand(item, item->font(), font));
         }
     });
 
     connect(menu_, &EditingMenu::fillChanged, [this](auto graph, auto filled) {
-        if (auto item = dynamic_cast<GraphicsItemInterface *>(scene()->focusItem());
-            item && item->graph() == graph && item->filled() != filled) {
+        if (auto item = scene_->focusItem(); item && item->graph() == graph && item->filled() != filled) {
             undo_stack_->push(new FillChangedCommand(item, filled));
         }
     });
 
     connect(menu_, &EditingMenu::imageArrived, [this](auto pixmap) {
-        QGraphicsItem *item = new GraphicsPixmapItem(pixmap, scene()->sceneRect().center());
+        GraphicsItemWrapper *item = new GraphicsPixmapItem(pixmap, scene()->sceneRect().center());
 
-        scene()->addItem(item);
-        item->setFocus();
-        dynamic_cast<GraphicsItemInterface *>(item)->onhovered([this](auto rl) { updateCursor(rl); });
+        undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(item)));
+
+        item->onhovered([this](auto rl) { updateCursor(rl); });
+        item->onmoved([=, this](auto opos) {
+            undo_stack_->push(new MoveCommand(dynamic_cast<QGraphicsItem *>(item), opos));
+        });
+        item->onrotated([=, this](auto angle) { undo_stack_->push(new RotateCommand(item, angle)); });
+        item->onresized([=, this](auto g, auto l) { undo_stack_->push(new ResizeCommand(item, g, l)); });
+        item->onfocused([=, this]() {
+            scene()->clearSelection(); // clear selection of text items
+            menu_->paintGraph(canvas::none);
+        });
     });
 
     // show menu
@@ -145,12 +146,19 @@ void ScreenShoter::start()
     selector_->start(probe::graphics::window_filter_t::visible |
                      probe::graphics::window_filter_t::children);
 
-    selector_->show();
-
     show();
+}
+
+void ScreenShoter::showEvent(QShowEvent *event)
+{
+    QGraphicsView::showEvent(event);
+
+    selector_->show();
 
     // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     activateWindow();
+
+    if (selector_->status() >= SelectorStatus::CAPTURED) menu_->show();
 }
 
 QBrush ScreenShoter::mosaicBrush()
@@ -198,23 +206,20 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         case canvas::counter: item = new GraphicsCounterleItem(pos, ++counter_); break;
 
         case canvas::eraser:
-            item = new GraphicsEraserItem(pos);
             pen.setBrush(QBrush(backgroundBrush().textureImage()));
-
-            dynamic_cast<GraphicsEraserItem *>(item)->setPen(pen);
+            item = new GraphicsEraserItem(pos);
             break;
 
         case canvas::mosaic:
             pen.setBrush(mosaicBrush());
             item = new GraphicsMosaicItem(pos);
-            dynamic_cast<GraphicsMosaicItem *>(item)->setPen(pen);
             break;
         case canvas::curve: item = new GraphicsCurveItem(pos); break;
 
         default: return;
         }
 
-        creating_item_ = dynamic_cast<GraphicsItemInterface *>(item);
+        creating_item_ = dynamic_cast<GraphicsItemWrapper *>(item);
 
         creating_item_->setPen(pen);
         creating_item_->setBrush(menu_->brush());
@@ -229,11 +234,9 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             menu_->setBrush(citem->brush());
             menu_->setFont(citem->font());
         });
+
         creating_item_->onhovered([this](ResizerLocation location) { updateCursor(location); });
-
-        creating_item_->onmoved(
-            [=, this](const QPointF& opos) { undo_stack_->push(new MoveCommand(item, opos)); });
-
+        creating_item_->onmoved([=, this](auto opos) { undo_stack_->push(new MoveCommand(item, opos)); });
         creating_item_->onresized([item = creating_item_, this](auto g, auto l) {
             undo_stack_->push(new ResizeCommand(item, g, l));
             if (item->graph() == canvas::text) menu_->setFont(item->font());
@@ -260,7 +263,6 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    // updateCursor();
     QGraphicsView::mouseMoveEvent(event);
 }
 
@@ -419,7 +421,7 @@ void ScreenShoter::exit()
 
     selector_->close();
 
-    copied_ = {};
+    undo_stack_->clear(); // before scene()->clear
 
     scene()->clear();
     setBackgroundBrush(Qt::NoBrush);
@@ -427,8 +429,6 @@ void ScreenShoter::exit()
     creating_item_ = {};
 
     counter_ = 0;
-
-    undo_stack_->clear();
 
     unsetCursor();
 
@@ -501,26 +501,8 @@ void ScreenShoter::registerShortcuts()
     });
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this]() {
-        if (selector_->status() < SelectorStatus::CAPTURED) {
+        if (selector_->status() < SelectorStatus::CAPTURED && magnifier_->isVisible()) {
             QApplication::clipboard()->setText(magnifier_->getColorStringValue());
-        }
-        else {
-            if (auto focused = scene()->focusItem(); focused) {
-                copied_ = { focused, 1 };
-            }
-        }
-    });
-
-    connect(new QShortcut(Qt::CTRL | Qt::Key_V, this), &QShortcut::activated, [this]() {
-        if (copied_.first) {
-            if (auto copied = dynamic_cast<GraphicsItemInterface *>(copied_.first)->copy(); copied) {
-                copied->moveBy(copied_.second * 10, copied_.second * (-10));
-                copied_.second++;
-                undo_stack_->push(new CreatedCommand(scene(), copied));
-                copied->setFocus();
-
-                // TODO: callbacks
-            }
         }
     });
 }

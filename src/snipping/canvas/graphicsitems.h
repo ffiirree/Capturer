@@ -9,7 +9,7 @@
 #include <QGraphicsItem>
 #include <QPen>
 
-class GraphicsItemInterface
+class GraphicsItemWrapper
 {
 public:
     virtual canvas::graphics_t graph() const = 0;
@@ -39,17 +39,15 @@ public:
     virtual bool invalid() const = 0;
 
     //
-    virtual ResizerLocation location(const QPointF&) const = 0;
+    virtual ResizerLocation location(const QPointF&) const;
 
-    //
+    // rotate
+    virtual qreal angle() const { return angle_; }
+
     virtual void rotate(qreal) {}
 
-    //
-    virtual QGraphicsItem *copy() const = 0;
-
+    // resize
     virtual ResizerF geometry() const { return geometry_; }
-
-    virtual qreal angle() const { return angle_; }
 
     virtual void resize(const ResizerF&, ResizerLocation) {}
 
@@ -70,6 +68,16 @@ public:
     virtual void onrotated(const std::function<void(qreal)>& fn) { onrotate = fn; }
 
 protected:
+    // events
+    void focus(QFocusEvent *);
+    void blur(QFocusEvent *);
+    void hover(QGraphicsSceneHoverEvent *);
+    void hoverLeave(QGraphicsSceneHoverEvent *);
+
+    void mousePress(QGraphicsSceneMouseEvent *, const QPointF&);
+    void mouseMove(QGraphicsSceneMouseEvent *, const QPointF&);
+    void mouseRelease(QGraphicsSceneMouseEvent *);
+
     // callbacks
     std::function<void(ResizerLocation)> onhover                   = [](auto) {};
     std::function<void()> onfocus                                  = []() {};
@@ -94,15 +102,26 @@ protected:
     ResizerF geometry_{ 0.0, 0.0, 0.0, 0.0, 12.0 };
 
     // for recording adjusted command
-    ResizerF before_resizing_{}; // rectangle
+    ResizerF before_resizing_{}; // geometry
     qreal before_rotating_{};    // angle
     QPointF before_moving_{};    // position
 };
 
-class GraphicsItem : public GraphicsItemInterface, public QGraphicsItem
+class GraphicsItem : public GraphicsItemWrapper, public QGraphicsItem
 {
 public:
     explicit GraphicsItem(QGraphicsItem * = nullptr);
+
+    QRectF boundingRect() const override;
+
+    //
+    void resize(const ResizerF&, ResizerLocation) override;
+
+    // getter
+    QPen pen() const override;
+
+    // setter
+    void setPen(const QPen&) override;
 
 protected:
     void focusInEvent(QFocusEvent *) override;
@@ -113,6 +132,8 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+
+    QPen pen_{ Qt::red, 3, Qt::SolidLine };
 };
 
 /// GraphicsLineItem
@@ -124,7 +145,6 @@ public:
     explicit GraphicsLineItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -132,26 +152,14 @@ public:
     //
     void setVertexes(const QPointF&, const QPointF&);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::line; }
-
-    QPen pen() const override;
-
-    void setPen(const QPen&) override;
 
     bool invalid() const override { return QLineF(geometry_.point1(), geometry_.point2()).length() < 4; }
 
     void push(const QPointF&) override;
 
     ResizerLocation location(const QPointF&) const override;
-
-    //
-    void resize(const ResizerF&, ResizerLocation) override;
-
-    QGraphicsItem *copy() const override;
-
-private:
-    QPen pen_{ Qt::red, 3, Qt::SolidLine };
 };
 
 /// GraphicsArrowItem
@@ -163,18 +171,12 @@ public:
     explicit GraphicsArrowItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
     //
     void setVertexes(const QPointF&, const QPointF&);
-
-    // GraphicsItemInterface
-    QPen pen() const override;
-
-    void setPen(const QPen&) override;
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::arrow; }
 
@@ -186,11 +188,8 @@ public:
 
     void resize(const ResizerF&, ResizerLocation) override;
 
-    QGraphicsItem *copy() const;
-
 private:
     QPolygonF polygon_{ 6 };
-    QPen pen_{ Qt::red, 1, Qt::SolidLine };
 };
 
 /// Rectangle Item
@@ -202,7 +201,6 @@ public:
     explicit GraphicsRectItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     bool filled() const override;
@@ -213,11 +211,8 @@ public:
     //
     void setVertexes(const QPointF&, const QPointF&);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::rectangle; }
-
-    QPen pen() const override;
-    void setPen(const QPen&) override;
 
     QBrush brush() const override;
     void setBrush(const QBrush&) override;
@@ -226,14 +221,7 @@ public:
 
     bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
 
-    ResizerLocation location(const QPointF&) const override;
-
-    void resize(const ResizerF& g, ResizerLocation) override;
-
-    QGraphicsItem *copy() const override;
-
 private:
-    QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
 };
@@ -246,7 +234,6 @@ public:
     explicit GraphicsPixmapItem(const QPixmap&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -254,7 +241,7 @@ public:
     //
     void setPixmap(const QPixmap&);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::pixmap; }
 
     void push(const QPointF&) override {}
@@ -263,16 +250,9 @@ public:
 
     bool invalid() const override { return pixmap_.size() == QSize{ 0, 0 }; }
 
-    ResizerLocation location(const QPointF&) const override;
-
     void resize(const ResizerF& g, ResizerLocation) override;
 
     void rotate(qreal) override;
-
-    QGraphicsItem *copy() const override;
-
-protected:
-    void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
 
 private:
     QPixmap pixmap_{};
@@ -289,7 +269,6 @@ public:
     ~GraphicsEllipseleItem() {}
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -297,11 +276,8 @@ public:
     //
     void setVertexes(const QPointF&, const QPointF&);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::ellipse; }
-
-    QPen pen() const override;
-    void setPen(const QPen&) override;
 
     QBrush brush() const override;
     void setBrush(const QBrush&) override;
@@ -315,12 +291,7 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
-    void resize(const ResizerF&, ResizerLocation) override;
-
-    QGraphicsItem *copy() const override;
-
 private:
-    QPen pen_{ Qt::red, 3, Qt::SolidLine };
     QBrush brush_{ Qt::NoBrush };
     bool filled_{};
 };
@@ -343,11 +314,8 @@ public:
     //
     void setCounter(int);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::counter; }
-
-    // QPen pen() const override;
-    // void setPen(const QPen&) override;
 
     bool filled() const override { return true; }
 
@@ -357,17 +325,7 @@ public:
 
     ResizerLocation location(const QPointF&) const override;
 
-    // void resize(const ResizerF&, ResizerLocation) override;
-
-    // disable copy
-    QGraphicsItem *copy() const { return nullptr; }
-
 private:
-    QPointF v1_{};
-    QPointF v2_{};
-
-    QPen pen_{ Qt::red, 3, Qt::SolidLine };
-
     int counter_{};
 
     static int counter;
@@ -383,20 +341,15 @@ public:
     ~GraphicsPathItem() {}
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
-    bool contains(const QPointF&) const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
     //
     void pushVertexes(const QVector<QPointF>&);
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::curve; }
-
-    QPen pen() const override;
-    void setPen(const QPen&) override;
 
     void push(const QPointF&) override;
 
@@ -404,11 +357,11 @@ public:
 
     ResizerLocation location(const QPointF&) const override { return ResizerLocation::DEFAULT; }
 
-    QGraphicsItem *copy() const { return nullptr; }
+protected:
+    void focusOutEvent(QFocusEvent *) override;
 
 private:
     QPainterPath path_{};
-    QPen pen_{ Qt::red, 10, Qt::SolidLine };
 };
 
 class GraphicsCurveItem : public GraphicsPathItem
@@ -437,7 +390,7 @@ public:
 
 ///
 
-class GraphicsTextItem : public GraphicsItemInterface, public QGraphicsTextItem
+class GraphicsTextItem : public GraphicsItemWrapper, public QGraphicsTextItem
 {
 public:
     explicit GraphicsTextItem(const QPointF&, QGraphicsItem * = nullptr);
@@ -449,7 +402,7 @@ public:
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
-    // GraphicsItemInterface
+    // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::text; }
 
     QPen pen() const override { return QPen(defaultTextColor()); }
@@ -473,8 +426,6 @@ public:
     void resize(const ResizerF&, ResizerLocation) override;
 
     void rotate(qreal) override;
-
-    QGraphicsItem *copy() const override;
 
     ResizerF geometry() const override { return ResizerF{ QGraphicsTextItem::boundingRect() }; }
 

@@ -1,8 +1,8 @@
 #ifndef CAPTURER_SCREEN_SHOTER_H
 #define CAPTURER_SCREEN_SHOTER_H
 
+#include "canvas/canvas.h"
 #include "canvas/command.h"
-#include "canvas/graphicsitems.h"
 #include "circlecursor.h"
 #include "config.h"
 #include "hunter.h"
@@ -29,10 +29,6 @@ class ScreenShoter : public QGraphicsView
         GRAPH_RESIZING = 0x0040'0000,
         GRAPH_ROTATING = 0x0080'0000,
 
-        READY_MASK     = 0x000f'0000,
-        OPERATION_MASK = 0xfff0'0000,
-        GRAPH_MASK     = 0x0000'ffff,
-
         ENABLE_BITMASK_OPERATORS()
     };
 
@@ -40,7 +36,6 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
-    void focusOnGraph(canvas::graphics_t);
     void pinSnipped(const QPixmap& image, const QPoint& pos);
     void SHOW_MESSAGE(const QString& title, const QString& msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
@@ -72,22 +67,22 @@ protected:
     void keyReleaseEvent(QKeyEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
+    void showEvent(QShowEvent *) override;
+
 private:
     void registerShortcuts();
     QBrush mosaicBrush();
 
     Selector *selector_{}; // Layer 1
+    canvas::Canvas *scene_{};
 
     uint32_t editstatus_{};
 
-    GraphicsItemInterface *creating_item_;
+    GraphicsItemWrapper *creating_item_;
     int counter_{ 0 };
 
     EditingMenu *menu_{};    // editing menu
     Magnifier *magnifier_{}; // magnifier
-
-    QPoint move_begin_{ 0, 0 };
-    QPoint resize_begin_{ 0, 0 };
 
     CircleCursor circle_cursor_{ 20 };
 
@@ -96,9 +91,6 @@ private:
     size_t history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
-
-    //
-    std::pair<QGraphicsItem *, int> copied_{}; // item, paste times
 
     QUndoStack *undo_stack_{};
 };

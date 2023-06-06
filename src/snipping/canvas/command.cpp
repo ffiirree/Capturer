@@ -12,9 +12,17 @@ CreatedCommand::CreatedCommand(QGraphicsScene *scene, QGraphicsItem *item)
       item_(item)
 {}
 
+CreatedCommand::~CreatedCommand()
+{
+    if (!item_->scene()) delete item_;
+}
+
 void CreatedCommand::redo()
 {
-    if (scene_ && item_) scene_->addItem(item_);
+    if (scene_ && item_) {
+        scene_->addItem(item_);
+        item_->setFocus();
+    }
 }
 
 void CreatedCommand::undo()
@@ -43,10 +51,10 @@ void MoveCommand::undo()
 
 ////
 
-ResizeCommand::ResizeCommand(GraphicsItemInterface *item, const ResizerF& osize, ResizerLocation location)
+ResizeCommand::ResizeCommand(GraphicsItemWrapper *item, const ResizerF& osize, ResizerLocation location)
     : item_(item),
-      osize_(osize),
-      location_(location)
+      location_(location),
+      osize_(osize)
 {
     nsize_ = item_->geometry();
 }
@@ -62,7 +70,7 @@ void ResizeCommand::undo()
 
 ////
 
-RotateCommand::RotateCommand(GraphicsItemInterface *item, qreal oangle)
+RotateCommand::RotateCommand(GraphicsItemWrapper *item, qreal oangle)
     : item_(item)
 {
     oangle_ = oangle;
@@ -105,7 +113,7 @@ void DeleteCommand::undo()
 
 ////
 
-PenChangedCommand::PenChangedCommand(GraphicsItemInterface *item, const QPen& open, const QPen& npen)
+PenChangedCommand::PenChangedCommand(GraphicsItemWrapper *item, const QPen& open, const QPen& npen)
     : item_(item),
       open_(open),
       npen_(npen)
@@ -133,7 +141,7 @@ bool PenChangedCommand::mergeWith(const QUndoCommand *other)
 
 ////
 
-FillChangedCommand::FillChangedCommand(GraphicsItemInterface *item, bool filled)
+FillChangedCommand::FillChangedCommand(GraphicsItemWrapper *item, bool filled)
     : item_(item),
       filled_(filled)
 {}
@@ -150,7 +158,7 @@ void FillChangedCommand::undo()
 
 ////
 
-BrushChangedCommand::BrushChangedCommand(GraphicsItemInterface *item, const QBrush& o, const QBrush& n)
+BrushChangedCommand::BrushChangedCommand(GraphicsItemWrapper *item, const QBrush& o, const QBrush& n)
     : item_(item),
       obrush_(o),
       nbrush_(n)
@@ -168,7 +176,7 @@ void BrushChangedCommand::undo()
 
 ////
 
-FontChangedCommand::FontChangedCommand(GraphicsItemInterface *item, const QFont& o, const QFont& n)
+FontChangedCommand::FontChangedCommand(GraphicsItemWrapper *item, const QFont& o, const QFont& n)
     : item_(item),
       ofont_(o),
       nfont_(n)

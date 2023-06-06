@@ -11,26 +11,7 @@
 
 class QGraphicsScene;
 class QGraphicsItem;
-class GraphicsItemInterface;
-
-////
-
-class LambdaCommand : public QUndoCommand
-{
-public:
-    LambdaCommand(const std::function<void()>& r, const std::function<void()>& u)
-        : onredo(r),
-          onundo(u)
-    {}
-
-    void redo() override { onredo(); }
-
-    void undo() override { onundo(); }
-
-private:
-    std::function<void()> onredo = []() {};
-    std::function<void()> onundo = []() {};
-};
+class GraphicsItemWrapper;
 
 ////
 
@@ -38,6 +19,8 @@ class CreatedCommand : public QUndoCommand
 {
 public:
     CreatedCommand(QGraphicsScene *scene, QGraphicsItem *item);
+
+    ~CreatedCommand() override;
 
     void redo() override;
     void undo() override;
@@ -68,13 +51,13 @@ private:
 class ResizeCommand : public QUndoCommand
 {
 public:
-    ResizeCommand(GraphicsItemInterface *item, const ResizerF& osize, ResizerLocation);
+    ResizeCommand(GraphicsItemWrapper *item, const ResizerF& osize, ResizerLocation location);
 
     void redo() override;
     void undo() override;
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     ResizerLocation location_{};
     ResizerF osize_{};
     ResizerF nsize_{};
@@ -85,13 +68,13 @@ private:
 class RotateCommand : public QUndoCommand
 {
 public:
-    RotateCommand(GraphicsItemInterface *item, qreal oangle);
+    RotateCommand(GraphicsItemWrapper *item, qreal oangle);
 
     void redo() override;
     void undo() override;
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     qreal oangle_{};
     qreal nangle_{};
 };
@@ -116,7 +99,7 @@ private:
 class PenChangedCommand : public QUndoCommand
 {
 public:
-    PenChangedCommand(GraphicsItemInterface *item, const QPen& open, const QPen& npen);
+    PenChangedCommand(GraphicsItemWrapper *item, const QPen& open, const QPen& npen);
 
     void redo() override;
     void undo() override;
@@ -125,7 +108,7 @@ public:
     int id() const override { return 1'234; }
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     QPen open_{ Qt::NoPen };
     QPen npen_{ Qt::NoPen };
 };
@@ -135,13 +118,13 @@ private:
 class FillChangedCommand : public QUndoCommand
 {
 public:
-    FillChangedCommand(GraphicsItemInterface *item, bool filled_);
+    FillChangedCommand(GraphicsItemWrapper *item, bool filled);
 
     void redo() override;
     void undo() override;
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     bool filled_{};
 };
 
@@ -150,13 +133,13 @@ private:
 class BrushChangedCommand : public QUndoCommand
 {
 public:
-    BrushChangedCommand(GraphicsItemInterface *item, const QBrush& open, const QBrush& npen);
+    BrushChangedCommand(GraphicsItemWrapper *item, const QBrush& open, const QBrush& npen);
 
     void redo() override;
     void undo() override;
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     QBrush obrush_{};
     QBrush nbrush_{};
 };
@@ -165,13 +148,13 @@ private:
 class FontChangedCommand : public QUndoCommand
 {
 public:
-    FontChangedCommand(GraphicsItemInterface *item, const QFont& open, const QFont& npen);
+    FontChangedCommand(GraphicsItemWrapper *item, const QFont& open, const QFont& npen);
 
     void redo() override;
     void undo() override;
 
 private:
-    GraphicsItemInterface *item_{};
+    GraphicsItemWrapper *item_{};
     QFont ofont_{};
     QFont nfont_{};
 };

@@ -5,7 +5,6 @@
 #include <cmath>
 #include <numbers>
 #include <QAbstractTextDocumentLayout>
-#include <QDebug>
 #include <QGraphicsScene>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -13,30 +12,23 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
-GraphicsItem::GraphicsItem(QGraphicsItem *parent)
-    : QGraphicsItem(parent)
+ResizerLocation GraphicsItemWrapper::location(const QPointF& p) const
 {
-    setFlag(QGraphicsItem::ItemIsFocusable);
-    setFlag(QGraphicsItem::ItemIsMovable);
-    // setFlag(QGraphicsItem::ItemIsSelectable);
-    setAcceptHoverEvents(true);
+    return geometry_.absolutePos(p, filled());
 }
 
-void GraphicsItem::focusInEvent(QFocusEvent *event)
+void GraphicsItemWrapper::focus(QFocusEvent *event)
 {
-    if (event->reason() == Qt::MouseFocusReason && (hover_location_ != ResizerLocation::EMPTY_INSIDE))
-        onfocus();
-
-    QGraphicsItem::focusInEvent(event);
+    if (event->reason() == Qt::MouseFocusReason) onfocus();
 }
 
-void GraphicsItem::focusOutEvent(QFocusEvent *event)
+void GraphicsItemWrapper::blur(QFocusEvent *)
 {
     onblur();
-    QGraphicsItem::focusOutEvent(event);
+    adjusting_ = canvas::adjusting_t::none;
 }
 
-void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
+void GraphicsItemWrapper::hover(QGraphicsSceneHoverEvent *event)
 {
     auto hpos = location(event->pos());
 
@@ -44,29 +36,26 @@ void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         onhover(hpos);
         hover_location_ = hpos;
     }
-
-    QGraphicsItem::hoverMoveEvent(event);
 }
 
-void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+void GraphicsItemWrapper::hoverLeave(QGraphicsSceneHoverEvent *)
 {
     onhover(ResizerLocation::DEFAULT);
     hover_location_ = ResizerLocation::DEFAULT;
-
-    QGraphicsItem::hoverLeaveEvent(event);
 }
 
-void GraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+void GraphicsItemWrapper::mousePress(QGraphicsSceneMouseEvent *event, const QPointF& pos)
 {
     if (event->button() == Qt::LeftButton) {
         if (!!(hover_location_ & ResizerLocation::ANCHOR)) {
             adjusting_       = canvas::adjusting_t::resizing;
-            before_resizing_ = geometry_;
+            before_resizing_ = geometry();
         }
         else if (!!(hover_location_ & ResizerLocation::BORDER) ||
                  !!(hover_location_ & ResizerLocation::FILLED_INSIDE)) {
             adjusting_     = canvas::adjusting_t::moving;
-            before_moving_ = pos();
+            mpos_          = event->scenePos();
+            before_moving_ = pos;
         }
         else if (!!(hover_location_ & ResizerLocation::ROTATE_ANCHOR)) {
             adjusting_       = canvas::adjusting_t::rotating;
@@ -74,18 +63,15 @@ void GraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
             before_rotating_ = angle_;
         }
     }
-
-    (hover_location_ != ResizerLocation::EMPTY_INSIDE) ? QGraphicsItem::mouseReleaseEvent(event)
-                                                       : event->ignore();
 }
 
-void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPointF& center)
 {
-    auto cpos = event->pos().toPoint();
-
     switch (adjusting_) {
-    case canvas::adjusting_t::moving: QGraphicsItem::mouseMoveEvent(event); break;
+    case canvas::adjusting_t::moving: break;
     case canvas::adjusting_t::resizing: {
+        auto cpos = event->pos();
+
         ResizerF resizer(geometry_);
         // clang-format off
         switch (hover_location_) {
@@ -105,11 +91,26 @@ void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
         break;
     }
+    case canvas::adjusting_t::rotating: {
+        auto a = mpos_;
+        auto b = center;
+        auto c = event->scenePos();
+
+        QPointF ab = { b.x() - a.x(), b.y() - a.y() };
+        QPointF cb = { b.x() - c.x(), b.y() - c.y() };
+
+        float dot   = (ab.x() * cb.x() + ab.y() * cb.y()); // dot product
+        float cross = (ab.x() * cb.y() - ab.y() * cb.x()); // cross product
+
+        rotate(angle_ + std::atan2(cross, dot) * 180. / std::numbers::pi);
+
+        mpos_ = event->scenePos();
+        break;
+    }
     default: break;
     }
 }
-
-void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+void GraphicsItemWrapper::mouseRelease(QGraphicsSceneMouseEvent *)
 {
     switch (adjusting_) {
     case canvas::adjusting_t::moving: onmove(before_moving_); break;
@@ -124,9 +125,82 @@ void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     before_moving_   = {};
     mpos_            = {};
     before_rotating_ = {};
+}
 
-    (hover_location_ != ResizerLocation::EMPTY_INSIDE) ? QGraphicsItem::mouseReleaseEvent(event)
-                                                       : event->ignore();
+////
+
+GraphicsItem::GraphicsItem(QGraphicsItem *parent)
+    : QGraphicsItem(parent)
+{
+    setFlag(QGraphicsItem::ItemIsFocusable);
+    setFlag(QGraphicsItem::ItemIsMovable);
+    // setFlag(QGraphicsItem::ItemIsSelectable);
+    setAcceptHoverEvents(true);
+}
+
+QPen GraphicsItem::pen() const { return pen_; }
+
+void GraphicsItem::setPen(const QPen& pen)
+{
+    if (pen_ == pen) return;
+
+    prepareGeometryChange();
+    pen_ = pen;
+    update();
+}
+
+QRectF GraphicsItem::boundingRect() const { return shape().controlPointRect(); }
+
+void GraphicsItem::focusInEvent(QFocusEvent *event)
+{
+    GraphicsItemWrapper::focus(event);
+    QGraphicsItem::focusInEvent(event);
+}
+
+void GraphicsItem::focusOutEvent(QFocusEvent *event)
+{
+    GraphicsItemWrapper::blur(event);
+    QGraphicsItem::focusOutEvent(event);
+}
+
+void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
+{
+    GraphicsItemWrapper::hover(event);
+    QGraphicsItem::hoverMoveEvent(event);
+}
+
+void GraphicsItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    GraphicsItemWrapper::hoverLeave(event);
+    QGraphicsItem::hoverLeaveEvent(event);
+}
+
+void GraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    GraphicsItemWrapper::mousePress(event, pos());
+    if (hover_location_ != ResizerLocation::EMPTY_INSIDE) QGraphicsItem::mousePressEvent(event);
+}
+
+void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    (adjusting_ == canvas::adjusting_t::moving)
+        ? QGraphicsItem::mouseMoveEvent(event)
+        : GraphicsItemWrapper::mouseMove(event, mapToScene(geometry_.rect().center()));
+}
+
+void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    GraphicsItemWrapper::mouseRelease(event);
+    if (hover_location_ != ResizerLocation::EMPTY_INSIDE) QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void GraphicsItem::resize(const ResizerF& ng, ResizerLocation)
+{
+    prepareGeometryChange();
+
+    geometry_.coords(ng.point1(), ng.point2());
+
+    update();
 }
 
 ///
@@ -163,6 +237,7 @@ GraphicsLineItem::GraphicsLineItem(const QPointF& x1, const QPointF& x2, QGraphi
     setVertexes(x1, x2);
 }
 
+// pos at scene (0,0)
 void GraphicsLineItem::setVertexes(const QPointF& p1, const QPointF& p2)
 {
     if (geometry_.point1() == p1 && geometry_.point2() == p2) return;
@@ -180,19 +255,6 @@ void GraphicsLineItem::push(const QPointF& point)
     geometry_.coords(geometry_.point1(), point);
     update();
 }
-
-QPen GraphicsLineItem::pen() const { return pen_; }
-
-void GraphicsLineItem::setPen(const QPen& pen)
-{
-    if (pen_ == pen) return;
-
-    prepareGeometryChange();
-    pen_ = pen;
-    update();
-}
-
-QRectF GraphicsLineItem::boundingRect() const { return shape().controlPointRect(); }
 
 QPainterPath GraphicsLineItem::shape() const
 {
@@ -245,23 +307,6 @@ void GraphicsLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     }
 }
 
-void GraphicsLineItem::resize(const ResizerF& g, ResizerLocation)
-{
-    prepareGeometryChange();
-
-    geometry_.coords(g.point1(), g.point2());
-
-    update();
-}
-
-QGraphicsItem *GraphicsLineItem::copy() const
-{
-    auto item  = new GraphicsLineItem(geometry_.point1(), geometry_.point2());
-    item->pen_ = pen();
-
-    return item;
-}
-
 ///
 static QVector<QPointF> compute_arrow_vertexes(QPointF begin, QPointF end)
 {
@@ -300,6 +345,7 @@ GraphicsArrowItem::GraphicsArrowItem(const QPointF& x1, const QPointF& x2, QGrap
     setVertexes(x1, x2);
 }
 
+// pos at scene (0,0)
 void GraphicsArrowItem::setVertexes(const QPointF& p1, const QPointF& p2)
 {
     if (geometry_.point1() == p1 && geometry_.point2() == p2) return;
@@ -319,19 +365,6 @@ void GraphicsArrowItem::push(const QPointF& point)
     polygon_ = compute_arrow_vertexes(geometry_.point1(), geometry_.point2());
     update();
 }
-
-QPen GraphicsArrowItem::pen() const { return pen_; }
-
-void GraphicsArrowItem::setPen(const QPen& pen)
-{
-    if (pen_ == pen) return;
-
-    prepareGeometryChange();
-    pen_ = pen;
-    update();
-}
-
-QRectF GraphicsArrowItem::boundingRect() const { return shape().controlPointRect(); }
 
 QPainterPath GraphicsArrowItem::shape() const
 {
@@ -390,14 +423,6 @@ void GraphicsArrowItem::resize(const ResizerF& g, ResizerLocation)
     update();
 }
 
-QGraphicsItem *GraphicsArrowItem::copy() const
-{
-    auto item      = new GraphicsArrowItem();
-    item->polygon_ = polygon_;
-    item->pen_     = pen();
-    return item;
-}
-
 ///
 
 GraphicsRectItem::GraphicsRectItem(QGraphicsItem *parent)
@@ -410,6 +435,7 @@ GraphicsRectItem::GraphicsRectItem(const QPointF& x1, const QPointF& x2, QGraphi
     setVertexes(x1, x2);
 }
 
+// pos at scene (0,0)
 void GraphicsRectItem::setVertexes(const QPointF& p1, const QPointF& p2)
 {
     if (geometry_.point1() == p1 && geometry_.point2() == p2) return;
@@ -427,31 +453,18 @@ void GraphicsRectItem::push(const QPointF& point)
     update();
 }
 
-QRectF GraphicsRectItem::boundingRect() const { return shape().controlPointRect(); }
-
 QPainterPath GraphicsRectItem::shape() const
 {
     QPainterPath path;
-    path.addRect(geometry_.boundingRect());
+    if (filled()) {
+        path.addRect(geometry_.boundingRect());
+    }
+    else {
+        auto m = geometry_.borderWidth() / 2;
+        path.addRect(geometry_.rect().adjusted(-m, -m, m, m));
+        path.addRect(geometry_.rect().adjusted(m, m, -m, -m));
+    }
     return path;
-}
-
-ResizerLocation GraphicsRectItem::location(const QPointF& p) const
-{
-    ResizerLocation l = geometry_.absolutePos(p);
-    if (l == ResizerLocation::EMPTY_INSIDE && filled()) return ResizerLocation::BORDER;
-    return l;
-}
-
-QPen GraphicsRectItem::pen() const { return pen_; }
-
-void GraphicsRectItem::setPen(const QPen& pen)
-{
-    if (pen_ == pen) return;
-
-    prepareGeometryChange();
-    pen_ = pen;
-    update();
 }
 
 QBrush GraphicsRectItem::brush() const { return brush_; }
@@ -504,26 +517,6 @@ void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     }
 }
 
-void GraphicsRectItem::resize(const ResizerF& g, ResizerLocation)
-{
-    prepareGeometryChange();
-
-    geometry_.coords(g.point1(), g.point2());
-
-    update();
-}
-
-QGraphicsItem *GraphicsRectItem::copy() const
-{
-    auto item = new GraphicsRectItem(geometry_.point1(), geometry_.point2());
-
-    item->pen_    = pen_;
-    item->brush_  = brush_;
-    item->filled_ = filled_;
-
-    return item;
-}
-
 ///
 
 GraphicsEllipseleItem::GraphicsEllipseleItem(QGraphicsItem *parent)
@@ -553,12 +546,18 @@ void GraphicsEllipseleItem::push(const QPointF& point)
     update();
 }
 
-QRectF GraphicsEllipseleItem::boundingRect() const { return geometry_.boundingRect(); }
-
 QPainterPath GraphicsEllipseleItem::shape() const
 {
     QPainterPath path;
-    path.addRect(geometry_.boundingRect());
+    if (filled()) {
+        path.addRect(geometry_.boundingRect());
+    }
+    else {
+        auto m = geometry_.borderWidth() / 2;
+
+        path.addRect(geometry_.boundingRect());
+        path.addEllipse(geometry_.rect().adjusted(m, m, -m, -m));
+    }
     return path;
 }
 
@@ -583,17 +582,6 @@ ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
         else
             return ResizerLocation::OUTSIDE;
     }
-}
-
-QPen GraphicsEllipseleItem::pen() const { return pen_; }
-
-void GraphicsEllipseleItem::setPen(const QPen& pen)
-{
-    if (pen_ == pen) return;
-
-    prepareGeometryChange();
-    pen_ = pen;
-    update();
 }
 
 QBrush GraphicsEllipseleItem::brush() const { return brush_; }
@@ -643,27 +631,6 @@ void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
     }
 }
 
-void GraphicsEllipseleItem::resize(const ResizerF& g, ResizerLocation)
-{
-    prepareGeometryChange();
-
-    geometry_.coords(g.point1(), g.point2());
-
-    update();
-}
-
-QGraphicsItem *GraphicsEllipseleItem::copy() const
-{
-    auto item = new GraphicsEllipseleItem(geometry_.point1(), geometry_.point2());
-
-    item->pen_    = pen_;
-    item->brush_  = brush_;
-    item->filled_ = filled_;
-
-    // TODO
-    return item;
-}
-
 ///
 
 GraphicsPixmapItem::GraphicsPixmapItem(const QPixmap& pixmap, const QPointF& center, QGraphicsItem *parent)
@@ -690,8 +657,6 @@ void GraphicsPixmapItem::setPixmap(const QPixmap& pixmap)
 
     update();
 }
-
-QRectF GraphicsPixmapItem::boundingRect() const { return shape().controlPointRect(); }
 
 QPainterPath GraphicsPixmapItem::shape() const
 {
@@ -723,42 +688,6 @@ void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
         painter->drawLine(geometry_.rotateAnchor().center(), geometry_.topAnchor().center());
         painter->drawEllipse(geometry_.rotateAnchor());
-    }
-}
-
-ResizerLocation GraphicsPixmapItem::location(const QPointF& p) const
-{
-    ResizerLocation l = geometry_.absolutePos(p);
-    if (l == ResizerLocation::EMPTY_INSIDE && filled()) return ResizerLocation::BORDER;
-    return l;
-}
-
-void GraphicsPixmapItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    auto cpos = event->pos().toPoint();
-
-    switch (adjusting_) {
-    case canvas::adjusting_t::moving:
-    case canvas::adjusting_t::resizing: GraphicsItem::mouseMoveEvent(event); break;
-
-    case canvas::adjusting_t::rotating: {
-        auto a = mpos_;
-        auto b = mapToScene(geometry_.rect().center());
-        auto c = event->scenePos();
-
-        QPointF ab = { b.x() - a.x(), b.y() - a.y() };
-        QPointF cb = { b.x() - c.x(), b.y() - c.y() };
-
-        float dot   = (ab.x() * cb.x() + ab.y() * cb.y()); // dot product
-        float cross = (ab.x() * cb.y() - ab.y() * cb.x()); // cross product
-
-        onrotate(angle_);
-        rotate(angle_ + std::atan2(cross, dot) * 180. / std::numbers::pi);
-
-        mpos_ = event->scenePos();
-        break;
-    }
-    default: break;
     }
 }
 
@@ -814,14 +743,6 @@ void GraphicsPixmapItem::rotate(qreal angle)
     transform.rotate(angle);
     transform.translate(-br.center().x(), -br.center().y());
     setTransform(transform);
-}
-
-QGraphicsItem *GraphicsPixmapItem::copy() const
-{
-    auto item = new GraphicsPixmapItem(pixmap_, boundingRect().center());
-
-    item->rotate(angle_);
-    return item;
 }
 
 ///
@@ -889,24 +810,7 @@ GraphicsPathItem::GraphicsPathItem(const QPointF& p, QGraphicsItem *parent)
     path_.moveTo(p);
 }
 
-QRectF GraphicsPathItem::boundingRect() const { return shape().controlPointRect(); }
-
 QPainterPath GraphicsPathItem::shape() const { return shape_from_path(path_, pen_); }
-
-bool GraphicsPathItem::contains(const QPointF& point) const { return QGraphicsItem::contains(point); }
-
-QPen GraphicsPathItem::pen() const { return pen_; }
-
-void GraphicsPathItem::setPen(const QPen& pen)
-{
-    if (pen_ == pen) return;
-
-    // onchange(std::make_shared<PenChangedCommand>(this, pen_, pen));
-
-    prepareGeometryChange();
-    pen_ = pen;
-    update();
-}
 
 void GraphicsPathItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
@@ -936,6 +840,12 @@ void GraphicsPathItem::pushVertexes(const QVector<QPointF>& points)
     update();
 }
 
+void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
+{
+    setFlag(QGraphicsItem::ItemIsFocusable, false);
+    GraphicsItem::focusOutEvent(event);
+}
+
 ///
 
 GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, QGraphicsItem *parent)
@@ -944,15 +854,11 @@ GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, QGraphicsItem *parent)
 
 GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, QGraphicsItem *parent)
     : GraphicsPathItem(p, parent)
-{
-    setFlag(QGraphicsItem::ItemIsFocusable, false);
-}
+{}
 
 GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, QGraphicsItem *parent)
     : GraphicsPathItem(p, parent)
-{
-    setFlag(QGraphicsItem::ItemIsFocusable, false);
-}
+{}
 
 ///
 
@@ -961,7 +867,7 @@ GraphicsTextItem::GraphicsTextItem(const QPointF& pos, QGraphicsItem *parent)
 {}
 
 GraphicsTextItem::GraphicsTextItem(const QString& text, const QPointF& pos, QGraphicsItem *parent)
-    : GraphicsItemInterface(),
+    : GraphicsItemWrapper(),
       QGraphicsTextItem(text, parent)
 {
     setPos(pos);
@@ -1048,57 +954,34 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 
 void GraphicsTextItem::focusInEvent(QFocusEvent *event)
 {
-    if (event->reason() == Qt::MouseFocusReason) onfocus();
-
+    GraphicsItemWrapper::focus(event);
     QGraphicsTextItem::focusInEvent(event);
 }
 
 void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
 {
-    adjusting_ = canvas::adjusting_t::none;
-    onblur();
     setTextInteractionFlags(Qt::NoTextInteraction);
 
+    GraphicsItemWrapper::blur(event);
     QGraphicsTextItem::focusOutEvent(event);
 }
 
 void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-    auto hpos = location(event->pos());
-
-    if (hover_location_ != hpos) {
-        onhover(hpos);
-        hover_location_ = hpos;
-    }
-
+    GraphicsItemWrapper::hover(event);
     QGraphicsTextItem::hoverMoveEvent(event);
 }
 
 void GraphicsTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    onhover(ResizerLocation::DEFAULT);
-    hover_location_ = ResizerLocation::DEFAULT;
+    GraphicsItemWrapper::hoverLeave(event);
     QGraphicsTextItem::hoverLeaveEvent(event);
 }
 
 void GraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (!!(hover_location_ & ResizerLocation::ANCHOR) && !toPlainText().isEmpty()) {
-            adjusting_       = canvas::adjusting_t::resizing;
-            before_resizing_ = ResizerF{ QGraphicsTextItem::boundingRect() };
-        }
-        else if (!!(hover_location_ & ResizerLocation::BORDER) ||
-                 hover_location_ == ResizerLocation::FILLED_INSIDE) {
-            adjusting_     = canvas::adjusting_t::moving;
-            mpos_          = event->scenePos();
-            before_moving_ = pos();
-        }
-        else if (hover_location_ == ResizerLocation::ROTATE_ANCHOR) {
-            adjusting_       = canvas::adjusting_t::rotating;
-            mpos_            = event->scenePos();
-            before_rotating_ = angle_;
-        }
+        GraphicsItemWrapper::mousePress(event, pos());
     }
     else {
         setTextInteractionFlags(Qt::NoTextInteraction);
@@ -1122,20 +1005,7 @@ void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         break;
     }
     case canvas::adjusting_t::rotating: {
-        auto a = mpos_;
-        auto b = mapToScene(QGraphicsTextItem::boundingRect().center());
-        auto c = event->scenePos();
-
-        QPointF ab = { b.x() - a.x(), b.y() - a.y() };
-        QPointF cb = { b.x() - c.x(), b.y() - c.y() };
-
-        float dot   = (ab.x() * cb.x() + ab.y() * cb.y()); // dot product
-        float cross = (ab.x() * cb.y() - ab.y() * cb.x()); // cross product
-
-        rotate(angle_ + std::atan2(cross, dot) * 180. / std::numbers::pi);
-
-        mpos_ = event->scenePos();
-
+        GraphicsItemWrapper::mouseMove(event, mapToScene(QGraphicsTextItem::boundingRect().center()));
         break;
     }
     case canvas::adjusting_t::resizing: {
@@ -1159,18 +1029,7 @@ void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    switch (adjusting_) {
-    case canvas::adjusting_t::moving: onmove(before_moving_); break;
-    case canvas::adjusting_t::resizing: onresize(before_resizing_, hover_location_); break;
-    case canvas::adjusting_t::rotating: onrotate(before_rotating_); break;
-    default: break;
-    }
-
-    adjusting_       = canvas::adjusting_t::none;
-    mpos_            = {};
-    before_rotating_ = {};
-    before_resizing_ = {};
-    before_moving_   = {};
+    GraphicsItemWrapper::mouseRelease(event);
     QGraphicsTextItem::mouseReleaseEvent(event);
 }
 
@@ -1207,14 +1066,14 @@ void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
         QTransform().translate(center.x(), center.y()).rotate(angle_).translate(-center.x(), -center.y()));
 
     // keep position after rotation
-    auto textrect_2 = QGraphicsTextItem::boundingRect();
+    geometry_.coords(QGraphicsTextItem::boundingRect());
 
     // position
     switch (location) {
-    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + rb - mapToScene(textrect_2.bottomRight())); break;
-    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(textrect_2.bottomLeft())); break;
-    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(textrect_2.topRight())); break;
-    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(textrect_2.topLeft())); break;
+    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + rb - mapToScene(geometry_.bottomRight())); break;
+    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(geometry_.bottomLeft())); break;
+    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(geometry_.topRight())); break;
+    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(geometry_.topLeft())); break;
     default: break;
     }
 
@@ -1250,16 +1109,4 @@ void GraphicsTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
     else {
         QGraphicsTextItem::mouseDoubleClickEvent(event);
     }
-}
-
-QGraphicsItem *GraphicsTextItem::copy() const
-{
-    auto item = new GraphicsTextItem(pos());
-    item->setPlainText(toPlainText());
-
-    item->rotate(angle_);
-
-    item->setPen(pen());
-    item->setFont(font());
-    return item;
 }

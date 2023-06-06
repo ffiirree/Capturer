@@ -11,12 +11,11 @@
 #include <QStandardPaths>
 
 EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
+    : QWidget(parent, Qt::WindowStaysOnTopHint)
 {
     setCursor(Qt::ArrowCursor);
-    setFocusPolicy(Qt::NoFocus);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setAttribute(Qt::WA_TranslucentBackground);
+    setVisible(false);
 
     // frameless: background & border
     auto backgroud_layout = new QHBoxLayout(this);
@@ -87,8 +86,14 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             graph_ = canvas::pixmap;
             emit graphChanged(canvas::pixmap);
 
+#ifdef __linux__
+            parent->hide();
+#endif
             auto filename = QFileDialog::getOpenFileName(this, tr("Open Image"), pictures_path_,
                                                          "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
+#ifdef __linux__
+            parent->show();
+#endif
 
             if (!filename.isEmpty()) {
                 pictures_path_ = QFileInfo(filename).absolutePath();
@@ -236,7 +241,10 @@ void EditingMenu::canRedo(bool val) { redo_btn_->setDisabled(!val); }
 void EditingMenu::paintGraph(canvas::graphics_t graph)
 {
     graph_ = graph;
-    if (group_->button(graph_)) group_->button(graph_)->setChecked(true);
+    if (group_->button(graph_))
+        group_->button(graph_)->setChecked(true);
+    else if (graph == canvas::none && group_->checkedButton())
+        group_->checkedButton()->setChecked(false);
 }
 
 QPen EditingMenu::pen() const

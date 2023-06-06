@@ -37,7 +37,7 @@
 <context>
     <name>EditingMenu</name>
     <message>
-        <location filename="../src/snipping/menu/editing-menu.cpp" line="90"/>
+        <location filename="../src/snipping/menu/editing-menu.cpp" line="93"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
@@ -176,7 +176,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="378"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="380"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>

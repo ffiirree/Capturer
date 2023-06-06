@@ -131,6 +131,21 @@ public:
         : _Resizer(rect.topLeft(), rect.bottomRight(), border_width, anchor_w)
     {}
 
+    _Resizer(const _Resizer& r)
+    {
+        x1_ = r.x1_;
+        x2_ = r.x2_;
+        y1_ = r.y1_;
+        y2_ = r.y2_;
+
+        range_ = r.range_;
+
+        rotate_f_ = rotate_f_;
+
+        border_w_ = border_w_;
+        anchor_w_ = anchor_w_;
+    }
+
     _Resizer& operator=(const _Resizer& r)
     {
         x1_ = r.x1_;
