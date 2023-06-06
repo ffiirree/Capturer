@@ -1,11 +1,10 @@
-#ifndef SETTING_DIALOG_H
-#define SETTING_DIALOG_H
+#ifndef CAPTURER_SETTING_DIALOG_H
+#define CAPTURER_SETTING_DIALOG_H
 
 #include "config.h"
 
+#include <QCheckBox>
 #include <QStackedWidget>
-
-class QCheckBox;
 
 class SettingWindow : public QWidget
 {
@@ -34,4 +33,4 @@ private:
     QCheckBox *autorun_{ nullptr };
 };
 
-#endif // SETTING_DIALOG_H
+#endif //! CAPTURER_SETTING_DIALOG_H

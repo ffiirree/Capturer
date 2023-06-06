@@ -1,5 +1,5 @@
-#ifndef COLOR_PANEL_H
-#define COLOR_PANEL_H
+#ifndef CAPTURER_COLOR_PANEL_H
+#define CAPTURER_COLOR_PANEL_H
 
 #include <QColorDialog>
 #include <QPainter>
@@ -28,11 +28,13 @@ signals:
 
 protected:
     void paintEvent(QPaintEvent *) override;
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void enterEvent(QEnterEvent *) override;
 #else
     void enterEvent(QEvent *) override;
 #endif
+
     void leaveEvent(QEvent *) override;
 
 protected:
@@ -80,4 +82,4 @@ private:
     ColorDialogButton *color_dialog_btn_{ nullptr };
 };
 
-#endif // COLOR_PANEL_H
+#endif //! CAPTURER_COLOR_PANEL_H

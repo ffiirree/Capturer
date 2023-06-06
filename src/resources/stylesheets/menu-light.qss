@@ -1,0 +1,181 @@
+/*///////////////////////////////// Record Menu //////////////////////////////*/
+
+RecordingMenu QWidget#recording-menu {
+    background-color: #f9f9f9;
+    border: 1px solid #dfdfdf;
+}
+
+RecordingMenu QCheckBox::indicator::hover {
+    background-color: #e6e6e6;
+}
+
+RecordingMenu QCheckBox#mic-btn::indicator:unchecked {
+    image: url(:/icons/microphone-dark);
+}
+
+RecordingMenu QCheckBox#mic-btn::indicator:checked {
+    image: url(:/icons/microphone-mute-dark);
+}
+
+RecordingMenu QCheckBox#mic-btn::indicator:disabled {
+    image: url(:/icons/microphone-mute-light);
+}
+
+RecordingMenu QCheckBox#speaker-btn::indicator:unchecked {
+    image: url(:/icons/speaker-dark);
+}
+
+RecordingMenu QCheckBox#speaker-btn::indicator:checked {
+    image: url(:/icons/speaker-mute-dark);
+}
+
+RecordingMenu QCheckBox#speaker-btn::indicator:disabled {
+    image: url(:/icons/speaker-mute-light);
+}
+
+RecordingMenu QCheckBox#camera-btn::indicator:checked {
+    image: url(:/icons/camera-fill-dark);
+}
+
+RecordingMenu QCheckBox#camera-btn::indicator:unchecked {
+    image: url(:/icons/camera-dark);
+}
+
+RecordingMenu QCheckBox#camera-btn::indicator:disabled {
+    image: url(:/icons/camera-light);
+}
+
+RecordingMenu QLabel#time {
+    color: #2c2c2c;
+}
+
+RecordingMenu QCheckBox#pause-btn::indicator:unchecked {
+    image: url(:/icons/pause-dark);
+}
+
+RecordingMenu QCheckBox#pause-btn::indicator:checked {
+    image: url(:/icons/play-dark);
+}
+
+/*///////////////////////////////// Edit Menu //////////////////////////////*/
+
+EditingMenu QWidget#editing-menu, EditingMenu QWidget#editing-submenu {
+    background-color: #f9f9f9;
+    border: 1px solid #dfdfdf;
+}
+
+EditingMenu QCheckBox::indicator:unchecked:hover {
+    background-color: #e6e6e6;
+}
+
+EditingMenu QCheckBox#rect-btn::indicator {
+    image: url(:/icons/rectangle-dark);
+}
+
+EditingMenu QCheckBox#ellipse-btn::indicator {
+    image: url(:/icons/circle-dark);
+}
+
+EditingMenu QCheckBox#arrow-btn::indicator {
+    image: url(:/icons/arrow-dark);
+}
+
+EditingMenu QCheckBox#line-btn::indicator {
+    image: url(:/icons/line-dark);
+}
+
+EditingMenu QCheckBox#pencil-btn::indicator {
+    image: url(:/icons/feather-dark);
+}
+
+EditingMenu QCheckBox#image-btn::indicator {
+    image: url(:/icons/image-dark);
+}
+
+EditingMenu QCheckBox#counter-btn::indicator {
+    image: url(:/icons/counter-dark);
+}
+
+EditingMenu QCheckBox#text-btn::indicator {
+    image: url(:/icons/text-dark);
+}
+
+EditingMenu QCheckBox#eraser-btn::indicator {
+    image: url(:/icons/eraser-dark);
+}
+
+EditingMenu QCheckBox#mosaic-btn::indicator {
+    image: url(:/icons/mosaic-dark);
+}
+
+EditingMenu QCheckBox#undo-btn::indicator {
+    image: url(:/icons/undo-dark);
+}
+
+EditingMenu QCheckBox#redo-btn::indicator {
+    image: url(:/icons/redo-dark);
+}
+
+EditingMenu QCheckBox#undo-btn::indicator:disabled {
+    image: url(:/icons/undo-light);
+    background-color: #bdbdbd;
+}
+
+EditingMenu QCheckBox#redo-btn::indicator:disabled {
+    image: url(:/icons/redo-light);
+    background-color: #bdbdbd;
+}
+
+EditingMenu QCheckBox#pin-btn::indicator {
+    image: url(:/icons/pin-dark);
+}
+
+EditingMenu QCheckBox#save-btn::indicator {
+    image: url(:/icons/save-dark);
+}
+
+/*///////////////////////////////// Style Menu //////////////////////////////*/
+
+EditingSubmenu QCheckBox#width-btn {
+    background-color: #f9f9f9;
+}
+
+EditingSubmenu QCheckBox#width-btn:unchecked:hover {
+    background-color: #e6e6e6;
+}
+
+EditingSubmenu QCheckBox#width-btn[width="1"]::indicator {
+    image: url(:/icons/dot-1-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="2"]::indicator {
+    image: url(:/icons/dot-2-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="3"]::indicator {
+    image: url(:/icons/dot-3-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="4"]::indicator {
+    image: url(:/icons/dot-4-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="5"]::indicator {
+    image: url(:/icons/dot-5-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="6"]::indicator {
+    image: url(:/icons/dot-6-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="7"]::indicator {
+    image: url(:/icons/dot-7-dark);
+}
+
+EditingSubmenu QCheckBox#width-btn[width="8"]::indicator {
+    image: url(:/icons/dot-8-dark);
+}
+
+EditingSubmenu QCheckBox#fill-btn::indicator {
+    image: url(:/icons/fill-dark)
+}

@@ -1,5 +1,5 @@
-#ifndef SHORTCUT_INPUT_H
-#define SHORTCUT_INPUT_H
+#ifndef CAPTURER_SHORTCUT_INPUT_H
+#define CAPTURER_SHORTCUT_INPUT_H
 
 #include <QLineEdit>
 
@@ -33,4 +33,4 @@ private:
     void keyPressEvent(QKeyEvent *event) override;
 };
 
-#endif // SHORTCUT_INPUT_H
+#endif //! CAPTURER_SHORTCUT_INPUT_H

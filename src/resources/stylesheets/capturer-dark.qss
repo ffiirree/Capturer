@@ -1,0 +1,144 @@
+/*///////////////////////////////////////////////////////////////*/
+QCheckBox::indicator {
+    image: url(:/icons/checkbox-unchecked-light);
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QComboBox {
+    border: 1px solid #323232;
+    background-color: #323232;
+    color: #e6e6e6;
+}
+
+QComboBox::down-arrow {
+    image: url(:/icons/arrow-down-light);
+}
+
+QComboBox::down-arrow:on {
+    image: url(:/icons/arrow-up-light);
+}
+
+QComboBox:hover {
+    background-color: #393939;
+    border: 1px solid #393939;
+}
+
+QComboBox:on {
+    border: 1px solid #409eff;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #e4e7ed;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #232323;
+    border: 1px solid #323232;
+}
+
+QComboBox QAbstractItemView::item {
+    color: #e6e6e6;
+}
+
+QComboBox QAbstractItemView::item:hover,
+QComboBox QAbstractItemView::item:selected,
+QComboBox QAbstractItemView::item:checked {
+    background-color: #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLineEdit {
+    background-color: #323232;
+    border: 1px solid #323232;
+    color: #50505f;
+}
+
+QLineEdit:hover {
+    background-color: #393939;
+    border: 1px solid #393939;
+}
+
+QLineEdit:focus {
+    color: #409eff;
+    border: 1px solid #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QSpinBox {
+    border: 1px solid #323232;
+    background-color: #323232;
+    color: #e6e6e6;
+}
+
+QSpinBox:hover {
+    background-color: #393939;
+    border: 1px solid #393939;
+}
+
+QSpinBox:focus {
+    border: 1px solid #409eff;
+}
+
+QSpinBox::down-button,
+QSpinBox::up-button {
+    background-color: #2b2b2b;
+}
+
+QSpinBox::up-button:hover,
+QSpinBox::up-button:pressed,
+QSpinBox::down-button:hover,
+QSpinBox::down-button:pressed {
+    background-color: #262626;
+}
+
+QSpinBox::up-arrow {
+    image: url(:/icons/arrow-up-light);
+}
+
+QSpinBox::down-arrow {
+    image: url(:/icons/arrow-down-light);
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QMenu {
+    background-color: #232323;
+    color: #e6e6e6;
+    border: 1px solid #323232;
+}
+
+QMenu::item::selected {
+    background-color: #323232;
+}
+
+QMenu::separator {
+    background-color: #323232;
+}
+
+
+/*///////////////////////////////////////////////////////////////*/
+QColorDialog {
+    background-color: #232323;
+    color: #e6e6e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QPushButton {
+    background-color: #323232;
+    border: 1px solid #323232;
+    color: #e6e6e6;
+}
+
+QPushButton:hover {
+    background-color: #383838;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+/* QFrame::VLine == 0x0005 */
+QFrame[frameShape="5"] {
+    color: #323232;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QLabel {
+    color: #e6e6e6;
+}

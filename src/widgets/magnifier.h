@@ -1,9 +1,7 @@
-#ifndef MAGNIFIER_H
-#define MAGNIFIER_H
+#ifndef CAPTURER_MAGNIFIER_H
+#define CAPTURER_MAGNIFIER_H
 
 #include <QLabel>
-#include <QPixmap>
-#include <QWidget>
 
 class Magnifier : public QWidget
 {
@@ -16,10 +14,6 @@ public:
 
 public:
     explicit Magnifier(QWidget *parent = nullptr);
-
-    inline void pixmap(const QPixmap& p) { pixmap_ = p; }
-
-    QRect mrect();
 
     QColor getColor() const { return center_color_; }
 
@@ -35,19 +29,32 @@ public:
         update();
     }
 
+    // 
+    void setGrabPixmap(const QPixmap&);
+
 protected:
+    bool eventFilter(QObject *, QEvent *) override;
+
+    void showEvent(QShowEvent *) override;
     void paintEvent(QPaintEvent *) override;
 
+    void closeEvent(QCloseEvent *) override;
+
 private:
-    QLabel *label_{ nullptr };
-    QPixmap pixmap_;
+    QRect grabRect();
+    QPixmap grab();
+    QPoint position();
+
+    QPixmap pixmap_{};
+
+    QLabel *label_{};
 
     int alpha_{ 5 };
-    QSize msize_{ 31, 25 };
+    QSize msize_{ 29, 29 };
     QSize psize_{ 0, 0 };
     QColor center_color_;
 
     ColorFormat color_format_{ ColorFormat::HEX };
 };
 
-#endif // MAGNIFIER_H
+#endif //! CAPTURER_MAGNIFIER_H

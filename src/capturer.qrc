@@ -1,120 +1,127 @@
-<RCC>
-    <qresource prefix="/icon">
-        <file>res/close.png</file>
-        <file>res/close-light.png</file>
-        <file>res/close-dark.png</file>
-        <file>res/save.png</file>
-		<file>res/save-light.png</file>
-		<file>res/save-dark.png</file>
-		<file>res/circle.png</file>
-		<file>res/circle-light.png</file>
-		<file>res/circle-dark.png</file>
-		<file>res/eraser.png</file>
-		<file>res/eraser-light.png</file>
-		<file>res/eraser-dark.png</file>
-        <file>res/feather.png</file>
-		<file>res/feather-light.png</file>
-		<file>res/feather-dark.png</file>
-        <file>res/text.png</file>
-		<file>res/text-light.png</file>
-		<file>res/text-dark.png</file>
-        <file>res/line.png</file>
-		<file>res/line-dark.png</file>
-		<file>res/line-light.png</file>
-        <file>res/redo.png</file>
-        <file>res/undo.png</file>
-		<file>res/redo-light.png</file>
-		<file>res/undo-light.png</file>
-		<file>res/redo-dark.png</file>
-		<file>res/undo-dark.png</file>
-        <file>res/rectangle.png</file>
-		<file>res/rectangle-light.png</file>
-		<file>res/rectangle-dark.png</file>
-        <file>res/capturer.png</file>
-        <file>res/mosaic.png</file>
-		<file>res/mosaic-light.png</file>
-		<file>res/mosaic-dark.png</file>
-        <file>res/stop.png</file>
-        <file>res/wrong.png</file>
-        <file>res/right.png</file>
-        <file>res/arrow.png</file>
-		<file>res/arrow-light.png</file>
-		<file>res/arrow-dark.png</file>
-        <file>res/fill.png</file>
-		<file>res/fill-light.png</file>
-		<file>res/fill-dark.png</file>
-		<file>res/pin.png</file>
-		<file>res/pin-light.png</file>
-		<file>res/pin-dark.png</file>
-		<file>res/rotate.png</file>
-        <file>res/arrow_down.png</file>
-        <file>res/arrow_up.png</file>
-        <file>res/arrow_down-light.png</file>
-        <file>res/arrow_up-light.png</file>
-        <file>res/pause-dark.png</file>
-        <file>res/play-dark.png</file>
-        <file>res/microphone-dark.png</file>
-        <file>res/microphone-mute-dark.png</file>
-        <file>res/speaker-dark.png</file>
-        <file>res/speaker-mute-dark.png</file>
-        <file>res/microphone-light.png</file>
-        <file>res/microphone-mute-light.png</file>
-        <file>res/pause-light.png</file>
-        <file>res/play-light.png</file>
-        <file>res/speaker-light.png</file>
-        <file>res/speaker-mute-light.png</file>
-        <file>res/setting-dark.png</file>
-        <file>res/setting-light.png</file>
-        <file>res/screenshot-light.png</file>
-        <file>res/capture-dark.png</file>
-        <file>res/capture-light.png</file>
-        <file>res/exit-dark.png</file>
-        <file>res/exit-light.png</file>
-        <file>res/gif-dark.png</file>
-        <file>res/gif-light.png</file>
-        <file>res/screenshot-dark.png</file>
-        <file>res/camera-dark.png</file>
-        <file>res/camera-fill-dark.png</file>
-        <file>res/camera-light.png</file>
-        <file>res/camera-fill-light.png</file>
-        <file>res/dot-1-light.png</file>
-        <file>res/dot-2-light.png</file>
-        <file>res/dot-3-light.png</file>
-        <file>res/dot-4-light.png</file>
-        <file>res/dot-5-light.png</file>
-        <file>res/dot-6-light.png</file>
-        <file>res/dot-7-light.png</file>
-        <file>res/dot-8-light.png</file>
-        <file>res/dot-1-dark.png</file>
-        <file>res/dot-2-dark.png</file>
-        <file>res/dot-3-dark.png</file>
-        <file>res/dot-4-dark.png</file>
-        <file>res/dot-5-dark.png</file>
-        <file>res/dot-6-dark.png</file>
-        <file>res/dot-7-dark.png</file>
-        <file>res/dot-8-dark.png</file>
-        <file>res/dot-1.png</file>
-        <file>res/dot-2.png</file>
-        <file>res/dot-3.png</file>
-        <file>res/dot-4.png</file>
-        <file>res/dot-5.png</file>
-        <file>res/dot-6.png</file>
-        <file>res/dot-7.png</file>
-        <file>res/dot-8.png</file>
-        <file>res/checkbox-checked.png</file>
-        <file>res/checkbox-unchecked-dark.png</file>
-        <file>res/checkbox-unchecked-hover.png</file>
-        <file>res/checkbox-unchecked-light.png</file>
+<!DOCTYPE RCC>
+    <RCC version="1.0">
+    <qresource prefix="/icons">
+        <file alias="close">resources/icons/close.png</file>
+        <file alias="close-light">resources/icons/close-light.png</file>
+        <file alias="close-dark">resources/icons/close-dark.png</file>
+        <file alias="save">resources/icons/save.png</file>
+        <file alias="save-light">resources/icons/save-light.png</file>
+        <file alias="save-dark">resources/icons/save-dark.png</file>
+        <file alias="circle">resources/icons/circle.png</file>
+        <file alias="circle-light">resources/icons/circle-light.png</file>
+        <file alias="circle-dark">resources/icons/circle-dark.png</file>
+        <file alias="eraser">resources/icons/eraser.png</file>
+        <file alias="eraser-light">resources/icons/eraser-light.png</file>
+        <file alias="eraser-dark">resources/icons/eraser-dark.png</file>
+        <file alias="feather">resources/icons/feather.png</file>
+        <file alias="feather-light">resources/icons/feather-light.png</file>
+        <file alias="feather-dark">resources/icons/feather-dark.png</file>
+        <file alias="text">resources/icons/text.png</file>
+        <file alias="text-light">resources/icons/text-light.png</file>
+        <file alias="text-dark">resources/icons/text-dark.png</file>
+        <file alias="line">resources/icons/line.png</file>
+        <file alias="line-dark">resources/icons/line-dark.png</file>
+        <file alias="line-light">resources/icons/line-light.png</file>
+        <file alias="redo">resources/icons/redo.png</file>
+        <file alias="undo">resources/icons/undo.png</file>
+        <file alias="redo-light">resources/icons/redo-light.png</file>
+        <file alias="undo-light">resources/icons/undo-light.png</file>
+        <file alias="redo-dark">resources/icons/redo-dark.png</file>
+        <file alias="undo-dark">resources/icons/undo-dark.png</file>
+        <file alias="rectangle">resources/icons/rectangle.png</file>
+        <file alias="rectangle-light">resources/icons/rectangle-light.png</file>
+        <file alias="rectangle-dark">resources/icons/rectangle-dark.png</file>
+        <file alias="capturer">resources/icons/capturer.png</file>
+        <file alias="mosaic">resources/icons/mosaic.png</file>
+        <file alias="mosaic-dark">resources/icons/mosaic-dark.png</file>
+        <file alias="mosaic-light">resources/icons/mosaic-light.png</file>
+        <file alias="stop">resources/icons/stop.png</file>
+        <file alias="wrong">resources/icons/wrong.png</file>
+        <file alias="right">resources/icons/right.png</file>
+        <file alias="arrow">resources/icons/arrow.png</file>
+        <file alias="arrow-light">resources/icons/arrow-light.png</file>
+        <file alias="arrow-dark">resources/icons/arrow-dark.png</file>
+        <file alias="fill">resources/icons/fill.png</file>
+        <file alias="fill-light">resources/icons/fill-light.png</file>
+        <file alias="fill-dark">resources/icons/fill-dark.png</file>
+        <file alias="pin">resources/icons/pin.png</file>
+        <file alias="pin-light">resources/icons/pin-light.png</file>
+        <file alias="pin-dark">resources/icons/pin-dark.png</file>
+        <file alias="rotate">resources/icons/rotate.png</file>
+        <file alias="arrow-up">resources/icons/arrow-up.png</file>
+        <file alias="arrow-up-light">resources/icons/arrow-up-light.png</file>
+        <file alias="arrow-down">resources/icons/arrow-down.png</file>
+        <file alias="arrow-down-light">resources/icons/arrow-down-light.png</file>
+        <file alias="pause-dark">resources/icons/pause-dark.png</file>
+        <file alias="pause-light">resources/icons/pause-light.png</file>
+        <file alias="play-dark">resources/icons/play-dark.png</file>
+        <file alias="play-light">resources/icons/play-light.png</file>
+        <file alias="microphone-dark">resources/icons/microphone-dark.png</file>
+        <file alias="microphone-light">resources/icons/microphone-light.png</file>
+        <file alias="microphone-mute-dark">resources/icons/microphone-mute-dark.png</file>
+        <file alias="microphone-mute-light">resources/icons/microphone-mute-light.png</file>
+        <file alias="speaker-dark">resources/icons/speaker-dark.png</file>
+        <file alias="speaker-light">resources/icons/speaker-light.png</file>
+        <file alias="speaker-mute-dark">resources/icons/speaker-mute-dark.png</file>
+        <file alias="speaker-mute-light">resources/icons/speaker-mute-light.png</file>
+        <file alias="setting-dark">resources/icons/setting-dark.png</file>
+        <file alias="setting-light">resources/icons/setting-light.png</file>
+        <file alias="screenshot-light">resources/icons/screenshot-light.png</file>
+        <file alias="screenshot-dark">resources/icons/screenshot-dark.png</file>
+        <file alias="capture-dark">resources/icons/capture-dark.png</file>
+        <file alias="capture-light">resources/icons/capture-light.png</file>
+        <file alias="exit-dark">resources/icons/exit-dark.png</file>
+        <file alias="exit-light">resources/icons/exit-light.png</file>
+        <file alias="gif-dark">resources/icons/gif-dark.png</file>
+        <file alias="gif-light">resources/icons/gif-light.png</file>
+        <file alias="camera-dark">resources/icons/camera-dark.png</file>
+        <file alias="camera-light">resources/icons/camera-light.png</file>
+        <file alias="camera-fill-dark">resources/icons/camera-fill-dark.png</file>
+        <file alias="camera-fill-light">resources/icons/camera-fill-light.png</file>
+        <file alias="dot-1">resources/icons/dot-1.png</file>
+        <file alias="dot-2">resources/icons/dot-2.png</file>
+        <file alias="dot-3">resources/icons/dot-3.png</file>
+        <file alias="dot-4">resources/icons/dot-4.png</file>
+        <file alias="dot-5">resources/icons/dot-5.png</file>
+        <file alias="dot-6">resources/icons/dot-6.png</file>
+        <file alias="dot-7">resources/icons/dot-7.png</file>
+        <file alias="dot-8">resources/icons/dot-8.png</file>
+        <file alias="dot-1-light">resources/icons/dot-1-light.png</file>
+        <file alias="dot-2-light">resources/icons/dot-2-light.png</file>
+        <file alias="dot-3-light">resources/icons/dot-3-light.png</file>
+        <file alias="dot-4-light">resources/icons/dot-4-light.png</file>
+        <file alias="dot-5-light">resources/icons/dot-5-light.png</file>
+        <file alias="dot-6-light">resources/icons/dot-6-light.png</file>
+        <file alias="dot-7-light">resources/icons/dot-7-light.png</file>
+        <file alias="dot-8-light">resources/icons/dot-8-light.png</file>
+        <file alias="dot-1-dark">resources/icons/dot-1-dark.png</file>
+        <file alias="dot-2-dark">resources/icons/dot-2-dark.png</file>
+        <file alias="dot-3-dark">resources/icons/dot-3-dark.png</file>
+        <file alias="dot-4-dark">resources/icons/dot-4-dark.png</file>
+        <file alias="dot-5-dark">resources/icons/dot-5-dark.png</file>
+        <file alias="dot-6-dark">resources/icons/dot-6-dark.png</file>
+        <file alias="dot-7-dark">resources/icons/dot-7-dark.png</file>
+        <file alias="dot-8-dark">resources/icons/dot-8-dark.png</file>
+        <file alias="checkbox-checked">resources/icons/checkbox-checked.png</file>
+        <file alias="checkbox-unchecked-dark">resources/icons/checkbox-unchecked-dark.png</file>
+        <file alias="checkbox-unchecked-hover">resources/icons/checkbox-unchecked-hover.png</file>
+        <file alias="checkbox-unchecked-light">resources/icons/checkbox-unchecked-light.png</file>
+        <file alias="counter">resources/icons/counter.png</file>
+        <file alias="counter-light">resources/icons/counter-light.png</file>
+        <file alias="counter-dark">resources/icons/counter-dark.png</file>
+        <file alias="image">resources/icons/image.png</file>
+        <file alias="image-light">resources/icons/image-light.png</file>
+        <file alias="image-dark">resources/icons/image-dark.png</file>
     </qresource>
-    <qresource prefix="/qss">
-        <file>menu/menu.qss</file>
-        <file>setting/settingswindow.qss</file>
-        <file>capturer.qss</file>
-        <file>menu/menu-light.qss</file>
-        <file>menu/menu-dark.qss</file>
-        <file>capturer-dark.qss</file>
-        <file>capturer-light.qss</file>
-        <file>setting/settingswindow-dark.qss</file>
-        <file>setting/settingswindow-light.qss</file>
+    <qresource prefix="/stylesheets">
+        <file alias="capturer">resources/stylesheets/capturer.qss</file>
+        <file alias="capturer-dark">resources/stylesheets/capturer-dark.qss</file>
+        <file alias="capturer-light">resources/stylesheets/capturer-light.qss</file>
+        <file alias="menu">resources/stylesheets/menu.qss</file>
+        <file alias="menu-light">resources/stylesheets/menu-light.qss</file>
+        <file alias="menu-dark">resources/stylesheets/menu-dark.qss</file>
+        <file alias="settingswindow">resources/stylesheets/settingswindow.qss</file>
+        <file alias="settingswindow-dark">resources/stylesheets/settingswindow-dark.qss</file>
+        <file alias="settingswindow-light">resources/stylesheets/settingswindow-light.qss</file>
     </qresource>
 </RCC>

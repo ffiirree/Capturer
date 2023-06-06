@@ -1,5 +1,5 @@
-#ifndef SEPARATOR_H
-#define SEPARATOR_H
+#ifndef CAPTURER_SEPARATOR_H
+#define CAPTURER_SEPARATOR_H
 
 #include <QFrame>
 
@@ -10,4 +10,4 @@ public:
     explicit Separator(Shape shape, int len, QWidget *parent = nullptr);
 };
 
-#endif // SEPARATOR_H
+#endif //! CAPTURER_SEPARATOR_H

@@ -2,14 +2,13 @@
 
 #include "colorpanel.h"
 #include "combobox.h"
-#include "devices.h"
-#include "hwaccel.h"
+#include "libcap/devices.h"
+#include "libcap/hwaccel.h"
 #include "logging.h"
 #include "shortcutinput.h"
 #include "titlebar.h"
 #include "version.h"
 
-#include <QCheckBox>
 #include <QCoreApplication>
 #include <QDir>
 #include <QGraphicsDropShadowEffect>
@@ -17,8 +16,15 @@
 #include <QListWidget>
 #include <QSettings>
 #include <QSpinBox>
-#include <QStackedWidget>
 #include <QVBoxLayout>
+
+static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString>> PENSTYLES = {
+    { Qt::SolidLine, "SolidLine" },
+    { Qt::DashLine, "DashLine" },
+    { Qt::DotLine, "DotLine" },
+    { Qt::DashDotLine, "DashDotLine" },
+    { Qt::DashDotDotLine, "DashDotDotLine" },
+};
 
 SettingWindow::SettingWindow(QWidget *parent)
     : QWidget(parent)
@@ -154,8 +160,7 @@ QWidget *SettingWindow::setupSnipWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setRange(1, 6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["snip"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -170,8 +175,7 @@ QWidget *SettingWindow::setupSnipWidget()
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected([this](auto value) {
             config.set(config["snip"]["selector"]["border"]["style"], value.toInt());
         })
@@ -203,8 +207,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setRange(1, 6);
     _1_2->setContextMenuPolicy(Qt::NoContextMenu);
     _1_2->setValue(config["record"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -219,8 +222,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_2_2, 2, 2, 1, 2);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected([this](auto value) {
             config.set(config["record"]["selector"]["border"]["style"], value.toInt());
         })
@@ -248,7 +250,7 @@ QWidget *SettingWindow::setupRecordWidget()
     layout->addWidget(_5, 7, 1, 1, 1);
 
     auto _6_2 = new QSpinBox();
-    _6_2->setMaximum(144);
+    _6_2->setRange(1, 144);
     _6_2->setContextMenuPolicy(Qt::NoContextMenu);
     _6_2->setValue(config["record"]["framerate"].get<int>());
     connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -309,8 +311,7 @@ QWidget *SettingWindow::setupGIFWidget()
     layout->addWidget(_0, 0, 1, 1, 1);
 
     auto _1_2 = new QSpinBox();
-    _1_2->setMinimum(1);
-    _1_2->setMaximum(20);
+    _1_2->setRange(1, 6);
     _1_2->setValue(config["gif"]["selector"]["border"]["width"].get<int>());
     connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             [this](int w) { config.set(config["gif"]["selector"]["border"]["width"], w); });
@@ -324,8 +325,7 @@ QWidget *SettingWindow::setupGIFWidget()
     layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
 
     auto _3_2 = new ComboBox();
-    _3_2->add({ "NoPen", "SolidLine", "DashLine", "DotLine", "DashDotLine", "DashDotDotLine",
-                "CustomDashLine" })
+    _3_2->add(PENSTYLES)
         .onselected(
             [this](auto value) { config.set(config["gif"]["selector"]["border"]["style"], value.toInt()); })
         .select(config["gif"]["selector"]["border"]["style"].get<int>());
@@ -519,14 +519,13 @@ QWidget *SettingWindow::setupAboutWidget()
     return about_widget;
 }
 
-void SettingWindow::setAutoRun(int statue)
+void SettingWindow::setAutoRun(int state)
 {
-    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-
 #ifdef _WIN32
+    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
     QSettings settings(R"(HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run)",
                        QSettings::NativeFormat);
-    settings.setValue("capturer_run", statue == Qt::Checked ? exec_path : "");
+    settings.setValue("capturer_run", state == Qt::Checked ? exec_path : "");
 #elif __linux__
     std::string desktop_file = "/usr/share/applications/capturer.desktop";
     std::string autorun_dir  = std::string{ ::getenv("HOME") } + "/.config/autostart";
@@ -534,11 +533,11 @@ void SettingWindow::setAutoRun(int statue)
 
     if (!std::filesystem::exists(desktop_file)) {
         LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";
-        statue = Qt::Unchecked;
+        state = Qt::Unchecked;
         autorun_->setCheckState(Qt::Unchecked);
     }
 
-    if (statue == Qt::Checked) {
+    if (state == Qt::Checked) {
         if (std::filesystem::exists(desktop_file) && !std::filesystem::exists(autorun_file)) {
             if (!std::filesystem::exists(autorun_dir)) {
                 std::filesystem::create_directories(autorun_dir);
@@ -551,5 +550,5 @@ void SettingWindow::setAutoRun(int statue)
     }
 #endif
 
-    config.set(config["autorun"], statue == Qt::Checked);
+    config.set(config["autorun"], state == Qt::Checked);
 }

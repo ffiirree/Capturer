@@ -1,9 +1,9 @@
 #ifndef CAPTURER_VIDEO_PLAYER_H
 #define CAPTURER_VIDEO_PLAYER_H
 
-#include "consumer.h"
-#include "decoder.h"
-#include "dispatcher.h"
+#include "libcap/consumer.h"
+#include "libcap/decoder.h"
+#include "libcap/dispatcher.h"
 
 #include <QWidget>
 

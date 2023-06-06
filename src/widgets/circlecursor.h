@@ -1,10 +1,10 @@
-#ifndef CIRCLE_CURSOR_H
-#define CIRCLE_CURSOR_H
+#ifndef CAPTURER_CIRCLE_CURSOR_H
+#define CAPTURER_CIRCLE_CURSOR_H
 
 #include <QObject>
 #include <QPixmap>
 
-class CircleCursor : QObject
+class CircleCursor : public QObject
 {
     Q_OBJECT
 
@@ -19,7 +19,6 @@ public:
     inline int width() const { return width_; }
 
 public slots:
-
     void setWidth(int val)
     {
         width_ = val;
@@ -32,4 +31,4 @@ private:
     int width_{ 3 };
 };
 
-#endif // CIRCLE_CURSOR_H
+#endif //! CAPTURER_CIRCLE_CURSOR_H

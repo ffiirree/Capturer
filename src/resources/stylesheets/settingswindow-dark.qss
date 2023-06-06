@@ -1,0 +1,36 @@
+SettingWindow * {
+    color: #e6e6e6;
+}
+
+TitleBar {
+    background-color: #272728;
+}
+
+TitleBar QCheckBox#logo {
+    background-color: #202021;
+}
+
+TitleBar QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-light);
+}
+
+SettingWindow QListWidget {
+    background-color: #202021;
+}
+
+SettingWindow QListWidget:item {
+    color: #e6e6e6;
+}
+
+SettingWindow QListWidget:item:hover,
+SettingWindow QListWidget:item:selected {
+    background: #272728;
+}
+
+SettingWindow QStackedWidget {
+    background-color: #272728;
+}
+
+SettingWindow #copyright-label {
+    color: #e6e6e6;
+}
