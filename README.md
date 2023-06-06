@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="src/res/capturer.png"  height="96">
+    <img src="src/resources/icons/capturer.png"  height="96">
 </p>
 
 <h1 align="center">Capturer</h1>
