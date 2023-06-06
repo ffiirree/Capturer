@@ -59,7 +59,7 @@ RecordingMenu QCheckBox#pause-btn::indicator:checked {
 
 /*///////////////////////////////// Editing Menu //////////////////////////////*/
 
-EditingMenu QWidget#editing-menu, EditingMenu QWidget#editing-submenu {
+EditingMenu QWidget#editing-menu, EditingSubmenu QWidget#editing-submenu {
     background-color: #232323;
     border: 1px solid #323232;
 }
@@ -136,7 +136,7 @@ EditingMenu QCheckBox#save-btn::indicator {
 
 /*///////////////////////////////// Editing Submenu //////////////////////////////*/
 
-EditingSubmenu QCheckBox#width-btn:unchecked:hover {
+EditingMenu QCheckBox::indicator:unchecked:hover {
     background-color: #323232;
 }
 

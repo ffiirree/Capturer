@@ -98,7 +98,7 @@ EditingSubmenu QCheckBox::indicator {
     font-size: 9pt;
 }
 
-EditingSubmenu QCheckBox#width-btn:checked {
+EditingSubmenu QCheckBox::indicator::checked {
     background-color: #409eff;
 }
 

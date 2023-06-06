@@ -146,19 +146,12 @@ void ScreenShoter::start()
     selector_->start(probe::graphics::window_filter_t::visible |
                      probe::graphics::window_filter_t::children);
 
-    show();
-}
-
-void ScreenShoter::showEvent(QShowEvent *event)
-{
-    QGraphicsView::showEvent(event);
-
     selector_->show();
+
+    show();
 
     // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     activateWindow();
-
-    if (selector_->status() >= SelectorStatus::CAPTURED) menu_->show();
 }
 
 QBrush ScreenShoter::mosaicBrush()

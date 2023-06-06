@@ -23,12 +23,4 @@ namespace canvas
 
         return nullptr;
     }
-
-    void Canvas::focusOutEvent(QFocusEvent *event)
-    {
-        clearFocus();
-        clearSelection();
-        QGraphicsScene::focusOutEvent(event);
-    }
-
 } // namespace canvas

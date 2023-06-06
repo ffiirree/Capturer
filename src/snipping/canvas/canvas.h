@@ -15,9 +15,6 @@ namespace canvas
         GraphicsItemWrapper *focusItem() const;
 
         GraphicsItemWrapper *focusOrFirstSelectedItem() const;
-
-    protected:
-        void focusOutEvent(QFocusEvent *) override;
     };
 } // namespace canvas
 

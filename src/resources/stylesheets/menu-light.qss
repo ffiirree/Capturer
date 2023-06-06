@@ -59,7 +59,7 @@ RecordingMenu QCheckBox#pause-btn::indicator:checked {
 
 /*///////////////////////////////// Edit Menu //////////////////////////////*/
 
-EditingMenu QWidget#editing-menu, EditingMenu QWidget#editing-submenu {
+EditingMenu QWidget#editing-menu, EditingSubmenu QWidget#editing-submenu {
     background-color: #f9f9f9;
     border: 1px solid #dfdfdf;
 }
@@ -134,13 +134,9 @@ EditingMenu QCheckBox#save-btn::indicator {
     image: url(:/icons/save-dark);
 }
 
-/*///////////////////////////////// Style Menu //////////////////////////////*/
+/*///////////////////////////////// Editing Submenu //////////////////////////////*/
 
-EditingSubmenu QCheckBox#width-btn {
-    background-color: #f9f9f9;
-}
-
-EditingSubmenu QCheckBox#width-btn:unchecked:hover {
+EditingMenu QCheckBox::indicator:unchecked:hover {
     background-color: #e6e6e6;
 }
 

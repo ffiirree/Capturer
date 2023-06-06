@@ -67,8 +67,6 @@ protected:
     void keyReleaseEvent(QKeyEvent *) override;
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
-    void showEvent(QShowEvent *) override;
-
 private:
     void registerShortcuts();
     QBrush mosaicBrush();

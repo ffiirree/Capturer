@@ -74,9 +74,9 @@ protected:
     void hover(QGraphicsSceneHoverEvent *);
     void hoverLeave(QGraphicsSceneHoverEvent *);
 
-    void mousePress(QGraphicsSceneMouseEvent *, const QPointF&);
-    void mouseMove(QGraphicsSceneMouseEvent *, const QPointF&);
-    void mouseRelease(QGraphicsSceneMouseEvent *);
+    void mousePress(QGraphicsSceneMouseEvent *, const QPointF& pos);
+    void mouseMove(QGraphicsSceneMouseEvent *, const QPointF& center);
+    void mouseRelease(QGraphicsSceneMouseEvent *, const QPointF& pos);
 
     // callbacks
     std::function<void(ResizerLocation)> onhover                   = [](auto) {};

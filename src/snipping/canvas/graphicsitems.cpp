@@ -110,10 +110,13 @@ void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPoin
     default: break;
     }
 }
-void GraphicsItemWrapper::mouseRelease(QGraphicsSceneMouseEvent *)
+
+void GraphicsItemWrapper::mouseRelease(QGraphicsSceneMouseEvent *, const QPointF& pos)
 {
     switch (adjusting_) {
-    case canvas::adjusting_t::moving: onmove(before_moving_); break;
+    case canvas::adjusting_t::moving:
+        if (pos != before_moving_) onmove(before_moving_);
+        break;
     case canvas::adjusting_t::resizing: onresize(before_resizing_, hover_location_); break;
     case canvas::adjusting_t::rotating: onrotate(before_rotating_); break;
 
@@ -190,7 +193,7 @@ void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    GraphicsItemWrapper::mouseRelease(event);
+    GraphicsItemWrapper::mouseRelease(event, pos());
     if (hover_location_ != ResizerLocation::EMPTY_INSIDE) QGraphicsItem::mouseReleaseEvent(event);
 }
 
@@ -710,22 +713,19 @@ void GraphicsPixmapItem::resize(const ResizerF& resizer, ResizerLocation locatio
     prepareGeometryChange();
 
     // fix me: v2 is on the topleft of v1
-    geometry_.coords(resizer.topLeft(), QRectF{ resizer.topLeft(), newsize }.bottomRight());
+    geometry_.coords(QRectF{ { 0, 0 }, newsize });
 
     // update rotation origin point
     auto center = resizer.rect().center();
     setTransform(
         QTransform().translate(center.x(), center.y()).rotate(angle_).translate(-center.x(), -center.y()));
 
-    // keep position after rotation
-    QRectF newrect{ geometry_.rect() };
-
     // position
     switch (location) {
-    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + rb - mapToScene(newrect.bottomRight())); break;
-    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(newrect.bottomLeft())); break;
-    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(newrect.topRight())); break;
-    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(newrect.topLeft())); break;
+    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + rb - mapToScene(geometry_.bottomRight())); break;
+    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(geometry_.bottomLeft())); break;
+    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(geometry_.topRight())); break;
+    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(geometry_.topLeft())); break;
     default: break;
     }
 
@@ -1029,7 +1029,7 @@ void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    GraphicsItemWrapper::mouseRelease(event);
+    GraphicsItemWrapper::mouseRelease(event, pos());
     QGraphicsTextItem::mouseReleaseEvent(event);
 }
 

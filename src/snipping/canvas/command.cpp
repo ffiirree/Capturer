@@ -63,6 +63,7 @@ void ResizeCommand::redo()
 {
     if (item_) item_->resize(nsize_, location_);
 }
+
 void ResizeCommand::undo()
 {
     if (item_) item_->resize(osize_, location_);

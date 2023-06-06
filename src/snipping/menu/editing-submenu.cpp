@@ -12,7 +12,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setAttribute(Qt::WA_TranslucentBackground);
+    setVisible(false);
 
     // frameless: background & border
     auto backgroud_layout = new QHBoxLayout(this);

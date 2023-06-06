@@ -11,7 +11,7 @@
 #include <QStandardPaths>
 
 EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
-    : QWidget(parent, Qt::WindowStaysOnTopHint)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
@@ -87,12 +87,16 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             emit graphChanged(canvas::pixmap);
 
 #ifdef __linux__
+            // The QFileDialog can not be raised to the top of Selector on Linux
+            hide();
             parent->hide();
 #endif
-            auto filename = QFileDialog::getOpenFileName(this, tr("Open Image"), pictures_path_,
+            auto filename = QFileDialog::getOpenFileName(parent, tr("Open Image"), pictures_path_,
                                                          "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
 #ifdef __linux__
             parent->show();
+            parent->activateWindow();
+            show();
 #endif
 
             if (!filename.isEmpty()) {
