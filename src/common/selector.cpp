@@ -224,13 +224,13 @@ void Selector::update_info_label()
 
     if (!invalid()) {
         str = fmt::format("{} x {}", selected().width(), selected().height());
-        if (prey_.type == hunter::prey_type_t::window || prey_.type == hunter::prey_type_t::desktop) {
+        if (prey_.type == hunter::prey_type_t::display) {
+            str += " : " + prey_.codename + " - " + prey_.name;
+        }
+        else if (prey_.type != hunter::prey_type_t::rectangle) {
             str += prey_.name.empty()
                        ? (prey_.codename.empty() ? std::string{} : " : [" + prey_.codename + "]")
                        : " : " + prey_.name;
-        }
-        else if (prey_.type == hunter::prey_type_t::display) {
-            str += " : " + prey_.codename + " - " + prey_.name;
         }
     }
 
@@ -375,7 +375,9 @@ void Selector::registerShortcuts()
 
     // fullscreen
     connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
-        if (status_ <= SelectorStatus::CAPTURED) {
+        if (status_ <= SelectorStatus::CAPTURED &&
+            ((prey_.type != hunter::prey_type_t::desktop) ||
+             (prey_.type != hunter::prey_type_t::display && scope_ == scope_t::display))) {
 
             status(SelectorStatus::PREY_SELECTING);
 

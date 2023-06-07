@@ -136,7 +136,7 @@ protected:
     QPen pen_{ Qt::red, 3, Qt::SolidLine };
 };
 
-/// GraphicsLineItem
+/// Line Item
 
 class GraphicsLineItem : public GraphicsItem
 {
@@ -162,7 +162,7 @@ public:
     ResizerLocation location(const QPointF&) const override;
 };
 
-/// GraphicsArrowItem
+/// Arrow Item
 
 class GraphicsArrowItem : public GraphicsItem
 {
@@ -258,7 +258,7 @@ private:
     QPixmap pixmap_{};
 };
 
-/// GraphicsEllipseleItem
+/// Ellipse Item
 
 class GraphicsEllipseleItem : public GraphicsItem
 {
@@ -331,7 +331,7 @@ private:
     static int counter;
 };
 
-/// GraphicsPathItem
+/// Path Item
 
 class GraphicsPathItem : public GraphicsItem
 {
@@ -388,7 +388,7 @@ public:
     canvas::graphics_t graph() const override { return canvas::graphics_t::eraser; }
 };
 
-///
+/// Text Item
 
 class GraphicsTextItem : public GraphicsItemWrapper, public QGraphicsTextItem
 {

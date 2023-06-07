@@ -185,6 +185,8 @@ public:
 
     inline void enableRotate(bool val) { rotate_f_ = val; }
 
+    inline bool rotationEnabled() const { return rotate_f_; }
+
     void coords(T x1, T y1, T x2, T y2)
     {
         x1_ = clamp_x(x1);
@@ -381,6 +383,8 @@ public:
     inline qpoint_t point2()        const { return { x2_, y2_ }; }
 
     inline qrect_t rect()           const { return { qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }; }
+    
+    inline qpoint_t center()        const { return rect().center(); }
 
     inline qrect_t boundingRect()   const 
     {

@@ -72,7 +72,7 @@ void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPoin
     case canvas::adjusting_t::resizing: {
         auto cpos = event->pos();
 
-        ResizerF resizer(geometry_);
+        ResizerF resizer = geometry();
         // clang-format off
         switch (hover_location_) {
         case ResizerLocation::X1Y1_ANCHOR:  resizer.x1(cpos.x()); resizer.y1(cpos.y()); break;
@@ -188,7 +188,7 @@ void GraphicsItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     (adjusting_ == canvas::adjusting_t::moving)
         ? QGraphicsItem::mouseMoveEvent(event)
-        : GraphicsItemWrapper::mouseMove(event, mapToScene(geometry_.rect().center()));
+        : GraphicsItemWrapper::mouseMove(event, mapToScene(geometry().rect().center()));
 }
 
 void GraphicsItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
@@ -226,6 +226,35 @@ static QPainterPath shape_from_path(const QPainterPath& path, const QPen& pen)
     QPainterPath p = ps.createStroke(path);
     p.addPath(path);
     return p;
+}
+
+static void highlight_selected(QPainter *painter, const ResizerF& geometry, bool border_anchor = false)
+{
+    auto color = QColor("#969696");
+
+    painter->setPen(QPen(color, 1, Qt::DashLine));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(geometry.rect());
+
+    painter->setPen(QPen(color, 1.5, Qt::SolidLine));
+    painter->setBrush(Qt::white);
+
+    painter->drawEllipse(geometry.X1Y1Anchor());
+    painter->drawEllipse(geometry.X1Y2Anchor());
+    painter->drawEllipse(geometry.X2Y1Anchor());
+    painter->drawEllipse(geometry.X2Y2Anchor());
+
+    if (border_anchor && geometry.width() > 24 && geometry.height() > 24) {
+        painter->drawEllipse(geometry.rightAnchor());
+        painter->drawEllipse(geometry.leftAnchor());
+        painter->drawEllipse(geometry.topAnchor());
+        painter->drawEllipse(geometry.bottomAnchor());
+    }
+
+    if (geometry.rotationEnabled()) {
+        painter->drawLine(geometry.rotateAnchor().center(), geometry.topAnchor().center());
+        painter->drawEllipse(geometry.rotateAnchor());
+    }
 }
 
 ///
@@ -507,16 +536,7 @@ void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     painter->drawRect(geometry_.rect());
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
-
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(geometry_.rect());
-
-        painter->setPen(QPen(color, 1, Qt::SolidLine));
-        painter->setBrush(Qt::white);
-
-        painter->drawRects(geometry_.anchors());
+        highlight_selected(painter, geometry_, true);
     }
 }
 
@@ -621,16 +641,7 @@ void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
     painter->drawEllipse(geometry_.rect());
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
-
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(geometry_.rect());
-
-        painter->setPen(QPen(color, 1, Qt::SolidLine));
-        painter->setBrush(Qt::white);
-
-        painter->drawRects(geometry_.anchors());
+        highlight_selected(painter, geometry_, true);
     }
 }
 
@@ -676,21 +687,7 @@ void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
     painter->drawPixmap(geometry_.rect(), pixmap_, QRectF{ {}, pixmap_.size() });
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
-
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->drawRect(geometry_.rect());
-
-        painter->setPen(QPen(color, 1.5, Qt::SolidLine));
-        painter->setBrush(Qt::white);
-
-        painter->drawEllipse(geometry_.X1Y1Anchor());
-        painter->drawEllipse(geometry_.X1Y2Anchor());
-        painter->drawEllipse(geometry_.X2Y1Anchor());
-        painter->drawEllipse(geometry_.X2Y2Anchor());
-
-        painter->drawLine(geometry_.rotateAnchor().center(), geometry_.topAnchor().center());
-        painter->drawEllipse(geometry_.rotateAnchor());
+        highlight_selected(painter, geometry_);
     }
 }
 
@@ -736,13 +733,8 @@ void GraphicsPixmapItem::rotate(qreal angle)
 {
     angle_ = angle;
 
-    QRectF br{ geometry_.rect() };
-
-    QTransform transform;
-    transform.translate(br.center().x(), br.center().y());
-    transform.rotate(angle);
-    transform.translate(-br.center().x(), -br.center().y());
-    setTransform(transform);
+    auto cx = geometry().center().x(), cy = geometry().center().y();
+    setTransform(QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
 }
 
 ///
@@ -933,22 +925,9 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 
     // render resizer
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
-
-        painter->setPen(QPen(color, 1, Qt::DashLine));
-        painter->drawRect(paddingRect());
-
-        painter->setPen(QPen(color, 1.5, Qt::SolidLine));
-        painter->setBrush(Qt::white);
-
-        ResizerF resizer{ paddingRect() };
-        painter->drawEllipse(resizer.X1Y1Anchor());
-        painter->drawEllipse(resizer.X1Y2Anchor());
-        painter->drawEllipse(resizer.X2Y1Anchor());
-        painter->drawEllipse(resizer.X2Y2Anchor());
-
-        painter->drawLine(resizer.rotateAnchor().center(), resizer.topAnchor().center());
-        painter->drawEllipse(resizer.rotateAnchor());
+        ResizerF geometry{ paddingRect() };
+        geometry.enableRotate(true);
+        highlight_selected(painter, geometry);
     }
 }
 
@@ -1004,25 +983,11 @@ void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         mpos_ = event->scenePos();
         break;
     }
-    case canvas::adjusting_t::rotating: {
+    case canvas::adjusting_t::rotating:
+    case canvas::adjusting_t::resizing:
         GraphicsItemWrapper::mouseMove(event, mapToScene(QGraphicsTextItem::boundingRect().center()));
         break;
-    }
-    case canvas::adjusting_t::resizing: {
-        auto resizer = ResizerF(QGraphicsTextItem::boundingRect());
 
-        switch (hover_location_) {
-        case ResizerLocation::X1Y1_ANCHOR: resizer.x1(cpos.x()), resizer.y1(cpos.y()); break;
-        case ResizerLocation::X2Y1_ANCHOR: resizer.x2(cpos.x()), resizer.y1(cpos.y()); break;
-        case ResizerLocation::X1Y2_ANCHOR: resizer.x1(cpos.x()), resizer.y2(cpos.y()); break;
-        case ResizerLocation::X2Y2_ANCHOR: resizer.x2(cpos.x()), resizer.y2(cpos.y()); break;
-        default: break;
-        }
-
-        resize(resizer, hover_location_);
-
-        break;
-    }
     default: QGraphicsTextItem::mouseMoveEvent(event); break;
     }
 }
@@ -1084,13 +1049,8 @@ void GraphicsTextItem::rotate(qreal angle)
 {
     angle_ = angle;
 
-    QTransform transform;
-    transform.translate(QGraphicsTextItem::boundingRect().center().x(),
-                        QGraphicsTextItem::boundingRect().center().y());
-    transform.rotate(angle);
-    transform.translate(-QGraphicsTextItem::boundingRect().center().x(),
-                        -QGraphicsTextItem::boundingRect().center().y());
-    setTransform(transform);
+    auto cx = geometry().center().x(), cy = geometry().center().y();
+    setTransform(QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
 }
 
 void GraphicsTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
