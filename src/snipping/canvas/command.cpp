@@ -19,7 +19,7 @@ CreatedCommand::~CreatedCommand()
 
 void CreatedCommand::redo()
 {
-    if (scene_ && item_) {
+    if (scene_ && item_ && !item_->scene()) {
         scene_->addItem(item_);
         item_->setFocus();
     }

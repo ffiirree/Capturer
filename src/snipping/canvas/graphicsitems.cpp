@@ -744,7 +744,20 @@ int GraphicsCounterleItem::counter = 0;
 GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
-    setPos(pos - QPointF{ 12, 12 });
+    // dynamic caculate the rect
+    QFont font;
+    font.setPointSizeF(18);
+    font.setBold(true);
+    QFontMetrics metrics(font);
+    QRectF four = metrics.boundingRect("44");
+    qreal width = std::max(four.width(), four.height());
+
+    // 
+    font_.setBold(true);
+
+    geometry_ = ResizerF(QRectF{ 0, 0, width, width }, width * 0.25);
+
+    setPos(pos - geometry_.center());
     setCounter(v);
 }
 
@@ -754,12 +767,10 @@ void GraphicsCounterleItem::setCounter(int v)
     counter  = counter_ + 1;
 }
 
-QRectF GraphicsCounterleItem::boundingRect() const { return QRectF{ 0, 0, 25, 25 }; }
-
 QPainterPath GraphicsCounterleItem::shape() const
 {
     QPainterPath path;
-    path.addRect(boundingRect()); // to include corner anchors
+    path.addRect(geometry_.boundingRect()); // to include corner anchors
     return shape_from_path(path, pen_);
 }
 
@@ -768,23 +779,24 @@ ResizerLocation GraphicsCounterleItem::location(const QPointF&) const { return R
 void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
+    painter->setRenderHint(QPainter::TextAntialiasing);
 
     painter->setPen(QPen{ Qt::red });
     painter->setBrush(Qt::red);
 
-    painter->drawEllipse({ 13, 13 }, 12, 12);
+    painter->drawEllipse(geometry_.boundingRect());
 
     painter->setPen(QPen{ Qt::white });
+    painter->setFont(font_);
 
-    painter->drawText(QRectF{ 1, 1, 23, 23 }, Qt::AlignCenter, QString::number(counter_));
+    painter->drawText(geometry_.rect(), Qt::AlignCenter, QString::number(counter_));
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->setBrush(Qt::NoBrush);
-        painter->drawEllipse({ 13, 13 }, 12, 12);
+        painter->drawEllipse(geometry_.boundingRect());
     }
 }
 

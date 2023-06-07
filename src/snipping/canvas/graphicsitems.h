@@ -306,7 +306,6 @@ public:
     ~GraphicsCounterleItem() {}
 
     // QGraphicsItem
-    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -329,6 +328,7 @@ private:
     int counter_{};
 
     static int counter;
+    QFont font_{};
 };
 
 /// Path Item

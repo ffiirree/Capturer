@@ -140,10 +140,10 @@ public:
 
         range_ = r.range_;
 
-        rotate_f_ = rotate_f_;
+        rotate_f_ = r.rotate_f_;
 
-        border_w_ = border_w_;
-        anchor_w_ = anchor_w_;
+        border_w_ = r.border_w_;
+        anchor_w_ = r.anchor_w_;
     }
 
     _Resizer& operator=(const _Resizer& r)
@@ -155,10 +155,10 @@ public:
 
         range_ = r.range_;
 
-        rotate_f_ = rotate_f_;
+        rotate_f_ = r.rotate_f_;
 
-        border_w_ = border_w_;
-        anchor_w_ = anchor_w_;
+        border_w_ = r.border_w_;
+        anchor_w_ = r.anchor_w_;
 
         return *this;
     }
