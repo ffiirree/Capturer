@@ -266,8 +266,6 @@ public:
     explicit GraphicsEllipseleItem(QGraphicsItem * = nullptr);
     explicit GraphicsEllipseleItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
-    ~GraphicsEllipseleItem() {}
-
     // QGraphicsItem
     QPainterPath shape() const override;
 
@@ -303,8 +301,6 @@ class GraphicsCounterleItem : public GraphicsItem
 public:
     explicit GraphicsCounterleItem(const QPointF&, int, QGraphicsItem * = nullptr);
 
-    ~GraphicsCounterleItem() {}
-
     // QGraphicsItem
     QPainterPath shape() const override;
 
@@ -336,9 +332,9 @@ private:
 class GraphicsPathItem : public GraphicsItem
 {
 public:
-    explicit GraphicsPathItem(const QPointF&, QGraphicsItem * = nullptr);
+    explicit GraphicsPathItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
 
-    ~GraphicsPathItem() {}
+    ~GraphicsPathItem();
 
     // QGraphicsItem
     QPainterPath shape() const override;
@@ -353,6 +349,8 @@ public:
 
     void push(const QPointF&) override;
 
+    void setPen(const QPen&) override;
+
     bool invalid() const override { return false; }
 
     ResizerLocation location(const QPointF&) const override { return ResizerLocation::DEFAULT; }
@@ -361,13 +359,15 @@ protected:
     void focusOutEvent(QFocusEvent *) override;
 
 private:
-    QPainterPath path_{};
+    QVector<QPointF> vertexes_{};
+    QPixmap pixmap_{};
+    QPainter *painter_{};
 };
 
 class GraphicsCurveItem : public GraphicsPathItem
 {
 public:
-    explicit GraphicsCurveItem(const QPointF&, QGraphicsItem * = nullptr);
+    explicit GraphicsCurveItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::curve; }
 };
@@ -375,7 +375,7 @@ public:
 class GraphicsMosaicItem : public GraphicsPathItem
 {
 public:
-    explicit GraphicsMosaicItem(const QPointF&, QGraphicsItem * = nullptr);
+    explicit GraphicsMosaicItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::mosaic; }
 };
@@ -383,7 +383,7 @@ public:
 class GraphicsEraserItem : public GraphicsPathItem
 {
 public:
-    explicit GraphicsEraserItem(const QPointF&, QGraphicsItem * = nullptr);
+    explicit GraphicsEraserItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::eraser; }
 };

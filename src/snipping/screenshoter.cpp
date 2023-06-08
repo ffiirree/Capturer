@@ -35,6 +35,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     scene_ = new canvas::Canvas(this);
     setScene(scene_);
 
+    setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+
     menu_->installEventFilter(this);
 
     connect(menu_, &EditingMenu::save, this, &ScreenShoter::save);
@@ -200,14 +202,14 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
         case canvas::eraser:
             pen.setBrush(QBrush(backgroundBrush().textureImage()));
-            item = new GraphicsEraserItem(pos);
+            item = new GraphicsEraserItem(pos, scene_->sceneRect().size());
             break;
 
         case canvas::mosaic:
             pen.setBrush(mosaicBrush());
-            item = new GraphicsMosaicItem(pos);
+            item = new GraphicsMosaicItem(pos, scene_->sceneRect().size());
             break;
-        case canvas::curve: item = new GraphicsCurveItem(pos); break;
+        case canvas::curve: item = new GraphicsCurveItem(pos, scene_->sceneRect().size()); break;
 
         default: return;
         }

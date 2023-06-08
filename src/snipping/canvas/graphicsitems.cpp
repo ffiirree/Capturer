@@ -320,9 +320,6 @@ void GraphicsLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 {
     if (invalid()) return;
 
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
-
     painter->setPen(pen_);
     painter->drawLine(geometry_.point1(), geometry_.point2());
 
@@ -424,9 +421,6 @@ void GraphicsArrowItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 {
     if (invalid()) return;
 
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
-
     painter->setPen({ pen_.color(), 1, Qt::SolidLine });
     painter->setBrush(pen_.color());
     painter->drawPolygon(polygon_);
@@ -522,9 +516,6 @@ void GraphicsRectItem::fill(bool f)
 void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     if (invalid()) return;
-
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
     pen_.setCapStyle(Qt::RoundCap);
     pen_.setJoinStyle(Qt::RoundJoin);
@@ -631,9 +622,6 @@ void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 {
     if (invalid()) return;
 
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
-
     painter->setPen(pen_);
     auto _brush = filled() ? ((brush_ == Qt::NoBrush) ? pen_.color() : brush_) : Qt::NoBrush;
     painter->setBrush(_brush);
@@ -681,9 +669,6 @@ QPainterPath GraphicsPixmapItem::shape() const
 
 void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
-
     painter->drawPixmap(geometry_.rect(), pixmap_, QRectF{ {}, pixmap_.size() });
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
@@ -752,10 +737,10 @@ GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphic
     QRectF four = metrics.boundingRect("44");
     qreal width = std::max(four.width(), four.height());
 
-    // 
+    //
     font_.setBold(true);
 
-    geometry_ = ResizerF(QRectF{ 0, 0, width, width }, width * 0.25);
+    geometry_ = ResizerF(QRectF{ 0, 0, width, width }, width * 0.125);
 
     setPos(pos - geometry_.center());
     setCounter(v);
@@ -778,9 +763,6 @@ ResizerLocation GraphicsCounterleItem::location(const QPointF&) const { return R
 
 void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::TextAntialiasing);
-
     painter->setPen(QPen{ Qt::red });
     painter->setBrush(Qt::red);
 
@@ -802,45 +784,78 @@ void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 
 ///
 
-GraphicsPathItem::GraphicsPathItem(const QPointF& p, QGraphicsItem *parent)
+GraphicsPathItem::GraphicsPathItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
     setFlag(QGraphicsItem::ItemIsMovable, false);
     setFlag(QGraphicsItem::ItemIsSelectable, false);
     setAcceptHoverEvents(false);
     setAcceptedMouseButtons(Qt::NoButton);
-    setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
-    path_.moveTo(p);
-}
-
-QPainterPath GraphicsPathItem::shape() const { return shape_from_path(path_, pen_); }
-
-void GraphicsPathItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
-{
     pen_.setCapStyle(Qt::RoundCap);
     pen_.setJoinStyle(Qt::RoundJoin);
 
-    painter->setRenderHint(QPainter::Antialiasing);
+    vertexes_.push_back(p);
 
-    painter->setPen(pen_);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawPath(path_);
+    pixmap_ = QPixmap{ size.toSize() };
+    pixmap_.fill(Qt::transparent);
+
+    painter_ = new QPainter(&pixmap_);
+    painter_->setPen(pen_);
+    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+}
+
+GraphicsPathItem::~GraphicsPathItem() { delete painter_; }
+
+QPainterPath GraphicsPathItem::shape() const
+{
+    QPainterPath path;
+    path.addPolygon(vertexes_);
+
+    return shape_from_path(path, pen_);
+}
+
+void GraphicsPathItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
+{
+    painter->drawPixmap(boundingRect(), pixmap_, boundingRect());
 }
 
 void GraphicsPathItem::push(const QPointF& p)
 {
+    painter_->drawLine(vertexes_.back(), p);
+    vertexes_.push_back(p);
+
     prepareGeometryChange();
-    path_.lineTo(p);
+    update();
+}
+
+void GraphicsPathItem::setPen(const QPen& pen)
+{
+    if (pen_ == pen) return;
+
+    pen_ = pen;
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+
+    painter_->setPen(pen_);
+
+    prepareGeometryChange();
+
+    //
+    pixmap_.fill(Qt::transparent);
+    painter_->drawPolyline(vertexes_);
+
     update();
 }
 
 void GraphicsPathItem::pushVertexes(const QVector<QPointF>& points)
 {
     prepareGeometryChange();
-    for (int i = 0; i < points.size(); ++i) {
-        path_.lineTo(points[i]);
-    }
+
+    vertexes_.append(points);
+    pixmap_.fill(Qt::transparent);
+    painter_->drawPolyline(vertexes_);
+
     update();
 }
 
@@ -852,16 +867,16 @@ void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
 
 ///
 
-GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, QGraphicsItem *parent)
-    : GraphicsPathItem(p, parent)
+GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
+    : GraphicsPathItem(p, size, parent)
 {}
 
-GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, QGraphicsItem *parent)
-    : GraphicsPathItem(p, parent)
+GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
+    : GraphicsPathItem(p, size, parent)
 {}
 
-GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, QGraphicsItem *parent)
-    : GraphicsPathItem(p, parent)
+GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
+    : GraphicsPathItem(p, size, parent)
 {}
 
 ///
@@ -928,10 +943,6 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     // render text
     QStyleOptionGraphicsItem text_render_option = *option;
     text_render_option.state = option->state & ~(QStyle::State_Selected | QStyle::State_HasFocus);
-
-    painter->setRenderHint(QPainter::Antialiasing);
-    painter->setRenderHint(QPainter::TextAntialiasing);
-    painter->setRenderHint(QPainter::SmoothPixmapTransform);
 
     QGraphicsTextItem::paint(painter, &text_render_option, nullptr);
 
