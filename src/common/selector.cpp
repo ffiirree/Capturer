@@ -214,6 +214,7 @@ void Selector::closeEvent(QCloseEvent *event)
     repaint();
 
     mask_hidden_ = false;
+    crosshair_   = false;
 
     QWidget::closeEvent(event);
 }
@@ -253,6 +254,35 @@ void Selector::paintEvent(QPaintEvent *)
     auto srect = selected();
 
     if (!mask_hidden_) {
+        // draw cross hair
+        if (crosshair_ && status_ < SelectorStatus::CAPTURED) {
+            painter_.save();
+
+            auto pos = mapFromGlobal(QCursor::pos());
+
+            painter_.setRenderHint(QPainter::Antialiasing);
+
+            painter_.setPen(QPen{ Qt::white, 1, Qt::DashLine });
+
+            painter_.drawLines(QVector<QLine>{
+                { { 0, pos.y() }, { width(), pos.y() } },
+                { { pos.x(), 0 }, QPoint{ pos.x(), height() } },
+            });
+
+            painter_.setPen(QPen{ Qt::white, 5, Qt::SolidLine, Qt::RoundCap });
+
+            painter_.drawLines(QVector<QLine>{
+                { { pos.x() - 75, pos.y() }, { pos.x() - 25, pos.y() } },
+                { { pos.x() + 75, pos.y() }, { pos.x() + 25, pos.y() } },
+
+                { { pos.x(), pos.y() - 75 }, QPoint{ pos.x(), pos.y() - 25 } },
+                { { pos.x(), pos.y() + 75 }, QPoint{ pos.x(), pos.y() + 25 } },
+            });
+
+            painter_.restore();
+        }
+
+        // draw mask
         painter_.save();
 
         painter_.setBrush(mask_color_);

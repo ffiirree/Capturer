@@ -67,6 +67,12 @@ public:
         return box_.width() < min_size_.width() || box_.height() < min_size_.height();
     }
 
+    void showCrossHair(bool v = true)
+    {
+        crosshair_ = v;
+        update();
+    }
+
     // region selection
     void select(const hunter::prey_t&);
     void select(const probe::graphics::display_t&);
@@ -135,6 +141,8 @@ private:
 
     // minimum valid size for selection
     QSize min_size_{ 2, 2 };
+
+    bool crosshair_{};
 };
 
 #endif //! CAPTURER_SELECTOR_H

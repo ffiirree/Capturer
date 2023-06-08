@@ -731,7 +731,7 @@ GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphic
 {
     // dynamic caculate the rect
     QFont font;
-    font.setPointSizeF(18);
+    font.setPointSizeF(16);
     font.setBold(true);
     QFontMetrics metrics(font);
     QRectF four = metrics.boundingRect("44");
@@ -740,7 +740,7 @@ GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphic
     //
     font_.setBold(true);
 
-    geometry_ = ResizerF(QRectF{ 0, 0, width, width }, width * 0.125);
+    geometry_ = ResizerF(QRectF{ 0, 0, width * 0.875, width * 0.875 }, width * 0.125);
 
     setPos(pos - geometry_.center());
     setCounter(v);

@@ -297,6 +297,9 @@ void ScreenShoter::keyPressEvent(QKeyEvent *event)
         !event->isAutoRepeat()) {
         selector_->status(SelectorStatus::CAPTURED);
     }
+    else if (event->key() == Qt::Key_Control && !event->isAutoRepeat()) {
+        selector_->showCrossHair(true);
+    }
 
     QGraphicsView::keyPressEvent(event);
 }
@@ -306,6 +309,9 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
     // stop moving the selector while editing
     if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
         selector_->status(SelectorStatus::LOCKED);
+    }
+    else if (event->key() == Qt::Key_Control && !event->isAutoRepeat()) {
+        selector_->showCrossHair(false);
     }
 
     QGraphicsView::keyReleaseEvent(event);
