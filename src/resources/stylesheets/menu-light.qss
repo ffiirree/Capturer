@@ -108,6 +108,10 @@ EditingMenu QCheckBox#mosaic-btn::indicator {
     image: url(:/icons/mosaic-dark);
 }
 
+EditingMenu QCheckBox#scroll-btn::indicator {
+    image: url(:/icons/scroll-dark);
+}
+
 EditingMenu QCheckBox#undo-btn::indicator {
     image: url(:/icons/undo-dark);
 }

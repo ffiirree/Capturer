@@ -20,6 +20,7 @@ public:
         REDO_UNDO_GROUP = 0x02,
         SAVE_GROUP      = 0x04,
         EXIT_GROUP      = 0x08,
+        ADVANCED_GROUP  = 0x10,
         ALL             = 0xff
     };
 
@@ -54,6 +55,8 @@ public:
     void setSubMenuShowAbove(bool v) { sub_menu_show_pos_ = v; }
 
 signals:
+    void scroll(); // scrolling screenshot
+
     void save();
     void pin();
     void copy();

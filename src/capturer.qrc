@@ -112,6 +112,9 @@
         <file alias="image">resources/icons/image.png</file>
         <file alias="image-light">resources/icons/image-light.png</file>
         <file alias="image-dark">resources/icons/image-dark.png</file>
+        <file alias="scroll">resources/icons/scroll.png</file>
+        <file alias="scroll-dark">resources/icons/scroll-dark.png</file>
+        <file alias="scroll-light">resources/icons/scroll-light.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

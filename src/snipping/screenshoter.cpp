@@ -39,6 +39,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     menu_->installEventFilter(this);
 
+    // TODO:
+    connect(menu_, &EditingMenu::scroll, [this]() {});
+
     connect(menu_, &EditingMenu::save, this, &ScreenShoter::save);
     connect(menu_, &EditingMenu::copy, this, &ScreenShoter::copy);
     connect(menu_, &EditingMenu::pin, this, &ScreenShoter::pin);
