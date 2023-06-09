@@ -2,33 +2,13 @@
 #define CAPTURER_CIRCLE_CURSOR_H
 
 #include <QObject>
+#include <QPen>
 #include <QPixmap>
 
-class CircleCursor : public QObject
+namespace cursor
 {
-    Q_OBJECT
-
-public:
-    CircleCursor();
-    explicit CircleCursor(int width);
-
-    void repaint();
-
-    inline QPixmap cursor() const { return cursor_; }
-
-    inline int width() const { return width_; }
-
-public slots:
-    void setWidth(int val)
-    {
-        width_ = val;
-        width_ = std::min(val, 49);
-        repaint();
-    }
-
-private:
-    QPixmap cursor_{ 51, 51 };
-    int width_{ 3 };
+    QPixmap circle(qreal width, const QPen& pen = QPen(QColor("#888888"), 2),
+                   const QBrush& brush = QColor(225, 200, 0, 175));
 };
 
 #endif //! CAPTURER_CIRCLE_CURSOR_H

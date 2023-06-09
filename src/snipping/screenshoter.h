@@ -45,6 +45,7 @@ public slots:
     void updateCursor(ResizerLocation);
 
 protected:
+    bool eventFilter(QObject *, QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -67,8 +68,6 @@ private:
 
     EditingMenu *menu_{};    // editing menu
     Magnifier *magnifier_{}; // magnifier
-
-    CircleCursor circle_cursor_{ 20 };
 
     // history
     std::vector<hunter::prey_t> history_{};

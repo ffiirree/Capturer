@@ -306,6 +306,9 @@ void GraphicsLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 {
     if (invalid()) return;
 
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+
     painter->setPen(pen_);
     painter->drawLine(geometry_.point1(), geometry_.point2());
 
@@ -472,7 +475,7 @@ QPainterPath GraphicsRectItem::shape() const
         path.addRect(geometry_.boundingRect());
     }
     else {
-        auto m = geometry_.borderWidth() / 2;
+        auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
         path.addRect(geometry_.rect().adjusted(-m, -m, m, m));
         path.addRect(geometry_.rect().adjusted(m, m, -m, -m));
     }
@@ -545,9 +548,9 @@ QPainterPath GraphicsEllipseleItem::shape() const
         path.addRect(geometry_.boundingRect());
     }
     else {
-        auto m = geometry_.borderWidth() / 2;
+        auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
 
-        path.addRect(geometry_.boundingRect());
+        path.addRect(geometry_.boundingRect().adjusted(-m, -m, m, m));
         path.addEllipse(geometry_.rect().adjusted(m, m, -m, -m));
     }
     return path;

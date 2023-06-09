@@ -118,6 +118,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             magnifier_->close();
     });
 
+    selector_->installEventFilter(this);
+
     //
     connect(undo_stack_, &QUndoStack::canRedoChanged, menu_, &EditingMenu::canRedo);
     connect(undo_stack_, &QUndoStack::canUndoChanged, menu_, &EditingMenu::canUndo);
@@ -173,13 +175,24 @@ QBrush ScreenShoter::mosaicBrush()
 
 void ScreenShoter::updateCursor(ResizerLocation location)
 {
-    if (menu_->graph() & (canvas::eraser | canvas::mosaic)) {
-        circle_cursor_.setWidth(menu_->pen().width());
-        setCursor(QCursor(circle_cursor_.cursor()));
+    if (menu_->graph() & canvas::eraser) {
+        setCursor(cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }, Qt::NoBrush));
+    }
+    else if (menu_->graph() & canvas::mosaic) {
+        setCursor(cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }));
     }
     else {
         setCursor(getCursorByLocation(location, Qt::CrossCursor));
     }
+}
+
+bool ScreenShoter::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == selector_ && event->type() == QEvent::MouseButtonDblClick) {
+        mouseDoubleClickEvent(dynamic_cast<QMouseEvent *>(event));
+        return true;
+    }
+    return QGraphicsView::eventFilter(obj, event);
 }
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
@@ -189,7 +202,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
     if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != canvas::none) {
         auto pos = event->pos();
 
-        QPen pen            = menu_->pen();
+        QPen pen = menu_->pen();
 
         switch (menu_->graph()) {
         case canvas::text: creating_item_ = new GraphicsTextItem(pos); break;
@@ -262,12 +275,15 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
-    if (menu_->graph() & (canvas::eraser | canvas::mosaic)) {
+    if (menu_->graph() != canvas::none && !menu_->filled()) {
         auto delta = event->angleDelta().y() / 120;
-        auto width = std::clamp(menu_->pen().width() + delta, 5, 49);
-        menu_->setPen(QPen(QBrush{}, width));
-        circle_cursor_.setWidth(width);
-        setCursor(QCursor(circle_cursor_.cursor()));
+
+        auto pen = menu_->pen();
+        pen.setWidth(std::clamp(menu_->pen().width() + delta, 1, 71));
+
+        menu_->setPen(pen);
+
+        updateCursor(ResizerLocation::DEFAULT);
     }
 }
 
@@ -467,6 +483,7 @@ void ScreenShoter::registerShortcuts()
         if (history_idx_ < history_.size()) {
             selector_->select(history_[history_idx_]);
             selector_->status(SelectorStatus::CAPTURED);
+            moveMenu();
             if (history_idx_ > 0) history_idx_--;
         }
     });
@@ -475,6 +492,7 @@ void ScreenShoter::registerShortcuts()
         if (history_idx_ < history_.size()) {
             selector_->select(history_[history_idx_]);
             selector_->status(SelectorStatus::CAPTURED);
+            moveMenu();
             if (history_idx_ < history_.size() - 1) history_idx_++;
         }
     });

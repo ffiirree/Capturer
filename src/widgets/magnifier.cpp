@@ -21,7 +21,7 @@ Magnifier::Magnifier(QWidget *parent)
     // label size
     label_ = new QLabel(this);
     label_->setObjectName("magnifier-color-label");
-    label_->setGeometry(0, psize_.height(), psize_.width(), 50);
+    label_->setGeometry(0, psize_.height(), psize_.width(), 55);
     label_->setAlignment(Qt::AlignCenter);
 
     // size
@@ -127,8 +127,8 @@ void Magnifier::paintEvent(QPaintEvent *)
     painter.end();
 
     // 5. text
-    auto text = QString("POS : %1, %2\nRGB : ").arg(QCursor::pos().x()).arg(QCursor::pos().y()) +
-                getColorStringValue();
+    auto text =
+        QString("(%1, %2)\n").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + getColorStringValue();
     label_->setText(text);
 }
 
