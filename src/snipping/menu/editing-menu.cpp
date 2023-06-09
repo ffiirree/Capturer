@@ -110,6 +110,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         group_->addButton(new QCheckBox(this), canvas::counter);
         group_->button(canvas::counter)->setObjectName("counter-btn");
         group_->button(canvas::counter)->setToolTip("Counter");
+        submenus_[canvas::counter] = new EditingSubmenu(EditingSubmenu::COLOR_PENAL, this);
 
         // text
         group_->addButton(new QCheckBox(this), canvas::text);
@@ -125,7 +126,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         submenus_[canvas::mosaic] = new EditingSubmenu(EditingSubmenu::WIDTH_BTN, this);
         submenus_[canvas::mosaic]->setPen(QPen{ Qt::transparent, 15 });
 
-        // mosaic
+        // eraser
         group_->addButton(new QCheckBox(this), canvas::eraser);
         group_->button(canvas::eraser)->setObjectName("eraser-btn");
         group_->button(canvas::eraser)->setToolTip("Eraser");
@@ -142,7 +143,6 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             if (submenus_.contains(gtype)) {
                 // clang-format off
                 connect(submenus_[gtype], &EditingSubmenu::penChanged,   [gtype, this](auto pen)    { emit penChanged(gtype, pen); });
-                connect(submenus_[gtype], &EditingSubmenu::brushChanged, [gtype, this](auto brush)  { emit brushChanged(gtype, brush); });
                 connect(submenus_[gtype], &EditingSubmenu::fontChanged,  [gtype, this](auto font)   { emit fontChanged(gtype, font); });
                 connect(submenus_[gtype], &EditingSubmenu::fillChanged,  [gtype, this](auto filled) { emit fillChanged(gtype, filled); });
                 // clang-format on
@@ -174,8 +174,8 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
         });
     }
     /////////////////////////////////////////////////////////////////////////////////
-    //if (groups & ADVANCED_GROUP) {
-    //    layout->addWidget(new Separator());
+    // if (groups & ADVANCED_GROUP) {
+    //     layout->addWidget(new Separator());
 
     //    auto scroll = new QCheckBox(this);
     //    scroll->setCheckable(false);
@@ -269,16 +269,6 @@ QPen EditingMenu::pen() const
 void EditingMenu::setPen(const QPen& pen)
 {
     if (submenus_.contains(graph_)) submenus_.at(graph_)->setPen(pen);
-}
-
-QBrush EditingMenu::brush() const
-{
-    return (submenus_.contains(graph_)) ? submenus_.at(graph_)->brush() : QBrush{};
-}
-
-void EditingMenu::setBrush(const QBrush& brush)
-{
-    if (submenus_.contains(graph_)) submenus_.at(graph_)->setBrush(brush);
 }
 
 bool EditingMenu::filled() const

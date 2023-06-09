@@ -117,14 +117,8 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 
         color_panel_ = new ColorPanel();
         connect(color_panel_, &ColorPanel::changed, [this](const QColor& c) {
-            if (filled()) {
-                brush_ = c;
-                emit brushChanged(brush_);
-            }
-            else {
-                pen_.setColor(c);
-                emit penChanged(pen_);
-            }
+            pen_.setColor(c);
+            emit penChanged(pen_);
         });
         layout->addWidget(color_panel_);
     }
@@ -133,15 +127,8 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 void EditingSubmenu::setPen(const QPen& pen)
 {
     pen_ = pen;
-    if ((!filled() || (filled() && brush() == Qt::NoBrush)) && color_panel_)
-        color_panel_->setColor(pen_.color());
+    if (color_panel_) color_panel_->setColor(pen_.color());
     if (width_btn_) width_btn_->setValue(pen_.width());
-}
-
-void EditingSubmenu::setBrush(const QBrush& brush)
-{
-    brush_ = brush;
-    if (filled() && brush != Qt::NoBrush && color_panel_) color_panel_->setColor(brush.color());
 }
 
 void EditingSubmenu::setFont(const QFont& font)

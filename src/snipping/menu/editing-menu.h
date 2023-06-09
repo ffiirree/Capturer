@@ -36,11 +36,6 @@ public:
 
     void setPen(const QPen&);
 
-    // brush
-    QBrush brush() const;
-
-    void setBrush(const QBrush&);
-
     // fill: pen | brush
     bool filled() const;
 
@@ -67,9 +62,9 @@ signals:
     void graphChanged(canvas::graphics_t); // start painting
 
     void penChanged(canvas::graphics_t, const QPen&);
-    void brushChanged(canvas::graphics_t, const QBrush&);
     void fontChanged(canvas::graphics_t, const QFont&);
     void fillChanged(canvas::graphics_t, bool);
+    
     void imageArrived(const QPixmap&);
 
     void moved();

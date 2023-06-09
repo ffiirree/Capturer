@@ -23,4 +23,15 @@ namespace canvas
 
         return nullptr;
     }
+
+    void Canvas::add(GraphicsItemWrapper *item)
+    { 
+        addItem(dynamic_cast<QGraphicsItem *>(item));
+    }
+
+    void Canvas::clear()
+    {
+        setBackgroundBrush(Qt::NoBrush);
+        QGraphicsScene::clear();
+    }
 } // namespace canvas

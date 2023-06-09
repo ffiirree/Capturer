@@ -20,18 +20,6 @@ class ScreenShoter : public QGraphicsView
 {
     Q_OBJECT
 
-    enum EditStatus : uint32_t
-    {
-        NONE           = 0x0000'0000,
-        READY          = 0x0001'0000,
-        GRAPH_CREATING = 0x0010'0000,
-        GRAPH_MOVING   = 0x0020'0000,
-        GRAPH_RESIZING = 0x0040'0000,
-        GRAPH_ROTATING = 0x0080'0000,
-
-        ENABLE_BITMASK_OPERATORS()
-    };
-
 public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
@@ -74,9 +62,7 @@ private:
     Selector *selector_{}; // Layer 1
     canvas::Canvas *scene_{};
 
-    uint32_t editstatus_{};
-
-    GraphicsItemWrapper *creating_item_;
+    GraphicsItemWrapper *creating_item_{};
     int counter_{ 0 };
 
     EditingMenu *menu_{};    // editing menu
@@ -85,7 +71,7 @@ private:
     CircleCursor circle_cursor_{ 20 };
 
     // history
-    std::vector<hunter::prey_t> history_;
+    std::vector<hunter::prey_t> history_{};
     size_t history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };

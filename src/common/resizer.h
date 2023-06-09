@@ -103,7 +103,7 @@ public:
     using qpoint_t   = qpoint_trait<T>::type;
     using qrect_t    = qrect_trait<T>::type;
     using qsize_t    = qsize_trait<T>::type;
-    using qmargins_t = qsize_trait<T>::type;
+    using qmargins_t = qmargins_trait<T>::type;
 
 public:
     _Resizer()
@@ -274,6 +274,8 @@ public:
         y2_ += dy;
     }
 
+    void translate(const qpoint_t& d) { translate(d.x(), d.y()); }
+
     inline bool contains(const qpoint_t& p) const
     {
         return qrect_t(left(), top(), width(), height()).contains(p);
@@ -319,7 +321,7 @@ public:
     qrect_t rotateAnchor() const
     {
         qrect_t anchor{ 0, 0, 11, 11 };
-        anchor.moveCenter({ (x1_ + x2_) / 2, top() - 20 });
+        anchor.moveCenter({ (x1_ + x2_) / 2, y1_ + (vflipped() ? 20 : - 20) });
         return anchor;
     }
 
@@ -369,8 +371,8 @@ public:
         return isX1Y1Anchor(p) || isX2Y1Anchor(p) || isX1Y2Anchor(p) || isX2Y2Anchor(p);
     }
 
-    inline int width()              const { return std::abs(x1_ - x2_) + 1; } // like QRect class
-    inline int height()             const { return std::abs(y1_ - y2_) + 1; }
+    inline T width()                const { return std::abs(x1_ - x2_) + 1; } // like QRect class
+    inline T height()               const { return std::abs(y1_ - y2_) + 1; }
 
     inline qsize_t size()           const { return { width(), height() }; }
 
@@ -444,8 +446,17 @@ public:
     }
     // clang-format on
 
-    T borderWidth() const { return border_w_; }
-    T anchorWidth() const { return anchor_w_; }
+    inline T borderWidth() const { return border_w_; }
+    inline T anchorWidth() const { return anchor_w_; }
+
+    inline bool hflipped() const { return x1_ > x2_; }
+    inline bool vflipped() const { return y1_ > y2_; }
+
+    inline void flip(bool h, bool v)
+    {
+        if (h) std::swap(x1_, x2_);
+        if (v) std::swap(y1_, y2_);
+    }
 
 protected:
     // point 1

@@ -5,7 +5,6 @@
 #include "resizer.h"
 #include "types.h"
 
-#include <QBrush>
 #include <QGraphicsItem>
 #include <QPen>
 
@@ -17,16 +16,12 @@ public:
     // getter
     virtual QPen pen() const { return Qt::NoPen; }
 
-    virtual QBrush brush() const { return Qt::NoBrush; }
-
     virtual bool filled() const { return false; }
 
     virtual QFont font() const { return {}; }
 
     // setter
     virtual void setPen(const QPen&) {}
-
-    virtual void setBrush(const QBrush&) {}
 
     virtual void setFont(const QFont&) {}
 
@@ -44,7 +39,7 @@ public:
     // rotate
     virtual qreal angle() const { return angle_; }
 
-    virtual void rotate(qreal) {}
+    virtual void rotate(qreal);
 
     // resize
     virtual ResizerF geometry() const { return geometry_; }
@@ -53,10 +48,6 @@ public:
 
     // callbacks
     virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
-
-    virtual void onfocused(const std::function<void()>& fn) { onfocus = fn; }
-
-    virtual void onblurred(const std::function<void()>& fn) { onblur = fn; }
 
     virtual void onresized(const std::function<void(const ResizerF&, ResizerLocation)>& fn)
     {
@@ -69,8 +60,6 @@ public:
 
 protected:
     // events
-    void focus(QFocusEvent *);
-    void blur(QFocusEvent *);
     void hover(QGraphicsSceneHoverEvent *);
     void hoverLeave(QGraphicsSceneHoverEvent *);
 
@@ -80,8 +69,6 @@ protected:
 
     // callbacks
     std::function<void(ResizerLocation)> onhover                   = [](auto) {};
-    std::function<void()> onfocus                                  = []() {};
-    std::function<void()> onblur                                   = []() {};
     std::function<void(const ResizerF&, ResizerLocation)> onresize = [](auto, auto) {};
     std::function<void(const QPointF&)> onmove                     = [](auto) {};
     std::function<void(qreal)> onrotate                            = [](auto) {};
@@ -124,8 +111,6 @@ public:
     void setPen(const QPen&) override;
 
 protected:
-    void focusInEvent(QFocusEvent *) override;
-    void focusOutEvent(QFocusEvent *) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
 
@@ -214,15 +199,11 @@ public:
     // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::rectangle; }
 
-    QBrush brush() const override;
-    void setBrush(const QBrush&) override;
-
     void push(const QPointF&) override;
 
     bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
 
 private:
-    QBrush brush_{ Qt::NoBrush };
     bool filled_{};
 };
 
@@ -252,8 +233,6 @@ public:
 
     void resize(const ResizerF& g, ResizerLocation) override;
 
-    void rotate(qreal) override;
-
 private:
     QPixmap pixmap_{};
 };
@@ -277,9 +256,6 @@ public:
     // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::ellipse; }
 
-    QBrush brush() const override;
-    void setBrush(const QBrush&) override;
-
     bool filled() const override;
     void fill(bool) override;
 
@@ -290,7 +266,6 @@ public:
     ResizerLocation location(const QPointF&) const override;
 
 private:
-    QBrush brush_{ Qt::NoBrush };
     bool filled_{};
 };
 
@@ -425,13 +400,9 @@ public:
     //
     void resize(const ResizerF&, ResizerLocation) override;
 
-    void rotate(qreal) override;
-
     ResizerF geometry() const override { return ResizerF{ QGraphicsTextItem::boundingRect() }; }
 
 protected:
-    void focusInEvent(QFocusEvent *) override;
-    void focusOutEvent(QFocusEvent *) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;

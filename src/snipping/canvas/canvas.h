@@ -15,6 +15,11 @@ namespace canvas
         GraphicsItemWrapper *focusItem() const;
 
         GraphicsItemWrapper *focusOrFirstSelectedItem() const;
+
+        void add(GraphicsItemWrapper *item);
+
+    public slots:
+        void clear();
     };
 } // namespace canvas
 

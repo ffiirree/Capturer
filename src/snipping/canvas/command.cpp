@@ -157,23 +157,6 @@ void FillChangedCommand::undo()
     if (item_) item_->fill(!filled_);
 }
 
-////
-
-BrushChangedCommand::BrushChangedCommand(GraphicsItemWrapper *item, const QBrush& o, const QBrush& n)
-    : item_(item),
-      obrush_(o),
-      nbrush_(n)
-{}
-
-void BrushChangedCommand::redo()
-{
-    if (item_) item_->setBrush(nbrush_);
-}
-
-void BrushChangedCommand::undo()
-{
-    if (item_) item_->setBrush(obrush_);
-}
 
 ////
 

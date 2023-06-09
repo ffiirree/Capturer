@@ -31,11 +31,6 @@ public:
     QPen pen() const { return pen_; }
 
     //
-    void setBrush(const QBrush& brush);
-
-    QBrush brush() const { return brush_; }
-
-    //
     void setFont(const QFont& font);
 
     QFont font() const { return font_; }
@@ -47,7 +42,6 @@ public:
 
 signals:
     void penChanged(const QPen&);
-    void brushChanged(const QBrush&);
     void fontChanged(const QFont&);
     void fillChanged(bool);
 
@@ -62,7 +56,6 @@ private:
     ColorPanel *color_panel_{ nullptr };
 
     QPen pen_{ Qt::red, 3 };
-    QBrush brush_{ Qt::NoBrush };
     QFont font_{};
     bool fill_{};
 };

@@ -37,7 +37,18 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 
     setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
-    menu_->installEventFilter(this);
+    connect(scene_, &canvas::Canvas::focusItemChanged, this, [this](auto item, auto, auto reason) {
+        if (item != nullptr && reason == Qt::MouseFocusReason) {
+            scene()->clearSelection(); // clear selection of text items
+
+            auto wrapper = dynamic_cast<GraphicsItemWrapper *>(item);
+            menu_->paintGraph((wrapper->graph() == canvas::pixmap) ? canvas::none : wrapper->graph());
+
+            menu_->fill(wrapper->filled());
+            menu_->setPen(wrapper->pen());
+            menu_->setFont(wrapper->font());
+        }
+    });
 
     // TODO:
     connect(menu_, &EditingMenu::scroll, [this]() {});
@@ -61,12 +72,6 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
         if (auto item = scene_->focusItem(); item && item->graph() == graph && item->pen() != pen) {
             undo_stack_->push(new PenChangedCommand(item, item->pen(), pen));
-        }
-    });
-
-    connect(menu_, &EditingMenu::brushChanged, [this](auto graph, auto brush) {
-        if (auto item = scene_->focusItem(); item && item->graph() == graph && item->brush() != brush) {
-            undo_stack_->push(new BrushChangedCommand(item, item->brush(), brush));
         }
     });
 
@@ -94,10 +99,6 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         });
         item->onrotated([=, this](auto angle) { undo_stack_->push(new RotateCommand(item, angle)); });
         item->onresized([=, this](auto g, auto l) { undo_stack_->push(new ResizeCommand(item, g, l)); });
-        item->onfocused([=, this]() {
-            scene()->clearSelection(); // clear selection of text items
-            menu_->paintGraph(canvas::none);
-        });
     });
 
     // show menu
@@ -183,58 +184,43 @@ void ScreenShoter::updateCursor(ResizerLocation location)
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
-    creating_item_ = {};
-
     QGraphicsView::mousePressEvent(event);
 
     if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != canvas::none) {
         auto pos = event->pos();
 
-        editstatus_ = EditStatus::GRAPH_CREATING;
-
-        QGraphicsItem *item = nullptr;
         QPen pen            = menu_->pen();
 
         switch (menu_->graph()) {
-        case canvas::text: item = new GraphicsTextItem(pos); break;
-        case canvas::rectangle: item = new GraphicsRectItem(pos, pos); break;
-        case canvas::ellipse: item = new GraphicsEllipseleItem(pos, pos); break;
-        case canvas::arrow: item = new GraphicsArrowItem(pos, pos); break;
-        case canvas::line: item = new GraphicsLineItem(pos, pos); break;
-        case canvas::counter: item = new GraphicsCounterleItem(pos, ++counter_); break;
+        case canvas::text: creating_item_ = new GraphicsTextItem(pos); break;
+        case canvas::rectangle: creating_item_ = new GraphicsRectItem(pos, pos); break;
+        case canvas::ellipse: creating_item_ = new GraphicsEllipseleItem(pos, pos); break;
+        case canvas::arrow: creating_item_ = new GraphicsArrowItem(pos, pos); break;
+        case canvas::line: creating_item_ = new GraphicsLineItem(pos, pos); break;
+        case canvas::counter: creating_item_ = new GraphicsCounterleItem(pos, ++counter_); break;
 
         case canvas::eraser:
             pen.setBrush(QBrush(backgroundBrush().textureImage()));
-            item = new GraphicsEraserItem(pos, scene_->sceneRect().size());
+            creating_item_ = new GraphicsEraserItem(pos, scene_->sceneRect().size());
             break;
 
         case canvas::mosaic:
             pen.setBrush(mosaicBrush());
-            item = new GraphicsMosaicItem(pos, scene_->sceneRect().size());
+            creating_item_ = new GraphicsMosaicItem(pos, scene_->sceneRect().size());
             break;
-        case canvas::curve: item = new GraphicsCurveItem(pos, scene_->sceneRect().size()); break;
+        case canvas::curve: creating_item_ = new GraphicsCurveItem(pos, scene_->sceneRect().size()); break;
 
         default: return;
         }
 
-        creating_item_ = dynamic_cast<GraphicsItemWrapper *>(item);
-
         creating_item_->setPen(pen);
-        creating_item_->setBrush(menu_->brush());
         creating_item_->setFont(menu_->font());
         creating_item_->fill(menu_->filled());
 
-        creating_item_->onfocused([citem = creating_item_, this]() {
-            scene()->clearSelection(); // clear selection of text items
-            menu_->paintGraph(citem->graph());
-            menu_->fill(citem->filled());
-            menu_->setPen(citem->pen());
-            menu_->setBrush(citem->brush());
-            menu_->setFont(citem->font());
-        });
-
         creating_item_->onhovered([this](ResizerLocation location) { updateCursor(location); });
-        creating_item_->onmoved([=, this](auto opos) { undo_stack_->push(new MoveCommand(item, opos)); });
+        creating_item_->onmoved([item = creating_item_, this](auto opos) {
+            undo_stack_->push(new MoveCommand(dynamic_cast<QGraphicsItem *>(item), opos));
+        });
         creating_item_->onresized([item = creating_item_, this](auto g, auto l) {
             undo_stack_->push(new ResizeCommand(item, g, l));
             if (item->graph() == canvas::text) menu_->setFont(item->font());
@@ -244,21 +230,15 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
             undo_stack_->push(new RotateCommand(item, angle));
         });
 
-        scene()->addItem(item);
-        item->setFocus();
+        scene_->add(creating_item_);
+        dynamic_cast<QGraphicsItem *>(creating_item_)->setFocus();
     }
 }
 
 void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 {
-    auto pos = event->pos();
-
-    if ((event->buttons() & Qt::LeftButton) && creating_item_ &&
-        editstatus_ == EditStatus::GRAPH_CREATING) {
-        switch (creating_item_->graph()) {
-        case canvas::text: break;
-        default: creating_item_->push(pos); break;
-        }
+    if (creating_item_) {
+        creating_item_->push(event->pos());
     }
 
     QGraphicsView::mouseMoveEvent(event);
@@ -266,8 +246,7 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton) && creating_item_ &&
-        editstatus_ == EditStatus::GRAPH_CREATING) {
+    if ((event->button() == Qt::LeftButton) && creating_item_) {
         if (creating_item_->invalid() && creating_item_->graph() != canvas::text) {
             scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_));
         }
@@ -276,8 +255,7 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
         }
     }
 
-    editstatus_    = EditStatus::READY;
-    creating_item_ = {};
+    creating_item_ = nullptr;
 
     QGraphicsView::mouseReleaseEvent(event);
 }
@@ -427,14 +405,11 @@ void ScreenShoter::exit()
 
     undo_stack_->clear(); // before scene()->clear
 
-    scene()->clear();
-    setBackgroundBrush(Qt::NoBrush);
+    scene_->clear();
 
     creating_item_ = {};
 
     counter_ = 0;
-
-    unsetCursor();
 
     QWidget::close();
 }

@@ -129,22 +129,6 @@ private:
 };
 
 ////
-
-class BrushChangedCommand : public QUndoCommand
-{
-public:
-    BrushChangedCommand(GraphicsItemWrapper *item, const QBrush& open, const QBrush& npen);
-
-    void redo() override;
-    void undo() override;
-
-private:
-    GraphicsItemWrapper *item_{};
-    QBrush obrush_{};
-    QBrush nbrush_{};
-};
-
-////
 class FontChangedCommand : public QUndoCommand
 {
 public:

@@ -17,17 +17,6 @@ ResizerLocation GraphicsItemWrapper::location(const QPointF& p) const
     return geometry_.absolutePos(p, filled());
 }
 
-void GraphicsItemWrapper::focus(QFocusEvent *event)
-{
-    if (event->reason() == Qt::MouseFocusReason) onfocus();
-}
-
-void GraphicsItemWrapper::blur(QFocusEvent *)
-{
-    onblur();
-    adjusting_ = canvas::adjusting_t::none;
-}
-
 void GraphicsItemWrapper::hover(QGraphicsSceneHoverEvent *event)
 {
     auto hpos = location(event->pos());
@@ -130,6 +119,15 @@ void GraphicsItemWrapper::mouseRelease(QGraphicsSceneMouseEvent *, const QPointF
     before_rotating_ = {};
 }
 
+void GraphicsItemWrapper::rotate(qreal angle)
+{
+    angle_ = angle;
+
+    auto cx = geometry().center().x(), cy = geometry().center().y();
+    dynamic_cast<QGraphicsItem *>(this)->setTransform(
+        QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
+}
+
 ////
 
 GraphicsItem::GraphicsItem(QGraphicsItem *parent)
@@ -153,18 +151,6 @@ void GraphicsItem::setPen(const QPen& pen)
 }
 
 QRectF GraphicsItem::boundingRect() const { return shape().controlPointRect(); }
-
-void GraphicsItem::focusInEvent(QFocusEvent *event)
-{
-    GraphicsItemWrapper::focus(event);
-    QGraphicsItem::focusInEvent(event);
-}
-
-void GraphicsItem::focusOutEvent(QFocusEvent *event)
-{
-    GraphicsItemWrapper::blur(event);
-    QGraphicsItem::focusOutEvent(event);
-}
 
 void GraphicsItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
@@ -252,7 +238,7 @@ static void highlight_selected(QPainter *painter, const ResizerF& geometry, bool
     }
 
     if (geometry.rotationEnabled()) {
-        painter->drawLine(geometry.rotateAnchor().center(), geometry.topAnchor().center());
+        painter->drawLine(geometry.rotateAnchor().center(), geometry.Y1Anchor().center());
         painter->drawEllipse(geometry.rotateAnchor());
     }
 }
@@ -493,16 +479,6 @@ QPainterPath GraphicsRectItem::shape() const
     return path;
 }
 
-QBrush GraphicsRectItem::brush() const { return brush_; }
-
-void GraphicsRectItem::setBrush(const QBrush& brush)
-{
-    if (brush_ == brush) return;
-
-    brush_ = brush;
-    update();
-}
-
 bool GraphicsRectItem::filled() const { return filled_; }
 
 void GraphicsRectItem::fill(bool f)
@@ -520,11 +496,13 @@ void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     pen_.setCapStyle(Qt::RoundCap);
     pen_.setJoinStyle(Qt::RoundJoin);
 
-    painter->setPen(pen_);
-    auto _brush = filled() ? ((brush_ == Qt::NoBrush) ? pen_.color() : brush_) : Qt::NoBrush;
-    painter->setBrush(_brush);
-
-    painter->drawRect(geometry_.rect());
+    if (filled()) {
+        painter->fillRect(geometry_.rect(), pen_.color());
+    }
+    else {
+        painter->setPen(pen_);
+        painter->drawRect(geometry_.rect());
+    }
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         highlight_selected(painter, geometry_, true);
@@ -598,16 +576,6 @@ ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
     }
 }
 
-QBrush GraphicsEllipseleItem::brush() const { return brush_; }
-
-void GraphicsEllipseleItem::setBrush(const QBrush& brush)
-{
-    if (brush_ == brush) return;
-
-    brush_ = brush;
-    update();
-}
-
 bool GraphicsEllipseleItem::filled() const { return filled_; }
 
 void GraphicsEllipseleItem::fill(bool f)
@@ -622,9 +590,8 @@ void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 {
     if (invalid()) return;
 
-    painter->setPen(pen_);
-    auto _brush = filled() ? ((brush_ == Qt::NoBrush) ? pen_.color() : brush_) : Qt::NoBrush;
-    painter->setBrush(_brush);
+    painter->setPen(filled() ? QPen{ pen_.color(), 1 } : pen_);
+    if (filled()) painter->setBrush(pen_.color());
 
     painter->drawEllipse(geometry_.rect());
 
@@ -669,7 +636,10 @@ QPainterPath GraphicsPixmapItem::shape() const
 
 void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
-    painter->drawPixmap(geometry_.rect(), pixmap_, QRectF{ {}, pixmap_.size() });
+    painter->drawPixmap(geometry_.rect(),
+                        pixmap_.transformed(QTransform{}.scale(geometry_.hflipped() ? -1 : 1,
+                                                               geometry_.vflipped() ? -1 : 1)),
+                        QRectF{ {}, pixmap_.size() });
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
         highlight_selected(painter, geometry_);
@@ -678,48 +648,39 @@ void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 void GraphicsPixmapItem::resize(const ResizerF& resizer, ResizerLocation location)
 {
-    auto oldrect = geometry_.rect();
-    auto tmprect = resizer.rect();
+    auto oldrect = geometry_.rect().translated(-geometry_.topLeft());
+    auto newrect = resizer.rect().translated(-resizer.topLeft());
 
-    auto oldsize = oldrect.size();
+    QSizeF newsize =
+        newrect.contains(newrect.united(oldrect))
+            ? QSizeF{ pixmap_.size() }.scaled(newrect.united(oldrect).size(), Qt::KeepAspectRatio)
+            : QSizeF{ pixmap_.size() }.scaled(newrect.intersected(oldrect).size(), Qt::KeepAspectRatio);
 
-    QSizeF newsize = tmprect.contains(tmprect.united(oldrect))
-                         ? oldsize.scaled(tmprect.united(oldrect).size(), Qt::KeepAspectRatio)
-                         : oldsize.scaled(tmprect.intersected(oldrect).size(), Qt::KeepAspectRatio);
-
-    auto lt = mapToScene(oldrect.topLeft());
-    auto lb = mapToScene(oldrect.bottomLeft());
-    auto rt = mapToScene(oldrect.topRight());
-    auto rb = mapToScene(oldrect.bottomRight());
+    auto x1y1 = mapToScene(geometry_.x1(), geometry_.y1());
+    auto x1y2 = mapToScene(geometry_.x1(), geometry_.y2());
+    auto x2y1 = mapToScene(geometry_.x2(), geometry_.y1());
+    auto x2y2 = mapToScene(geometry_.x2(), geometry_.y2());
 
     prepareGeometryChange();
 
     // fix me: v2 is on the topleft of v1
-    geometry_.coords(QRectF{ { 0, 0 }, newsize });
+    geometry_.coords({ { 0, 0 }, newsize });
+    geometry_.flip(resizer.hflipped(), resizer.vflipped());
 
     // update rotation origin point
-    auto center = resizer.rect().center();
-    setTransform(
-        QTransform().translate(center.x(), center.y()).rotate(angle_).translate(-center.x(), -center.y()));
+    rotate(angle_);
 
-    // position
+    // clang-format off
     switch (location) {
-    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + rb - mapToScene(geometry_.bottomRight())); break;
-    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(geometry_.bottomLeft())); break;
-    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(geometry_.topRight())); break;
-    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(geometry_.topLeft())); break;
+    case ResizerLocation::X1Y1_ANCHOR: setPos(pos() + x2y2 - mapToScene(geometry_.x2(), geometry_.y2())); break;
+    case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + x1y2 - mapToScene(geometry_.x1(), geometry_.y2())); break;
+    case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + x2y1 - mapToScene(geometry_.x2(), geometry_.y1())); break;
+    case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + x1y1 - mapToScene(geometry_.x1(), geometry_.y1())); break;
     default: break;
     }
+    // clang-format on
 
     update();
-}
-
-void GraphicsPixmapItem::rotate(qreal angle)
-{
-    angle_ = angle;
-
-    auto cx = geometry().center().x(), cy = geometry().center().y();
-    setTransform(QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
 }
 
 ///
@@ -763,8 +724,8 @@ ResizerLocation GraphicsCounterleItem::location(const QPointF&) const { return R
 
 void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
-    painter->setPen(QPen{ Qt::red });
-    painter->setBrush(Qt::red);
+    painter->setPen(QPen{ pen_.color() });
+    painter->setBrush(pen_.color());
 
     painter->drawEllipse(geometry_.boundingRect());
 
@@ -954,20 +915,6 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     }
 }
 
-void GraphicsTextItem::focusInEvent(QFocusEvent *event)
-{
-    GraphicsItemWrapper::focus(event);
-    QGraphicsTextItem::focusInEvent(event);
-}
-
-void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
-{
-    setTextInteractionFlags(Qt::NoTextInteraction);
-
-    GraphicsItemWrapper::blur(event);
-    QGraphicsTextItem::focusOutEvent(event);
-}
-
 void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
     GraphicsItemWrapper::hover(event);
@@ -990,8 +937,6 @@ void GraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
     }
 
     setFocus(Qt::MouseFocusReason);
-    if (!hasFocus() && !isSelected()) onfocus();
-
     QGraphicsTextItem::mousePressEvent(event);
 }
 
@@ -1023,38 +968,32 @@ void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
 {
-    auto textrect_1   = QGraphicsTextItem::boundingRect();
-    auto resized_rect = resizer.rect();
-    auto textsize_1   = textrect_1.size();
+    auto oldrect = QGraphicsTextItem::boundingRect();
+    auto newrect = resizer.rect();
 
-    QSizeF textsize_2 =
-        resized_rect.contains(resized_rect.united(textrect_1))
-            ? textsize_1.scaled(resized_rect.united(textrect_1).size(), Qt::KeepAspectRatio)
-            : textsize_1.scaled(resized_rect.intersected(textrect_1).size(), Qt::KeepAspectRatio);
+    QSizeF newsize = newrect.contains(newrect.united(oldrect))
+                         ? oldrect.size().scaled(newrect.united(oldrect).size(), Qt::KeepAspectRatio)
+                         : oldrect.size().scaled(newrect.intersected(oldrect).size(), Qt::KeepAspectRatio);
 
-    auto scaled_fontsize = std::max(font().pointSizeF() * (textsize_2.width() / textsize_1.width()), 5.0);
+    auto scaled_fontsize = std::max(font().pointSizeF() * (newsize.width() / oldrect.width()), 5.0);
 
     if (scaled_fontsize == font().pointSizeF()) return;
 
-    auto lt = mapToScene(textrect_1.topLeft());
-    auto lb = mapToScene(textrect_1.bottomLeft());
-    auto rt = mapToScene(textrect_1.topRight());
-    auto rb = mapToScene(textrect_1.bottomRight());
-
-    prepareGeometryChange();
+    auto lt = mapToScene(oldrect.topLeft());
+    auto lb = mapToScene(oldrect.bottomLeft());
+    auto rt = mapToScene(oldrect.topRight());
+    auto rb = mapToScene(oldrect.bottomRight());
 
     // resized font size
     auto scaledfont = font();
     scaledfont.setPointSizeF(scaled_fontsize);
     QGraphicsTextItem::setFont(scaledfont);
 
-    // update rotation origin point
-    auto center = QGraphicsTextItem::boundingRect().center();
-    setTransform(
-        QTransform().translate(center.x(), center.y()).rotate(angle_).translate(-center.x(), -center.y()));
-
     // keep position after rotation
     geometry_.coords(QGraphicsTextItem::boundingRect());
+
+    // update rotation origin point
+    rotate(angle_);
 
     // position
     switch (location) {
@@ -1064,16 +1003,6 @@ void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
     case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(geometry_.topLeft())); break;
     default: break;
     }
-
-    update();
-}
-
-void GraphicsTextItem::rotate(qreal angle)
-{
-    angle_ = angle;
-
-    auto cx = geometry().center().x(), cy = geometry().center().y();
-    setTransform(QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
 }
 
 void GraphicsTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
