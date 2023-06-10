@@ -15,6 +15,7 @@
 #include <QPixmap>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
+#include <QPixmap>
 
 class ScreenShoter : public QGraphicsView
 {
@@ -43,6 +44,8 @@ public slots:
     void moveMenu();
 
     void updateCursor(ResizerLocation);
+
+    void refresh(const probe::geometry_t&);
 
 protected:
     bool eventFilter(QObject *, QEvent *) override;
@@ -76,6 +79,8 @@ private:
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
 
     QUndoStack *undo_stack_{};
+
+    QPixmap background_{};
 };
 
 #endif //! CAPTURER_SCREEN_SHOTER_H

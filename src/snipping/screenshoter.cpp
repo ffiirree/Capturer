@@ -133,9 +133,6 @@ void ScreenShoter::start()
     if (isVisible()) return;
 
     auto virtual_geometry = probe::graphics::virtual_screen_geometry();
-    auto captured_pixmap  = QGuiApplication::primaryScreen()->grabWindow(
-        probe::graphics::virtual_screen().handle, virtual_geometry.x, virtual_geometry.y,
-        static_cast<int>(virtual_geometry.width), static_cast<int>(virtual_geometry.height));
 
     // geometry
     setGeometry(QRect{ virtual_geometry });  // window geometry == virtual geometry, absolute coordinate
@@ -143,12 +140,7 @@ void ScreenShoter::start()
     selector_->setGeometry(rect());          // relative coordinate, start at (0, 0)
     selector_->coordinate(virtual_geometry); // painter coordinate, absolute coordinate
 
-    // background
-    setBackgroundBrush(captured_pixmap);
-    setCacheMode(QGraphicsView::CacheBackground);
-
-    //
-    magnifier_->setGrabPixmap(captured_pixmap);
+    refresh(virtual_geometry);
 
     //
     selector_->start(probe::graphics::window_filter_t::visible |
@@ -160,6 +152,20 @@ void ScreenShoter::start()
 
     // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
     activateWindow();
+}
+
+void ScreenShoter::refresh(const probe::geometry_t& geometry)
+{
+    // background
+    background_ = QGuiApplication::primaryScreen()->grabWindow(
+        probe::graphics::virtual_screen().handle, geometry.x, geometry.y, static_cast<int>(geometry.width),
+        static_cast<int>(geometry.height));
+
+    setBackgroundBrush(background_);
+    setCacheMode(QGraphicsView::CacheBackground);
+
+    //
+    magnifier_->setGrabPixmap(background_);
 }
 
 QBrush ScreenShoter::mosaicBrush()
@@ -462,6 +468,17 @@ void ScreenShoter::registerShortcuts()
         if (magnifier_->isVisible()) {
             magnifier_->toggleColorFormat();
         }
+    });
+
+    connect(new QShortcut(Qt::Key_F5, this), &QShortcut::activated, [this]() {
+        hide();
+        magnifier_->hide();
+
+        refresh(probe::graphics::virtual_screen_geometry());
+
+        magnifier_->show();
+        show();
+        activateWindow();
     });
 
     // clang-format off

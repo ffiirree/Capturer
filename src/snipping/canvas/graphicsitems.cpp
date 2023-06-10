@@ -757,19 +757,30 @@ GraphicsPathItem::GraphicsPathItem(const QPointF& p, const QSizeF& size, QGraphi
     setAcceptedMouseButtons(Qt::NoButton);
 
     pen_.setCapStyle(Qt::RoundCap);
-    pen_.setJoinStyle(Qt::RoundJoin);
 
     vertexes_.push_back(p);
+    tmpvtxes_.push_back(p);
 
     pixmap_ = QPixmap{ size.toSize() };
     pixmap_.fill(Qt::transparent);
 
-    painter_ = new QPainter(&pixmap_);
-    painter_->setPen(pen_);
-    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter_ = new QPainter();
 }
 
 GraphicsPathItem::~GraphicsPathItem() { delete painter_; }
+
+QRectF GraphicsPathItem::boundingRect() const
+{
+    if (!fixed_) {
+        QPainterPath path;
+        path.addPolygon(tmpvtxes_);
+
+        return shape_from_path(path, pen_).controlPointRect();
+    }
+    else {
+        return shape().controlPointRect();
+    }
+}
 
 QPainterPath GraphicsPathItem::shape() const
 {
@@ -781,15 +792,32 @@ QPainterPath GraphicsPathItem::shape() const
 
 void GraphicsPathItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
-    painter->drawPixmap(boundingRect(), pixmap_, boundingRect());
+
+    if (!fixed_) {
+        tmpvtxes_.clear();
+        tmpvtxes_.push_back(vertexes_.back());
+        painter->drawPixmap(shape().controlPointRect(), pixmap_, shape().controlPointRect());
+    }
+    else {
+        painter->drawPixmap(pixmap_.rect(), pixmap_);
+    }
 }
 
 void GraphicsPathItem::push(const QPointF& p)
 {
+    tmpvtxes_.push_back(p);
+
+    painter_->begin(&pixmap_);
+    painter_->setPen(pen_);
+    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter_->setCompositionMode(QPainter::CompositionMode_Source);
     painter_->drawLine(vertexes_.back(), p);
-    vertexes_.push_back(p);
+    painter_->end();
 
     prepareGeometryChange();
+
+    vertexes_.push_back(p);
+
     update();
 }
 
@@ -799,9 +827,11 @@ void GraphicsPathItem::setPen(const QPen& pen)
 
     pen_ = pen;
     pen_.setCapStyle(Qt::RoundCap);
-    pen_.setJoinStyle(Qt::RoundJoin);
 
+    painter_->begin(&pixmap_);
     painter_->setPen(pen_);
+    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter_->setCompositionMode(QPainter::CompositionMode_Source);
 
     prepareGeometryChange();
 
@@ -809,16 +839,9 @@ void GraphicsPathItem::setPen(const QPen& pen)
     pixmap_.fill(Qt::transparent);
     painter_->drawPolyline(vertexes_);
 
-    update();
-}
+    painter_->end();
 
-void GraphicsPathItem::pushVertexes(const QVector<QPointF>& points)
-{
-    prepareGeometryChange();
-
-    vertexes_.append(points);
-    pixmap_.fill(Qt::transparent);
-    painter_->drawPolyline(vertexes_);
+    tmpvtxes_ = vertexes_;
 
     update();
 }
@@ -826,6 +849,14 @@ void GraphicsPathItem::pushVertexes(const QVector<QPointF>& points)
 void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
 {
     setFlag(QGraphicsItem::ItemIsFocusable, false);
+
+    fixed_ = true;
+    auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
+    setPos(rect.topLeft());
+
+    pixmap_   = pixmap_.copy(rect);
+    vertexes_ = mapFromScene(vertexes_);
+
     GraphicsItem::focusOutEvent(event);
 }
 

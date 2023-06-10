@@ -312,12 +312,10 @@ public:
     ~GraphicsPathItem();
 
     // QGraphicsItem
+    QRectF boundingRect() const override;
     QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
-
-    //
-    void pushVertexes(const QVector<QPointF>&);
 
     // GraphicsItemWrapper
     canvas::graphics_t graph() const override { return canvas::graphics_t::curve; }
@@ -335,6 +333,10 @@ protected:
 
 private:
     QVector<QPointF> vertexes_{};
+
+    QVector<QPointF> tmpvtxes_{};
+    bool fixed_{};
+
     QPixmap pixmap_{};
     QPainter *painter_{};
 };
