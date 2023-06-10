@@ -270,12 +270,12 @@ void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
             scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_));
         }
         else {
+            creating_item_->end();
             undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(creating_item_)));
         }
     }
 
     creating_item_ = nullptr;
-
     QGraphicsView::mouseReleaseEvent(event);
 }
 

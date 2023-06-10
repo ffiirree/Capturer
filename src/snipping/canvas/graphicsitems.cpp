@@ -846,16 +846,23 @@ void GraphicsPathItem::setPen(const QPen& pen)
     update();
 }
 
+void GraphicsPathItem::end()
+{
+    if (!fixed_) {
+        fixed_    = true;
+        auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
+        setPos(rect.topLeft());
+
+        pixmap_   = pixmap_.copy(rect);
+        vertexes_ = mapFromScene(vertexes_);
+    }
+}
+
 void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
 {
     setFlag(QGraphicsItem::ItemIsFocusable, false);
-
-    fixed_ = true;
-    auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
-    setPos(rect.topLeft());
-
-    pixmap_   = pixmap_.copy(rect);
-    vertexes_ = mapFromScene(vertexes_);
+    
+    end();
 
     GraphicsItem::focusOutEvent(event);
 }
@@ -976,8 +983,6 @@ void GraphicsTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    auto cpos = event->pos();
-
     switch (adjusting_) {
     case canvas::adjusting_t::moving: {
         auto offset = event->scenePos() - mpos_;

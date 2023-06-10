@@ -46,6 +46,9 @@ public:
 
     virtual void resize(const ResizerF&, ResizerLocation) {}
 
+    //
+    virtual void end() {};
+
     // callbacks
     virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
 
@@ -327,6 +330,8 @@ public:
     bool invalid() const override { return false; }
 
     ResizerLocation location(const QPointF&) const override { return ResizerLocation::DEFAULT; }
+
+    void end() override;
 
 protected:
     void focusOutEvent(QFocusEvent *) override;
