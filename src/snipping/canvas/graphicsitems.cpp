@@ -956,6 +956,12 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     }
 }
 
+void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
+{
+    setTextInteractionFlags(Qt::NoTextInteraction);
+    QGraphicsTextItem::focusOutEvent(event);
+}
+
 void GraphicsTextItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
     GraphicsItemWrapper::hover(event);

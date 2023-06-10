@@ -410,6 +410,7 @@ public:
     ResizerF geometry() const override { return ResizerF{ QGraphicsTextItem::boundingRect() }; }
 
 protected:
+    void focusOutEvent(QFocusEvent *) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *) override;

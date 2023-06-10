@@ -24,10 +24,9 @@ namespace canvas
         return nullptr;
     }
 
-    void Canvas::add(GraphicsItemWrapper *item)
-    { 
-        addItem(dynamic_cast<QGraphicsItem *>(item));
-    }
+    void Canvas::add(GraphicsItemWrapper *item) { addItem(dynamic_cast<QGraphicsItem *>(item)); }
+
+    void Canvas::remove(GraphicsItemWrapper *item) { removeItem(dynamic_cast<QGraphicsItem *>(item)); }
 
     void Canvas::clear()
     {

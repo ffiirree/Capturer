@@ -18,6 +18,8 @@ namespace canvas
 
         void add(GraphicsItemWrapper *item);
 
+        void remove(GraphicsItemWrapper *item);
+
     public slots:
         void clear();
     };

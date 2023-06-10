@@ -205,9 +205,20 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
     QGraphicsView::mousePressEvent(event);
 
-    if (!event->isAccepted() && event->button() == Qt::LeftButton && menu_->graph() != canvas::none) {
-        auto pos = event->pos();
+    //
+    if (event->isAccepted() || event->button() != Qt::LeftButton) return;
 
+    // handle the valid item when the mouse is released
+    if (creating_item_ && !creating_item_->invalid()) return;
+
+    // remove the invalid text item
+    if (creating_item_ && (creating_item_->graph() & canvas::text)) {
+        scene_->remove(creating_item_);
+        creating_item_ = nullptr;
+    }
+
+    if (menu_->graph() != canvas::none) {
+        auto pos = event->pos(); // view pos & scene pos
         QPen pen = menu_->pen();
 
         switch (menu_->graph()) {
@@ -242,7 +253,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
         });
         creating_item_->onresized([item = creating_item_, this](auto g, auto l) {
             undo_stack_->push(new ResizeCommand(item, g, l));
-            if (item->graph() == canvas::text) menu_->setFont(item->font());
+            if (item->graph() & canvas::text) menu_->setFont(item->font());
         });
 
         creating_item_->onrotated([item = creating_item_, this](auto angle) {
@@ -265,17 +276,20 @@ void ScreenShoter::mouseMoveEvent(QMouseEvent *event)
 
 void ScreenShoter::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton) && creating_item_) {
-        if (creating_item_->invalid() && creating_item_->graph() != canvas::text) {
-            scene()->removeItem(dynamic_cast<QGraphicsItem *>(creating_item_));
-        }
-        else {
-            creating_item_->end();
-            undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(creating_item_)));
+    if (creating_item_) {
+        if (!((creating_item_->graph() & canvas::text) && creating_item_ == scene_->focusItem())) {
+            if (creating_item_->invalid()) {
+                scene_->remove(creating_item_);
+            }
+            else {
+                creating_item_->end();
+                undo_stack_->push(
+                    new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(creating_item_)));
+            }
+            creating_item_ = nullptr;
         }
     }
 
-    creating_item_ = nullptr;
     QGraphicsView::mouseReleaseEvent(event);
 }
 
