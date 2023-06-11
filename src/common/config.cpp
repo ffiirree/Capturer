@@ -76,6 +76,7 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
     // clang-format on
 
+    // cameras
     if ((settings_["devices"]["cameras"].is_null() ||
          settings_["devices"]["cameras"].get<std::string>().empty()) &&
         !av::cameras().empty()) {
@@ -86,20 +87,15 @@ Config::Config()
 #endif
     }
 
-    if (settings_["devices"]["microphones"].is_null()) {
-        auto asrc = av::default_audio_source();
-        if (asrc.has_value()) {
-            settings_["devices"]["microphones"] = asrc.value().id;
-        }
-    }
+    // microphones: default or null
+    auto asrc = av::default_audio_source();
+    settings_["devices"]["microphones"] = asrc.value_or(av::device_t{}).id;
 
-    if (settings_["devices"]["speakers"].is_null()) {
-        auto asink = av::default_audio_sink();
-        if (asink.has_value()) {
-            settings_["devices"]["speakers"] = asink.value().id;
-        }
-    }
+    // speakers: default or null
+    auto asink = av::default_audio_sink();
+    settings_["devices"]["speakers"] = asink.value_or(av::device_t{}).id;
 
+    //
     connect(this, &Config::changed, this, &Config::save);
     connect(this, &Config::SYSTEM_THEME_CHANGED, this, [this](int theme) {
         if (settings_["theme"].get<std::string>() == "auto") {
