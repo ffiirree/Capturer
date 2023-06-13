@@ -26,7 +26,7 @@ public:
     explicit EditingSubmenu(int buttons, QWidget *parent = nullptr);
 
     //
-    void setPen(const QPen& pen);
+    void setPen(const QPen& pen, bool silence = true);
 
     QPen pen() const { return pen_; }
 

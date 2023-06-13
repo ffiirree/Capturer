@@ -219,31 +219,23 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
 
     if (menu_->graph() != canvas::none) {
         auto pos = event->pos(); // view pos & scene pos
-        QPen pen = menu_->pen();
 
+        // clang-format off
         switch (menu_->graph()) {
-        case canvas::text: creating_item_ = new GraphicsTextItem(pos); break;
         case canvas::rectangle: creating_item_ = new GraphicsRectItem(pos, pos); break;
-        case canvas::ellipse: creating_item_ = new GraphicsEllipseleItem(pos, pos); break;
-        case canvas::arrow: creating_item_ = new GraphicsArrowItem(pos, pos); break;
-        case canvas::line: creating_item_ = new GraphicsLineItem(pos, pos); break;
-        case canvas::counter: creating_item_ = new GraphicsCounterleItem(pos, ++counter_); break;
-
-        case canvas::eraser:
-            pen.setBrush(QBrush(backgroundBrush().textureImage()));
-            creating_item_ = new GraphicsEraserItem(pos, scene_->sceneRect().size());
-            break;
-
-        case canvas::mosaic:
-            pen.setBrush(mosaicBrush());
-            creating_item_ = new GraphicsMosaicItem(pos, scene_->sceneRect().size());
-            break;
-        case canvas::curve: creating_item_ = new GraphicsCurveItem(pos, scene_->sceneRect().size()); break;
-
+        case canvas::ellipse:   creating_item_ = new GraphicsEllipseleItem(pos, pos); break;
+        case canvas::arrow:     creating_item_ = new GraphicsArrowItem(pos, pos); break;
+        case canvas::line:      creating_item_ = new GraphicsLineItem(pos, pos); break;
+        case canvas::curve:     creating_item_ = new GraphicsCurveItem(pos, sceneRect().size()); break;
+        case canvas::counter:   creating_item_ = new GraphicsCounterleItem(pos, ++counter_); break;
+        case canvas::text:      creating_item_ = new GraphicsTextItem(pos); break;
+        case canvas::eraser:    creating_item_ = new GraphicsEraserItem(pos, sceneRect().size(), backgroundBrush()); break;
+        case canvas::mosaic:    creating_item_ = new GraphicsMosaicItem(pos, sceneRect().size(), mosaicBrush()); break;
         default: return;
         }
+        // clang-format on
 
-        creating_item_->setPen(pen);
+        creating_item_->setPen(menu_->pen());
         creating_item_->setFont(menu_->font());
         creating_item_->fill(menu_->filled());
 
@@ -301,7 +293,7 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
         auto pen = menu_->pen();
         pen.setWidth(std::clamp(menu_->pen().width() + delta, 1, 71));
 
-        menu_->setPen(pen);
+        menu_->setPen(pen, false);
 
         updateCursor(ResizerLocation::DEFAULT);
     }

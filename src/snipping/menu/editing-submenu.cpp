@@ -124,11 +124,17 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
     }
 }
 
-void EditingSubmenu::setPen(const QPen& pen)
+void EditingSubmenu::setPen(const QPen& pen, bool silence)
 {
-    pen_ = pen;
-    if (color_panel_) color_panel_->setColor(pen_.color());
-    if (width_btn_) width_btn_->setValue(pen_.width());
+    if (color_panel_) {
+        color_panel_->setColor(pen.color(), silence);
+        pen_.setColor(color_panel_->color());
+    }
+
+    if (width_btn_) {
+        width_btn_->setValue(pen.width(), silence);
+        pen_.setWidth(width_btn_->value());
+    }
 }
 
 void EditingSubmenu::setFont(const QFont& font)

@@ -13,11 +13,14 @@ public:
     explicit ColorButton(QWidget * = nullptr);
     explicit ColorButton(const QColor&, QWidget * = nullptr);
 
-    inline void color(const QColor& c)
+    inline void color(const QColor& c, bool silence = true)
     {
+        if (color_ == c) return;
+
         color_ = c;
         update();
-        emit changed(color_);
+
+        if (!silence) emit changed(color_);
     }
 
     inline QColor color() const { return color_; }
@@ -76,7 +79,7 @@ signals:
 
 public slots:
 
-    void setColor(const QColor& color) { color_dialog_btn_->color(color); }
+    void setColor(const QColor& color, bool silence = true) { color_dialog_btn_->color(color, silence); }
 
 private:
     ColorDialogButton *color_dialog_btn_{ nullptr };

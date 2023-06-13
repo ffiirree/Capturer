@@ -72,8 +72,9 @@ ColorDialogButton::ColorDialogButton(const QColor& color, QWidget *parent)
 
 void ColorDialogButton::wheelEvent(QWheelEvent *event)
 {
-    color_.setAlpha(color_.alpha() + event->angleDelta().y() / 60);
-    color(color_);
+    QColor tmp(color_);
+    tmp.setAlpha(color_.alpha() + event->angleDelta().y() / 60);
+    color(tmp, false);
 }
 
 ColorDialogButton::~ColorDialogButton() { delete color_dialog_; }
@@ -96,7 +97,7 @@ ColorPanel::ColorPanel(QWidget *parent)
         auto cbtn = new ColorButton(COLOR);                                                                \
         cbtn->setFixedSize(14, 14);                                                                        \
         layout->addWidget(cbtn, X, Y);                                                                     \
-        connect(cbtn, &ColorButton::clicked, this, &ColorPanel::setColor);                                 \
+        connect(cbtn, &ColorButton::clicked, [this](auto c) { setColor(c, false); });                      \
     } while (0)
 
     ADD_COLOR(QColor(000, 000, 000), 0, 2);

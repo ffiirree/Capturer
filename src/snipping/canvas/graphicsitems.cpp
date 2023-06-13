@@ -748,6 +748,7 @@ void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 
 ///
 
+// TODO: smooth the curve
 GraphicsPathItem::GraphicsPathItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
@@ -756,26 +757,32 @@ GraphicsPathItem::GraphicsPathItem(const QPointF& p, const QSizeF& size, QGraphi
     setAcceptHoverEvents(false);
     setAcceptedMouseButtons(Qt::NoButton);
 
-    pen_.setCapStyle(Qt::RoundCap);
-
     vertexes_.push_back(p);
     tmpvtxes_.push_back(p);
 
     pixmap_ = QPixmap{ size.toSize() };
     pixmap_.fill(Qt::transparent);
 
-    painter_ = new QPainter();
+    pen_.setCapStyle(Qt::RoundCap);
+    pen_.setJoinStyle(Qt::RoundJoin);
+
+    painter_ = new QPainter(&pixmap_);
+    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter_->setCompositionMode(QPainter::CompositionMode_Source);
 }
 
 GraphicsPathItem::~GraphicsPathItem() { delete painter_; }
 
+// for updating
 QRectF GraphicsPathItem::boundingRect() const
 {
     if (!fixed_) {
         QPainterPath path;
         path.addPolygon(tmpvtxes_);
 
-        return shape_from_path(path, pen_).controlPointRect();
+        QPen pen = pen_;
+        pen.setWidth(pen_.width() + 2);
+        return shape_from_path(path, pen).controlPointRect();
     }
     else {
         return shape().controlPointRect();
@@ -787,12 +794,13 @@ QPainterPath GraphicsPathItem::shape() const
     QPainterPath path;
     path.addPolygon(vertexes_);
 
-    return shape_from_path(path, pen_);
+    QPen pen = pen_;
+    pen.setWidth(pen_.width() + 2);
+    return shape_from_path(path, pen);
 }
 
 void GraphicsPathItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
-
     if (!fixed_) {
         tmpvtxes_.clear();
         tmpvtxes_.push_back(vertexes_.back());
@@ -807,17 +815,10 @@ void GraphicsPathItem::push(const QPointF& p)
 {
     tmpvtxes_.push_back(p);
 
-    painter_->begin(&pixmap_);
-    painter_->setPen(pen_);
-    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    painter_->setCompositionMode(QPainter::CompositionMode_Source);
     painter_->drawLine(vertexes_.back(), p);
-    painter_->end();
 
     prepareGeometryChange();
-
     vertexes_.push_back(p);
-
     update();
 }
 
@@ -827,42 +828,41 @@ void GraphicsPathItem::setPen(const QPen& pen)
 
     pen_ = pen;
     pen_.setCapStyle(Qt::RoundCap);
-
-    painter_->begin(&pixmap_);
+    pen_.setJoinStyle(Qt::RoundJoin);
     painter_->setPen(pen_);
-    painter_->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
-    painter_->setCompositionMode(QPainter::CompositionMode_Source);
 
-    prepareGeometryChange();
+    redraw();
+}
 
-    //
+void GraphicsPathItem::redraw()
+{
     pixmap_.fill(Qt::transparent);
     painter_->drawPolyline(vertexes_);
 
-    painter_->end();
-
+    prepareGeometryChange();
     tmpvtxes_ = vertexes_;
-
     update();
 }
 
 void GraphicsPathItem::end()
 {
-    if (!fixed_) {
-        fixed_    = true;
-        auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
-        setPos(rect.topLeft());
+    fixed_ = true;
 
-        pixmap_   = pixmap_.copy(rect);
-        vertexes_ = mapFromScene(vertexes_);
-    }
+    redraw();
 }
 
 void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
 {
     setFlag(QGraphicsItem::ItemIsFocusable, false);
-    
-    end();
+
+    if (!fixed_) {
+        fixed_    = true;
+        auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
+        pixmap_   = pixmap_.copy(rect);
+        vertexes_ = mapFromScene(vertexes_);
+
+        setPos(rect.topLeft());
+    }
 
     GraphicsItem::focusOutEvent(event);
 }
@@ -873,13 +873,45 @@ GraphicsCurveItem::GraphicsCurveItem(const QPointF& p, const QSizeF& size, QGrap
     : GraphicsPathItem(p, size, parent)
 {}
 
-GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
-    : GraphicsPathItem(p, size, parent)
-{}
+///
 
-GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, const QSizeF& size, QGraphicsItem *parent)
+GraphicsMosaicItem::GraphicsMosaicItem(const QPointF& p, const QSizeF& size, const QBrush& brush,
+                                       QGraphicsItem *parent)
     : GraphicsPathItem(p, size, parent)
-{}
+{
+    pen_.setBrush(brush);
+    painter_->setPen(pen_);
+}
+
+void GraphicsMosaicItem::setPen(const QPen& pen)
+{
+    if (pen_.widthF() == pen.widthF()) return;
+
+    pen_.setWidthF(pen.widthF());
+    painter_->setPen(pen_);
+
+    redraw();
+}
+
+///
+
+GraphicsEraserItem::GraphicsEraserItem(const QPointF& p, const QSizeF& size, const QBrush& brush,
+                                       QGraphicsItem *parent)
+    : GraphicsPathItem(p, size, parent)
+{
+    pen_.setBrush(brush);
+    painter_->setPen(pen_);
+}
+
+void GraphicsEraserItem::setPen(const QPen& pen)
+{
+    if (pen_.widthF() == pen.widthF()) return;
+
+    pen_.setWidth(pen.width());
+    painter_->setPen(pen_);
+
+    redraw();
+}
 
 ///
 

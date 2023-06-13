@@ -38,7 +38,7 @@ protected:
 private:
     int width_{ 3 };
 
-    int max_{ 16 };
+    int max_{ 71 };
     int min_{ 1 };
 
     int __attr_width{ 2 };

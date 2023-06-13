@@ -266,9 +266,9 @@ QPen EditingMenu::pen() const
     return (submenus_.contains(graph_)) ? submenus_.at(graph_)->pen() : QPen{ Qt::red };
 }
 
-void EditingMenu::setPen(const QPen& pen)
+void EditingMenu::setPen(const QPen& pen, bool silence)
 {
-    if (submenus_.contains(graph_)) submenus_.at(graph_)->setPen(pen);
+    if (submenus_.contains(graph_)) submenus_.at(graph_)->setPen(pen, silence);
 }
 
 bool EditingMenu::filled() const

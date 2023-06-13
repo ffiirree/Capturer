@@ -56,6 +56,8 @@ function(find_ffmpeg_root_by_version version)
             if(EXISTS "${_ffmpeg_version_header}")
                 file(STRINGS "${_ffmpeg_version_header}" __ffmpeg_version_line REGEX "FFMPEG_VERSION")
 
+                #           #define FFMPEG_VERSION "6.0-full_build-www.gyan.dev"
+                # fixme:    #define FFMPEG_VERSION "N-111059-gd78bffbf3d"
                 string(REGEX REPLACE ".*FFMPEG_VERSION[ \t]+\"[n]?([0-9\\.]*).*\"" "\\1" _ffmpeg_version "${__ffmpeg_version_line}")
 
                 # if do not specified, return the fist one

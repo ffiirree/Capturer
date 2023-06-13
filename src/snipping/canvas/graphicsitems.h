@@ -47,7 +47,7 @@ public:
     virtual void resize(const ResizerF&, ResizerLocation) {}
 
     //
-    virtual void end() {};
+    virtual void end(){};
 
     // callbacks
     virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
@@ -333,10 +333,12 @@ public:
 
     void end() override;
 
+    //
+    virtual void redraw();
+
 protected:
     void focusOutEvent(QFocusEvent *) override;
 
-private:
     QVector<QPointF> vertexes_{};
 
     QVector<QPointF> tmpvtxes_{};
@@ -357,7 +359,10 @@ public:
 class GraphicsMosaicItem : public GraphicsPathItem
 {
 public:
-    explicit GraphicsMosaicItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
+    explicit GraphicsMosaicItem(const QPointF&, const QSizeF& size, const QBrush& brush,
+                                QGraphicsItem * = nullptr);
+
+    void setPen(const QPen&) override;
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::mosaic; }
 };
@@ -365,7 +370,10 @@ public:
 class GraphicsEraserItem : public GraphicsPathItem
 {
 public:
-    explicit GraphicsEraserItem(const QPointF&, const QSizeF& size, QGraphicsItem * = nullptr);
+    explicit GraphicsEraserItem(const QPointF&, const QSizeF& size, const QBrush& brush,
+                                QGraphicsItem * = nullptr);
+
+    void setPen(const QPen&) override;
 
     canvas::graphics_t graph() const override { return canvas::graphics_t::eraser; }
 };

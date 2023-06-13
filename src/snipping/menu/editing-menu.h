@@ -34,7 +34,7 @@ public:
     // pen
     QPen pen() const;
 
-    void setPen(const QPen&);
+    void setPen(const QPen&, bool silence = true);
 
     // fill: pen | brush
     bool filled() const;
