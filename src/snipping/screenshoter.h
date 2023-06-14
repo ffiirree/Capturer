@@ -47,6 +47,9 @@ public slots:
 
     void refresh(const probe::geometry_t&);
 
+    void createItem(const QPointF& pos);
+    void finishItem();
+
 protected:
     bool eventFilter(QObject *, QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;

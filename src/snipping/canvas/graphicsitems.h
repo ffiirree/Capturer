@@ -11,6 +11,8 @@
 class GraphicsItemWrapper
 {
 public:
+    virtual ~GraphicsItemWrapper() = default;
+
     virtual canvas::graphics_t graph() const = 0;
 
     // getter
@@ -32,6 +34,8 @@ public:
 
     //
     virtual bool invalid() const = 0;
+
+    virtual bool creating() const { return false; }
 
     //
     virtual ResizerLocation location(const QPointF&) const;

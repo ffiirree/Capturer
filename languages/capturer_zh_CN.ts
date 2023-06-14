@@ -31,7 +31,7 @@
     <message>
         <location filename="../src/capturer.cpp" line="119"/>
         <source>Quit</source>
-        <translation>推出</translation>
+        <translation>退出</translation>
     </message>
 </context>
 <context>
@@ -176,7 +176,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="390"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="402"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
