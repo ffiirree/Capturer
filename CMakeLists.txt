@@ -19,11 +19,13 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(BUILD_SHARED_LIBS   OFF CACHE BOOL "Build static libraries")
 set(WITH_GFLAGS         OFF CACHE BOOL "Use gflags for google/glog")
 set(PROBE_BUILD_WITH_QT ON  CACHE BOOL "Build probe with Qt")
+set(JSON_BuildTests     OFF CACHE BOOL "Build nlohmann/json tests")
 
 add_subdirectory(3rdparty/QHotkey   EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/json      EXCLUDE_FROM_ALL)
 add_subdirectory(libcap             EXCLUDE_FROM_ALL)
 
 # Qt 5 / 6
@@ -85,13 +87,13 @@ target_link_libraries(${PROJECT_NAME}
         fmt::fmt
         ffmpeg::ffmpeg
         probe::probe
+        nlohmann_json::nlohmann_json
         libcap::libcap
         $<$<PLATFORM_ID:Linux>:${QT}::X11Extras>
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
-        3rdparty
         src/common
         src/widgets
         src/preview

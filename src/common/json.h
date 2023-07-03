@@ -3,7 +3,7 @@
 
 #include <QKeySequence>
 #include <QColor>
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 

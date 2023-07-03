@@ -10,3 +10,6 @@
 [submodule "3rdparty/probe"]
 	path = 3rdparty/probe
 	url = https://github.com/ffiirree/probe
+[submodule "3rdparty/json"]
+	path = 3rdparty/json
+	url = https://github.com/nlohmann/json.git
