@@ -71,11 +71,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->addWidget(font_size_);
 
         QFontDatabase font_db;
-#if WIN32
-        font_.setFamily("微软雅黑");
-#else
-        font_.setFamily("宋体");
-#endif
+        font_.setFamily(font_.defaultFamily());
         font_.setPointSizeF(16);
 
         // font family

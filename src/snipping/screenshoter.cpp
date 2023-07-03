@@ -443,12 +443,15 @@ void ScreenShoter::exit()
 
     selector_->close();
 
-    undo_stack_->clear(); // before scene()->clear
+    //! 1.
+    undo_stack_->clear();
 
-    scene_->clear();
-
+    //! 2.
     if (creating_item_ && !dynamic_cast<QGraphicsItem *>(creating_item_)->scene()) delete creating_item_;
     creating_item_ = {};
+
+    //! 3.
+    scene_->clear();
 
     counter_ = 0;
 
