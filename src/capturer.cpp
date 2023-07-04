@@ -1,13 +1,14 @@
 #include "capturer.h"
 
 #include "clipboard.h"
+#include "image-window.h"
 #include "logging.h"
+#include "menu.h"
 #include "probe/system.h"
 
 #include <QApplication>
 #include <QFileInfo>
 #include <QKeyEvent>
-#include "menu.h"
 
 #define SET_HOTKEY(X, Y)                                                                                   \
     if (!X->setShortcut(Y, true)) {                                                                        \
@@ -22,7 +23,7 @@ Capturer::Capturer(QWidget *parent)
     recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
     gifcptr_  = new ScreenRecorder(ScreenRecorder::GIF, this);
 
-    connect(sniper_, &ScreenShoter::pinData, this, &Capturer::pinData);
+    connect(sniper_, &ScreenShoter::pinData, this, &Capturer::pinMimeData);
 
     clipboard::init();
 
@@ -133,28 +134,23 @@ void Capturer::showMessage(const QString& title, const QString& msg, QSystemTray
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
 }
 
-void Capturer::pin()
-{
-    pinData(clipboard::back(true));
-}
+void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 
-void Capturer::pinData(const std::shared_ptr<QMimeData>& data)
+void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
-    if (data != nullptr) {
-        auto win = new ImageWindow(this);
-        win->preview(data);
+    if (mimedata != nullptr) {
+        auto win = new ImageWindow(mimedata, this);
         win->show();
 
         auto iter = windows_.insert(windows_.end(), win);
-        connect(win, &ImageWindow::closed, [=, this](){
-            windows_.erase(iter);
-        });
+        connect(win, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
     }
 }
 
-void Capturer::showImages() {
+void Capturer::showImages()
+{
     bool visible = !windows_.empty() && windows_.front()->isVisible();
-    for(auto& win: windows_) {
+    for (auto& win : windows_) {
         win->setVisible(!visible);
     }
 }

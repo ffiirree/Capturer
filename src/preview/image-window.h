@@ -2,12 +2,13 @@
 #define CAPTURER_IMAGE_WINDOW_H
 
 #include "framelesswindow.h"
+#include "menu.h"
 #include "menu/editing-menu.h"
 #include "texture-widget.h"
 
 #include <any>
+#include <memory>
 #include <optional>
-#include "menu.h"
 #include <QStandardPaths>
 
 class ImageWindow : public FramelessWindow
@@ -15,7 +16,7 @@ class ImageWindow : public FramelessWindow
     Q_OBJECT
 
 public:
-    explicit ImageWindow(QWidget *parent = nullptr);
+    explicit ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent = nullptr);
 
     void preview(const std::shared_ptr<QMimeData>& data);
 
@@ -23,14 +24,12 @@ public:
 
     void present(const QPixmap& pixmap);
 
+    static bool is_supported(const QMimeData *);
+
 public slots:
     void paste();
     void open();
     void saveAs();
-    void recover();
-
-signals:
-    void closed();
 
 private:
     void mouseDoubleClickEvent(QMouseEvent *) override;

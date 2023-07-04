@@ -75,12 +75,13 @@ int VideoPlayer::consume(AVFrame *frame, int type)
     return 0;
 }
 
-void VideoPlayer::closeEvent(QCloseEvent *)
+void VideoPlayer::closeEvent(QCloseEvent *event)
 {
     eof_ = 0x01;
 
     if (dispatcher_) {
         dispatcher_->stop();
     }
-    emit closed();
+
+    FramelessWindow::closeEvent(event);
 }

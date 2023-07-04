@@ -33,7 +33,6 @@ public:
 
 signals:
     void started();
-    void closed();
 
 protected:
     void closeEvent(QCloseEvent *event) override;

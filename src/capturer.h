@@ -1,7 +1,7 @@
 #ifndef CAPTURER_H
 #define CAPTURER_H
 
-#include "image-window.h"
+#include "framelesswindow.h"
 #include "qhotkey.h"
 #include "screenrecorder.h"
 #include "screenshoter.h"
@@ -19,7 +19,7 @@ public:
 
 private slots:
     void pin();
-    void pinData(const std::shared_ptr<QMimeData>&);
+    void pinMimeData(const std::shared_ptr<QMimeData>&);
     void showImages();
 
     void updateConfig();
@@ -45,7 +45,7 @@ private:
     QHotkey *gif_sc_{ nullptr };
     QHotkey *video_sc_{ nullptr };
 
-    std::list<ImageWindow *> windows_{};
+    std::list<FramelessWindow *> windows_{};
 };
 
 #endif // CAPTURER_H

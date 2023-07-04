@@ -32,6 +32,8 @@ namespace clipboard
 
     std::shared_ptr<QMimeData> push(const QColor& color);
 
+    std::shared_ptr<QMimeData> push(const std::shared_ptr<QMimeData>& mimedata);
+
     //
     std::vector<std::shared_ptr<QMimeData>> history();
 

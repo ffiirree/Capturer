@@ -89,6 +89,15 @@ namespace clipboard
         return history_.emplace_back(std::shared_ptr<QMimeData>(clone(mimedata)));
     }
 
+    std::shared_ptr<QMimeData> push(const std::shared_ptr<QMimeData>& mimedata)
+    {
+        auto cloned = std::shared_ptr<QMimeData>(clone(mimedata.get()));
+        cloned->setData(MIME_TYPE_STATUS, "N");
+
+        QApplication::clipboard()->setMimeData(clone(cloned.get()));
+        return history_.emplace_back(cloned);
+    }
+
     size_t size() { return history_.size(); }
 
     bool empty() { return history_.empty(); }
