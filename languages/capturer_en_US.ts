@@ -4,32 +4,32 @@
 <context>
     <name>Capturer</name>
     <message>
-        <location filename="../src/capturer.cpp" line="111"/>
+        <location filename="../src/capturer.cpp" line="105"/>
         <source>Screenshot</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="112"/>
+        <location filename="../src/capturer.cpp" line="106"/>
         <source>Record Video</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="113"/>
+        <location filename="../src/capturer.cpp" line="107"/>
         <source>Record GIF</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="115"/>
+        <location filename="../src/capturer.cpp" line="109"/>
         <source>Open Camera</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="117"/>
+        <location filename="../src/capturer.cpp" line="111"/>
         <source>Settings</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/capturer.cpp" line="119"/>
+        <location filename="../src/capturer.cpp" line="113"/>
         <source>Quit</source>
         <translation></translation>
     </message>
@@ -45,122 +45,79 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="229"/>
+        <location filename="../src/preview/image-window.cpp" line="130"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="242"/>
+        <location filename="../src/preview/image-window.cpp" line="142"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="277"/>
+        <location filename="../src/preview/image-window.cpp" line="168"/>
         <source>Copy image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="278"/>
+        <location filename="../src/preview/image-window.cpp" line="169"/>
         <source>Paste image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="282"/>
+        <location filename="../src/preview/image-window.cpp" line="173"/>
         <source>Open image...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="283"/>
+        <location filename="../src/preview/image-window.cpp" line="174"/>
         <source>Save as...</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="287"/>
+        <location filename="../src/preview/image-window.cpp" line="178"/>
         <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="288"/>
+        <location filename="../src/preview/image-window.cpp" line="179"/>
         <source>Rotate +90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="289"/>
+        <location filename="../src/preview/image-window.cpp" line="180"/>
         <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="290"/>
+        <location filename="../src/preview/image-window.cpp" line="181"/>
         <source>H Flip</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="291"/>
+        <location filename="../src/preview/image-window.cpp" line="182"/>
         <source>V Flip</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="295"/>
-        <source>Background</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="299"/>
-        <source>White</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="300"/>
-        <source>Gray</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="301"/>
-        <source>Black</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="302"/>
-        <source>Transparent</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="305"/>
-        <location filename="../src/preview/imagewindow.cpp" line="319"/>
-        <source>Hide </source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="305"/>
-        <location filename="../src/preview/imagewindow.cpp" line="319"/>
-        <source>Show </source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="305"/>
-        <location filename="../src/preview/imagewindow.cpp" line="319"/>
-        <source>Shadow</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/preview/imagewindow.cpp" line="306"/>
-        <location filename="../src/preview/imagewindow.cpp" line="320"/>
+        <location filename="../src/preview/image-window.cpp" line="193"/>
+        <location filename="../src/preview/image-window.cpp" line="206"/>
         <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="307"/>
-        <location filename="../src/preview/imagewindow.cpp" line="321"/>
+        <location filename="../src/preview/image-window.cpp" line="194"/>
+        <location filename="../src/preview/image-window.cpp" line="207"/>
         <source>Opacity : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="308"/>
+        <location filename="../src/preview/image-window.cpp" line="195"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/imagewindow.cpp" line="312"/>
+        <location filename="../src/preview/image-window.cpp" line="199"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -176,7 +133,7 @@
 <context>
     <name>ScreenShoter</name>
     <message>
-        <location filename="../src/snipping/screenshoter.cpp" line="402"/>
+        <location filename="../src/snipping/screenshoter.cpp" line="389"/>
         <source>Save Image</source>
         <translation></translation>
     </message>

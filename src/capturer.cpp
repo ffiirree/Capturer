@@ -1,15 +1,13 @@
 #include "capturer.h"
 
+#include "clipboard.h"
 #include "logging.h"
 #include "probe/system.h"
 
 #include <QApplication>
-#include <QClipboard>
 #include <QFileInfo>
 #include <QKeyEvent>
-#include <QMimeData>
-#include <QPixmap>
-#include <QTextEdit>
+#include "menu.h"
 
 #define SET_HOTKEY(X, Y)                                                                                   \
     if (!X->setShortcut(Y, true)) {                                                                        \
@@ -24,7 +22,9 @@ Capturer::Capturer(QWidget *parent)
     recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
     gifcptr_  = new ScreenRecorder(ScreenRecorder::GIF, this);
 
-    connect(sniper_, &ScreenShoter::pinSnipped, this, &Capturer::pinPixmap);
+    connect(sniper_, &ScreenShoter::pinData, this, &Capturer::pinData);
+
+    clipboard::init();
 
     sys_tray_icon_ = new QSystemTrayIcon(QIcon(":/icons/capturer"), this);
 
@@ -61,9 +61,6 @@ Capturer::Capturer(QWidget *parent)
     connect(recorder_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
     connect(gifcptr_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
 
-    // clipboard
-    connect(QApplication::clipboard(), &QClipboard::dataChanged, [this]() { clipboard_changed_ = true; });
-
     LOG(INFO) << "initialized.";
 }
 
@@ -88,11 +85,8 @@ void Capturer::updateConfig()
 
 void Capturer::setupSystemTray()
 {
-    auto menu = new QMenu(this);
+    auto menu = new Menu(this);
     menu->setObjectName("tray-menu");
-    menu->setWindowFlag(Qt::FramelessWindowHint);
-    menu->setWindowFlag(Qt::NoDropShadowWindowHint);
-    menu->setAttribute(Qt::WA_TranslucentBackground);
 
     // SystemTrayIcon
     auto update_tray_menu = [=, this]() {
@@ -139,104 +133,28 @@ void Capturer::showMessage(const QString& title, const QString& msg, QSystemTray
     sys_tray_icon_->showMessage(title, msg, icon, msecs);
 }
 
-std::pair<DataFormat, std::any> Capturer::clipboard_data()
-{
-    const auto mimedata = QApplication::clipboard()->mimeData();
-
-    if (mimedata->hasHtml() && mimedata->hasImage()) {
-        return { DataFormat::PIXMAP, mimedata->imageData().value<QPixmap>() };
-    }
-    else if (mimedata->hasHtml()) {
-        return { DataFormat::HTML, mimedata->html() };
-    }
-    else if (mimedata->hasFormat("application/x-snipped") && mimedata->hasImage()) {
-        QString type = mimedata->data("application/x-snipped");
-        return (type == "copied")
-                   ? std::pair<DataFormat, std::any>{ DataFormat::PIXMAP,
-                                                      mimedata->imageData().value<QPixmap>() }
-                   : std::pair<DataFormat, std::any>{ DataFormat::UNKNOWN, nullptr };
-    }
-    else if (mimedata->hasUrls() &&
-             QString("jpg;jpeg;png;bmp;ico;gif;svg")
-                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
-        return { DataFormat::URLS, mimedata->urls() };
-    }
-    else if (mimedata->hasText()) {
-        return { DataFormat::TEXT, mimedata->text() };
-    }
-    else if (mimedata->hasColor()) {
-        return { DataFormat::COLOR, mimedata->colorData().value<QColor>() };
-    }
-    else {
-        return { DataFormat::UNKNOWN, nullptr };
-    }
-}
-
-std::optional<QPixmap> Capturer::to_pixmap(const std::pair<DataFormat, std::any>& data_pair)
-{
-    auto& [type, buffer] = data_pair;
-
-    switch (type) {
-    case DataFormat::PIXMAP: return std::any_cast<QPixmap>(buffer);
-    case DataFormat::HTML: {
-        QTextEdit view;
-        view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        view.setLineWrapMode(QTextEdit::NoWrap);
-
-        view.setHtml(std::any_cast<QString>(buffer));
-        view.setFixedSize(view.document()->size().toSize());
-
-        return view.grab();
-    }
-    case DataFormat::TEXT: {
-        QLabel label(std::any_cast<QString>(buffer));
-        label.setWordWrap(true);
-        label.setMargin(10);
-        label.setStyleSheet("background-color:white");
-        label.setFont({ "Consolas", 12 });
-        return label.grab();
-    }
-    case DataFormat::URLS: return QPixmap(std::any_cast<QList<QUrl>>(buffer)[0].toLocalFile());
-    default: LOG(WARNING) << "not support"; return std::nullopt;
-    }
-}
-
 void Capturer::pin()
 {
-    auto [fmt, value] = clipboard_data();
-    if (clipboard_changed_) {
-        auto pixmap = to_pixmap({ fmt, value });
-        if (pixmap) {
-            history_.append(
-                { fmt, value,
-                  std::make_shared<ImageWindow>(
-                      pixmap.value(), QRect(probe::graphics::displays()[0].geometry).center() -
-                                          QPoint{ pixmap.value().width(), pixmap.value().height() } / 2) });
-            pin_idx_ = history_.size() - 1;
-        }
-    }
-    else {
-        auto& [_1, _2, win] = history_[pin_idx_];
-        if (win) {
-            win->show();
-        }
-        pin_idx_ = std::clamp<size_t>(pin_idx_ - 1, 0, history_.size() - 1);
-    }
-
-    clipboard_changed_ = false;
+    pinData(clipboard::back(true));
 }
 
-void Capturer::pinPixmap(const QPixmap& image, const QPoint& pos)
+void Capturer::pinData(const std::shared_ptr<QMimeData>& data)
 {
-    history_.append({ DataFormat::PIXMAP, image, std::make_shared<ImageWindow>(image, pos) });
-    pin_idx_ = history_.size() - 1;
+    if (data != nullptr) {
+        auto win = new ImageWindow(this);
+        win->preview(data);
+        win->show();
+
+        auto iter = windows_.insert(windows_.end(), win);
+        connect(win, &ImageWindow::closed, [=, this](){
+            windows_.erase(iter);
+        });
+    }
 }
 
-void Capturer::showImages()
-{
-    images_visible_ = !images_visible_;
-    for (auto& [_1, _2, win] : history_) {
-        images_visible_&& win ? win->show(false) : win->hide();
+void Capturer::showImages() {
+    bool visible = !windows_.empty() && windows_.front()->isVisible();
+    for(auto& win: windows_) {
+        win->setVisible(!visible);
     }
 }

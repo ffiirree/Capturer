@@ -7,11 +7,13 @@
 
 namespace clipboard
 {
-    inline constexpr auto MIME_TYPE_POINT = "application/x-capturer-point";
+    inline constexpr auto MIME_TYPE_POINT  = "application/x-capturer-point";
+    inline constexpr auto MIME_TYPE_STATUS = "application/x-capturer-status";
+    inline constexpr auto MIME_TYPE_IMAGE  = "application/x-qt-image";
 
     void init();
 
-    QMimeData *clone(const QMimeData *copydata);
+    QMimeData *clone(const QMimeData *other);
 
     //
     size_t size();
@@ -19,7 +21,7 @@ namespace clipboard
     bool empty();
 
     //
-    std::shared_ptr<QMimeData> back();
+    std::shared_ptr<QMimeData> back(bool invisible = false);
 
     std::shared_ptr<QMimeData> at(size_t idx);
 

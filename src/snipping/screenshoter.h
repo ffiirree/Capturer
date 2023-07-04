@@ -25,7 +25,8 @@ public:
     explicit ScreenShoter(QWidget *parent = nullptr);
 
 signals:
-    void pinSnipped(const QPixmap& image, const QPoint& pos);
+    void pinData(const std::shared_ptr<QMimeData>&);
+
     void SHOW_MESSAGE(const QString& title, const QString& msg,
                       QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
 
@@ -37,7 +38,6 @@ public slots:
     void copy();
     void pin();
     std::pair<QPixmap, QPoint> snip();
-    void save2clipboard(const QPixmap&, bool);
 
     void updateTheme();
 

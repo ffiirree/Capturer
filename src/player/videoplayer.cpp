@@ -21,8 +21,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 
 VideoPlayer::~VideoPlayer()
 {
-    delete decoder_;
-    delete dispatcher_;
+    delete dispatcher_; // 1.
+    delete decoder_;    // 2.
 }
 
 int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string> options)

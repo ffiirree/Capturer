@@ -1,39 +1,13 @@
 #ifndef CAPTURER_H
 #define CAPTURER_H
 
-#include "imagewindow.h"
+#include "image-window.h"
 #include "qhotkey.h"
 #include "screenrecorder.h"
 #include "screenshoter.h"
 #include "settingdialog.h"
 
-#include <any>
-#include <optional>
 #include <QSystemTrayIcon>
-
-template<typename T, int MAX_SIZE = 32> class LimitSizeVector : public std::vector<T>
-{
-public:
-    void append(const T& value)
-    {
-        this->push_back(value);
-
-        if (this->size() > MAX_SIZE) {
-            this->erase(this->begin());
-        }
-    }
-};
-
-enum class DataFormat
-{
-    UNKNOWN,
-    PIXMAP,
-    HTML,
-    TEXT,
-    COLOR,
-    URLS,
-    SNIPPED
-};
 
 class Capturer : public QWidget
 {
@@ -45,7 +19,7 @@ public:
 
 private slots:
     void pin();
-    void pinPixmap(const QPixmap&, const QPoint&);
+    void pinData(const std::shared_ptr<QMimeData>&);
     void showImages();
 
     void updateConfig();
@@ -56,16 +30,9 @@ private slots:
 private:
     void setupSystemTray();
 
-    static std::pair<DataFormat, std::any> clipboard_data();
-    static std::optional<QPixmap> to_pixmap(const std::pair<DataFormat, std::any>&);
-
     ScreenShoter *sniper_{ nullptr };
     ScreenRecorder *recorder_{ nullptr };
     ScreenRecorder *gifcptr_{ nullptr };
-
-    size_t pin_idx_{ 0 };
-    bool clipboard_changed_{ false };
-    LimitSizeVector<std::tuple<DataFormat, std::any, std::shared_ptr<ImageWindow>>> history_;
 
     QSystemTrayIcon *sys_tray_icon_{ nullptr };
 
@@ -78,7 +45,7 @@ private:
     QHotkey *gif_sc_{ nullptr };
     QHotkey *video_sc_{ nullptr };
 
-    bool images_visible_{ true };
+    std::list<ImageWindow *> windows_{};
 };
 
 #endif // CAPTURER_H

@@ -1,16 +1,15 @@
 #include "screenshoter.h"
 
+#include "clipboard.h"
 #include "logging.h"
 
 #include <QApplication>
 #include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
-#include <QMimeData>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
-#include <QWheelEvent>
 
 ScreenShoter::ScreenShoter(QWidget *parent)
     : QGraphicsView(parent)
@@ -211,7 +210,7 @@ void ScreenShoter::mousePressEvent(QMouseEvent *event)
     //
     if (event->isAccepted() || event->button() != Qt::LeftButton) return;
 
-    // do not creating text items if a text item has focus
+    // do not create text items if a text item has focus
     if ((creating_item_ && (creating_item_->graph() & canvas::text)) ||
         (ffs_item && (ffs_item->graph() & canvas::text))) {
         if (menu_->graph() & canvas::text) return;
@@ -344,8 +343,7 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 
     if (!event->isAccepted() && event->button() == Qt::LeftButton &&
         selector_->status() >= SelectorStatus::CAPTURED) {
-        save2clipboard(snip().first, false);
-        exit();
+        copy();
     }
 }
 
@@ -382,17 +380,6 @@ std::pair<QPixmap, QPoint> ScreenShoter::snip()
     return { QGraphicsView::grab(rect.translated(-geometry().topLeft())), rect.topLeft() };
 }
 
-void ScreenShoter::save2clipboard(const QPixmap& image, bool pinned)
-{
-    auto mimedata = new QMimeData();
-    mimedata->setImageData(QVariant(image));
-    mimedata->setData("application/x-snipped", QByteArray().append(pinned ? "pinned" : "copied"));
-    mimedata->setImageData(QVariant(image));
-    // Ownership of the data is transferred to the clipboard:
-    // https://doc.qt.io/qt-5/qclipboard.html#setMimeData
-    QApplication::clipboard()->setMimeData(mimedata);
-}
-
 void ScreenShoter::save()
 {
     QString default_filename =
@@ -419,7 +406,7 @@ void ScreenShoter::save()
 
 void ScreenShoter::copy()
 {
-    save2clipboard(snip().first, false);
+    clipboard::push(snip().first);
 
     exit();
 }
@@ -428,9 +415,7 @@ void ScreenShoter::pin()
 {
     auto [pixmap, pos] = snip();
 
-    emit pinSnipped(pixmap, pos);
-
-    save2clipboard(pixmap, true);
+    emit pinData(clipboard::push(pixmap, pos));
 
     exit();
 }
@@ -538,7 +523,7 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this]() {
         if (selector_->status() < SelectorStatus::CAPTURED && magnifier_->isVisible()) {
-            QApplication::clipboard()->setText(magnifier_->getColorStringValue());
+            clipboard::push(magnifier_->getColor());
         }
     });
 }
