@@ -2,23 +2,21 @@
 
 #include "logging.h"
 
-#include <QImage>
-#include <QPainter>
-
-extern "C" {
-#include <libavfilter/avfilter.h>
-#include <libavfilter/buffersink.h>
-}
+#include <QHBoxLayout>
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : QWidget(parent)
+    : FramelessWindow(parent)
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window | windowFlags());
-    setAttribute(Qt::WA_TranslucentBackground);
+    setWindowFlags(windowFlags() | Qt::Window | Qt::WindowStaysOnTopHint);
 
-    CHECK_NOTNULL(frame_ = av_frame_alloc());
     decoder_    = new Decoder();
     dispatcher_ = new Dispatcher();
+
+    texture_ = new TextureWidget(this);
+    setLayout(new QHBoxLayout());
+    layout()->setSpacing(0);
+    layout()->setContentsMargins({});
+    layout()->addWidget(texture_);
 }
 
 VideoPlayer::~VideoPlayer()
@@ -73,32 +71,8 @@ int VideoPlayer::consume(AVFrame *frame, int type)
 {
     if (type != AVMEDIA_TYPE_VIDEO) return -1;
 
-    std::lock_guard lock(mtx_);
-
-    av_frame_unref(frame_);
-    av_frame_move_ref(frame_, frame);
-
-    QWidget::update();
+    texture_->present(frame);
     return 0;
-}
-
-void VideoPlayer::paintEvent(QPaintEvent *)
-{
-    if (std::lock_guard lock(mtx_); frame_) {
-        QPainter painter(this);
-
-        auto frame = QImage(static_cast<const uchar *>(frame_->data[0]), frame_->width, frame_->height,
-                            QImage::Format_RGB888);
-
-        auto winrect = rect();
-
-        auto imgsize = frame.size().scaled(winrect.width(), winrect.height(), Qt::KeepAspectRatio);
-        auto imgrect = QRect{ { 0, 0 }, imgsize };
-
-        imgrect.moveCenter(winrect.center());
-
-        painter.drawImage(imgrect, frame);
-    }
 }
 
 void VideoPlayer::closeEvent(QCloseEvent *)

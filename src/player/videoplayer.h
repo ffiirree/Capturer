@@ -1,13 +1,13 @@
 #ifndef CAPTURER_VIDEO_PLAYER_H
 #define CAPTURER_VIDEO_PLAYER_H
 
+#include "framelesswindow.h"
 #include "libcap/consumer.h"
 #include "libcap/decoder.h"
 #include "libcap/dispatcher.h"
+#include "texture-widget.h"
 
-#include <QWidget>
-
-class VideoPlayer : public QWidget, public Consumer<AVFrame>
+class VideoPlayer : public FramelessWindow, public Consumer<AVFrame>
 {
     Q_OBJECT
 
@@ -19,31 +19,28 @@ public:
 
     int run() override { return 0; };
 
-    bool ready() const override { return decoder_ && decoder_->ready(); }
+    [[nodiscard]] bool ready() const override { return decoder_ && decoder_->ready(); }
 
     void reset() override {}
 
     int consume(AVFrame *frame, int type) override;
 
-    bool full(int) const override { return false; }
+    [[nodiscard]] bool full(int) const override { return false; }
 
     void enable(int, bool) override {}
 
-    bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
+    [[nodiscard]] bool accepts(int type) const override { return type == AVMEDIA_TYPE_VIDEO; }
 
 signals:
     void started();
     void closed();
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
+    TextureWidget *texture_{};
     Decoder *decoder_{ nullptr };
     Dispatcher *dispatcher_{ nullptr };
-
-    std::mutex mtx_;
-    AVFrame *frame_{ nullptr };
 };
 
 #endif // !CAPTURER_VIDEO_PLAYER_H

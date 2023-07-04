@@ -19,6 +19,10 @@ protected:
 #else
     bool nativeEvent(const QByteArray& eventType, void *message, long *result) override;
 #endif
+
+#ifdef __linux__
+    QPoint moving_begin_{ -1, -1 };
+#endif
 };
 
 #endif // !CAPTURER_FRAMELESS_WINDOW_H
