@@ -7,14 +7,7 @@ class TitleBar : public QWidget
 {
     Q_OBJECT
 public:
-    explicit TitleBar(QWidget * = nullptr);
-
-    void setTitle(const QString& title) { logo_->setText(title); }
-
-signals:
-    void close();
-    void normal();
-    void moved(const QPoint&);
+    explicit TitleBar(QWidget *);
 
 protected:
     void mousePressEvent(QMouseEvent *) override;
@@ -22,10 +15,9 @@ protected:
     void mouseReleaseEvent(QMouseEvent *) override;
 
 private:
-    QCheckBox *logo_{ nullptr };
+    QCheckBox *icon_{ nullptr };
 
     QPoint begin_{ 0, 0 };
     bool moving_{ false };
-    bool is_maximized_{ false };
 };
 #endif //! CAPTURER_TITLE_BAR_H

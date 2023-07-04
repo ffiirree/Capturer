@@ -3,28 +3,22 @@
 
 #include <QWidget>
 
-class QGraphicsDropShadowEffect;
-
 class FramelessWindow : public QWidget
 {
 public:
     explicit FramelessWindow(QWidget *parent = nullptr);
 
-    void setWidget(QWidget *);
-
 protected:
-    void mousePressEvent(QMouseEvent *) override;
-    void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
-    QGraphicsDropShadowEffect *effect_{ nullptr };
-
-    QPoint moving_begin_{ -1, -1 };
-    QPoint resizing_begin_{ -1, -1 };
-
-    uint32_t hover_flags_{ 0x00 };
-    bool is_resizing_{ false };
-    bool is_moving_{ false };
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool nativeEvent(const QByteArray& eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray& eventType, void *message, long *result) override;
+#endif
 };
 
 #endif // !CAPTURER_FRAMELESS_WINDOW_H

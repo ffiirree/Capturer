@@ -11,7 +11,6 @@
 
 #include <QCoreApplication>
 #include <QDir>
-#include <QGraphicsDropShadowEffect>
 #include <QLabel>
 #include <QListWidget>
 #include <QSettings>
@@ -27,48 +26,26 @@ static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString
 };
 
 SettingWindow::SettingWindow(QWidget *parent)
-    : QWidget(parent)
+    : FramelessWindow(parent)
 {
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
-    setAttribute(Qt::WA_TranslucentBackground);
-    setMouseTracking(true);
-
     setMinimumSize(850, 600);
-    setContentsMargins(20, 20, 20, 20);
+    setContentsMargins({});
     setWindowTitle("Capturer Settings");
 
-    auto shadow_layout = new QVBoxLayout();
-    shadow_layout->setSpacing(0);
-    shadow_layout->setContentsMargins({});
-    auto window = new QWidget();
-    window->setObjectName("settings-mainwindow");
-    shadow_layout->addWidget(window);
-    setLayout(shadow_layout);
-
-    // shadow
-    auto effect = new QGraphicsDropShadowEffect(this);
-    effect->setBlurRadius(20);
-    effect->setOffset(0);
-    effect->setColor(QColor(0, 0, 0, 50));
-    window->setGraphicsEffect(effect);
-
     //
-    auto wrapper_layer = new QVBoxLayout();
-    wrapper_layer->setSpacing(0);
-    wrapper_layer->setContentsMargins({});
-    window->setLayout(wrapper_layer);
+    auto vlayout = new QVBoxLayout();
+    vlayout->setSpacing(0);
+    vlayout->setContentsMargins({});
+    setLayout(vlayout);
 
     // title bar
-    auto titlebar = new TitleBar();
-    titlebar->setTitle(tr("Settings"));
-    connect(titlebar, &TitleBar::close, this, &QWidget::close);
-    connect(titlebar, &TitleBar::moved, [this](const QPoint& m) { move(pos() + m); });
-    wrapper_layer->addWidget(titlebar);
+    vlayout->addWidget(new TitleBar(this));
+    setWindowTitle(tr("Settings"));
 
     auto layout = new QHBoxLayout();
     layout->setSpacing(0);
     layout->setContentsMargins({});
-    wrapper_layer->addLayout(layout);
+    vlayout->addLayout(layout);
 
     auto menu = new QListWidget();
     menu->setFocusPolicy(Qt::NoFocus);

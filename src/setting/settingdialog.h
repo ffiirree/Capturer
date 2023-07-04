@@ -2,11 +2,12 @@
 #define CAPTURER_SETTING_DIALOG_H
 
 #include "config.h"
+#include "framelesswindow.h"
 
 #include <QCheckBox>
 #include <QStackedWidget>
 
-class SettingWindow : public QWidget
+class SettingWindow : public FramelessWindow
 {
     Q_OBJECT
 
