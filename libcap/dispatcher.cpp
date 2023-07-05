@@ -403,12 +403,8 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
     auto& sink         = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.vctx : consumer_ctx_.actx;
     auto& consumer_eof = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.v_eof : consumer_ctx_.a_eof;
 
-    bool sleepy = false;
     while (running_ && !consumer_eof) {
-
-        if (sleepy) os_sleep(10ms);
-        sleepy = true;
-
+        bool sleepy = true;
         // input streams
         for (auto& [src_ctx, producer, _] : ctxs) {
             if (!producer->eof() && running_) {
@@ -442,31 +438,37 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
             }
         }
 
+        // no new frames
+        if (sleepy && !draining_) {
+            std::this_thread::sleep_for(10ms);
+            sleepy = false;
+            continue;
+        }
+
         // output streams
-        if (consumer_ctx_.consumer->full(mt)) {
-            sleepy = true;
-            continue;
-        }
-
-        av_frame_unref(frame);
-        int ret = av_buffersink_get_frame_flags(sink, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
-        if (ret == AVERROR(EAGAIN)) {
-            continue;
-        }
-        else if (ret == AVERROR_EOF) {
-            LOG(INFO) << fmt::format("[{}] EOF", av::to_char(mt));
-            consumer_eof = true;
-            // through and send null packet
+        while (!consumer_eof) {
             av_frame_unref(frame);
-        }
-        else if (ret < 0) {
-            LOG(ERROR) << fmt::format("[{}] failed to get frame.", av::to_char(mt));
-            running_ = false;
-            break;
-        }
+            int ret = av_buffersink_get_frame_flags(sink, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+            if (ret == AVERROR(EAGAIN)) {
+                break;
+            }
+            else if (ret == AVERROR_EOF) {
+                LOG(INFO) << fmt::format("[{}] EOF", av::to_char(mt));
+                consumer_eof = true;
+                // through and send null packet
+                av_frame_unref(frame);
+            }
+            else if (ret < 0) {
+                LOG(ERROR) << fmt::format("[{}] failed to get frame.", av::to_char(mt));
+                running_ = false;
+                break;
+            }
 
-        sleepy = false;
-        consumer_ctx_.consumer->consume(frame, mt);
+            while (consumer_ctx_.consumer->full(mt) && running_) {
+                std::this_thread::sleep_for(10ms);
+            }
+            consumer_ctx_.consumer->consume(frame, mt);
+        }
     }
 
     return 0;
@@ -527,6 +529,8 @@ int Dispatcher::reset()
         }
     }
 
+    draining_ = true;
+
     // consumer
     if (consumer_ctx_.consumer) {
         // wait 0~3s
@@ -542,7 +546,8 @@ int Dispatcher::reset()
     }
 
     // dispatcher
-    running_ = false;
+    running_  = false;
+    draining_ = false;
 
     if (video_thread_.joinable()) {
         video_thread_.join();

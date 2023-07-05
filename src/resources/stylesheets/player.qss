@@ -1,0 +1,110 @@
+ControlWidget {
+    font-size: 10.5pt;
+}
+
+/*////////////////////////////////////////////////*/
+ControlWidget QWidget#title-bar {
+    background-color: rgba(0, 0, 0, 175);
+}
+
+ControlWidget QCheckBox#close-btn::indicator {
+    height: 1.25em;
+    width: 1.25em;
+
+    padding: 0.75em 1.25em 0.75em 1.25em;
+}
+
+ControlWidget QCheckBox#close-btn::indicator:hover {
+    background-color: #e81123;
+    image: url(:/icons/close-light);
+}
+
+ControlWidget QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-light);
+}
+
+/*////////////////////////////////////////////////*/
+ControlWidget QWidget#control-bar {
+    background-color: rgba(0, 0, 0, 175);
+}
+
+ControlWidget QCheckBox::indicator {
+    height: 1.25em;
+    width: 1.25em;
+
+    padding: 0.75em;
+}
+
+ControlWidget QCheckBox#pause-btn::indicator:checked {
+    image: url(:/icons/play-light);
+}
+
+ControlWidget QCheckBox#pause-btn::indicator:unchecked {
+    image: url(:/icons/pause-light);
+}
+
+ControlWidget QLabel#time-label {
+    font-size: 9pt;
+    padding: 0 0.25em;
+
+    color: white;
+}
+
+ControlWidget QLabel#duration-label {
+    font-size: 9pt;
+    padding: 0 0.25em;
+}
+
+ControlWidget QCheckBox#volume-btn::indicator:checked {
+    image: url(:/icons/speaker-mute-light);
+}
+
+ControlWidget QCheckBox#volume-btn::indicator:unchecked {
+    image: url(:/icons/speaker-light);
+}
+
+QSlider {
+    height: 32px;
+}
+
+QSlider::groove:horizontal {
+    border: 0px;
+}
+
+/* 6px */
+QSlider::sub-page:horizontal {
+    background: #409eff;
+    border-radius: 3px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+/* 4px */
+QSlider::add-page:horizontal {
+    background: white;
+    border-radius: 2px;
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+ 
+QSlider::handle:horizontal {
+    background: white;
+
+    width: 12px;
+    height: 12px;
+
+    border: 3px solid #666;
+    border-radius: 9px; 
+
+    margin-top: 7px;
+    margin-bottom: 7px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #409eff;
+
+    width: 14px;
+    height: 14px;
+
+    border: 2px solid #666;
+}

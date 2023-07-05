@@ -88,11 +88,11 @@ Config::Config()
     }
 
     // microphones: default or null
-    auto asrc = av::default_audio_source();
+    auto asrc                           = av::default_audio_source();
     settings_["devices"]["microphones"] = asrc.value_or(av::device_t{}).id;
 
     // speakers: default or null
-    auto asink = av::default_audio_sink();
+    auto asink                       = av::default_audio_sink();
     settings_["devices"]["speakers"] = asink.value_or(av::device_t{}).id;
 
     //
@@ -220,6 +220,7 @@ void Config::load_theme(const std::string& theme)
             ":/stylesheets/capturer",       ":/stylesheets/capturer-" + QString::fromStdString(theme),
             ":/stylesheets/menu",           ":/stylesheets/menu-" + QString::fromStdString(theme),
             ":/stylesheets/settingswindow", ":/stylesheets/settingswindow-" + QString::fromStdString(theme),
+            ":/stylesheets/player",         ":/stylesheets/player-" + QString::fromStdString(theme),
         };
 
         QString style{};

@@ -50,6 +50,12 @@ namespace av
     {
         frame() { ptr_ = av_frame_alloc(); }
 
+        frame(AVFrame *frame)
+        {
+            ptr_ = av_frame_alloc();
+            ref(frame);
+        }
+
         frame(const frame& other)
         {
             ptr_  = av_frame_alloc();

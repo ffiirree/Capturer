@@ -1,19 +1,24 @@
 #include "texture-widget.h"
 
+#include <libcap/media.h>
 #include <QPainter>
 
 TextureWidget::TextureWidget(QWidget *parent)
     : QWidget(parent)
-{}
-
-void TextureWidget::present(AVFrame *frame)
 {
-    if (!frame) return;
+    setAttribute(Qt::WA_TransparentForMouseEvents);
+}
+
+void TextureWidget::present(AVFrame *avframe)
+{
+    av::frame frame{ avframe };
+
+    if (!frame->data[0]) return;
 
     std::lock_guard lock(mtx_);
 
     frame_ = QPixmap::fromImage(QImage{ static_cast<const uchar *>(frame->data[0]), frame->width,
-                                        frame->height, QImage::Format_RGB888 });
+                                        frame->height, QImage::Format_RGBA8888 });
 
     update();
 }

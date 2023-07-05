@@ -34,6 +34,11 @@ void os_sleep(const std::chrono::duration<Rep, Period>& _t)
     std::this_thread::sleep_for(_t);
 }
 
+inline void os_nsleep(int64_t _ns) 
+{ 
+    std::this_thread::sleep_for(std::chrono::nanoseconds(_ns)); 
+}
+
 inline void os_usleep(int64_t _us)
 {
     std::this_thread::sleep_for(std::chrono::microseconds(_us));

@@ -52,6 +52,8 @@ public:
 
     std::vector<av::aformat_t> aformats() const override { return { afmt }; }
 
+    int64_t duration() const { return fmt_ctx_ ? fmt_ctx_->duration / AV_TIME_BASE : 0; }
+
 private:
     int run_f();
     void destroy();

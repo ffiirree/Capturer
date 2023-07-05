@@ -127,6 +127,7 @@ private:
     // @}
 
     std::atomic<bool> running_{ false };
+    std::atomic<bool> draining_{ false };
     std::atomic<bool> ready_{ false };
 
     std::thread video_thread_;

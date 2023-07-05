@@ -273,14 +273,6 @@ int Decoder::run_f()
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
     while (running_) {
-        if (video_buffer_.full()) {
-            LOG(WARNING) << "[V] buffer is full, drop the packet";
-        }
-
-        if (audio_buffer_.full()) {
-            LOG(WARNING) << "[A] buffer is full, drop the packet";
-        }
-
         // read
         av_packet_unref(packet_);
         int ret = av_read_frame(fmt_ctx_, packet_);
@@ -325,6 +317,10 @@ int Decoder::run_f()
                 decoded_frame_->pts += VIDEO_OFFSET_TIME; // synchronize with the system clock
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
 
+                while (video_buffer_.full() && running_) {
+                    std::this_thread::sleep_for(10ms);
+                }
+
                 DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
                                           video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
@@ -358,6 +354,10 @@ int Decoder::run_f()
 
                 decoded_frame_->pts += AUDIO_OFFSET_TIME;
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
+
+                while (audio_buffer_.full() && running_) {
+                    std::this_thread::sleep_for(10ms);
+                }
 
                 DLOG(INFO) << fmt::format(
                     "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",

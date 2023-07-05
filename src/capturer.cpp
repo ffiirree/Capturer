@@ -139,11 +139,23 @@ void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
     if (mimedata != nullptr) {
-        auto win = new ImageWindow(mimedata, this);
-        win->show();
+        if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
+            QString("gif;mp4;mkv;m2ts;avi;wmv")
+                .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
+            auto player = new VideoPlayer(this);
+            player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+            player->show();
 
-        auto iter = windows_.insert(windows_.end(), win);
-        connect(win, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
+            auto iter = windows_.insert(windows_.end(), player);
+            connect(player, &VideoPlayer::closed, [=, this]() { windows_.erase(iter); });
+        }
+        else {
+            auto win = new ImageWindow(mimedata, this);
+            win->show();
+
+            auto iter = windows_.insert(windows_.end(), win);
+            connect(win, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
+        }
     }
 }
 

@@ -284,7 +284,7 @@ std::optional<QPixmap> ImageWindow::render(const std::shared_ptr<QMimeData>& mim
     }
 
     // 3. urls
-    if (mimedata->hasUrls() &&
+    if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
         QString("jpg;jpeg;png;bmp;ico;svg")
             .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
         return QPixmap(mimedata->urls()[0].toLocalFile());
