@@ -29,6 +29,7 @@ ControlWidget::ControlWidget(QWidget *parent)
         hl->addSpacerItem(new QSpacerItem(16, 10, QSizePolicy::Minimum, QSizePolicy::Minimum));
 
         auto title = new QLabel("Capturer Player");
+        title->setObjectName("title-label");
         hl->addWidget(title);
         connect(parent, &QWidget::windowTitleChanged, [=](const auto& t) { title->setText(t); });
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));

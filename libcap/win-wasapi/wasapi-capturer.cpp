@@ -25,8 +25,8 @@ void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
 
     afmt = av::aformat_t{
         .sample_rate    = static_cast<int>(wfex->nSamplesPerSec),
-        .channels       = wfex->nChannels,
         .sample_fmt     = AV_SAMPLE_FMT_FLT,
+        .channels       = wfex->nChannels,
         .channel_layout = wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels),
         .time_base      = { 1, OS_TIME_BASE },
     };

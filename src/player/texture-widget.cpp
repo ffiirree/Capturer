@@ -18,7 +18,7 @@ void TextureWidget::present(AVFrame *avframe)
     std::lock_guard lock(mtx_);
 
     frame_ = QPixmap::fromImage(QImage{ static_cast<const uchar *>(frame->data[0]), frame->width,
-                                        frame->height, QImage::Format_RGBA8888 });
+                                        frame->height, QImage::Format_RGB888 });
 
     update();
 }

@@ -307,6 +307,11 @@ void WindowsGraphicsCapturer::on_frame_arrived(const Direct3D11CaptureFramePool&
 
     frame_->sample_aspect_ratio = { 1, 1 };
     frame_->pts                 = os_gettime_ns();
+    // According to MSDN, all integer formats contain sRGB image data
+    frame_->color_range         = AVCOL_RANGE_JPEG;
+    frame_->color_primaries     = AVCOL_PRI_BT709;
+    frame_->color_trc           = AVCOL_TRC_IEC61966_2_1;
+    frame_->colorspace          = AVCOL_SPC_RGB;
 
     // copy the texture to the FFmpeg frame
     // 1. Display   Mode: CopyResource

@@ -70,7 +70,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     dispatcher_->append(decoder_);
     dispatcher_->set_encoder(this);
 
-    dispatcher_->vfmt.pix_fmt = AV_PIX_FMT_RGBA;
+    dispatcher_->afmt.sample_fmt = decoder_->afmt.sample_fmt;
+    dispatcher_->vfmt.pix_fmt    = AV_PIX_FMT_RGB24;
     if (dispatcher_->create_filter_graph(options.contains("filters") ? options.at("filters") : "", {})) {
         LOG(INFO) << "create filters failed";
         return false;
@@ -155,7 +156,7 @@ void VideoPlayer::video_thread_f()
         int64_t sleep_ns =
             std::min<int64_t>(std::max<int64_t>(0, pts_ns - clock_ns() - 3 * 1'000'000), OS_TIME_BASE);
 
-        LOG(INFO) << fmt::format("pts = {}, time = {}ms, sleep = {}ms", frame->pts, clock_ns() / 1'000'000,
+        LOG(INFO) << fmt::format("[V] pts = {}, time = {}ms, sleep = {}ms", frame->pts, clock_ns() / 1'000'000,
                                  sleep_ns / 1'000'000);
         os_nsleep(sleep_ns);
 

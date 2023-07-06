@@ -38,8 +38,9 @@ namespace av
     struct aformat_t
     {
         int sample_rate{ 48'000 };
-        int channels{ 2 };
         AVSampleFormat sample_fmt{ AV_SAMPLE_FMT_NONE };
+
+        int channels{ 2 };
         uint64_t channel_layout{ 0 };
 
         AVRational time_base{ 1, OS_TIME_BASE };

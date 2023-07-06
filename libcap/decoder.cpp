@@ -32,8 +32,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     AVInputFormat *input_fmt = nullptr;
 #endif
     if (options.contains("format")) {
-        input_fmt = av_find_input_format(options.at("format").c_str());
-        if (!input_fmt) {
+        if (input_fmt = av_find_input_format(options.at("format").c_str()); !input_fmt) {
             LOG(ERROR) << "[   DECODER] av_find_input_format";
             return -1;
         }
@@ -74,21 +73,10 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
         return -1;
     }
 
-    VIDEO_OFFSET_TIME = video_stream_idx_ < 0
-                            ? 0
-                            : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q,
-                                           fmt_ctx_->streams[video_stream_idx_]->time_base) -
-                                  fmt_ctx_->streams[video_stream_idx_]->start_time;
-    AUDIO_OFFSET_TIME = audio_stream_idx_ < 0
-                            ? 0
-                            : av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q,
-                                           fmt_ctx_->streams[audio_stream_idx_]->time_base) -
-                                  fmt_ctx_->streams[audio_stream_idx_]->start_time;
-
+    // video stream
     if (video_stream_idx_ >= 0) {
         // decoder context
-        video_decoder_ctx_ = avcodec_alloc_context3(video_decoder);
-        if (!video_decoder_ctx_) {
+        if (video_decoder_ctx_ = avcodec_alloc_context3(video_decoder); !video_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [V] failed to alloc decoder context";
             return -1;
         }
@@ -108,16 +96,24 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             return -1;
         }
 
-        auto fr = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr);
-        LOG(INFO) << fmt::format("[   DECODER] [{:>10}] {}x{}, pix_fmt = {}, framerate = {}, tbn = {}",
-                                 name_, video_decoder_ctx_->width, video_decoder_ctx_->height,
-                                 av::to_string(video_decoder_ctx_->pix_fmt), fr,
-                                 fmt_ctx_->streams[video_stream_idx_]->time_base);
+        vfmt = av::vformat_t{
+            .width     = video_decoder_ctx_->width,
+            .height    = video_decoder_ctx_->height,
+            .pix_fmt   = video_decoder_ctx_->pix_fmt,
+            .framerate = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr),
+            .sample_aspect_ratio = video_decoder_ctx_->sample_aspect_ratio,
+            .time_base           = fmt_ctx_->streams[video_stream_idx_]->time_base,
+        };
+
+        VIDEO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, vfmt.time_base) -
+                            fmt_ctx_->streams[video_stream_idx_]->start_time;
+
+        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] {}", name_, av::to_string(vfmt));
     }
 
+    // audio stream
     if (audio_stream_idx_ >= 0) {
-        audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder);
-        if (!audio_decoder_ctx_) {
+        if (audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder); !audio_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [A] failed to alloc decoder context";
             return -1;
         }
@@ -133,13 +129,20 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             return -1;
         }
 
-        LOG(INFO) << fmt::format(
-            "[    DECODER] [A] [{:>10}] sample_rate = {}, channels = {}, channel_layout = {}, format = {}, frame_size = {}, start_time = {}, tbn = {}",
-            name_, audio_decoder_ctx_->sample_rate, audio_decoder_ctx_->channels,
-            av_get_default_channel_layout(audio_decoder_ctx_->channels),
-            av::to_string(audio_decoder_ctx_->sample_fmt), audio_decoder_ctx_->frame_size,
-            fmt_ctx_->streams[audio_stream_idx_]->start_time,
-            fmt_ctx_->streams[audio_stream_idx_]->time_base);
+        afmt = av::aformat_t{
+            .sample_rate    = audio_decoder_ctx_->sample_rate,
+            .sample_fmt     = audio_decoder_ctx_->sample_fmt,
+            .channels       = audio_decoder_ctx_->channels,
+            .channel_layout = audio_decoder_ctx_->channel_layout,
+            .time_base      = fmt_ctx_->streams[audio_stream_idx_]->time_base,
+        };
+
+        AUDIO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, afmt.time_base) -
+                            fmt_ctx_->streams[audio_stream_idx_]->start_time;
+
+        LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] {}, frame_size = {}, start_time = {}", name_,
+                                 av::to_string(afmt), audio_decoder_ctx_->frame_size,
+                                 fmt_ctx_->streams[audio_stream_idx_]->start_time);
     }
 
     // prepare
@@ -152,7 +155,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     ready_ = true;
 
-    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] is opened", name_);
+    LOG(INFO) << fmt::format("[   DECODER] [{:>10}] opened", name_);
     return 0;
 }
 
@@ -168,26 +171,8 @@ bool Decoder::has(int type) const
 std::string Decoder::format_str(int type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: {
-        if (video_stream_idx_ < 0) return {};
-
-        auto video_stream = fmt_ctx_->streams[video_stream_idx_];
-        auto fr           = av_guess_frame_rate(fmt_ctx_, video_stream, nullptr);
-        return fmt::format("video_size={}x{}:pix_fmt={}:time_base={}:pixel_aspect={}:frame_rate={}",
-                           video_decoder_ctx_->width, video_decoder_ctx_->height,
-                           av::to_string(video_decoder_ctx_->pix_fmt), video_stream->time_base,
-                           video_stream->codecpar->sample_aspect_ratio, fr);
-    }
-    case AVMEDIA_TYPE_AUDIO: {
-        if (audio_stream_idx_ < 0) return {};
-
-        auto audio_stream = fmt_ctx_->streams[audio_stream_idx_];
-        return fmt::format("sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}",
-                           audio_decoder_ctx_->sample_rate, av::to_string(audio_decoder_ctx_->sample_fmt),
-                           audio_decoder_ctx_->channels,
-                           av_get_default_channel_layout(audio_decoder_ctx_->channels),
-                           audio_stream->time_base);
-    }
+    case AVMEDIA_TYPE_VIDEO: return (video_stream_idx_ >= 0) ? av::to_string(vfmt) : std::string{};
+    case AVMEDIA_TYPE_AUDIO: return (audio_stream_idx_ >= 0) ? av::to_string(afmt) : std::string{};
     default: return {};
     }
 }
@@ -317,6 +302,7 @@ int Decoder::run_f()
                 decoded_frame_->pts += VIDEO_OFFSET_TIME; // synchronize with the system clock
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
 
+                // waiting
                 while (video_buffer_.full() && running_) {
                     std::this_thread::sleep_for(10ms);
                 }
@@ -355,6 +341,7 @@ int Decoder::run_f()
                 decoded_frame_->pts += AUDIO_OFFSET_TIME;
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
 
+                // waiting
                 while (audio_buffer_.full() && running_) {
                     std::this_thread::sleep_for(10ms);
                 }
