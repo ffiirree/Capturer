@@ -79,10 +79,11 @@ namespace clipboard
         return history_.emplace_back(std::shared_ptr<QMimeData>(clone(mimedata)));
     }
 
-    std::shared_ptr<QMimeData> push(const QColor& color)
+    std::shared_ptr<QMimeData> push(const QColor& color, const QString& text)
     {
         auto mimedata = new QMimeData();
         mimedata->setColorData(QVariant(color));
+        mimedata->setText(text);
         mimedata->setData(MIME_TYPE_STATUS, "N");
 
         QApplication::clipboard()->setMimeData(mimedata);

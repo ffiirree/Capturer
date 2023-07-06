@@ -1,6 +1,7 @@
 #include "capturer.h"
 
 #include "clipboard.h"
+#include "color-window.h"
 #include "image-window.h"
 #include "logging.h"
 #include "menu.h"
@@ -139,23 +140,26 @@ void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
     if (mimedata != nullptr) {
+        FramelessWindow *pwin = nullptr;
         if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
             QString("gif;mp4;mkv;m2ts;avi;wmv")
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
             auto player = new VideoPlayer(this);
             player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
-            player->show();
 
-            auto iter = windows_.insert(windows_.end(), player);
-            connect(player, &VideoPlayer::closed, [=, this]() { windows_.erase(iter); });
+            pwin = player;
+        }
+        else if (mimedata->hasColor()) {
+            pwin = new ColorWindow(mimedata, this);
         }
         else {
-            auto win = new ImageWindow(mimedata, this);
-            win->show();
-
-            auto iter = windows_.insert(windows_.end(), win);
-            connect(win, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
+            pwin = new ImageWindow(mimedata, this);
         }
+
+        pwin->show();
+
+        auto iter = windows_.insert(windows_.end(), pwin);
+        connect(pwin, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
     }
 }
 

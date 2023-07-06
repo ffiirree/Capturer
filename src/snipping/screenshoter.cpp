@@ -317,7 +317,7 @@ void ScreenShoter::keyPressEvent(QKeyEvent *event)
         !event->isAutoRepeat()) {
         selector_->status(SelectorStatus::CAPTURED);
     }
-    else if (event->key() == Qt::Key_Control && !event->isAutoRepeat()) {
+    else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat()) {
         selector_->showCrossHair(true);
     }
 
@@ -330,7 +330,7 @@ void ScreenShoter::keyReleaseEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Space && !event->isAutoRepeat()) {
         selector_->status(SelectorStatus::LOCKED);
     }
-    else if (event->key() == Qt::Key_Control && !event->isAutoRepeat()) {
+    else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat()) {
         selector_->showCrossHair(false);
     }
 
@@ -473,7 +473,7 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::Key_Tab, this), &QShortcut::activated, [this]() {
         if (magnifier_->isVisible()) {
-            magnifier_->toggleColorFormat();
+            magnifier_->toggleFormat();
         }
     });
 
@@ -523,7 +523,8 @@ void ScreenShoter::registerShortcuts()
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this]() {
         if (selector_->status() < SelectorStatus::CAPTURED && magnifier_->isVisible()) {
-            clipboard::push(magnifier_->getColor());
+            clipboard::push(magnifier_->color(), magnifier_->colorname());
+            exit();
         }
     });
 }

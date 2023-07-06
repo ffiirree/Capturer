@@ -1,4 +1,8 @@
 /*///////////////////////////////////////////////////////////////*/
+QCheckBox {
+    color: #50505f;
+}
+
 QCheckBox::indicator {
     image: url(:/icons/checkbox-unchecked-dark);
 }
@@ -139,4 +143,15 @@ QPushButton:checked {
 /* QFrame::VLine == 0x0005 */
 QFrame[frameShape="5"] {
     color: #dfdfdf;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+NavigationBar {
+    border: 1px solid #D6D6D7;
+    background-color: #E6E6E7;
+}
+
+NavigationBar QCheckBox {
+    background-color: #FAF9FB;
+    border: 1px solid #C5C4C9;
 }

@@ -2,6 +2,7 @@
 
 #include "probe/graphics.h"
 
+#include <fmt/format.h>
 #include <QApplication>
 #include <QGuiApplication>
 #include <QMouseEvent>
@@ -10,10 +11,11 @@
 #include <QScreen>
 
 Magnifier::Magnifier(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setVisible(false);
 
     // pixmap size
     psize_ = msize_ * alpha_;
@@ -29,8 +31,6 @@ Magnifier::Magnifier(QWidget *parent)
 
     // TODO: listen sytem level mouse move event, not just this APP
     qApp->installEventFilter(this);
-
-    hide();
 }
 
 QRect Magnifier::grabRect()
@@ -50,13 +50,22 @@ QRect Magnifier::grabRect()
     };
 }
 
-QString Magnifier::getColorStringValue()
+QString Magnifier::colorname(ColorFormat format)
 {
-    return (color_format_ == ColorFormat::HEX) ? center_color_.name(QColor::HexRgb)
-                                               : QString("%1, %2, %3")
-                                                     .arg(center_color_.red())
-                                                     .arg(center_color_.green())
-                                                     .arg(center_color_.blue());
+    auto fmt = (format == ColorFormat::AUTO) ? cfmt_ : format;
+    switch (fmt) {
+    case Magnifier::ColorFormat::INT:
+        return QString::fromStdString(
+            fmt::format("{:3d}, {:3d}, {:3d}", color_.red(), color_.green(), color_.blue()));
+
+    case Magnifier::ColorFormat::FLT:
+        return QString::fromStdString(
+            fmt::format("{:4.2f}, {:4.2f}, {:4.2f}", color_.redF(), color_.greenF(), color_.blueF()));
+
+    default:
+        return QString::fromStdString(
+            fmt::format("#{:2X}{:2X}{:2X}", color_.red(), color_.green(), color_.blue()));
+    }
 }
 
 QPoint Magnifier::position()
@@ -114,8 +123,8 @@ void Magnifier::paintEvent(QPaintEvent *)
     painter.drawLine(QPoint(psize_.width() / 2, 0), QPoint(psize_.width() / 2, psize_.height()));
 
     // 3.
-    center_color_ = QColor(draw.toImage().pixel(psize_.width() / 2, psize_.height() / 2));
-    painter.setPen(QPen(center_color_, 5, Qt::SolidLine, Qt::FlatCap));
+    color_ = QColor(draw.toImage().pixel(psize_.width() / 2, psize_.height() / 2));
+    painter.setPen(QPen(color_, 5, Qt::SolidLine, Qt::FlatCap));
     painter.drawLine(QPoint(psize_.width() / 2 - 2, psize_.height() / 2),
                      QPoint(psize_.width() / 2 + 3, psize_.height() / 2));
 
@@ -127,8 +136,7 @@ void Magnifier::paintEvent(QPaintEvent *)
     painter.end();
 
     // 5. text
-    auto text =
-        QString("(%1, %2)\n").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + getColorStringValue();
+    auto text = QString("(%1, %2)\n").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + colorname();
     label_->setText(text);
 }
 

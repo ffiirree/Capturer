@@ -30,7 +30,7 @@ namespace clipboard
 
     std::shared_ptr<QMimeData> push(const QPixmap& pixmap, const QPoint& pos);
 
-    std::shared_ptr<QMimeData> push(const QColor& color);
+    std::shared_ptr<QMimeData> push(const QColor& color, const QString& text);
 
     std::shared_ptr<QMimeData> push(const std::shared_ptr<QMimeData>& mimedata);
 

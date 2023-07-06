@@ -6,26 +6,28 @@
 class Magnifier : public QWidget
 {
 public:
-    enum class ColorFormat
+    enum class ColorFormat: int
     {
         HEX,
-        DEC
+        INT,
+        FLT,
+        AUTO,
     };
 
 public:
     explicit Magnifier(QWidget *parent = nullptr);
 
-    QColor getColor() const { return center_color_; }
+    QColor color() const { return color_; }
 
-    QString getColorStringValue();
+    QString colorname(ColorFormat = ColorFormat::AUTO);
 
-    void colorFormat(ColorFormat format) { color_format_ = format; }
+    void format(ColorFormat format) { cfmt_ = format; }
 
-    ColorFormat colorFormat() const { return color_format_; }
+    ColorFormat format() const { return cfmt_; }
 
-    void toggleColorFormat()
+    void toggleFormat()
     {
-        color_format_ = (color_format_ == ColorFormat::HEX) ? ColorFormat::DEC : ColorFormat::HEX;
+        cfmt_ = static_cast<ColorFormat>((static_cast<int>(cfmt_) + 1) % 3);
         update();
     }
 
@@ -52,9 +54,9 @@ private:
     int alpha_{ 5 };
     QSize msize_{ 29, 29 };
     QSize psize_{ 0, 0 };
-    QColor center_color_;
+    QColor color_;
 
-    ColorFormat color_format_{ ColorFormat::HEX };
+    ColorFormat cfmt_{ ColorFormat::HEX };
 };
 
 #endif //! CAPTURER_MAGNIFIER_H

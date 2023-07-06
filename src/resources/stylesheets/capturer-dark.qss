@@ -1,4 +1,8 @@
 /*///////////////////////////////////////////////////////////////*/
+QCheckBox {
+    color: #e6e6e6;
+}
+
 QCheckBox::indicator {
     image: url(:/icons/checkbox-unchecked-light);
 }
@@ -50,7 +54,7 @@ QComboBox QAbstractItemView::item:checked {
 QLineEdit {
     background-color: #323232;
     border: 1px solid #323232;
-    color: #50505f;
+    color: #e6e6e6;
 }
 
 QLineEdit:hover {
@@ -141,4 +145,20 @@ QFrame[frameShape="5"] {
 /*///////////////////////////////////////////////////////////////*/
 QLabel {
     color: #e6e6e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+
+ColorWindow {
+    background-color: #272728;
+}
+
+NavigationBar {
+    border: 1px solid #303031;
+    background-color: #201f23;
+}
+
+NavigationBar QCheckBox {
+    background-color: #2a292d;
+    border: 1px solid #444445;
 }

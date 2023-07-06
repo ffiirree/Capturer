@@ -3,6 +3,7 @@ QWidget {
     font-family: "Microsoft YaHei";
 }
 
+/*///////////////////////////////////////////////////////////////*/
 QCheckBox {
     spacing: 0px;
 }
@@ -166,4 +167,28 @@ QLabel#magnifier-color-label {
     color: white;
     font-size: 9pt;
     font-family: "Microsoft YaHei";
+}
+
+/*///////////////////////////////////////////////////////////////*/
+NavigationBar {
+    border-radius: 5px;
+    height: 1.5em;
+}
+
+NavigationBar QCheckBox {
+    border-radius: 5px;
+    height: 1.5em;
+
+    padding: 0 0.5em;
+}
+
+NavigationBar QCheckBox:unchecked {
+    background-color: transparent;
+
+    border: 1px solid transparent;
+}
+
+NavigationBar QCheckBox::indicator {
+    width: 0;
+    height: 0;
 }
