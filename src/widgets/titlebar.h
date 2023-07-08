@@ -1,23 +1,26 @@
 #ifndef CAPTURER_TITLE_BAR_H
 #define CAPTURER_TITLE_BAR_H
 
-#include <QCheckBox>
+#include "framelesswindow.h"
 
 class TitleBar : public QWidget
 {
     Q_OBJECT
 public:
-    explicit TitleBar(QWidget *);
+    explicit TitleBar(FramelessWindow *parent);
+
+    FramelessWindow *parent() const { return dynamic_cast<FramelessWindow *>(QWidget::parent()); }
 
 protected:
-    void mousePressEvent(QMouseEvent *) override;
-    void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
-    QCheckBox *icon_{ nullptr };
-
+#ifndef Q_OS_WIN
     QPoint begin_{ 0, 0 };
     bool moving_{ false };
+#endif
 };
 #endif //! CAPTURER_TITLE_BAR_H

@@ -26,7 +26,7 @@ private:
     explicit Clipboard(QObject *parent = nullptr)
         : QObject(parent)
     {
-        connect(QApplication::clipboard(), &QClipboard::changed, [=](auto) {
+        connect(QApplication::clipboard(), &QClipboard::dataChanged, [=]() {
             if (auto clipboard_data = QApplication::clipboard()->mimeData();
                 !clipboard_data->hasFormat(clipboard::MIME_TYPE_STATUS)) {
                 auto cloned = std::shared_ptr<QMimeData>(clipboard::clone(clipboard_data));
@@ -41,11 +41,19 @@ namespace clipboard
 {
     void init() { Clipboard::instance(); }
 
+    // TODO : crush while copying these types
+    static const QVector<QString> blacklist = {
+        R"(application/x-qt-windows-mime;value="HyperlinkWordBkmk")",
+        R"(application/x-qt-windows-mime;value="EnterpriseDataProtectionId")",
+    };
+
     QMimeData *clone(const QMimeData *other)
     {
         auto mimedata = new QMimeData();
 
         foreach(const auto& format, other->formats()) {
+            if (blacklist.contains(format)) continue;
+
             if (format == MIME_TYPE_IMAGE) {
                 mimedata->setImageData(other->imageData());
                 continue;

@@ -192,3 +192,34 @@ NavigationBar QCheckBox::indicator {
     width: 0;
     height: 0;
 }
+
+/*///////////////////////////////////////////////////////////////*/
+TitleBar QCheckBox#icon-title {
+    font-size: 11pt;
+    min-width: 10em;
+    max-width: 10em;
+    padding-top: 0.15em;
+}
+
+TitleBar QCheckBox#icon-title::indicator {
+    image: url(:/icons/capturer);
+    font-size: 9pt;
+    height: 2.25em;
+    width: 2.25em;
+
+    padding: 0.25em 1.25em 0.25em 1.25em;
+}
+
+/* buttons */
+TitleBar QCheckBox::indicator {
+    font-size: 8pt;
+    height: 1em;
+    width: 1em;
+
+    padding: 1em 1.35em 1em 1.35em;
+}
+
+TitleBar QCheckBox#close-btn::indicator:hover {
+    background-color: #C42B1C;
+    image: url(:/icons/close);
+}

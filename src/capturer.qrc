@@ -1,9 +1,6 @@
 <!DOCTYPE RCC>
     <RCC version="1.0">
     <qresource prefix="/icons">
-        <file alias="close">resources/icons/close.png</file>
-        <file alias="close-light">resources/icons/close-light.png</file>
-        <file alias="close-dark">resources/icons/close-dark.png</file>
         <file alias="save">resources/icons/save.png</file>
         <file alias="save-light">resources/icons/save-light.png</file>
         <file alias="save-dark">resources/icons/save-dark.png</file>
@@ -115,6 +112,18 @@
         <file alias="scroll">resources/icons/scroll.png</file>
         <file alias="scroll-dark">resources/icons/scroll-dark.png</file>
         <file alias="scroll-light">resources/icons/scroll-light.png</file>
+        <file alias="minimize">resources/icons/minimize.png</file>
+        <file alias="minimize-light">resources/icons/minimize-light.png</file>
+        <file alias="minimize-dark">resources/icons/minimize-dark.png</file>
+        <file alias="maximize">resources/icons/maximize.png</file>
+        <file alias="maximize-light">resources/icons/maximize-light.png</file>
+        <file alias="maximize-dark">resources/icons/maximize-dark.png</file>
+        <file alias="normal">resources/icons/normal.png</file>
+        <file alias="normal-light">resources/icons/normal-light.png</file>
+        <file alias="normal-dark">resources/icons/normal-dark.png</file>
+        <file alias="close">resources/icons/close.png</file>
+        <file alias="close-light">resources/icons/close-light.png</file>
+        <file alias="close-dark">resources/icons/close-dark.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

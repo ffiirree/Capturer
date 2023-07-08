@@ -45,79 +45,79 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="137"/>
+        <location filename="../src/preview/image-window.cpp" line="139"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="149"/>
+        <location filename="../src/preview/image-window.cpp" line="151"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="166"/>
+        <location filename="../src/preview/image-window.cpp" line="168"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="167"/>
+        <location filename="../src/preview/image-window.cpp" line="169"/>
         <source>Paste</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="171"/>
+        <location filename="../src/preview/image-window.cpp" line="173"/>
         <source>Open Image...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="172"/>
+        <location filename="../src/preview/image-window.cpp" line="174"/>
         <source>Save As...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="176"/>
+        <location filename="../src/preview/image-window.cpp" line="178"/>
         <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="177"/>
+        <location filename="../src/preview/image-window.cpp" line="179"/>
         <source>Rotate +90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="178"/>
+        <location filename="../src/preview/image-window.cpp" line="180"/>
         <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="179"/>
+        <location filename="../src/preview/image-window.cpp" line="181"/>
         <source>H Flip</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="180"/>
+        <location filename="../src/preview/image-window.cpp" line="182"/>
         <source>V Flip</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="187"/>
-        <location filename="../src/preview/image-window.cpp" line="199"/>
+        <location filename="../src/preview/image-window.cpp" line="189"/>
+        <location filename="../src/preview/image-window.cpp" line="201"/>
         <source>Zoom : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="188"/>
-        <location filename="../src/preview/image-window.cpp" line="200"/>
+        <location filename="../src/preview/image-window.cpp" line="190"/>
+        <location filename="../src/preview/image-window.cpp" line="202"/>
         <source>Opacity : </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="189"/>
+        <location filename="../src/preview/image-window.cpp" line="191"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="193"/>
+        <location filename="../src/preview/image-window.cpp" line="195"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -141,7 +141,7 @@
 <context>
     <name>SettingWindow</name>
     <message>
-        <location filename="../src/setting/settingdialog.cpp" line="43"/>
+        <location filename="../src/setting/settingdialog.cpp" line="42"/>
         <source>Settings</source>
         <translation></translation>
     </message>

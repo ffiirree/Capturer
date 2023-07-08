@@ -7,6 +7,7 @@
 #include "screenshoter.h"
 #include "settingdialog.h"
 
+#include <memory>
 #include <QSystemTrayIcon>
 
 class Capturer : public QWidget
@@ -15,7 +16,6 @@ class Capturer : public QWidget
 
 public:
     explicit Capturer(QWidget *parent = nullptr);
-    ~Capturer() override = default;
 
 private slots:
     void pin();
@@ -36,7 +36,7 @@ private:
 
     QSystemTrayIcon *sys_tray_icon_{ nullptr };
 
-    SettingWindow *setting_dialog_{ nullptr };
+    std::shared_ptr<SettingWindow> setting_dialog_{};
 
     // hotkey
     QHotkey *snip_sc_{ nullptr };

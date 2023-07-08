@@ -1,33 +1,4 @@
 /*///////////////////////////////////////////////////////////////*/
-TitleBar QCheckBox#logo {
-    font-size: 11pt;
-    min-width: 10em;
-    max-width: 10em;
-    padding-top: 0.15em;
-}
-
-TitleBar QCheckBox#logo::indicator {
-    image: url(:/icons/capturer);
-    font-size: 9pt;
-    height: 2.25em;
-    width: 2.25em;
-
-    padding: 0.25em 1.25em 0.25em 1.25em;
-}
-
-TitleBar QCheckBox#close-btn::indicator {
-    font-size: 9pt;
-    height: 1.25em;
-    width: 1.25em;
-
-    padding: 0.75em 1.25em 0.75em 1.25em;
-}
-
-TitleBar QCheckBox#close-btn::indicator:hover {
-    background-color: #e81123;
-    image: url(:/icons/close-light);
-}
-
 SettingWindow QListWidget {
     font-size: 11pt;
     min-width: 10em;

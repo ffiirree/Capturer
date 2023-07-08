@@ -148,7 +148,6 @@ QLabel {
 }
 
 /*///////////////////////////////////////////////////////////////*/
-
 ColorWindow {
     background-color: #272728;
 }
@@ -161,4 +160,30 @@ NavigationBar {
 NavigationBar QCheckBox {
     background-color: #2a292d;
     border: 1px solid #444445;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+TitleBar {
+    background-color: #272728;
+}
+
+TitleBar QCheckBox#min-btn::indicator {
+    image: url(:/icons/minimize-light);
+}
+
+TitleBar QCheckBox#max-btn::indicator:unchecked {
+    image: url(:/icons/maximize-light);
+}
+
+TitleBar QCheckBox#max-btn::indicator:checked {
+    image: url(:/icons/normal-light);
+}
+
+TitleBar QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-light);
+}
+
+TitleBar QCheckBox#min-btn:hover,
+TitleBar QCheckBox#max-btn:hover {
+    background: #323232;
 }

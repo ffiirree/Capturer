@@ -155,3 +155,29 @@ NavigationBar QCheckBox {
     background-color: #FAF9FB;
     border: 1px solid #C5C4C9;
 }
+
+/*///////////////////////////////////////////////////////////////*/
+TitleBar {
+    background-color: #fcfbfb;
+}
+
+TitleBar QCheckBox#min-btn::indicator  {
+    image: url(:/icons/minimize-dark);
+}
+
+TitleBar QCheckBox#max-btn::indicator:unchecked  {
+    image: url(:/icons/maximize-dark);
+}
+
+TitleBar QCheckBox#max-btn::indicator:checked  {
+    image: url(:/icons/normal-dark);
+}
+
+TitleBar QCheckBox#close-btn::indicator  {
+    image: url(:/icons/close-dark);
+}
+
+TitleBar QCheckBox#min-btn:hover,
+TitleBar QCheckBox#max-btn:hover {
+    background: #E0E0E0;
+}

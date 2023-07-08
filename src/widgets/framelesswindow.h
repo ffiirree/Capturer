@@ -9,8 +9,19 @@ class FramelessWindow : public QWidget
 public:
     explicit FramelessWindow(QWidget *parent = nullptr);
 
+public slots:
+    void maximize(bool = true);
+    void minimize(bool = true);
+    void fullscreen(bool = true);
+
 signals:
+    void hidden();
     void closed();
+
+    void normalized();
+    void maximized();
+    void minimized();
+    void fullscreened();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -19,6 +30,8 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 
     void closeEvent(QCloseEvent *) override;
+    void hideEvent(QHideEvent *event) override;
+    void changeEvent(QEvent *) override;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     bool nativeEvent(const QByteArray& eventType, void *message, qintptr *result) override;

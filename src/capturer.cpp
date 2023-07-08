@@ -48,7 +48,7 @@ Capturer::Capturer(QWidget *parent)
     connect(&Config::instance(), &Config::changed, this, &Capturer::updateConfig);
 
     // setting
-    setting_dialog_ = new SettingWindow(this);
+    setting_dialog_ = std::make_shared<SettingWindow>();
 
     // System tray icon
     // @attention Must after setting.

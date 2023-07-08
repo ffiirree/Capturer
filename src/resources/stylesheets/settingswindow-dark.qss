@@ -2,16 +2,8 @@ SettingWindow * {
     color: #e6e6e6;
 }
 
-TitleBar {
-    background-color: #272728;
-}
-
-TitleBar QCheckBox#logo {
+TitleBar QCheckBox#icon-title {
     background-color: #202021;
-}
-
-TitleBar QCheckBox#close-btn::indicator {
-    image: url(:/icons/close-light);
 }
 
 SettingWindow QListWidget {

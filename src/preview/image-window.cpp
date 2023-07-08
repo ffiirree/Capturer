@@ -22,6 +22,8 @@ ImageWindow::ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
     setWindowFlags((windowFlags() & ~Qt::Window) | Qt::Tool | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_DeleteOnClose);
 
+    setWindowTitle("Image Window");
+
     setAcceptDrops(true);
 
     preview_ = new TextureWidget(this);

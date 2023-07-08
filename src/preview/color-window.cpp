@@ -60,6 +60,8 @@ ColorWindow::ColorWindow(QWidget *parent)
 ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent)
     : FramelessWindow(parent)
 {
+    setWindowTitle("Color Window");
+
     if (data && data->hasColor()) {
         data_ = data;
         data_->setData(clipboard::MIME_TYPE_STATUS, "P");
@@ -84,6 +86,9 @@ ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
     hl->addStretch();
 
     connect(nbar, &NavigationBar::toggled, [this](int id) { refresh(static_cast<number_t>(id)); });
+    
+    //
+    layout->addStretch();
 
     auto gl = new QGridLayout();
     layout->addLayout(gl);

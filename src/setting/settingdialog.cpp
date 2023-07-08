@@ -30,7 +30,6 @@ SettingWindow::SettingWindow(QWidget *parent)
 {
     setMinimumSize(850, 600);
     setContentsMargins({});
-    setWindowTitle("Capturer Settings");
 
     //
     auto vlayout = new QVBoxLayout();
@@ -41,6 +40,7 @@ SettingWindow::SettingWindow(QWidget *parent)
     // title bar
     vlayout->addWidget(new TitleBar(this));
     setWindowTitle(tr("Settings"));
+    setWindowIcon(QIcon(":/icons/capturer"));
 
     auto layout = new QHBoxLayout();
     layout->setSpacing(0);
