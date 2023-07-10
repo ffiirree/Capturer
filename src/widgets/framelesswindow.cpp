@@ -12,8 +12,8 @@
 #include <windowsx.h>
 #endif
 
-FramelessWindow::FramelessWindow(QWidget *parent)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint)
+FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags f)
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | f)
 {
 #ifdef Q_OS_WIN
     auto hwnd = reinterpret_cast<HWND>(winId());

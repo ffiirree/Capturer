@@ -89,7 +89,7 @@ int Dispatcher::create_audio_src(const Producer<AVFrame> *decoder, AVFilterConte
     auto buffer_args = decoder->format_str(AVMEDIA_TYPE_AUDIO);
     if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("abuffer"), "a_src", buffer_args.c_str(),
                                      nullptr, audio_graph_) < 0) {
-        LOG(ERROR) << "[DISPATCHER] [A] filter to create 'abuffer'.";
+        LOG(ERROR) << "[DISPATCHER] [A] failed to create 'abuffer'.";
         return -1;
     }
 

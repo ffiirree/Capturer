@@ -100,4 +100,4 @@ void TitleBar::mouseReleaseEvent(QMouseEvent *)
 #endif
 }
 
-void TitleBar::mouseDoubleClickEvent(QMouseEvent *event) { parent()->maximize(!parent()->isMaximized()); }
+void TitleBar::mouseDoubleClickEvent(QMouseEvent *) { parent()->maximize(!parent()->isMaximized()); }

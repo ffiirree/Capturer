@@ -7,6 +7,7 @@
 #include "libcap/decoder.h"
 #include "libcap/dispatcher.h"
 #include "texture-widget.h"
+#include "texture-widget-opengl.h"
 
 #include <QTimer>
 
@@ -75,7 +76,7 @@ protected:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
-    TextureWidget *texture_{};
+    TextureGLWidget *texture_{};
     Decoder *decoder_{ nullptr };
     Dispatcher *dispatcher_{ nullptr };
 

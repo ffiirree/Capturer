@@ -181,8 +181,13 @@ namespace av
     {
         return fmt::format("sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}/{}",
                            fmt.sample_rate, to_string(fmt.sample_fmt), fmt.channels,
-                           channel_layout_name(fmt.channels, fmt.channel_layout), fmt.time_base.num,
-                           fmt.time_base.den);
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+                           channel_layout_name(fmt.channels, fmt.channel_layout),
+#else
+                           fmt.channel_layout ? fmt.channel_layout
+                                              : av_get_default_channel_layout(fmt.channels),
+#endif
+                           fmt.time_base.num, fmt.time_base.den);
     }
 
     inline std::string to_string(vsync_t m)

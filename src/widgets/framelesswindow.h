@@ -7,7 +7,7 @@ class FramelessWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FramelessWindow(QWidget *parent = nullptr);
+    explicit FramelessWindow(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 
 public slots:
     void maximize(bool = true);

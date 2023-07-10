@@ -9,14 +9,12 @@
 #include <QVBoxLayout>
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent)
+    : FramelessWindow(parent, Qt::WindowStaysOnTopHint)
 {
-    setWindowFlags(windowFlags() | Qt::Window | Qt::WindowStaysOnTopHint);
-
     decoder_    = new Decoder();
     dispatcher_ = new Dispatcher();
 
-    texture_ = new TextureWidget();
+    texture_ = new TextureGLWidget();
 
     auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
@@ -48,13 +46,6 @@ VideoPlayer::~VideoPlayer()
 {
     delete dispatcher_; // 1.
     delete decoder_;    // 2.
-
-    running_ = false;
-
-    if (video_thread_.joinable()) video_thread_.join();
-    if (audio_thread_.joinable()) audio_thread_.join();
-
-    first_pts_ = AV_NOPTS_VALUE;
 }
 
 int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string> options)
@@ -71,7 +62,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     dispatcher_->set_encoder(this);
 
     dispatcher_->afmt.sample_fmt = decoder_->afmt.sample_fmt;
-    dispatcher_->vfmt.pix_fmt    = AV_PIX_FMT_RGB24;
+    dispatcher_->vfmt.pix_fmt    = AV_PIX_FMT_YUV420P;
     if (dispatcher_->create_filter_graph(options.contains("filters") ? options.at("filters") : "", {})) {
         LOG(INFO) << "create filters failed";
         return false;
@@ -156,8 +147,8 @@ void VideoPlayer::video_thread_f()
         int64_t sleep_ns =
             std::min<int64_t>(std::max<int64_t>(0, pts_ns - clock_ns() - 3 * 1'000'000), OS_TIME_BASE);
 
-        LOG(INFO) << fmt::format("[V] pts = {}, time = {}ms, sleep = {}ms", frame->pts, clock_ns() / 1'000'000,
-                                 sleep_ns / 1'000'000);
+        LOG(INFO) << fmt::format("[V] pts = {}, time = {}ms, sleep = {}ms", frame->pts,
+                                 clock_ns() / 1'000'000, sleep_ns / 1'000'000);
         os_nsleep(sleep_ns);
 
         texture_->present(frame);
@@ -181,6 +172,13 @@ void VideoPlayer::closeEvent(QCloseEvent *event)
     if (dispatcher_) {
         dispatcher_->stop();
     }
+
+    running_ = false;
+
+    if (video_thread_.joinable()) video_thread_.join();
+    if (audio_thread_.joinable()) audio_thread_.join();
+
+    first_pts_ = AV_NOPTS_VALUE;
 
     FramelessWindow::closeEvent(event);
 }
