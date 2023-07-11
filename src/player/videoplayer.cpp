@@ -58,11 +58,18 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return false;
     }
 
+    if (texture_->setPixelFormat(texture_->isSupported(decoder_->vfmt.pix_fmt)
+                                     ? decoder_->vfmt.pix_fmt
+                                     : texture_->formats()[0]) < 0) {
+        return false;
+    }
+
     dispatcher_->append(decoder_);
     dispatcher_->set_encoder(this);
 
     dispatcher_->afmt.sample_fmt = decoder_->afmt.sample_fmt;
-    dispatcher_->vfmt.pix_fmt    = AV_PIX_FMT_YUV420P;
+    dispatcher_->vfmt.pix_fmt    = texture_->format();
+
     if (dispatcher_->create_filter_graph(options.contains("filters") ? options.at("filters") : "", {})) {
         LOG(INFO) << "create filters failed";
         return false;
