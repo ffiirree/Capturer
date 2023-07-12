@@ -124,6 +124,18 @@
         <file alias="close">resources/icons/close.png</file>
         <file alias="close-light">resources/icons/close-light.png</file>
         <file alias="close-dark">resources/icons/close-dark.png</file>
+        <file alias="settings-fill">resources/icons/settings-fill.png</file>
+        <file alias="settings-fill-dark">resources/icons/settings-fill-dark.png</file>
+        <file alias="settings-fill-light">resources/icons/settings-fill-light.png</file>
+        <file alias="volume-fill-mute">resources/icons/volume-fill-mute.png</file>
+        <file alias="volume-fill-mute-dark">resources/icons/volume-fill-mute-dark.png</file>
+        <file alias="volume-fill-mute-light">resources/icons/volume-fill-mute-light.png</file>
+        <file alias="volume-fill-low">resources/icons/volume-fill-low.png</file>
+        <file alias="volume-fill-low-dark">resources/icons/volume-fill-low-dark.png</file>
+        <file alias="volume-fill-low-light">resources/icons/volume-fill-low-light.png</file>
+        <file alias="volume-fill-high">resources/icons/volume-fill-high.png</file>
+        <file alias="volume-fill-high-dark">resources/icons/volume-fill-high-dark.png</file>
+        <file alias="volume-fill-high-light">resources/icons/volume-fill-high-light.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

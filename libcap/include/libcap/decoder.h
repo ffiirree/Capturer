@@ -43,6 +43,9 @@ public:
         }
     }
 
+    // AV_TIME_BASE
+    void seek(const std::chrono::microseconds& ts) override;
+
     bool has(int) const override;
     std::string format_str(int) const override;
     AVRational time_base(int) const override;
@@ -52,7 +55,7 @@ public:
 
     std::vector<av::aformat_t> aformats() const override { return { afmt }; }
 
-    int64_t duration() const { return fmt_ctx_ ? fmt_ctx_->duration / AV_TIME_BASE : 0; }
+    int64_t duration() const override { return fmt_ctx_ ? fmt_ctx_->duration : AV_NOPTS_VALUE; }
 
 private:
     int run_f();

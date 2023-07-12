@@ -1,10 +1,10 @@
 #ifndef CAPTURER_CONTROL_WIDGET_H
 #define CAPTURER_CONTROL_WIDGET_H
 
+#include "slider.h"
+
 #include <QCheckBox>
 #include <QLabel>
-#include <QSlider>
-#include <QWidget>
 
 class ControlWidget : public QWidget
 {
@@ -13,18 +13,23 @@ public:
     explicit ControlWidget(QWidget *parent);
 
 public slots:
-    void setDuration(int64_t);
-    void setTime(int64_t);
+    void setDuration(int64_t); // AV_TIME_BASE
+    void setTime(int64_t);     // AV_TIME_BASE
+    void setVolume(int);
 
     bool paused() const;
 
 signals:
     void pause();
     void resume();
+    void seek(int64_t, int64_t); // us
+    void speed(float);
+    void volume(int);
 
 private:
-    QSlider *time_slider_{};
-    QSlider *volume_slider_{};
+    Slider *time_slider_{};
+    QCheckBox *volume_btn_{};
+    Slider *volume_slider_{};
 
     QLabel *time_label_{};
     QLabel *duration_label_{};

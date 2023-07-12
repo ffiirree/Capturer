@@ -6,8 +6,8 @@
 #include "libcap/consumer.h"
 #include "libcap/decoder.h"
 #include "libcap/dispatcher.h"
-#include "texture-widget.h"
 #include "texture-widget-opengl.h"
+#include "texture-widget.h"
 
 #include <QTimer>
 
@@ -55,7 +55,23 @@ public:
         }
     }
 
-    int64_t clock_ns() { return os_gettime_ns() - first_pts_; }
+    int64_t clock_ns()
+    {
+        if (offset_ts_ == AV_NOPTS_VALUE) return 0;
+        if (speed_.ts == AV_NOPTS_VALUE) return os_gettime_ns() - offset_ts_;
+
+        int64_t normal = speed_.ts - offset_ts_;
+        int64_t speedx = (os_gettime_ns() - speed_.ts) * speed_.x;
+        return normal + speedx;
+    }
+
+    bool paused() const { return paused_pts_ != AV_NOPTS_VALUE; }
+
+public slots:
+    void pause();
+    void resume();
+    void seek(int64_t, int64_t); // us
+    void speed(float);
 
 signals:
     void started();
@@ -63,15 +79,13 @@ signals:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
+    bool eventFilter(QObject *object, QEvent *event) override;
+
+private:
     void video_thread_f();
     void audio_thread_f();
-
-    int64_t first_pts_{ AV_NOPTS_VALUE };
-    std::atomic<int64_t> audio_clock_{ 0 }; // { 1, AV_TIME_BASE } unit
-    std::atomic<int64_t> audio_clock_ts_{ 0 };
 
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
@@ -95,7 +109,26 @@ protected:
 
     ControlWidget *control_{};
     QTimer *timer_{};
-    int64_t paused_pts_{ AV_NOPTS_VALUE };
+
+    // pause / resume
+    std::atomic<bool> seeking_{ false };
+    std::atomic<int64_t> paused_pts_{ AV_NOPTS_VALUE };
+    std::atomic<int> step_{ 0 };
+
+    std::atomic<int64_t> offset_ts_{ AV_NOPTS_VALUE };
+    std::atomic<int64_t> video_pts_{ AV_NOPTS_VALUE };
+
+    struct speed_t
+    {
+        std::atomic<float> x{ 1.0 };
+        std::atomic<int64_t> ts{ AV_NOPTS_VALUE };
+    } speed_{};
+
+    struct volume_t
+    {
+        std::atomic<int> x{ 1 };
+        std::atomic<bool> muted{ false };
+    } volume_;
 };
 
 #endif // !CAPTURER_VIDEO_PLAYER_H

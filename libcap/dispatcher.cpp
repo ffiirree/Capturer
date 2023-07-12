@@ -402,8 +402,19 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
     auto& ctxs         = (mt == AVMEDIA_TYPE_VIDEO) ? v_producer_ctxs_ : a_producer_ctxs_;
     auto& sink         = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.vctx : consumer_ctx_.actx;
     auto& consumer_eof = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.v_eof : consumer_ctx_.a_eof;
+    auto& seeking      = (mt == AVMEDIA_TYPE_VIDEO) ? vseeking_ : aseeking_;
+    auto& fg_desc      = (mt == AVMEDIA_TYPE_VIDEO) ? video_graph_desc_ : audio_graph_desc_;
 
     while (running_ && !consumer_eof) {
+        if (seeking) {
+            if (create_filter_graph_for(ctxs, fg_desc, mt) < 0) {
+                LOG(ERROR) << "[DISPATCHER] failed to reconfigure graph for " << av::to_string(mt);
+                running_ = false;
+                return -1;
+            }
+            seeking = false;
+        }
+
         bool sleepy = true;
         // input streams
         for (auto& [src_ctx, producer, _] : ctxs) {
@@ -439,14 +450,14 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
         }
 
         // no new frames
-        if (sleepy && !draining_) {
+        if (sleepy && !draining_ && !seeking) {
             std::this_thread::sleep_for(10ms);
             sleepy = false;
             continue;
         }
 
         // output streams
-        while (!consumer_eof) {
+        while (!consumer_eof && !seeking) {
             av_frame_unref(frame);
             int ret = av_buffersink_get_frame_flags(sink, frame, AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret == AVERROR(EAGAIN)) {
@@ -464,14 +475,26 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
                 break;
             }
 
-            while (consumer_ctx_.consumer->full(mt) && running_) {
+            while (consumer_ctx_.consumer->full(mt) && running_ && !seeking) {
                 std::this_thread::sleep_for(10ms);
             }
-            consumer_ctx_.consumer->consume(frame, mt);
+
+            if (!seeking) consumer_ctx_.consumer->consume(frame, mt);
         }
     }
 
     return 0;
+}
+
+void Dispatcher::seek(const std::chrono::microseconds& ts)
+{
+
+    for (auto& [_0, coder, _2] : v_producer_ctxs_) {
+        coder->seek(ts);
+    }
+
+    vseeking_ = true;
+    aseeking_ = true;
 }
 
 void Dispatcher::pause()

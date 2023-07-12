@@ -1,14 +1,19 @@
 #include "control-widget.h"
 
+#include "combobox.h"
+
 #include <chrono>
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QLineEdit>
 
 ControlWidget::ControlWidget(QWidget *parent)
     : QWidget(parent)
 {
+    setMouseTracking(true);
+
     // controller
     auto layout = new QVBoxLayout();
     layout->setSpacing(0);
@@ -45,19 +50,24 @@ ControlWidget::ControlWidget(QWidget *parent)
     // control
     {
         auto control = new QWidget();
-        auto vl      = new QVBoxLayout();
-        vl->setSpacing(0);
-        vl->setContentsMargins({ 10, 0, 10, 0 });
+        control->setMouseTracking(true);
         control->setObjectName("control-bar");
+        layout->addWidget(control);
+
+        auto vl = new QVBoxLayout();
+        vl->setSpacing(0);
+        vl->setContentsMargins({ 10, 0, 10, 10 });
         control->setLayout(vl);
 
-        time_slider_ = new QSlider(Qt::Horizontal);
+        time_slider_ = new Slider(Qt::Horizontal);
+        time_slider_->setObjectName("time-slider");
+        time_slider_->setMouseTracking(true);
         time_slider_->setRange(1, 100);
-        time_slider_->setValue(10);
+        connect(time_slider_, &Slider::seek, this, &ControlWidget::seek);
         vl->addWidget(time_slider_);
 
         auto hl = new QHBoxLayout();
-        hl->setSpacing(0);
+        hl->setSpacing(10);
         hl->setContentsMargins({});
         vl->addLayout(hl);
 
@@ -87,32 +97,70 @@ ControlWidget::ControlWidget(QWidget *parent)
 
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
 
+        // speed
+        auto speed_box = new ComboBox();
+        speed_box->setObjectName("speed-box");
+        speed_box
+            ->add({
+                { 0.5, "0.5x" },
+                { 0.75, "0.75x" },
+                { 1.0, "1.0x" },
+                { 1.25, "1.25x" },
+                { 1.5, "1.5x" },
+                { 2.0, "2.0x" },
+                { 3.0, "3.0x" },
+            })
+            .onselected([this](const QVariant& v) { emit speed(v.toFloat()); })
+            .select(1.0);
+        hl->addWidget(speed_box);
+
         // volume
-        //auto volume_btn = new QCheckBox();
-        //volume_btn->setObjectName("volume-btn");
-        //hl->addWidget(volume_btn);
+        volume_btn_ = new QCheckBox();
+        volume_btn_->setObjectName("volume-btn");
+        hl->addWidget(volume_btn_);
 
-        //volume_slider_ = new QSlider(Qt::Horizontal);
-        //volume_slider_->setObjectName("volume-bar");
-        //volume_slider_->setFixedWidth(125);
-        //volume_slider_->setRange(1, 100);
-        //volume_slider_->setValue(25);
-        //hl->addWidget(volume_slider_);
+        volume_slider_ = new Slider(Qt::Horizontal);
+        volume_slider_->setObjectName("volume-bar");
+        volume_slider_->setFixedWidth(125);
+        volume_slider_->setRange(0, 100);
+        connect(volume_slider_, &Slider::seek, [this](int v) {
+            volume_btn_->setChecked(v == 0);
+            emit volume(v);
+        });
+        hl->addWidget(volume_slider_);
 
-        layout->addWidget(control);
+        // settings
+        auto setting_btn = new QCheckBox();
+        setting_btn->setObjectName("setting-btn");
+        setting_btn->setCheckable(false);
+        hl->addWidget(setting_btn);
     }
+
+    setVolume(0);
 }
 
 void ControlWidget::setDuration(int64_t time)
 {
-    time_slider_->setMaximum(time);
-    duration_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time }).c_str());
+    time_slider_->setMaximum(static_cast<int>(time / 1'000));
+    duration_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::milliseconds{ time / 1'000 }).c_str());
 }
 
 void ControlWidget::setTime(int64_t time)
 {
-    time_slider_->setValue(time);
-    time_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time }).c_str());
+    if (!time_slider_->isSliderDown()) {
+        time_slider_->setValue(static_cast<int>(time / 1'000));
+    }
+    time_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::milliseconds{ time / 1'000 }).c_str());
+}
+
+void ControlWidget::setVolume(int v)
+{
+    v = std::clamp<int>(v, 0, volume_slider_->maximum());
+
+    if (!volume_slider_->isSliderDown()) {
+        volume_slider_->setValue(v);
+    }
+    volume_btn_->setChecked(v == 0);
 }
 
 bool ControlWidget::paused() const { return pause_btn_->isChecked(); }

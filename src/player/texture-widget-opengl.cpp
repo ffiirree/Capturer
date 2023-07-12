@@ -481,7 +481,7 @@ void TextureGLWidget::paintGL()
     for (size_t idx = 0; idx < tex_params_.size(); ++idx) {
         const auto& [wd, hd, fmt, dt, bytes] = tex_params_[idx];
 
-        glActiveTexture(GL_TEXTURE0 + idx);
+        glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + idx));
         glBindTexture(GL_TEXTURE_2D, texture_[idx]);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, frame_->linesize[idx] / bytes); // format_.width + padding
@@ -496,7 +496,7 @@ void TextureGLWidget::create_texture()
 {
     update_tex_params();
 
-    glGenTextures(tex_params_.size(), texture_);
+    glGenTextures(static_cast<GLsizei>(tex_params_.size()), texture_);
 
     for (size_t idx = 0; idx < tex_params_.size(); ++idx) {
         program_.setUniformValue(fmt::format("tex{}", idx).c_str(), static_cast<GLuint>(idx));

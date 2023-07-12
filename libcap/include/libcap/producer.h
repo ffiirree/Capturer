@@ -4,6 +4,7 @@
 #include "media.h"
 
 #include <atomic>
+#include <chrono>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -50,6 +51,10 @@ public:
 
     virtual void enable(int t) { enabled_[t] = true; }
 
+    virtual int64_t duration() const { return AV_NOPTS_VALUE; }
+
+    virtual void seek(const std::chrono::microseconds&) {}
+
     virtual void stop() { running_ = false; }
 
     [[nodiscard]] virtual bool eof() { return eof_ != 0; }
@@ -78,6 +83,7 @@ public:
 
 protected:
     std::atomic<bool> running_{ false };
+    std::atomic<int64_t> seeking_{ 0 };
     std::atomic<uint8_t> eof_{ 0x00 };
     std::atomic<bool> ready_{ false };
     std::thread thread_;

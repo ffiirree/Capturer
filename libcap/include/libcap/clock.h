@@ -4,8 +4,8 @@
 #include <chrono>
 #include <thread>
 
-#define OS_TIME_BASE            1000000000
-#define OS_TIME_BASE_Q          {1, OS_TIME_BASE}
+#define OS_TIME_BASE            1'000'000'000
+#define OS_TIME_BASE_Q          { 1, OS_TIME_BASE }
 
 using namespace std::chrono_literals;
 
@@ -28,6 +28,13 @@ inline int64_t os_gettime_us()
     return duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
+inline int64_t os_gettime_ms()
+{
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+// sleep
 template <class Rep, class Period>
 void os_sleep(const std::chrono::duration<Rep, Period>& _t) 
 {

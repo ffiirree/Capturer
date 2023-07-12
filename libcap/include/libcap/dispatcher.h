@@ -52,6 +52,9 @@ public:
     int64_t paused_time();
     int reset();
 
+    // AV_TIME_BESE
+    void seek(const std::chrono::microseconds& ts);
+
     void stop() { reset(); }
 
     [[nodiscard]] bool running() const { return running_; }
@@ -132,6 +135,9 @@ private:
 
     std::thread video_thread_;
     std::thread auido_thread_;
+
+    std::atomic<bool> vseeking_{ false };
+    std::atomic<bool> aseeking_{ false };
 };
 
 #endif //! CAPTURER_DISPATCHER_H
