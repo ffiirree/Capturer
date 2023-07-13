@@ -161,6 +161,14 @@ TitleBar {
     background-color: #fcfbfb;
 }
 
+TitleBar QCheckBox#pin-btn::indicator:unchecked  {
+    image: url(:/icons/title-pin-dark);
+}
+
+TitleBar QCheckBox#pin-btn::indicator:checked  {
+    image: url(:/icons/title-pin-fill-dark);
+}
+
 TitleBar QCheckBox#min-btn::indicator  {
     image: url(:/icons/minimize-dark);
 }
@@ -177,7 +185,17 @@ TitleBar QCheckBox#close-btn::indicator  {
     image: url(:/icons/close-dark);
 }
 
+TitleBar QCheckBox#full-btn::indicator:unchecked {
+    image: url(:/icons/fullscreen-dark);
+}
+
+TitleBar QCheckBox#full-btn::indicator:checked {
+    image: url(:/icons/fullscreen-back-dark);
+}
+
+TitleBar QCheckBox#pin-btn:hover,
 TitleBar QCheckBox#min-btn:hover,
-TitleBar QCheckBox#max-btn:hover {
+TitleBar QCheckBox#max-btn:hover,
+TitleBar QCheckBox#full-btn:hover {
     background: #E0E0E0;
 }

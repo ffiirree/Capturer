@@ -243,14 +243,10 @@ NavigationBar QCheckBox::indicator {
 
 /*///////////////////////////////////////////////////////////////*/
 TitleBar QCheckBox#icon-title {
-    font-size: 11pt;
-    min-width: 10em;
-    max-width: 10em;
-    padding-top: 0.15em;
+    font-size: 10pt;
 }
 
 TitleBar QCheckBox#icon-title::indicator {
-    image: url(:/icons/capturer);
     font-size: 9pt;
     height: 2.25em;
     width: 2.25em;
@@ -265,6 +261,15 @@ TitleBar QCheckBox::indicator {
     width: 1em;
 
     padding: 1em 1.35em 1em 1.35em;
+}
+
+TitleBar QCheckBox#pin-btn::indicator {
+    font-size: 8pt;
+    
+    height: 1.1em;
+    width: 1.1em;
+
+    padding: 0.95em 1.3em 0.95em 1.3em;
 }
 
 TitleBar QCheckBox#close-btn::indicator:hover {

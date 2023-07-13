@@ -7,32 +7,32 @@
 #include <QCoreApplication>
 
 // clang-format off
-static constexpr GLfloat coordinate[] = {
-  //  x      y     z
-    -1.0f, -1.0f, 0.0f, // bottom left
-    +1.0f, -1.0f, 0.0f, // bottom right
-    -1.0f, +1.0f, 0.0f, // top    left
-    +1.0f, +1.0f, 0.0f, // top    right
-    
-  // x     y
-    0.0f, 1.0f,         // top    left
-    1.0f, 1.0f,         // top    right
-    0.0f, 0.0f,         // bottom left
-    1.0f, 0.0f,         // bottom right
+// normalized device coordinates
+static constexpr GLfloat vertices[] = {
+  // vertex coordinate: [-1.0, 1.0]       / texture coordinate: [0.0, 1.0]
+  //  x      y     z                       / x     y
+    -1.0f, -1.0f, 0.0f, /* bottom left  */  0.0f, 1.0f, /* top    left  */
+    +1.0f, -1.0f, 0.0f, /* bottom right */  1.0f, 1.0f, /* top    right */
+    -1.0f, +1.0f, 0.0f, /* top    left  */  0.0f, 0.0f, /* bottom left  */
+    +1.0f, +1.0f, 0.0f, /* top    right */  1.0f, 0.0f, /* bottom right */ 
 };
 // clang-format on
 
 // https://github.com/libsdl-org/SDL/blob/main/src/render/opengl/SDL_shaders_gl.c
 static const QString TEXTURE_VERTEX_SHADER = R"(
-    attribute vec3 vertex;
-    attribute vec2 texture;
+    #version 330 core
 
-    varying vec2 texCoord;
+    layout (location = 0) in vec3 vtx;
+    layout (location = 1) in vec2 tex;
+
+    uniform mat4 ProjM;
+
+    out vec2 texCoord;
 
     void main(void)
     {
-        gl_Position = vec4(vertex, 1.0);
-        texCoord = texture;
+        gl_Position = ProjM * vec4(vtx, 1.0);
+        texCoord = tex;
     }
 )";
 
@@ -233,7 +233,11 @@ static const QString XBGR_FRAGMENT_SHADER = R"(
     }
 )";
 
-static const std::map<AVPixelFormat, QString> prologues = {
+static const std::map<AVColorSpace, QString> SHADER_CONSTANTS = {
+    { AVCOL_SPC_BT709, BT709_SHADER_CONSTANTS },
+};
+
+static const std::map<AVPixelFormat, QString> PROLOGUES = {
     { AV_PIX_FMT_YUV420P, TEX3_SHADER_PROLOGUE }, { AV_PIX_FMT_YUYV422, TEX1_SHADER_PROLOGUE },
     { AV_PIX_FMT_RGB24, TEX1_SHADER_PROLOGUE },   { AV_PIX_FMT_BGR24, TEX1_SHADER_PROLOGUE },
     { AV_PIX_FMT_YUV422P, TEX3_SHADER_PROLOGUE }, { AV_PIX_FMT_YUV444P, TEX3_SHADER_PROLOGUE },
@@ -246,7 +250,7 @@ static const std::map<AVPixelFormat, QString> prologues = {
     { AV_PIX_FMT_0BGR, TEX1_SHADER_PROLOGUE },    { AV_PIX_FMT_BGR0, TEX1_SHADER_PROLOGUE },
 };
 
-static const std::map<AVPixelFormat, QString> shaders = {
+static const std::map<AVPixelFormat, QString> SHADERS = {
     { AV_PIX_FMT_YUV420P, YUV_FRAGMENT_SHADER }, { AV_PIX_FMT_YUYV422, YUYV_FRAGMENT_SHADER },
     { AV_PIX_FMT_RGB24, RGB_FRAGMENT_SHADER },   { AV_PIX_FMT_BGR24, BGR_FRAGMENT_SHADER },
     { AV_PIX_FMT_YUV422P, YUV_FRAGMENT_SHADER }, { AV_PIX_FMT_YUV444P, YUV_FRAGMENT_SHADER },
@@ -258,6 +262,13 @@ static const std::map<AVPixelFormat, QString> shaders = {
     { AV_PIX_FMT_0RGB, XRGB_FRAGMENT_SHADER },   { AV_PIX_FMT_RGB0, RGB_FRAGMENT_SHADER },
     { AV_PIX_FMT_0BGR, XBGR_FRAGMENT_SHADER },   { AV_PIX_FMT_BGR0, BGR_FRAGMENT_SHADER },
 };
+
+static QString GENERATOR_FRAGMENT_SHADER(AVPixelFormat pix_fmt, AVColorSpace color_space = AVCOL_SPC_BT709)
+{
+    return SHADER_CONSTANTS.at(color_space) + PROLOGUES.at(pix_fmt) + SHADERS.at(pix_fmt);
+}
+
+///
 
 TextureGLWidget::TextureGLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -271,12 +282,12 @@ TextureGLWidget::TextureGLWidget(QWidget *parent)
 TextureGLWidget ::~TextureGLWidget()
 {
     makeCurrent();
-    vertex_buffer_.destroy();
-    delete_texture();
+    vbo_.destroy();
+    delete_textures();
     doneCurrent();
 }
 
-std::vector<AVPixelFormat> TextureGLWidget::formats() const
+std::vector<AVPixelFormat> TextureGLWidget::pix_fmts() const
 {
     return {
         AV_PIX_FMT_YUV420P, ///< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
@@ -312,20 +323,49 @@ std::vector<AVPixelFormat> TextureGLWidget::formats() const
 
 bool TextureGLWidget::isSupported(AVPixelFormat pix_fmt) const
 {
-    for (const auto& fmt : formats()) {
+    for (const auto& fmt : pix_fmts()) {
         if (fmt == pix_fmt) return true;
     }
     return false;
 }
 
-int TextureGLWidget::setPixelFormat(AVPixelFormat pix_fmt)
+int TextureGLWidget::setFormat(const av::vformat_t& vfmt)
 {
-    if (format_.pix_fmt == pix_fmt) return 0;
+    if (!isSupported(vfmt.pix_fmt)) return -1;
 
-    format_.pix_fmt = pix_fmt;
+    std::lock_guard lock(mtx_);
+
+    format_ = vfmt;
+    makeCurrent();
+
     reinit_shaders();
 
+    delete_textures();
+    create_textures();
+
+    doneCurrent();
+
     return 0;
+}
+
+AVRational TextureGLWidget::SAR() const
+{
+    if (format_.sample_aspect_ratio.num > 0 && format_.sample_aspect_ratio.den > 0)
+        return format_.sample_aspect_ratio;
+
+    return { 1, 1 };
+}
+
+AVRational TextureGLWidget::DAR() const
+{
+    if (!format_.width || !format_.height) return { 0, 0 };
+
+    auto sar = SAR();
+    AVRational dar{};
+    av_reduce(&dar.num, &dar.den, static_cast<int64_t>(format_.width) * sar.num,
+              static_cast<int64_t>(format_.height) * sar.den, 1'024 * 1'024);
+
+    return dar;
 }
 
 void TextureGLWidget::present(AVFrame *frame)
@@ -339,14 +379,13 @@ void TextureGLWidget::present(AVFrame *frame)
     update();
 }
 
-void TextureGLWidget::update_tex_params()
+bool TextureGLWidget::update_tex_params()
 {
-
     switch (format_.pix_fmt) {
-    case AV_PIX_FMT_YUYV422: tex_params_ = { { 2, 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 } }; break;
+    case AV_PIX_FMT_YUYV422: tex_params_ = { { 2, 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 } }; return true;
 
     case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_BGR24: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE, 3 } }; break;
+    case AV_PIX_FMT_BGR24: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE, 3 } }; return true;
 
     case AV_PIX_FMT_YUV420P:
         tex_params_ = {
@@ -354,7 +393,7 @@ void TextureGLWidget::update_tex_params()
             { 2, 2, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
             { 2, 2, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_YUV422P:
         tex_params_ = {
@@ -362,7 +401,7 @@ void TextureGLWidget::update_tex_params()
             { 2, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
             { 2, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_YUV444P:
         tex_params_ = {
@@ -370,7 +409,7 @@ void TextureGLWidget::update_tex_params()
             { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
             { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_YUV410P:
         tex_params_ = {
@@ -378,7 +417,7 @@ void TextureGLWidget::update_tex_params()
             { 4, 4, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
             { 4, 4, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_YUV411P:
         tex_params_ = {
@@ -386,7 +425,7 @@ void TextureGLWidget::update_tex_params()
             { 4, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
             { 4, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_BGR8: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE_2_3_3_REV, 1 } }; break;
 
@@ -398,7 +437,7 @@ void TextureGLWidget::update_tex_params()
             { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
             { 2, 2, GL_RG, GL_UNSIGNED_BYTE, 2 },
         };
-        break;
+        return true;
 
     case AV_PIX_FMT_ARGB:
     case AV_PIX_FMT_RGBA:
@@ -407,77 +446,91 @@ void TextureGLWidget::update_tex_params()
     case AV_PIX_FMT_0RGB:
     case AV_PIX_FMT_RGB0:
     case AV_PIX_FMT_0BGR:
-    case AV_PIX_FMT_BGR0: tex_params_ = { { 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 } }; break;
-    default: LOG(ERROR) << "unsuppored pixel format"; break;
+    case AV_PIX_FMT_BGR0: tex_params_ = { { 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 } }; return true;
     }
+
+    LOG(ERROR) << "unsuppored pixel format: " << av::to_string(format_.pix_fmt);
+    return false;
 }
 
 void TextureGLWidget::reinit_shaders()
 {
-    makeCurrent();
-
     program_.removeAllShaders();
 
     // TODO: color space
     program_.addShaderFromSourceCode(QOpenGLShader::Vertex, TEXTURE_VERTEX_SHADER);
-    program_.addShaderFromSourceCode(QOpenGLShader::Fragment, BT709_SHADER_CONSTANTS +
-                                                                  prologues.at(format_.pix_fmt) +
-                                                                  shaders.at(format_.pix_fmt));
+    program_.addShaderFromSourceCode(QOpenGLShader::Fragment, GENERATOR_FRAGMENT_SHADER(format_.pix_fmt));
     program_.link();
-
-    doneCurrent();
 }
 
 void TextureGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
-    vertex_buffer_.create();
-    vertex_buffer_.bind();
-    vertex_buffer_.allocate(coordinate, sizeof(coordinate));
+    // vertex buffer object
+    vbo_.create();
+    vbo_.bind();
+    vbo_.allocate(vertices, sizeof(vertices));
 
+    // shader program
     program_.addShaderFromSourceCode(QOpenGLShader::Vertex, TEXTURE_VERTEX_SHADER);
-    program_.addShaderFromSourceCode(QOpenGLShader::Fragment, BT709_SHADER_CONSTANTS +
-                                                                  prologues.at(format_.pix_fmt) +
-                                                                  shaders.at(format_.pix_fmt));
+    program_.addShaderFromSourceCode(QOpenGLShader::Fragment, GENERATOR_FRAGMENT_SHADER(format_.pix_fmt));
     program_.link();
     program_.bind();
 
     // vertex & texture
-    program_.setAttributeBuffer("vertex", GL_FLOAT, 0, 3, 3 * sizeof(float));
-    program_.setAttributeBuffer("texture", GL_FLOAT, 12 * sizeof(float), 2, 2 * sizeof(float));
-    program_.enableAttributeArray("vertex");
-    program_.enableAttributeArray("texture");
+    program_.setAttributeBuffer(0, GL_FLOAT, 0, 3, 5 * sizeof(float));
+    program_.setAttributeBuffer(1, GL_FLOAT, 3 * sizeof(float), 2, 5 * sizeof(float));
+    program_.enableAttributeArray(0);
+    program_.enableAttributeArray(1);
+
+    // matrix
+    proj_id_ = program_.uniformLocation("ProjM");
+
+    // create textures
+    create_textures();
 }
 
 void TextureGLWidget::resizeGL(int w, int h)
 {
     glViewport(0, 0, w, h);
+
+    // keep aspect ratio
+    proj_.setToIdentity();
+    if (auto dar = DAR(); dar.num && dar.den) {
+        auto size = QSizeF(dar.num, dar.den).scaled(w, h, Qt::KeepAspectRatio);
+        proj_.scale(size.width() / w, size.height() / h);
+    }
+    program_.setUniformValue(proj_id_, proj_);
+
     repaint();
 }
 
 void TextureGLWidget::paintGL()
 {
-    //
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    //
     std::lock_guard lock(mtx_);
 
     if (!frame_->data[0]) return;
 
+    if (format_.pix_fmt != frame_->format) {
+        format_.pix_fmt = static_cast<AVPixelFormat>(frame_->format);
+        reinit_shaders();
+    }
+
     if (format_.width != frame_->width || format_.height != frame_->height) {
         format_.width  = frame_->width;
         format_.height = frame_->height;
-
-        delete_texture();
-        create_texture();
     }
 
-    //
+    // update textures
     for (size_t idx = 0; idx < tex_params_.size(); ++idx) {
         const auto& [wd, hd, fmt, dt, bytes] = tex_params_[idx];
 
@@ -492,9 +545,12 @@ void TextureGLWidget::paintGL()
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void TextureGLWidget::create_texture()
+void TextureGLWidget::create_textures()
 {
-    update_tex_params();
+    if (!update_tex_params()) {
+        LOG(ERROR) << "can not create textures";
+        return;
+    }
 
     glGenTextures(static_cast<GLsizei>(tex_params_.size()), texture_);
 
@@ -511,7 +567,7 @@ void TextureGLWidget::create_texture()
     }
 }
 
-void TextureGLWidget::delete_texture()
+void TextureGLWidget::delete_textures()
 {
     if (QOpenGLFunctions::isInitialized(QOpenGLFunctions::d_ptr)) {
         glDeleteTextures(3, texture_);

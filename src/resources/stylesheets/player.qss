@@ -3,70 +3,68 @@ ControlWidget {
 }
 
 /*////////////////////////////////////////////////*/
-ControlWidget QWidget#title-bar {
-    background-color: rgba(0, 0, 0, 175);
+ControlWidget TitleBar {
+    background-color: rgba(25, 25, 25, 175);
 }
 
-ControlWidget QLabel#title-label {
+ControlWidget QCheckBox#icon-title {
     font-size: 10pt;
     color: white;
+    padding-left: 0.5em;
+    min-width: 8em;
 }
 
-ControlWidget QCheckBox#close-btn::indicator {
-    height: 1.25em;
-    width: 1.25em;
-
-    padding: 0.75em 1.25em 0.75em 1.25em;
+ControlWidget TitleBar QCheckBox#icon-title::indicator {
+    width: 0px;
+    height: 0px;
+    padding: 0px;
 }
 
-ControlWidget QCheckBox#close-btn::indicator:hover {
-    background-color: #e81123;
-    image: url(:/icons/close-light);
-}
-
-ControlWidget QCheckBox#close-btn::indicator {
-    image: url(:/icons/close-light);
+ControlWidget QCheckBox#pin-btn:hover,
+ControlWidget QCheckBox#min-btn:hover,
+ControlWidget QCheckBox#max-btn:hover,
+ControlWidget QCheckBox#full-btn:hover {
+    background: rgba(0, 0, 0, 75);
 }
 
 /*////////////////////////////////////////////////*/
 ControlWidget QWidget#control-bar {
-    background-color: rgba(50, 50, 50, 175);
+    background-color: rgba(25, 25, 25, 175);
 }
 
-ControlWidget QCheckBox::indicator {
+QWidget#control-bar QCheckBox::indicator {
     height: 1.25em;
     width: 1.25em;
-
     padding: 0.75em;
     border-radius: 5px;
 }
 
-ControlWidget QCheckBox::indicator:hover {
-    background-color: rgba(0, 0, 0, 50);
+QWidget#control-bar QCheckBox::indicator:hover {
+    background-color: rgba(0, 0, 0, 75);
 }
 
 /* pause button */
-ControlWidget QCheckBox#pause-btn::indicator:checked {
+QWidget#control-bar QCheckBox#pause-btn::indicator:checked {
     image: url(:/icons/play-light);
 }
 
-ControlWidget QCheckBox#pause-btn::indicator:unchecked {
+QWidget#control-bar QCheckBox#pause-btn::indicator:unchecked {
     image: url(:/icons/pause-light);
 }
 
 /* time labels */
-ControlWidget QLabel {
+QWidget#control-bar QLabel {
     font-size: 9pt;
 
     color: #efefef;
 }
 
-ControlWidget QLabel#time-label {
+QWidget#control-bar QLabel#time-label {
     color: white;
 }
 
 /* speed */
-ControlWidget ComboBox#speed-box {
+QWidget#control-bar ComboBox#speed-box {
     background-color: transparent;
     border: none;
 
@@ -79,32 +77,32 @@ ControlWidget ComboBox#speed-box {
     color: #e6e6e6;
 }
 
-ControlWidget ComboBox#speed-box::drop-down,
-ControlWidget ComboBox#speed-box::down-arrow {
+QWidget#control-bar ComboBox#speed-box::drop-down,
+QWidget#control-bar ComboBox#speed-box::down-arrow {
     width: 0px;
     height: 0px;
 }
 
-ControlWidget ComboBox#speed-box:hover {
+QWidget#control-bar ComboBox#speed-box:hover {
     color: white;
     background-color: rgba(0, 0, 0, 50);
 }
 
 
 /* volume */
-ControlWidget QCheckBox#volume-btn::indicator:checked {
+QWidget#control-bar QCheckBox#volume-btn::indicator:checked {
     image: url(:/icons/volume-fill-mute-light);
 }
 
-ControlWidget QCheckBox#volume-btn::indicator:unchecked {
+QWidget#control-bar QCheckBox#volume-btn::indicator:unchecked {
     image: url(:/icons/volume-fill-high-light);
 }
 
 /* settings */
-ControlWidget QCheckBox#setting-btn::indicator {
+QWidget#control-bar QCheckBox#setting-btn::indicator {
     image: url(:/icons/settings-fill-light);
 }
 
-ControlWidget QCheckBox#setting-btn::indicator:hover {
+QWidget#control-bar QCheckBox#setting-btn::indicator:hover {
     image: url(:/icons/settings-fill);
 }

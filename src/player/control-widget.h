@@ -2,6 +2,7 @@
 #define CAPTURER_CONTROL_WIDGET_H
 
 #include "slider.h"
+#include "framelesswindow.h"
 
 #include <QCheckBox>
 #include <QLabel>
@@ -10,7 +11,7 @@ class ControlWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ControlWidget(QWidget *parent);
+    explicit ControlWidget(FramelessWindow *parent);
 
 public slots:
     void setDuration(int64_t); // AV_TIME_BASE
@@ -25,6 +26,9 @@ signals:
     void seek(int64_t, int64_t); // us
     void speed(float);
     void volume(int);
+    void mute(bool);
+
+    void validDruation(bool);
 
 private:
     Slider *time_slider_{};

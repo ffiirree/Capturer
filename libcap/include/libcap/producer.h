@@ -83,7 +83,7 @@ public:
 
 protected:
     std::atomic<bool> running_{ false };
-    std::atomic<int64_t> seeking_{ 0 };
+    std::atomic<int64_t> seeking_{ AV_NOPTS_VALUE };
     std::atomic<uint8_t> eof_{ 0x00 };
     std::atomic<bool> ready_{ false };
     std::thread thread_;

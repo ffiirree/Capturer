@@ -1,20 +1,20 @@
 #include "control-widget.h"
 
 #include "combobox.h"
+#include "libcap/media.h"
+#include "titlebar.h"
 
 #include <chrono>
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QLineEdit>
 
-ControlWidget::ControlWidget(QWidget *parent)
+ControlWidget::ControlWidget(FramelessWindow *parent)
     : QWidget(parent)
 {
     setMouseTracking(true);
 
-    // controller
     auto layout = new QVBoxLayout();
     layout->setSpacing(0);
     layout->setContentsMargins({});
@@ -22,27 +22,10 @@ ControlWidget::ControlWidget(QWidget *parent)
 
     // title bar
     {
-        auto title_bar = new QWidget();
+        auto title_bar = new TitleBar(parent);
         title_bar->setObjectName("title-bar");
+        title_bar->setHideOnFullScreen(false);
         layout->addWidget(title_bar);
-
-        auto hl = new QHBoxLayout();
-        hl->setSpacing(0);
-        hl->setContentsMargins({});
-        title_bar->setLayout(hl);
-
-        hl->addSpacerItem(new QSpacerItem(16, 10, QSizePolicy::Minimum, QSizePolicy::Minimum));
-
-        auto title = new QLabel("Capturer Player");
-        title->setObjectName("title-label");
-        hl->addWidget(title);
-        connect(parent, &QWidget::windowTitleChanged, [=](const auto& t) { title->setText(t); });
-        hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
-
-        auto close_btn = new QCheckBox();
-        close_btn->setObjectName("close-btn");
-        connect(close_btn, &QCheckBox::clicked, parent, &QWidget::close);
-        hl->addWidget(close_btn);
     }
 
     layout->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
@@ -57,6 +40,9 @@ ControlWidget::ControlWidget(QWidget *parent)
         auto vl = new QVBoxLayout();
         vl->setSpacing(0);
         vl->setContentsMargins({ 10, 0, 10, 10 });
+        connect(this, &ControlWidget::validDruation, [vl](auto valid) {
+            vl->setContentsMargins({ 10, valid ? 0 : 10, 10, 10 });
+        });
         control->setLayout(vl);
 
         time_slider_ = new Slider(Qt::Horizontal);
@@ -64,6 +50,7 @@ ControlWidget::ControlWidget(QWidget *parent)
         time_slider_->setMouseTracking(true);
         time_slider_->setRange(1, 100);
         connect(time_slider_, &Slider::seek, this, &ControlWidget::seek);
+        connect(this, &ControlWidget::validDruation, time_slider_, &Slider::setVisible);
         vl->addWidget(time_slider_);
 
         auto hl = new QHBoxLayout();
@@ -88,11 +75,14 @@ ControlWidget::ControlWidget(QWidget *parent)
         time_label_->setAlignment(Qt::AlignCenter);
         hl->addWidget(time_label_);
 
-        hl->addWidget(new QLabel("/"));
+        auto separator = new QLabel("/");
+        connect(this, &ControlWidget::validDruation, separator, &QLabel::setVisible);
+        hl->addWidget(separator);
 
         duration_label_ = new QLabel("--:--:--");
         duration_label_->setObjectName("duration-label");
         duration_label_->setAlignment(Qt::AlignCenter);
+        connect(this, &ControlWidget::validDruation, duration_label_, &QLabel::setVisible);
         hl->addWidget(duration_label_);
 
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
@@ -112,6 +102,8 @@ ControlWidget::ControlWidget(QWidget *parent)
             })
             .onselected([this](const QVariant& v) { emit speed(v.toFloat()); })
             .select(1.0);
+        connect(this, &ControlWidget::validDruation, speed_box, &ComboBox::setVisible);
+
         hl->addWidget(speed_box);
 
         // volume
@@ -123,7 +115,7 @@ ControlWidget::ControlWidget(QWidget *parent)
         volume_slider_->setObjectName("volume-bar");
         volume_slider_->setFixedWidth(125);
         volume_slider_->setRange(0, 100);
-        connect(volume_slider_, &Slider::seek, [this](int v) {
+        connect(volume_slider_, &Slider::valueChanged, [this](int v) {
             volume_btn_->setChecked(v == 0);
             emit volume(v);
         });
@@ -141,16 +133,18 @@ ControlWidget::ControlWidget(QWidget *parent)
 
 void ControlWidget::setDuration(int64_t time)
 {
+    emit validDruation(time != AV_NOPTS_VALUE);
+
     time_slider_->setMaximum(static_cast<int>(time / 1'000));
-    duration_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::milliseconds{ time / 1'000 }).c_str());
+    duration_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time / 1'000'000 }).c_str());
 }
 
 void ControlWidget::setTime(int64_t time)
 {
-    if (!time_slider_->isSliderDown()) {
+    if (time_slider_ && !time_slider_->isSliderDown() && time_slider_->isVisible()) {
         time_slider_->setValue(static_cast<int>(time / 1'000));
     }
-    time_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::milliseconds{ time / 1'000 }).c_str());
+    time_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time / 1'000'000 }).c_str());
 }
 
 void ControlWidget::setVolume(int v)

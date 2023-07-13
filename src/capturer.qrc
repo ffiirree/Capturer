@@ -118,6 +118,12 @@
         <file alias="maximize">resources/icons/maximize.png</file>
         <file alias="maximize-light">resources/icons/maximize-light.png</file>
         <file alias="maximize-dark">resources/icons/maximize-dark.png</file>
+        <file alias="fullscreen">resources/icons/fullscreen.png</file>
+        <file alias="fullscreen-light">resources/icons/fullscreen-light.png</file>
+        <file alias="fullscreen-dark">resources/icons/fullscreen-dark.png</file>
+        <file alias="fullscreen-back">resources/icons/fullscreen-back.png</file>
+        <file alias="fullscreen-back-light">resources/icons/fullscreen-back-light.png</file>
+        <file alias="fullscreen-back-dark">resources/icons/fullscreen-back-dark.png</file>
         <file alias="normal">resources/icons/normal.png</file>
         <file alias="normal-light">resources/icons/normal-light.png</file>
         <file alias="normal-dark">resources/icons/normal-dark.png</file>
@@ -136,6 +142,12 @@
         <file alias="volume-fill-high">resources/icons/volume-fill-high.png</file>
         <file alias="volume-fill-high-dark">resources/icons/volume-fill-high-dark.png</file>
         <file alias="volume-fill-high-light">resources/icons/volume-fill-high-light.png</file>
+        <file alias="title-pin">resources/icons/title-pin.png</file>
+        <file alias="title-pin-dark">resources/icons/title-pin-dark.png</file>
+        <file alias="title-pin-light">resources/icons/title-pin-light.png</file>
+        <file alias="title-pin-fill">resources/icons/title-pin-fill.png</file>
+        <file alias="title-pin-fill-dark">resources/icons/title-pin-fill-dark.png</file>
+        <file alias="title-pin-fill-light">resources/icons/title-pin-fill-light.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

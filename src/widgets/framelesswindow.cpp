@@ -13,7 +13,7 @@
 #endif
 
 FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags f)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | f)
+    : QWidget(parent, f | Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint)
 {
 #ifdef Q_OS_WIN
     auto hwnd = reinterpret_cast<HWND>(winId());
@@ -33,9 +33,13 @@ FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags f)
 
 void FramelessWindow::maximize(bool state) { state ? showMaximized() : showNormal(); }
 
+void FramelessWindow::toggleMaximized() { !isMaximized() ? showMaximized() : showNormal(); }
+
 void FramelessWindow::minimize(bool state) { state ? showMinimized() : showNormal(); }
 
 void FramelessWindow::fullscreen(bool state) { state ? showFullScreen() : showNormal(); }
+
+void FramelessWindow::toggleFullScreen() { isFullScreen() ? showNormal() : showFullScreen(); }
 
 void FramelessWindow::mousePressEvent(QMouseEvent *event)
 {

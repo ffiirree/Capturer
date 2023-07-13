@@ -6,6 +6,7 @@
 #include <fmt/chrono.h>
 #include <QCheckBox>
 #include <QChildEvent>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QShortcut>
@@ -13,45 +14,51 @@
 #include <QVBoxLayout>
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent)
+    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint |
+                                  Qt::WindowStaysOnTopHint)
 {
+    setMouseTracking(true);
     installEventFilter(this);
 
     decoder_    = new Decoder();
     dispatcher_ = new Dispatcher();
 
-    texture_ = new TextureGLWidget();
-
     auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
     setLayout(stacked_layout);
 
+    // control bar
     control_ = new ControlWidget(this);
     connect(control_, &ControlWidget::pause, this, &VideoPlayer::pause);
     connect(control_, &ControlWidget::resume, this, &VideoPlayer::resume);
     connect(control_, &ControlWidget::seek, this, &VideoPlayer::seek);
-    connect(control_, &ControlWidget::speed, this, &VideoPlayer::speed);
+    connect(control_, &ControlWidget::speed, this, &VideoPlayer::setSpeed);
+    connect(control_, &ControlWidget::volume, this, &VideoPlayer::setVolume);
+    connect(control_, &ControlWidget::mute, this, &VideoPlayer::mute);
     connect(this, &VideoPlayer::timeChanged, [this](auto t) {
         if (!seeking_) control_->setTime(t);
     });
     stacked_layout->addWidget(control_);
+
+    // texture
+    texture_ = new TextureGLWidget();
     stacked_layout->addWidget(texture_);
 
+    //
     timer_ = new QTimer;
     connect(timer_, &QTimer::timeout, [this]() {
         setCursor(Qt::BlankCursor);
-
-        // control_->hide();
+        control_->hide();
         timer_->stop();
     });
     timer_->start(2000ms);
-
-    setMouseTracking(true);
 
     // clang-format off
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { seek(clock_ns() / 1'000 + 10'000'000, clock_ns() / 1000); }); // +10s
     connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this]() { seek(clock_ns() / 1'000 - 10'000'000, clock_ns() / 1000); }); // -10s
     connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this]() { paused() ? resume() : pause(); });
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this]() { control_->setVolume(volume_.x + 5); }); // +10s
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this]() { control_->setVolume(volume_.x - 5); }); // -10s
     // clang-format on
 }
 
@@ -71,20 +78,19 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return false;
     }
 
-    if (texture_->setPixelFormat(texture_->isSupported(decoder_->vfmt.pix_fmt)
-                                     ? decoder_->vfmt.pix_fmt
-                                     : texture_->formats()[0]) < 0) {
-        return false;
-    }
-
     dispatcher_->append(decoder_);
     dispatcher_->set_encoder(this);
 
     dispatcher_->afmt.sample_fmt = decoder_->afmt.sample_fmt;
-    dispatcher_->vfmt.pix_fmt    = texture_->format();
+    dispatcher_->vfmt.pix_fmt =
+        texture_->isSupported(decoder_->vfmt.pix_fmt) ? decoder_->vfmt.pix_fmt : texture_->pix_fmts()[0];
 
     if (dispatcher_->create_filter_graph(options.contains("filters") ? options.at("filters") : "", {})) {
         LOG(INFO) << "create filters failed";
+        return false;
+    }
+
+    if (texture_->setFormat(vfmt) < 0) {
         return false;
     }
 
@@ -103,7 +109,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return false;
     }
 
-    QWidget::setWindowTitle(QString::fromUtf8(filename.c_str()));
+    QFileInfo info(QString::fromStdString(filename));
+    QWidget::setWindowTitle(info.isFile() ? info.fileName() : info.filePath());
     control_->setDuration(decoder_->duration());
 
     running_ = true;
@@ -122,6 +129,11 @@ int VideoPlayer::consume(AVFrame *frame, int type)
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
+        if (!frame || !frame->data[0]) {
+            eof_ = 0x01;
+            return 0;
+        }
+
         if (video_buffer_.full()) return AVERROR(EAGAIN);
 
         if (offset_ts_ == AV_NOPTS_VALUE || seeking_) {
@@ -163,7 +175,12 @@ void VideoPlayer::pause()
 
 void VideoPlayer::resume()
 {
-    if (paused_pts_ != AV_NOPTS_VALUE) {
+    if (eof()) {
+        seek(0, 0);
+        paused_pts_ = AV_NOPTS_VALUE;
+        eof_        = 0;
+    }
+    else if (paused_pts_ != AV_NOPTS_VALUE) {
         offset_ts_ += os_gettime_ns() - paused_pts_;
         paused_pts_ = AV_NOPTS_VALUE;
     }
@@ -188,12 +205,31 @@ void VideoPlayer::seek(int64_t nts, int64_t ots)
     }
 }
 
-void VideoPlayer::speed(float speed)
+void VideoPlayer::setSpeed(float speed)
 {
     offset_ts_ = os_gettime_ns() - video_pts_;
     speed_.ts  = os_gettime_ns();
     speed_.x   = std::clamp<float>(speed, 0.5, 3.0);
-    ;
+}
+
+void VideoPlayer::mute(bool muted)
+{
+    if (volume_.muted == muted) return;
+
+    volume_.muted = muted;
+    control_->setVolume(muted ? 0 : volume_.x.load());
+}
+
+void VideoPlayer::setVolume(int volume)
+{
+    volume = std::clamp<int>(volume, 0, 100);
+
+    if (volume_.x == volume && volume_.muted == !!volume) return;
+
+    volume_.x     = volume;
+    volume_.muted = volume;
+
+    control_->setVolume(volume_.x);
 }
 
 void VideoPlayer::video_thread_f()
@@ -205,7 +241,7 @@ void VideoPlayer::video_thread_f()
 
     while (video_enabled_ && running_) {
         if (video_buffer_.empty() || (paused() && !step_)) {
-            std::this_thread::sleep_for(20ms);
+            std::this_thread::sleep_for(10ms);
             continue;
         }
 
@@ -215,8 +251,8 @@ void VideoPlayer::video_thread_f()
         });
 
         if (!step_ && !seeking_) {
-            video_pts_       = av_rescale_q(frame->pts, vfmt.time_base, OS_TIME_BASE_Q);
-            int64_t sleep_ns = std::clamp<int64_t>((video_pts_ - clock_ns()) / speed_.x, 0, OS_TIME_BASE);
+            video_pts_    = av_rescale_q(frame->pts, vfmt.time_base, OS_TIME_BASE_Q);
+            auto sleep_ns = std::clamp<int64_t>((video_pts_ - clock_ns()) / speed_.x, 0, OS_TIME_BASE);
 
             DLOG(INFO) << fmt::format("[V] pts = {}ms, time = {}ms, sleep = {}ms, speed = {:4.2f}x",
                                       av_rescale_q(frame->pts, vfmt.time_base, { 1, 1'000 }),
@@ -228,6 +264,8 @@ void VideoPlayer::video_thread_f()
         emit timeChanged(av_rescale_q(frame->pts, vfmt.time_base, { 1, AV_TIME_BASE }));
 
         step_ = std::max<int>(0, step_ - 1);
+
+        if (eof_ == 0x01 && video_buffer_.empty()) control_->pause();
     }
 }
 
@@ -244,7 +282,7 @@ bool VideoPlayer::eventFilter(QObject *object, QEvent *event)
 {
     if (event->type() == QEvent::ChildAdded) {
         dynamic_cast<QChildEvent *>(event)->child()->installEventFilter(this);
-        qDebug() << Q_FUNC_INFO << object << event;
+        // qDebug() << Q_FUNC_INFO << object << event;
     }
 
     if (event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonPress) {

@@ -167,6 +167,14 @@ TitleBar {
     background-color: #272728;
 }
 
+TitleBar QCheckBox#pin-btn::indicator:unchecked  {
+    image: url(:/icons/title-pin-light);
+}
+
+TitleBar QCheckBox#pin-btn::indicator:checked  {
+    image: url(:/icons/title-pin-fill-light);
+}
+
 TitleBar QCheckBox#min-btn::indicator {
     image: url(:/icons/minimize-light);
 }
@@ -179,11 +187,21 @@ TitleBar QCheckBox#max-btn::indicator:checked {
     image: url(:/icons/normal-light);
 }
 
+TitleBar QCheckBox#full-btn::indicator:unchecked {
+    image: url(:/icons/fullscreen-light);
+}
+
+TitleBar QCheckBox#full-btn::indicator:checked {
+    image: url(:/icons/fullscreen-back-light);
+}
+
 TitleBar QCheckBox#close-btn::indicator {
     image: url(:/icons/close-light);
 }
 
+TitleBar QCheckBox#pin-btn:hover,
 TitleBar QCheckBox#min-btn:hover,
-TitleBar QCheckBox#max-btn:hover {
-    background: #323232;
+TitleBar QCheckBox#max-btn:hover,
+TitleBar QCheckBox#full-btn:hover {
+    background-color: #323232;
 }

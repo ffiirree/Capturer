@@ -11,8 +11,10 @@ public:
 
 public slots:
     void maximize(bool = true);
+    void toggleMaximized();
     void minimize(bool = true);
     void fullscreen(bool = true);
+    void toggleFullScreen();
 
 signals:
     void hidden();

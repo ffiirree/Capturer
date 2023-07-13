@@ -71,7 +71,9 @@ public slots:
     void pause();
     void resume();
     void seek(int64_t, int64_t); // us
-    void speed(float);
+    void mute(bool);
+    void setSpeed(float);
+    void setVolume(int);
 
 signals:
     void started();
@@ -115,8 +117,8 @@ private:
     std::atomic<int64_t> paused_pts_{ AV_NOPTS_VALUE };
     std::atomic<int> step_{ 0 };
 
-    std::atomic<int64_t> offset_ts_{ AV_NOPTS_VALUE };
-    std::atomic<int64_t> video_pts_{ AV_NOPTS_VALUE };
+    std::atomic<int64_t> offset_ts_{ AV_NOPTS_VALUE }; // OS_TIME_BASE
+    std::atomic<int64_t> video_pts_{ AV_NOPTS_VALUE }; // OS_TIME_BASE
 
     struct speed_t
     {

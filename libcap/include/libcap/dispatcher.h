@@ -57,7 +57,7 @@ public:
 
     void stop() { reset(); }
 
-    [[nodiscard]] bool running() const { return running_; }
+    [[nodiscard]] bool running() const { return vrunning_ || arunning_; }
 
     [[nodiscard]] int64_t escaped_us();
 
@@ -129,7 +129,8 @@ private:
     AVFilterGraph *video_graph_{ nullptr };
     // @}
 
-    std::atomic<bool> running_{ false };
+    std::atomic<bool> vrunning_{ false };
+    std::atomic<bool> arunning_{ false };
     std::atomic<bool> draining_{ false };
     std::atomic<bool> ready_{ false };
 

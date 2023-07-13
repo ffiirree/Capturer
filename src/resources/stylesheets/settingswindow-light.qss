@@ -2,7 +2,6 @@ SettingWindow * {
     color: #333333;
 }
 
-
 SettingWindow TitleBar QCheckBox#icon-title {
     background-color: #f4f6f6;
 }

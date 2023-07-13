@@ -106,9 +106,6 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             .time_base           = fmt_ctx_->streams[video_stream_idx_]->time_base,
         };
 
-        VIDEO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, vfmt.time_base) -
-                            fmt_ctx_->streams[video_stream_idx_]->start_time;
-
         LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] {}", name_, av::to_string(vfmt));
     }
 
@@ -137,9 +134,6 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             .channel_layout = audio_decoder_ctx_->channel_layout,
             .time_base      = fmt_ctx_->streams[audio_stream_idx_]->time_base,
         };
-
-        AUDIO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, afmt.time_base) -
-                            fmt_ctx_->streams[audio_stream_idx_]->start_time;
 
         LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] {}, frame_size = {}, start_time = {}", name_,
                                  av::to_string(afmt), audio_decoder_ctx_->frame_size,
@@ -201,11 +195,11 @@ AVRational Decoder::time_base(int type) const
     }
 }
 
-bool Decoder::eof() { return (eof_ == DECODING_EOF) && video_buffer_.empty() && audio_buffer_.empty(); }
+bool Decoder::eof() { return eof_ == DECODING_EOF; }
 
 int Decoder::produce(AVFrame *frame, int type)
 {
-    if (seeking_) return AVERROR(EAGAIN);
+    if (seeking_ != AV_NOPTS_VALUE) return AVERROR(EAGAIN);
 
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -239,6 +233,13 @@ int Decoder::run()
         return -1;
     }
 
+    if (video_stream_idx_ >= 0)
+        VIDEO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, vfmt.time_base) -
+                            fmt_ctx_->streams[video_stream_idx_]->start_time;
+    if (audio_stream_idx_ >= 0)
+        AUDIO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, afmt.time_base) -
+                            fmt_ctx_->streams[audio_stream_idx_]->start_time;
+
     eof_     = 0x00;
     running_ = true;
     thread_  = std::thread([this]() {
@@ -261,7 +262,7 @@ int Decoder::run_f()
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
     while (running_) {
-        if (seeking_) {
+        if (seeking_ != AV_NOPTS_VALUE) {
             if (avformat_seek_file(fmt_ctx_, -1, INT64_MIN, seeking_, INT64_MAX, 0) < 0) {
                 LOG(ERROR) << fmt::format(" failed to seek: {:%H:%M:%S}",
                                           std::chrono::microseconds{ seeking_ });
@@ -274,7 +275,7 @@ int Decoder::run_f()
                 audio_buffer_.clear();
             }
 
-            seeking_ = 0;
+            seeking_ = AV_NOPTS_VALUE;
         }
 
         // read
@@ -301,7 +302,7 @@ int Decoder::run_f()
         if (packet_->stream_index == video_stream_idx_ ||
             ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
             ret = avcodec_send_packet(video_decoder_ctx_, packet_);
-            while (ret >= 0 && !seeking_) {
+            while (ret >= 0 && seeking_ == AV_NOPTS_VALUE) {
                 av_frame_unref(decoded_frame_);
                 ret = avcodec_receive_frame(video_decoder_ctx_, decoded_frame_);
                 if (ret == AVERROR(EAGAIN)) {
@@ -320,15 +321,16 @@ int Decoder::run_f()
                     return ret;
                 }
 
+                decoded_frame_->pts = decoded_frame_->best_effort_timestamp;
                 decoded_frame_->pts += VIDEO_OFFSET_TIME; // synchronize with the system clock
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
 
                 // waiting
-                while (video_buffer_.full() && running_ && !seeking_) {
+                while (video_buffer_.full() && running_ && seeking_ == AV_NOPTS_VALUE) {
                     std::this_thread::sleep_for(10ms);
                 }
 
-                if (!seeking_) {
+                if (seeking_ == AV_NOPTS_VALUE) {
                     DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
                                               video_decoder_ctx_->frame_number, decoded_frame_->pts);
 
@@ -344,7 +346,7 @@ int Decoder::run_f()
         if (packet_->stream_index == audio_stream_idx_ ||
             ((eof_ & DEMUXING_EOF) && !(eof_ & ADECODING_EOF))) {
             ret = avcodec_send_packet(audio_decoder_ctx_, packet_);
-            while (ret >= 0 && !seeking_) {
+            while (ret >= 0 && seeking_ == AV_NOPTS_VALUE) {
                 av_frame_unref(decoded_frame_);
                 ret = avcodec_receive_frame(audio_decoder_ctx_, decoded_frame_);
                 if (ret == AVERROR(EAGAIN)) {
@@ -367,11 +369,11 @@ int Decoder::run_f()
                 if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
 
                 // waiting
-                while (audio_buffer_.full() && running_ && !seeking_) {
+                while (audio_buffer_.full() && running_ && seeking_ == AV_NOPTS_VALUE) {
                     std::this_thread::sleep_for(10ms);
                 }
 
-                if (!seeking_) {
+                if (seeking_ == AV_NOPTS_VALUE) {
                     DLOG(INFO) << fmt::format(
                         "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
                         audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples,
@@ -397,10 +399,21 @@ int Decoder::run_f()
     }
     LOG(INFO) << "EXITED";
 
+    running_ = false;
+
     return 0;
 }
 
-void Decoder::seek(const std::chrono::microseconds& ts) { seeking_ = ts.count(); }
+void Decoder::seek(const std::chrono::microseconds& ts)
+{
+    seeking_ = ts.count();
+
+    if (!running_) {
+        eof_ = 0x00;
+        wait();
+        run();
+    }
+}
 
 void Decoder::reset()
 {

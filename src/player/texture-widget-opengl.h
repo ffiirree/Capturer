@@ -19,13 +19,18 @@ public:
 
     void present(AVFrame *frame);
 
-    std::vector<AVPixelFormat> formats() const;
+    std::vector<AVPixelFormat> pix_fmts() const;
 
     bool isSupported(AVPixelFormat) const;
 
-    int setPixelFormat(AVPixelFormat pix_fmt);
+    int setFormat(const av::vformat_t& vfmt);
 
-    AVPixelFormat format() const { return format_.pix_fmt; }
+    av::vformat_t format() const { return format_; }
+
+    AVPixelFormat pix_fmt() const { return format_.pix_fmt; }
+
+    AVRational SAR() const;
+    AVRational DAR() const;
 
 protected:
     virtual void initializeGL();
@@ -33,19 +38,23 @@ protected:
     virtual void paintGL();
 
 private:
-    void create_texture();
-    void delete_texture();
+    void create_textures();
+    void delete_textures();
     void reinit_shaders();
-    void update_tex_params();
+    bool update_tex_params();
 
     // shader program
     QOpenGLShaderProgram program_{};
 
-    // vertex buffer object
-    QOpenGLBuffer vertex_buffer_{};
+    // vertex buffer objectss
+    QOpenGLBuffer vbo_{ QOpenGLBuffer::VertexBuffer };
 
     // YUV texture
     GLuint texture_[4]{};
+
+    // ModelViewProjectionMatrix
+    GLuint proj_id_{};
+    QMatrix4x4 proj_{};
 
     av::vformat_t format_{ .pix_fmt = AV_PIX_FMT_YUV420P };
 

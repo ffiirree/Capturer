@@ -9,7 +9,9 @@ class TitleBar : public QWidget
 public:
     explicit TitleBar(FramelessWindow *parent);
 
-    FramelessWindow *parent() const { return dynamic_cast<FramelessWindow *>(QWidget::parent()); }
+    FramelessWindow *window() const { return window_; }
+
+    void setHideOnFullScreen(bool value = true) { hide_on_fullscreen_ = value; }
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -18,6 +20,8 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
+    FramelessWindow *window_{};
+    bool hide_on_fullscreen_{ true };
 #ifndef Q_OS_WIN
     QPoint begin_{ 0, 0 };
     bool moving_{ false };
