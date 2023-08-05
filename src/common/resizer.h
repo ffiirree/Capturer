@@ -1,8 +1,7 @@
 #ifndef CAPTURER_RESIZER_H
 #define CAPTURER_RESIZER_H
 
-#include "probe/graphics.h"
-
+#include <probe/graphics.h>
 #include <QPoint>
 #include <QRect>
 #include <QWidget>

@@ -4,19 +4,18 @@
 
 #include "libcap/platform.h"
 #include "logging.h"
-#include "probe/defer.h"
-#include "probe/util.h"
 
 #include <Audioclient.h>
 #include <functiondiscoverykeys.h>
+#include <probe/defer.h>
+#include <probe/util.h>
 #include <propsys.h>
 #include <Windows.h>
+#include <winrt/base.h>
 
 extern "C" {
 #include <libavformat/avformat.h>
 }
-
-#include <winrt/base.h>
 
 uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
 {

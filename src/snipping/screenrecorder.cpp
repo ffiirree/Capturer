@@ -315,7 +315,7 @@ void ScreenRecorder::setup()
     dispatcher_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     dispatcher_->afmt.channels       = 2;
     dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
-    if (dispatcher_->create_filter_graph(filters_, {}) < 0) {
+    if (dispatcher_->initialize(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         stop();
         return;

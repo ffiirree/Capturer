@@ -3,7 +3,7 @@
 
 #include "logging.h"
 #include "producer.h"
-#include "ringvector.h"
+#include "queue.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -21,34 +21,39 @@ class Decoder : public Producer<AVFrame>
     };
 
 public:
+    using super = Producer<AVFrame>;
+
     ~Decoder() override { destroy(); }
 
     // reset and stop the thread
     void reset() override;
 
     // open input
-    int open(const std::string& name, std::map<std::string, std::string> options = {});
+    int open(const std::string& name, std::map<std::string, std::string> options = {}) override;
 
     // start thread
     int run() override;
 
-    int produce(AVFrame *frame, int type) override;
+    int produce(AVFrame *frame, AVMediaType type) override;
 
-    bool empty(int type) override
+    bool empty(AVMediaType type) override
     {
         switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return video_buffer_.empty();
-        case AVMEDIA_TYPE_AUDIO: return audio_buffer_.empty();
+        case AVMEDIA_TYPE_VIDEO: return vbuffer_.empty();
+        case AVMEDIA_TYPE_AUDIO: return abuffer_.empty();
         default: return true;
         }
     }
 
     // AV_TIME_BASE
-    void seek(const std::chrono::microseconds& ts) override;
+    void seek(const std::chrono::microseconds& ts, int64_t lts, int64_t rts) override;
 
-    bool has(int) const override;
-    std::string format_str(int) const override;
-    AVRational time_base(int) const override;
+    bool has(AVMediaType) const override;
+
+    std::string format_str(AVMediaType) const override;
+
+    AVRational time_base(AVMediaType) const override;
+
     bool eof() override;
 
     std::vector<av::vformat_t> vformats() const override { return { vfmt }; }
@@ -57,8 +62,10 @@ public:
 
     int64_t duration() const override { return fmt_ctx_ ? fmt_ctx_->duration : AV_NOPTS_VALUE; }
 
+    bool has_enough(AVMediaType type) const;
+
 private:
-    int run_f();
+    int decode_fn();
     void destroy();
 
     std::string name_{ "unknown" };
@@ -70,21 +77,16 @@ private:
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
 
-    int64_t VIDEO_OFFSET_TIME{ 0 };
-    int64_t AUDIO_OFFSET_TIME{ 0 };
+    int64_t SYNC_PTS{ 0 };
 
-    AVPacket *packet_{ nullptr };
-    AVFrame *decoded_frame_{ nullptr };
+    av::packet packet_{};
+    av::frame frame_{};
 
-    RingVector<AVFrame *, 8> video_buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
+    int64_t audio_next_pts_{ AV_NOPTS_VALUE }; // samples
+    AVRational audio_next_pts_tb_{};
 
-    RingVector<AVFrame *, 32> audio_buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
+    lock_queue<av::frame> vbuffer_{};
+    lock_queue<av::frame> abuffer_{};
 };
 
 #endif //! CAPTURER_DECODER_H

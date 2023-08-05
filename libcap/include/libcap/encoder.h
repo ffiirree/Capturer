@@ -1,14 +1,15 @@
 #ifndef CAPTURER_ENCODER_H
 #define CAPTURER_ENCODER_H
 
+#include "consumer.h"
+#include "logging.h"
+#include "ringvector.h"
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/audio_fifo.h>
 }
-#include "consumer.h"
-#include "logging.h"
-#include "ringvector.h"
 
 class Encoder : public Consumer<AVFrame>
 {
@@ -29,9 +30,9 @@ public:
     int open(const std::string&, std::map<std::string, std::string>) override;
 
     int run() override;
-    int consume(AVFrame *frame, int type) override;
+    int consume(AVFrame *frame, AVMediaType type) override;
 
-    bool full(int type) const override
+    bool full(AVMediaType type) const override
     {
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: return video_buffer_.full();
@@ -40,7 +41,7 @@ public:
         }
     }
 
-    bool accepts(int type) const override
+    bool accepts(AVMediaType type) const override
     {
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: return video_enabled_;
@@ -49,11 +50,12 @@ public:
         }
     }
 
-    void enable(int type, bool v = true) override
+    void enable(AVMediaType type, bool v = true) override
     {
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
         case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
+        default: break;
         }
     }
 
@@ -88,9 +90,10 @@ private:
     int64_t a_last_dts_{ AV_NOPTS_VALUE };
     int64_t audio_pts_{ 0 };
 
-    AVPacket *packet_{ nullptr };
-    AVFrame *filtered_frame_{ nullptr };
-    AVFrame *last_frame_{ nullptr };
+    av::packet packet_{ };
+    av::frame filtered_frame_{ };
+    av::frame last_frame_{ };
+
     // the expected pts of next video frame computed by last pts and duration
     int64_t expected_pts_{ AV_NOPTS_VALUE };
 

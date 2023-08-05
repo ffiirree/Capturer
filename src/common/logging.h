@@ -1,10 +1,9 @@
 #ifndef CAPTURER_LOGGING_H
 #define CAPTURER_LOGGING_H
 
-#include "probe/thread.h"
-
 #include <filesystem>
 #include <glog/logging.h>
+#include <probe/thread.h>
 
 class Logger
 {

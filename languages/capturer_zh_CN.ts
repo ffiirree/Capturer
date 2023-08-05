@@ -45,12 +45,12 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="139"/>
+        <location filename="../src/preview/image-window.cpp" line="138"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="151"/>
+        <location filename="../src/preview/image-window.cpp" line="150"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
@@ -71,47 +71,47 @@
         <translation type="vanished">另存为...</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="168"/>
+        <location filename="../src/preview/image-window.cpp" line="167"/>
         <source>Copy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="169"/>
+        <location filename="../src/preview/image-window.cpp" line="168"/>
         <source>Paste</source>
         <translation type="unfinished">粘贴</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="173"/>
+        <location filename="../src/preview/image-window.cpp" line="172"/>
         <source>Open Image...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="174"/>
+        <location filename="../src/preview/image-window.cpp" line="173"/>
         <source>Save As...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="178"/>
+        <location filename="../src/preview/image-window.cpp" line="177"/>
         <source>Grayscale</source>
         <translation>灰度图</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="179"/>
+        <location filename="../src/preview/image-window.cpp" line="178"/>
         <source>Rotate +90</source>
         <translation>旋转 +90°</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="180"/>
+        <location filename="../src/preview/image-window.cpp" line="179"/>
         <source>Rotate -90</source>
         <translation>旋转 -90°</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="181"/>
+        <location filename="../src/preview/image-window.cpp" line="180"/>
         <source>H Flip</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="182"/>
+        <location filename="../src/preview/image-window.cpp" line="181"/>
         <source>V Flip</source>
         <translation>垂直翻转</translation>
     </message>
@@ -144,24 +144,24 @@
         <translation type="vanished">阴影</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="189"/>
-        <location filename="../src/preview/image-window.cpp" line="201"/>
+        <location filename="../src/preview/image-window.cpp" line="188"/>
+        <location filename="../src/preview/image-window.cpp" line="200"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="190"/>
-        <location filename="../src/preview/image-window.cpp" line="202"/>
+        <location filename="../src/preview/image-window.cpp" line="189"/>
+        <location filename="../src/preview/image-window.cpp" line="201"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="191"/>
+        <location filename="../src/preview/image-window.cpp" line="190"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="195"/>
+        <location filename="../src/preview/image-window.cpp" line="194"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>

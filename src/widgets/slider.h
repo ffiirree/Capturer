@@ -11,7 +11,7 @@ public:
     explicit Slider(Qt::Orientation orientation, QWidget *parent = nullptr);
 
 signals:
-    void seek(int64_t, int64_t); // us
+    void seek(int64_t, int64_t); // AV_TIME_BASE
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

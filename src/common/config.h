@@ -2,8 +2,8 @@
 #define CAPTURER_CONFIG_H
 
 #include "json.h"
-#include "probe/util.h"
 
+#include <probe/util.h>
 #include <QObject>
 
 class Config : public QObject

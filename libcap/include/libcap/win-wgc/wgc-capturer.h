@@ -33,25 +33,23 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, int) override;
-    bool empty(int) override;
+    int produce(AVFrame *, AVMediaType) override;
+    bool empty(AVMediaType) override;
 
-    bool has(int mt) const override;
-    std::string format_str(int) const override;
-    AVRational time_base(int) const override;
+    bool has(AVMediaType mt) const override;
+    std::string format_str(AVMediaType) const override;
+    AVRational time_base(AVMediaType) const override;
 
     std::vector<av::vformat_t> vformats() const override;
 
-    std::vector<av::aformat_t> aformats() const override { return {}; }
-
 private:
-    void on_frame_arrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
-                          const winrt::Windows::Foundation::IInspectable& args);
+    void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
+                        const winrt::Windows::Foundation::IInspectable& args);
 
-    void on_closed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem&,
-                   const winrt::Windows::Foundation::IInspectable&);
+    void OnClosed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem&,
+                  const winrt::Windows::Foundation::IInspectable&);
 
-    int init_hwframes_ctx();
+    int InitializeHWFramesContext();
 
     void parse_options(std::map<std::string, std::string>&);
 

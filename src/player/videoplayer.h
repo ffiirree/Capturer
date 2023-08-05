@@ -3,69 +3,94 @@
 
 #include "control-widget.h"
 #include "framelesswindow.h"
-#include "libcap/consumer.h"
-#include "libcap/decoder.h"
-#include "libcap/dispatcher.h"
 #include "texture-widget-opengl.h"
 #include "texture-widget.h"
 
+#include <libcap/audio-render.h>
+#include <libcap/consumer.h>
+#include <libcap/decoder.h>
+#include <libcap/dispatcher.h>
 #include <QTimer>
+
+extern "C" {
+#include <libavutil/audio_fifo.h>
+}
 
 class VideoPlayer : public FramelessWindow, public Consumer<AVFrame>
 {
     Q_OBJECT
 
+    enum avsync_t
+    {
+        AUDIO_MASTER   = 0x00,
+        VIDEO_MASTER   = 0x01,
+        EXTERNAL_CLOCK = 0x02,
+    };
+
 public:
     explicit VideoPlayer(QWidget *parent = nullptr);
-    ~VideoPlayer() override;
+    ~VideoPlayer();
 
     int open(const std::string&, std::map<std::string, std::string>) override;
 
-    int run() override { return 0; };
+    int run() override;
 
-    [[nodiscard]] bool ready() const override { return decoder_ && decoder_->ready(); }
-
-    void reset() override {}
-
-    int consume(AVFrame *frame, int type) override;
-
-    [[nodiscard]] bool full(int type) const override
+    [[nodiscard]] bool ready() const override
     {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return video_buffer_.full();
-        case AVMEDIA_TYPE_AUDIO: return audio_buffer_.full();
-        default: return true;
-        }
+        return decoder_ && decoder_->ready() && audio_render_ &&
+               ((audio_render_->ready() && audio_enabled_) || !audio_enabled_);
     }
 
-    void enable(int type, bool v = true) override
+    void stop() override
     {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
-        case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
-        }
+        if (dispatcher_) dispatcher_->reset();
     }
 
-    [[nodiscard]] bool accepts(int type) const override
+    void reset() override;
+
+    [[nodiscard]] bool full(AVMediaType type) const override;
+    int consume(AVFrame *frame, AVMediaType type) override;
+
+    void enable(AVMediaType type, bool v = true) override;
+    [[nodiscard]] bool accepts(AVMediaType type) const override;
+
+    [[nodiscard]] bool eof() const override
     {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return video_enabled_;
-        case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
-        default: return false;
-        }
+        return (((eof_ & 0x01) && video_enabled_) || !video_enabled_) &&
+               (((eof_ & 0x02) && audio_enabled_) || !audio_enabled_);
+    }
+
+    avsync_t sync_type()
+    {
+        if (avsync_ == avsync_t::AUDIO_MASTER && audio_enabled_) return avsync_t::AUDIO_MASTER;
+
+        return avsync_t::EXTERNAL_CLOCK;
     }
 
     int64_t clock_ns()
     {
-        if (offset_ts_ == AV_NOPTS_VALUE) return 0;
-        if (speed_.ts == AV_NOPTS_VALUE) return os_gettime_ns() - offset_ts_;
+        if (paused_) return clock_.pts;
 
-        int64_t normal = speed_.ts - offset_ts_;
-        int64_t speedx = (os_gettime_ns() - speed_.ts) * speed_.x;
-        return normal + speedx;
+        return clock_.pts + (os_gettime_ns() - clock_.updated) * clock_.speed;
     }
 
-    bool paused() const { return paused_pts_ != AV_NOPTS_VALUE; }
+    float get_speed() { return clock_.speed; }
+
+    void set_clock(int64_t pts, int64_t base_time = AV_NOPTS_VALUE)
+    {
+        auto systime = (base_time == AV_NOPTS_VALUE) ? os_gettime_ns() : base_time;
+
+        clock_.pts     = pts;
+        clock_.updated = systime;
+    }
+
+    void set_speed(float speed)
+    {
+        set_clock(clock_ns());
+        clock_.speed = speed;
+    }
+
+    bool paused() const { return paused_; }
 
 public slots:
     void pause();
@@ -87,50 +112,43 @@ protected:
 
 private:
     void video_thread_f();
-    void audio_thread_f();
 
-    std::atomic<bool> video_enabled_{ false };
-    std::atomic<bool> audio_enabled_{ false };
-
+    // UI
     TextureGLWidget *texture_{};
-    Decoder *decoder_{ nullptr };
-    Dispatcher *dispatcher_{ nullptr };
-
-    std::thread video_thread_;
-    std::thread audio_thread_;
-
-    RingVector<AVFrame *, 8> video_buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
-
-    RingVector<AVFrame *, 32> audio_buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
 
     ControlWidget *control_{};
     QTimer *timer_{};
 
-    // pause / resume
+    // video & audio
+    std::thread video_thread_;
+
+    std::unique_ptr<Decoder> decoder_{ nullptr };
+    std::unique_ptr<AudioRender> audio_render_{ nullptr };
+    std::unique_ptr<Dispatcher> dispatcher_{ nullptr }; // TODO: ctor & dtor order
+
+    std::atomic<bool> video_enabled_{ false };
+    std::atomic<bool> audio_enabled_{ false };
+
+    lock_queue<av::frame> vbuffer_{};
+    AVAudioFifo *abuffer_{ nullptr };
+    std::atomic<int64_t> audio_pts_{ AV_NOPTS_VALUE };
+
     std::atomic<bool> seeking_{ false };
-    std::atomic<int64_t> paused_pts_{ AV_NOPTS_VALUE };
     std::atomic<int> step_{ 0 };
 
-    std::atomic<int64_t> offset_ts_{ AV_NOPTS_VALUE }; // OS_TIME_BASE
-    std::atomic<int64_t> video_pts_{ AV_NOPTS_VALUE }; // OS_TIME_BASE
+    std::atomic<bool> paused_{ false };
 
-    struct speed_t
-    {
-        std::atomic<float> x{ 1.0 };
-        std::atomic<int64_t> ts{ AV_NOPTS_VALUE };
-    } speed_{};
+    // clock @{
+    avsync_t avsync_{ avsync_t::AUDIO_MASTER };
 
-    struct volume_t
+    struct clock_t
     {
-        std::atomic<int> x{ 1 };
-        std::atomic<bool> muted{ false };
-    } volume_;
+        std::atomic<int64_t> pts{ AV_NOPTS_VALUE };
+
+        std::atomic<float> speed{ 1.0 };
+        std::atomic<int64_t> updated{ AV_NOPTS_VALUE };
+    } clock_{};
+    // @}
 };
 
 #endif // !CAPTURER_VIDEO_PLAYER_H

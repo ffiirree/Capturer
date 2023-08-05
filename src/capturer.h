@@ -45,7 +45,7 @@ private:
     QHotkey *gif_sc_{ nullptr };
     QHotkey *video_sc_{ nullptr };
 
-    std::list<FramelessWindow *> windows_{};
+    std::list<std::shared_ptr<FramelessWindow>> windows_{};
 };
 
 #endif // CAPTURER_H

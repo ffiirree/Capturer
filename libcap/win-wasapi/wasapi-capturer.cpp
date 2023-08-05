@@ -2,14 +2,14 @@
 
 #include "libcap/win-wasapi/wasapi-capturer.h"
 
-#include "fmt/format.h"
 #include "libcap/platform.h"
 #include "libcap/win-wasapi/win-wasapi.h"
 #include "logging.h"
-#include "probe/defer.h"
-#include "probe/util.h"
 
+#include <fmt/format.h>
 #include <iterator>
+#include <probe/defer.h>
+#include <probe/util.h>
 #include <winrt/base.h>
 
 // REFERENCE_TIME time units per second and per millisecond
@@ -31,7 +31,7 @@ void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
         .time_base      = { 1, OS_TIME_BASE },
     };
 
-    LOG(INFO) << fmt::format("[    WASAPI] [{:>10}] {}", device_.name, av::to_string(afmt));
+    LOG(INFO) << fmt::format("[  WASAPI-C] [{:>10}] {}", device_.name, av::to_string(afmt));
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
@@ -131,12 +131,12 @@ int WasapiCapturer::run()
     std::lock_guard lock(mtx_);
 
     if (!ready_ || running_) {
-        LOG(ERROR) << "[  WASAPI] not ready or running.";
+        LOG(ERROR) << "[  WASAPI-C] not ready or running.";
         return -1;
     }
 
     if (FAILED(capturer_audio_client_->Start())) {
-        LOG(ERROR) << "[  WASAPI] failed to start audio client.";
+        LOG(ERROR) << "[  WASAPI-C] failed to start audio client.";
         return -1;
     }
 
@@ -145,7 +145,7 @@ int WasapiCapturer::run()
 
     start_time_ = os_gettime_ns();
     thread_     = std::thread([this]() {
-        probe::thread::set_name("wasapi-" + device_.id);
+        probe::thread::set_name("WASAPI-C-" + device_.id);
         run_f();
     });
 
@@ -247,30 +247,27 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     return 0;
 }
 
-std::string WasapiCapturer::format_str(int type) const
+std::string WasapiCapturer::format_str(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO: return av::to_string(afmt);
-    default:
-        LOG(ERROR) << "unsupported media type : " << av::to_string(static_cast<AVMediaType>(type));
-        return {};
+    default: LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return {};
     }
 }
 
-AVRational WasapiCapturer::time_base(int type) const
+AVRational WasapiCapturer::time_base(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO: {
         return afmt.time_base;
     }
     default:
-        LOG(ERROR) << "[    WASAPI] unsupported media type : "
-                   << av::to_string(static_cast<AVMediaType>(type));
+        LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type);
         return OS_TIME_BASE_Q;
     }
 }
 
-int WasapiCapturer::produce(AVFrame *frame, int type)
+int WasapiCapturer::produce(AVFrame *frame, AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -282,10 +279,7 @@ int WasapiCapturer::produce(AVFrame *frame, int type)
         });
         return 0;
 
-    default:
-        LOG(ERROR) << "[    WASAPI] unsupported media type : "
-                   << av::to_string(static_cast<AVMediaType>(type));
-        return -1;
+    default: LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return -1;
     }
 }
 
@@ -319,7 +313,7 @@ int WasapiCapturer::destroy()
 
     frame_number_ = 0;
 
-    LOG(INFO) << "[    WASAPI] RESET";
+    LOG(INFO) << "[  WASAPI-C] RESET";
 
     return 0;
 }

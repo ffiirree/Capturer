@@ -2,7 +2,8 @@
 #define CAPTURER_CONSUMER_H
 
 #include "clock.h"
-#include "libcap/media.h"
+#include "ffmpeg-wrapper.h"
+#include "media.h"
 
 #include <atomic>
 #include <map>
@@ -31,8 +32,11 @@ public:
 
     [[nodiscard]] virtual int open(const std::string&, std::map<std::string, std::string>) = 0;
 
-    virtual int run()             = 0;
-    virtual int consume(T *, int) = 0;
+    virtual int run()                     = 0;
+    virtual int consume(T *, AVMediaType) = 0;
+
+    virtual void pause() { paused_ = true; }
+    virtual void resume() { paused_ = false; }
 
     virtual void stop()
     {
@@ -50,9 +54,9 @@ public:
         return 0;
     }
 
-    [[nodiscard]] virtual bool full(int) const    = 0;
-    [[nodiscard]] virtual bool accepts(int) const = 0;
-    virtual void enable(int, bool = true)         = 0;
+    [[nodiscard]] virtual bool full(AVMediaType) const    = 0;
+    [[nodiscard]] virtual bool accepts(AVMediaType) const = 0;
+    virtual void enable(AVMediaType, bool = true)         = 0;
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
 
@@ -70,6 +74,7 @@ protected:
     std::atomic<bool> ready_{ false };
     std::thread thread_;
     std::mutex mtx_;
+    std::atomic<bool> paused_{ false };
 
     av::vsync_t vsync_{ av::vsync_t::cfr };
 };

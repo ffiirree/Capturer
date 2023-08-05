@@ -1,12 +1,10 @@
 #include "control-widget.h"
 
 #include "combobox.h"
-#include "libcap/media.h"
 #include "titlebar.h"
 
-#include <chrono>
 #include <fmt/chrono.h>
-#include <fmt/format.h>
+#include <libcap/media.h>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
@@ -109,6 +107,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         // volume
         volume_btn_ = new QCheckBox();
         volume_btn_->setObjectName("volume-btn");
+        connect(volume_btn_, &QCheckBox::toggled, this, &ControlWidget::mute);
         hl->addWidget(volume_btn_);
 
         volume_slider_ = new Slider(Qt::Horizontal);
@@ -127,8 +126,6 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         setting_btn->setCheckable(false);
         hl->addWidget(setting_btn);
     }
-
-    setVolume(0);
 }
 
 void ControlWidget::setDuration(int64_t time)
@@ -156,5 +153,7 @@ void ControlWidget::setVolume(int v)
     }
     volume_btn_->setChecked(v == 0);
 }
+
+void ControlWidget::setMute(bool muted) { volume_btn_->setChecked(muted); }
 
 bool ControlWidget::paused() const { return pause_btn_->isChecked(); }

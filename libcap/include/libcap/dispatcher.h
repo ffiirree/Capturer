@@ -26,12 +26,12 @@ public:
     {
         if (!locked_) {
             if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
-                a_producer_ctxs_.push_back({ nullptr, decoder, false });
+                aproducer_ctxs_.push_back({ nullptr, decoder, false });
                 audio_enabled_ = true;
             }
 
             if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
-                v_producer_ctxs_.push_back({ nullptr, decoder, false });
+                vproducer_ctxs_.push_back({ nullptr, decoder, false });
                 video_enabled_ = true;
             }
         }
@@ -44,7 +44,10 @@ public:
         }
     }
 
-    int create_filter_graph(const std::string_view& video_filters, const std::string_view& audio_filters);
+    int initialize(const std::string_view& video_filters, const std::string_view& audio_filters);
+
+    int send_command(AVMediaType mt, const std::string& target, const std::string& cmd,
+                     const std::string& arg);
 
     int start();
     void pause();
@@ -53,7 +56,7 @@ public:
     int reset();
 
     // AV_TIME_BESE
-    void seek(const std::chrono::microseconds& ts);
+    void seek(const std::chrono::microseconds& ts, int64_t = 0, int64_t = 0);
 
     void stop() { reset(); }
 
@@ -63,24 +66,30 @@ public:
 
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1'000; }
 
+    void set_timing(av::timing_t t) { timing_ = t; }
+    av::timing_t timing() const { return timing_; }
+
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
+
+    std::string vfilters{};
+    std::string afilters{};
 
 private:
     struct ProducerContext
     {
-        AVFilterContext *ctx;
+        AVFilterContext *src_ctx;
         Producer<AVFrame> *producer;
         bool eof;
     };
 
     struct ConsumerContext
     {
-        AVFilterContext *actx;
-        AVFilterContext *vctx;
+        AVFilterContext *asink_ctx;
+        AVFilterContext *vsink_ctx;
         Consumer<AVFrame> *consumer;
-        bool a_eof;
-        bool v_eof;
+        bool aeof;
+        bool veof;
     };
 
     int create_src_filter(const Producer<AVFrame> *, AVFilterContext **, enum AVMediaType);
@@ -92,8 +101,7 @@ private:
     int create_audio_src(const Producer<AVFrame> *, AVFilterContext **);
     int create_audio_sink(const Consumer<AVFrame> *, AVFilterContext **);
 
-    [[nodiscard]] int create_filter_graph_for(std::vector<ProducerContext>&, const std::string&,
-                                              enum AVMediaType);
+    int create_filter_graph(enum AVMediaType);
 
     int set_encoder_format_by_sinks();
 
@@ -108,7 +116,7 @@ private:
     int64_t paused_pts_{ AV_NOPTS_VALUE }; //
     int64_t resumed_pts_{ AV_NOPTS_VALUE };
     int64_t paused_time_{ 0 };             // do not include the time being paused, please use paused_time()
-    std::atomic<int64_t> start_time_{ 0 };
+    std::atomic<int64_t> start_time_{ AV_NOPTS_VALUE };
     //@}
 
     // filter graphs @{
@@ -117,16 +125,13 @@ private:
     bool video_enabled_{};
     bool audio_enabled_{};
 
-    std::vector<ProducerContext> a_producer_ctxs_{};
-    std::vector<ProducerContext> v_producer_ctxs_{};
+    std::vector<ProducerContext> aproducer_ctxs_{};
+    std::vector<ProducerContext> vproducer_ctxs_{};
 
     ConsumerContext consumer_ctx_{};
 
-    std::string audio_graph_desc_{};
-    std::string video_graph_desc_{};
-
-    AVFilterGraph *audio_graph_{ nullptr };
-    AVFilterGraph *video_graph_{ nullptr };
+    AVFilterGraph *agraph_{ nullptr };
+    AVFilterGraph *vgraph_{ nullptr };
     // @}
 
     std::atomic<bool> vrunning_{ false };
@@ -139,6 +144,7 @@ private:
 
     std::atomic<bool> vseeking_{ false };
     std::atomic<bool> aseeking_{ false };
+    std::atomic<av::timing_t> timing_{ av::timing_t::system };
 };
 
 #endif //! CAPTURER_DISPATCHER_H

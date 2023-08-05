@@ -66,7 +66,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
         LOG(ERROR) << "[     WGC] can not create capture item for: '" << name << "'.";
         return -1;
     }
-    closed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::on_closed });
+    closed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
 
     // IDirect3DDevice: FFmpeg -> D3D11 -> DXGI -> WinRT @{
     auto ffmpeg_d3d11_device = hwaccel::find_or_create_device(AV_HWDEVICE_TYPE_D3D11VA);
@@ -102,7 +102,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
 
     // callback
     frame_arrived_ =
-        frame_pool_.FrameArrived(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::on_frame_arrived });
+        frame_pool_.FrameArrived(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnFrameArrived });
 
     session_ = frame_pool_.CreateCaptureSession(item_);
 
@@ -175,7 +175,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
                                            &view_desc, resize_shader_view_.put());
 
     // FFmpeg hardware frame pool
-    if (init_hwframes_ctx() < 0) return -1;
+    if (InitializeHWFramesContext() < 0) return -1;
 
     eof_   = 0x00;
     ready_ = true;
@@ -197,11 +197,10 @@ int WindowsGraphicsCapturer::run()
     return 0;
 }
 
-int WindowsGraphicsCapturer::produce(AVFrame *frame, int type)
+int WindowsGraphicsCapturer::produce(AVFrame *frame, AVMediaType type)
 {
     if (type != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[       WGC] unsupported media type : "
-                   << av::to_string(static_cast<AVMediaType>(type));
+        LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(type);
         return -1;
     }
 
@@ -214,21 +213,21 @@ int WindowsGraphicsCapturer::produce(AVFrame *frame, int type)
     return 0;
 }
 
-bool WindowsGraphicsCapturer::empty(int) { return buffer_.empty(); }
+bool WindowsGraphicsCapturer::empty(AVMediaType) { return buffer_.empty(); }
 
-bool WindowsGraphicsCapturer::has(int mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
+bool WindowsGraphicsCapturer::has(AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
 
-std::string WindowsGraphicsCapturer::format_str(int mt) const
+std::string WindowsGraphicsCapturer::format_str(AVMediaType mt) const
 {
     if (mt != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "not supported";
+        LOG(ERROR) << "[       WGC] not supported";
         return {};
     }
 
     return av::to_string(vfmt);
 }
 
-AVRational WindowsGraphicsCapturer::time_base(int) const { return vfmt.time_base; }
+AVRational WindowsGraphicsCapturer::time_base(AVMediaType) const { return vfmt.time_base; }
 
 std::vector<av::vformat_t> WindowsGraphicsCapturer::vformats() const
 {
@@ -244,7 +243,7 @@ std::vector<av::vformat_t> WindowsGraphicsCapturer::vformats() const
     };
 }
 
-int WindowsGraphicsCapturer::init_hwframes_ctx()
+int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
     auto dev = hwaccel::find_or_create_device(AV_HWDEVICE_TYPE_D3D11VA);
     if (!dev) {
@@ -279,7 +278,7 @@ int WindowsGraphicsCapturer::init_hwframes_ctx()
     return 0;
 }
 
-void WindowsGraphicsCapturer::on_frame_arrived(const Direct3D11CaptureFramePool& sender,
+void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& sender,
                                                const winrt::Windows::Foundation::IInspectable&)
 {
     std::lock_guard lock(mtx_);
@@ -340,7 +339,7 @@ void WindowsGraphicsCapturer::on_frame_arrived(const Direct3D11CaptureFramePool&
     });
 }
 
-void WindowsGraphicsCapturer::on_closed(const GraphicsCaptureItem&,
+void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
                                         const winrt::Windows::Foundation::IInspectable&)
 {
     // TODO: Window Capture Mode

@@ -1,6 +1,13 @@
 #ifndef CAPTURER_HWACCEL_H
 #define CAPTURER_HWACCEL_H
 
+#include <memory>
+#include <optional>
+#include <probe/defer.h>
+#include <probe/library.h>
+#include <string>
+#include <vector>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
@@ -8,13 +15,6 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavutil/hwcontext.h>
 }
-#include "probe/defer.h"
-#include "probe/library.h"
-
-#include <memory>
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace hwaccel
 {
@@ -24,7 +24,9 @@ namespace hwaccel
         AVHWDeviceType type{ AV_HWDEVICE_TYPE_NONE };
 
         hwdevice_t(std::string n, AVHWDeviceType t, AVBufferRef *r)
-            : name(std::move(n)), type(t), ref_(r)
+            : name(std::move(n)),
+              type(t),
+              ref_(r)
         {}
 
         hwdevice_t(const hwdevice_t&)            = delete;

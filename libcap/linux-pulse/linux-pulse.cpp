@@ -9,6 +9,7 @@
 #include <mutex>
 
 static std::mutex pulse_mtx;
+static uint32_t pulse_refs              = 0;
 static pa_threaded_mainloop *pulse_loop = nullptr;
 static pa_context *pulse_ctx            = nullptr;
 
@@ -59,16 +60,22 @@ static void pulse_server_info_callback(pa_context *, const pa_server_info *i, vo
     pulse::signal(0);
 }
 
+static void pulse_context_success_callback(pa_context *, int, void *)
+{
+    pulse::signal(0);
+}
+
 namespace pulse
 {
     void init()
     {
         std::lock_guard lock(pulse_mtx);
 
-        if (pulse_loop == nullptr) {
+        if (pulse_refs == 0) {
             pulse_loop = ::pa_threaded_mainloop_new();
             ::pa_threaded_mainloop_start(pulse_loop);
 
+            // context
             pulse::loop_lock();
             defer(pulse::loop_unlock());
 
@@ -81,28 +88,32 @@ namespace pulse
             // Calling pa_context_connect() will initiate the connection procedure.
             ::pa_context_connect(pulse_ctx, nullptr, PA_CONTEXT_NOAUTOSPAWN, nullptr);
         }
+
+        pulse_refs++;
     }
 
     void unref()
     {
         std::lock_guard lock(pulse_mtx);
 
-        pulse::loop_lock();
+        if (--pulse_refs == 0) {
+            pulse::loop_lock();
 
-        if (pulse_ctx != nullptr) {
-            ::pa_context_disconnect(pulse_ctx);
-            ::pa_context_unref(pulse_ctx);
+            if (pulse_ctx != nullptr) {
+                ::pa_context_disconnect(pulse_ctx);
+                ::pa_context_unref(pulse_ctx);
 
-            pulse_ctx = nullptr;
-        }
+                pulse_ctx = nullptr;
+            }
 
-        pulse::loop_unlock();
+            pulse::loop_unlock();
 
-        if (pulse_loop != nullptr) {
-            ::pa_threaded_mainloop_stop(pulse_loop);
-            ::pa_threaded_mainloop_free(pulse_loop);
+            if (pulse_loop != nullptr) {
+                ::pa_threaded_mainloop_stop(pulse_loop);
+                ::pa_threaded_mainloop_free(pulse_loop);
 
-            pulse_loop = nullptr;
+                pulse_loop = nullptr;
+            }
         }
     }
 
@@ -126,13 +137,29 @@ namespace pulse
         return true;
     }
 
+    void wait() { ::pa_threaded_mainloop_wait(pulse_loop); }
+
     void signal(int wait_for_accept) { ::pa_threaded_mainloop_signal(pulse_loop, wait_for_accept); }
+
+    void accept() { ::pa_threaded_mainloop_accept(pulse_loop); }
+
+    bool wait_operation(pa_operation * op)
+    {
+        if (!op) return false;
+
+        auto state = ::pa_operation_get_state(op);
+        while (state == PA_OPERATION_RUNNING) {
+            ::pa_threaded_mainloop_wait(pulse_loop);
+            state = ::pa_operation_get_state(op);
+        }
+        ::pa_operation_unref(op);
+
+        return state == PA_OPERATION_DONE;
+    }
 
     std::vector<av::device_t> source_list()
     {
-        if (!pulse::context_is_ready()) {
-            return {};
-        }
+        if (!pulse::context_is_ready()) return {};
 
         pulse::loop_lock();
         defer(pulse::loop_unlock());
@@ -163,23 +190,12 @@ namespace pulse
             },
             &list);
 
-        if (!op) {
-            return {};
-        }
-
-        while (::pa_operation_get_state(op) == PA_OPERATION_RUNNING) {
-            ::pa_threaded_mainloop_wait(pulse_loop);
-        }
-        ::pa_operation_unref(op);
-
-        return list;
+        return wait_operation(op) ? list : std::vector<av::device_t>{};
     }
 
     std::vector<av::device_t> sink_list()
     {
-        if (!pulse::context_is_ready()) {
-            return {};
-        }
+        if (!pulse::context_is_ready()) return {};
 
         pulse::loop_lock();
         defer(pulse::loop_unlock());
@@ -210,16 +226,7 @@ namespace pulse
             },
             &list);
 
-        if (!op) {
-            return {};
-        }
-
-        while (::pa_operation_get_state(op) == PA_OPERATION_RUNNING) {
-            ::pa_threaded_mainloop_wait(pulse_loop);
-        }
-        ::pa_operation_unref(op);
-
-        return list;
+        return wait_operation(op) ? list : std::vector<av::device_t>{};
     }
 
     std::optional<av::device_t> default_source()
@@ -258,16 +265,7 @@ namespace pulse
             },
             &dev);
 
-        if (!op) {
-            return std::nullopt;
-        }
-
-        while (::pa_operation_get_state(op) == PA_OPERATION_RUNNING) {
-            ::pa_threaded_mainloop_wait(pulse_loop);
-        }
-        ::pa_operation_unref(op);
-
-        if (dev.id.empty()) return std::nullopt;
+        if (!wait_operation(op) || dev.id.empty()) return std::nullopt;
 
         return dev;
     }
@@ -275,11 +273,7 @@ namespace pulse
     std::optional<av::device_t> default_sink()
     {
         PulseServerInfo server{};
-        if (server_info(server) < 0) {
-            return std::nullopt;
-        }
-
-        if (!pulse::context_is_ready()) {
+        if (pulse::server_info(server) < 0) {
             return std::nullopt;
         }
 
@@ -305,37 +299,125 @@ namespace pulse
             },
             &dev);
 
-        if (!op) {
-            return std::nullopt;
-        }
-
-        while (::pa_operation_get_state(op) == PA_OPERATION_RUNNING) {
-            ::pa_threaded_mainloop_wait(pulse_loop);
-        }
-        ::pa_operation_unref(op);
-
-        if (dev.id.empty()) return std::nullopt;
+        if (!wait_operation(op) || dev.id.empty()) return std::nullopt;
 
         return dev;
     }
 
     int server_info(PulseServerInfo& info)
     {
-        if (!pulse::context_is_ready()) {
+        if (!pulse::context_is_ready())
             return -1;
-        }
 
         pulse::loop_lock();
         defer(pulse::loop_unlock());
 
-        auto op = pa_context_get_server_info(pulse_ctx, pulse_server_info_callback, &info);
-        if (!op) {
+        if (!wait_operation(::pa_context_get_server_info(pulse_ctx, pulse_server_info_callback, &info)))
             return -1;
-        }
 
-        while (::pa_operation_get_state(op) == PA_OPERATION_RUNNING)
-            ::pa_threaded_mainloop_wait(pulse_loop);
-        ::pa_operation_unref(op);
+        return 0;
+    }
+
+    pa_stream *stream_new(const std::string& name, const pa_sample_spec *ss, const pa_channel_map *map)
+    {
+        if (!pulse::context_is_ready()) return nullptr;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        return ::pa_stream_new(pulse_ctx, name.c_str(), ss, map);
+    }
+
+    int stream_cork(pa_stream * stream, bool cork, pa_stream_success_cb_t cb, void * userdata)
+    {
+        if (!pulse::context_is_ready()) return -1;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        if (!wait_operation(::pa_stream_cork(stream, cork, cb, userdata))) return -1;
+
+        return 0;
+    }
+
+    int stream_set_sink_volume(pa_stream * stream, const pa_cvolume *volume)
+    {
+        if (!pulse::context_is_ready()) return -1;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        if (!wait_operation(::pa_context_set_sink_input_volume(pulse_ctx, ::pa_stream_get_index(stream), volume, pulse_context_success_callback, nullptr))) return -1;
+
+        return 0;
+    }
+
+    float stream_get_sink_volume(pa_stream * stream)
+    {
+        float volume = 0.0;
+        if(!wait_operation(::pa_context_get_sink_input_info(
+            pulse_ctx,
+            ::pa_stream_get_index(stream),
+            [](pa_context *c, const pa_sink_input_info *info, int eol, void *userdata){
+                auto volume = reinterpret_cast<float *>(userdata);
+
+                if (eol == 0)
+                    *volume = static_cast<float>(::pa_sw_volume_to_linear(info->volume.values[0]));
+
+                pulse::signal(0);
+            }, &volume)))
+            return 0.0;
+        return volume;
+    }
+
+    int stream_set_sink_mute(pa_stream * stream, bool muted)
+    {
+        if (!pulse::context_is_ready()) return -1;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        if (!wait_operation(::pa_context_set_sink_input_mute(pulse_ctx, ::pa_stream_get_index(stream), muted, pulse_context_success_callback, nullptr))) return -1;
+
+        return 0;
+    }
+
+    bool stream_get_sink_muted(pa_stream *stream)
+    {
+        bool muted = false;
+        if(!wait_operation(::pa_context_get_sink_input_info(
+        pulse_ctx,
+        ::pa_stream_get_index(stream),
+        [](pa_context *c, const pa_sink_input_info *info, int eol, void *userdata){
+            auto muted = reinterpret_cast<bool *>(userdata);
+            if (eol == 0) *muted = info->mute;
+
+            pulse::signal(0);
+        }, &muted)))
+            return false;
+        return muted;
+    }
+
+    int stream_flush(pa_stream * stream, pa_stream_success_cb_t cb, void * userdata)
+    {
+        if (!pulse::context_is_ready()) return -1;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        if (!wait_operation(::pa_stream_flush(stream, cb, userdata))) return -1;
+
+        return 0;
+    }
+
+    int stream_update_timing_info(pa_stream *stream, pa_stream_success_cb_t cb, void *userdata)
+    {
+        if (!pulse::context_is_ready()) return -1;
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        if (!wait_operation(::pa_stream_update_timing_info(stream, cb, userdata))) return -1;
 
         return 0;
     }

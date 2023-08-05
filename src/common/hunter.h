@@ -1,10 +1,9 @@
 #ifndef CAPTURE_HUNTER_H
 #define CAPTURE_HUNTER_H
 
-#include "probe/enum.h"
-#include "probe/graphics.h"
-
 #include <deque>
+#include <probe/enum.h>
+#include <probe/graphics.h>
 
 namespace hunter
 {

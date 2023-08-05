@@ -1,11 +1,14 @@
 #include "libcap/decoder.h"
 
-#include "fmt/chrono.h"
-#include "fmt/format.h"
-#include "fmt/ranges.h"
 #include "libcap/clock.h"
-#include "probe/defer.h"
-#include "probe/thread.h"
+
+#include <cassert>
+#include <filesystem>
+#include <fmt/chrono.h>
+#include <fmt/ranges.h>
+#include <probe/defer.h>
+#include <probe/thread.h>
+#include <probe/util.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -14,6 +17,8 @@ extern "C" {
 #include <libavutil/pixdesc.h>
 #include <libavutil/time.h>
 }
+
+#define MIN_FRAMES 8
 
 int Decoder::open(const std::string& name, std::map<std::string, std::string> options)
 {
@@ -55,6 +60,17 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     if (avformat_find_stream_info(fmt_ctx_, nullptr) < 0) {
         LOG(ERROR) << "[   DECODER] avformat_find_stream_info";
         return -1;
+    }
+
+    // clock
+    switch (timing_.load()) {
+    case av::timing_t::none: SYNC_PTS = -fmt_ctx_->start_time; break;
+    case av::timing_t::system:
+        SYNC_PTS +=
+            av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, { 1, AV_TIME_BASE }) - fmt_ctx_->start_time;
+        break;
+    case av::timing_t::device:
+    default: SYNC_PTS = 0; break;
     }
 
     // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
@@ -104,9 +120,16 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             .framerate = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr),
             .sample_aspect_ratio = video_decoder_ctx_->sample_aspect_ratio,
             .time_base           = fmt_ctx_->streams[video_stream_idx_]->time_base,
+            .color               = {
+                .space      = video_decoder_ctx_->colorspace,
+                .primaries  = video_decoder_ctx_->color_primaries,
+                .transfer   = video_decoder_ctx_->color_trc,
+                .range      = video_decoder_ctx_->color_range,
+            },
         };
 
-        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] {}", name_, av::to_string(vfmt));
+        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] {}({})", name_, av::to_string(vfmt),
+                                 av::to_string(vfmt.color));
     }
 
     // audio stream
@@ -132,20 +155,15 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             .sample_fmt     = audio_decoder_ctx_->sample_fmt,
             .channels       = audio_decoder_ctx_->channels,
             .channel_layout = audio_decoder_ctx_->channel_layout,
-            .time_base      = fmt_ctx_->streams[audio_stream_idx_]->time_base,
+            .time_base      = { 1, audio_decoder_ctx_->sample_rate },
         };
+
+        audio_next_pts_ = av_rescale_q(fmt_ctx_->streams[audio_stream_idx_]->start_time,
+                                       fmt_ctx_->streams[audio_stream_idx_]->time_base, afmt.time_base);
 
         LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] {}, frame_size = {}, start_time = {}", name_,
                                  av::to_string(afmt), audio_decoder_ctx_->frame_size,
                                  fmt_ctx_->streams[audio_stream_idx_]->start_time);
-    }
-
-    // prepare
-    packet_        = av_packet_alloc();
-    decoded_frame_ = av_frame_alloc();
-    if (!packet_ || !decoded_frame_) {
-        LOG(ERROR) << "[   DECODER] av_frame_alloc";
-        return -1;
     }
 
     ready_ = true;
@@ -154,7 +172,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     return 0;
 }
 
-bool Decoder::has(int type) const
+bool Decoder::has(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ >= 0;
@@ -163,7 +181,7 @@ bool Decoder::has(int type) const
     }
 }
 
-std::string Decoder::format_str(int type) const
+std::string Decoder::format_str(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return (video_stream_idx_ >= 0) ? av::to_string(vfmt) : std::string{};
@@ -172,16 +190,16 @@ std::string Decoder::format_str(int type) const
     }
 }
 
-AVRational Decoder::time_base(int type) const
+AVRational Decoder::time_base(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO: {
         if (audio_stream_idx_ < 0) {
-            LOG(WARNING) << "no audio stream";
+            LOG(WARNING) << "[   DECODER] [A] no audio stream";
             return OS_TIME_BASE_Q;
         }
 
-        return fmt_ctx_->streams[audio_stream_idx_]->time_base;
+        return afmt.time_base;
     }
     case AVMEDIA_TYPE_VIDEO: {
         if (video_stream_idx_ < 0) {
@@ -189,7 +207,7 @@ AVRational Decoder::time_base(int type) const
             return OS_TIME_BASE_Q;
         }
 
-        return fmt_ctx_->streams[video_stream_idx_]->time_base;
+        return vfmt.time_base;
     }
     default: LOG(ERROR) << "[   DECODER] [X] unknown meida type."; return OS_TIME_BASE_Q;
     }
@@ -197,31 +215,37 @@ AVRational Decoder::time_base(int type) const
 
 bool Decoder::eof() { return eof_ == DECODING_EOF; }
 
-int Decoder::produce(AVFrame *frame, int type)
+int Decoder::produce(AVFrame *frame, AVMediaType type)
 {
-    if (seeking_ != AV_NOPTS_VALUE) return AVERROR(EAGAIN);
+    if (seeking()) return AVERROR(EAGAIN);
 
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (video_buffer_.empty()) return (eof_ & VDECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
+        if (vbuffer_.empty()) return ((eof_ & VDECODING_EOF) || !running()) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        video_buffer_.pop([frame](AVFrame *popped) {
-            av_frame_unref(frame);
-            av_frame_move_ref(frame, popped);
-        });
+        av_frame_unref(frame);
+        av_frame_move_ref(frame, vbuffer_.pop().get());
         return 0;
 
     case AVMEDIA_TYPE_AUDIO:
-        if (audio_buffer_.empty()) return (eof_ & ADECODING_EOF) ? AVERROR_EOF : AVERROR(EAGAIN);
+        if (abuffer_.empty()) return ((eof_ & ADECODING_EOF) || !running()) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        audio_buffer_.pop([frame](AVFrame *popped) {
-            av_frame_unref(frame);
-            av_frame_move_ref(frame, popped);
-        });
+        av_frame_unref(frame);
+        av_frame_move_ref(frame, abuffer_.pop().get());
         return 0;
 
     default: return -1;
     }
+}
+
+bool Decoder::has_enough(AVMediaType type) const
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ < 0 || vbuffer_.size() > MIN_FRAMES; break;
+    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ < 0 || abuffer_.size() > MIN_FRAMES; break;
+    default: break;
+    }
+    return true;
 }
 
 int Decoder::run()
@@ -233,54 +257,53 @@ int Decoder::run()
         return -1;
     }
 
-    if (video_stream_idx_ >= 0)
-        VIDEO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, vfmt.time_base) -
-                            fmt_ctx_->streams[video_stream_idx_]->start_time;
-    if (audio_stream_idx_ >= 0)
-        AUDIO_OFFSET_TIME = av_rescale_q(os_gettime_ns(), OS_TIME_BASE_Q, afmt.time_base) -
-                            fmt_ctx_->streams[audio_stream_idx_]->start_time;
-
     eof_     = 0x00;
     running_ = true;
     thread_  = std::thread([this]() {
-        probe::thread::set_name("dec-" + name_);
-        run_f();
+        probe::thread::set_name("DEC-" + name_);
+        decode_fn();
     });
 
     return 0;
 }
 
-int Decoder::run_f()
+int Decoder::decode_fn()
 {
     LOG(INFO) << "STARTED";
 
     // reset the buffer
-    video_buffer_.clear();
-    audio_buffer_.clear();
+    vbuffer_.clear();
+    abuffer_.clear();
 
     eof_ |= audio_stream_idx_ < 0 ? ADECODING_EOF : 0x00;
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
 
     while (running_) {
-        if (seeking_ != AV_NOPTS_VALUE) {
-            if (avformat_seek_file(fmt_ctx_, -1, INT64_MIN, seeking_, INT64_MAX, 0) < 0) {
-                LOG(ERROR) << fmt::format(" failed to seek: {:%H:%M:%S}",
-                                          std::chrono::microseconds{ seeking_ });
+        if (seeking()) {
+            LOG(INFO) << fmt::format(
+                "seek: {:%H:%M:%S}({:%H:%M:%S}, {:%H:%M:%S})", std::chrono::microseconds{ seek_.ts },
+                std::chrono::microseconds{ seek_.min }, std::chrono::microseconds{ seek_.max });
+
+            if (avformat_seek_file(fmt_ctx_, -1, seek_.min, seek_.ts, seek_.max, 0) < 0) {
+                LOG(ERROR) << fmt::format("failed to seek, VIDEO: [{:%H:%M:%S}, {:%H:%M:%S}]",
+                                          std::chrono::microseconds{ fmt_ctx_->start_time },
+                                          std::chrono::microseconds{ fmt_ctx_->duration });
             }
             else {
                 if (audio_stream_idx_ >= 0) avcodec_flush_buffers(audio_decoder_ctx_);
                 if (video_stream_idx_ >= 0) avcodec_flush_buffers(video_decoder_ctx_);
 
-                video_buffer_.clear();
-                audio_buffer_.clear();
+                vbuffer_.clear();
+                abuffer_.clear();
+
+                audio_next_pts_ = AV_NOPTS_VALUE;
             }
 
-            seeking_ = AV_NOPTS_VALUE;
+            seek_.ts = AV_NOPTS_VALUE;
         }
 
         // read
-        av_packet_unref(packet_);
-        int ret = av_read_frame(fmt_ctx_, packet_);
+        int ret = av_read_frame(fmt_ctx_, packet_.put());
         if ((ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) && !(eof_ & DEMUXING_EOF)) {
             // [draining] 1. Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or
             //               avcodec_send_frame() (encoding) functions.
@@ -301,10 +324,9 @@ int Decoder::run_f()
         // video decoding
         if (packet_->stream_index == video_stream_idx_ ||
             ((eof_ & DEMUXING_EOF) && !(eof_ & VDECODING_EOF))) {
-            ret = avcodec_send_packet(video_decoder_ctx_, packet_);
-            while (ret >= 0 && seeking_ == AV_NOPTS_VALUE) {
-                av_frame_unref(decoded_frame_);
-                ret = avcodec_receive_frame(video_decoder_ctx_, decoded_frame_);
+            ret = avcodec_send_packet(video_decoder_ctx_, packet_.get());
+            while (ret >= 0 && !seeking()) {
+                ret = avcodec_receive_frame(video_decoder_ctx_, frame_.put());
                 if (ret == AVERROR(EAGAIN)) {
                     break;
                 }
@@ -317,38 +339,34 @@ int Decoder::run_f()
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << "[V] DECODING ERROR";
+                    LOG(ERROR) << "[V] DECODING ERROR, ABORTING";
                     return ret;
                 }
 
-                decoded_frame_->pts = decoded_frame_->best_effort_timestamp;
-                decoded_frame_->pts += VIDEO_OFFSET_TIME; // synchronize with the system clock
-                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += VIDEO_OFFSET_TIME;
+                frame_->pts = frame_->best_effort_timestamp;
+                frame_->pts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, vfmt.time_base);
+                if (frame_->pkt_dts != AV_NOPTS_VALUE)
+                    frame_->pkt_dts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, vfmt.time_base);
 
                 // waiting
-                while (video_buffer_.full() && running_ && seeking_ == AV_NOPTS_VALUE) {
+                while ((has_enough(AVMEDIA_TYPE_VIDEO) && has_enough(AVMEDIA_TYPE_AUDIO)) && running_ &&
+                       !seeking()) {
                     std::this_thread::sleep_for(10ms);
                 }
 
-                if (seeking_ == AV_NOPTS_VALUE) {
-                    DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
-                                              video_decoder_ctx_->frame_number, decoded_frame_->pts);
+                DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}",
+                                          video_decoder_ctx_->frame_number, frame_->pts);
 
-                    video_buffer_.push([this](AVFrame *frame) {
-                        av_frame_unref(frame);
-                        av_frame_move_ref(frame, decoded_frame_);
-                    });
-                }
+                vbuffer_.push(frame_);
             }
         }
 
         // audio decoding
         if (packet_->stream_index == audio_stream_idx_ ||
             ((eof_ & DEMUXING_EOF) && !(eof_ & ADECODING_EOF))) {
-            ret = avcodec_send_packet(audio_decoder_ctx_, packet_);
-            while (ret >= 0 && seeking_ == AV_NOPTS_VALUE) {
-                av_frame_unref(decoded_frame_);
-                ret = avcodec_receive_frame(audio_decoder_ctx_, decoded_frame_);
+            ret = avcodec_send_packet(audio_decoder_ctx_, packet_.get());
+            while (ret >= 0 && !seeking()) {
+                ret = avcodec_receive_frame(audio_decoder_ctx_, frame_.put());
                 if (ret == AVERROR(EAGAIN)) {
                     break;
                 }
@@ -361,35 +379,46 @@ int Decoder::run_f()
                 }
                 else if (ret < 0) {
                     running_ = false;
-                    LOG(INFO) << "[A] DECODING ERROR";
+                    LOG(ERROR) << "[A] DECODING ERROR, ABORTING";
                     return ret;
                 }
 
-                decoded_frame_->pts += AUDIO_OFFSET_TIME;
-                if (decoded_frame_->pkt_dts != AV_NOPTS_VALUE) decoded_frame_->pkt_dts += AUDIO_OFFSET_TIME;
+                if (frame_->pts != AV_NOPTS_VALUE) {
+                    frame_->pts = av_rescale_q(frame_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base,
+                                               afmt.time_base);
+                }
+                else {
+                    if (audio_next_pts_ == AV_NOPTS_VALUE && packet_->pts != AV_NOPTS_VALUE) {
+                        audio_next_pts_ = av_rescale_q(
+                            packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, afmt.time_base);
+                    }
+                    frame_->pts = audio_next_pts_;
+                }
+
+                if (frame_->pts != AV_NOPTS_VALUE) {
+                    audio_next_pts_ = frame_->pts + frame_->nb_samples;
+                    frame_->pts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, afmt.time_base);
+                }
+
+                if (frame_->pkt_dts != AV_NOPTS_VALUE)
+                    frame_->pkt_dts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, afmt.time_base);
 
                 // waiting
-                while (audio_buffer_.full() && running_ && seeking_ == AV_NOPTS_VALUE) {
+                while ((has_enough(AVMEDIA_TYPE_VIDEO) && has_enough(AVMEDIA_TYPE_AUDIO)) && running_ &&
+                       !seeking()) {
                     std::this_thread::sleep_for(10ms);
                 }
 
-                if (seeking_ == AV_NOPTS_VALUE) {
-                    DLOG(INFO) << fmt::format(
-                        "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}",
-                        audio_decoder_ctx_->frame_number, decoded_frame_->pts, decoded_frame_->nb_samples,
-                        muted_.load());
+                DLOG(INFO) << fmt::format(
+                    "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}, ts={:%H:%M:%S}",
+                    audio_decoder_ctx_->frame_number, frame_->pts, frame_->nb_samples, muted_.load(),
+                    std::chrono::microseconds(av_rescale_q(frame_->pts, afmt.time_base, { 1, 1'000'000 })));
 
-                    if (muted_) {
-                        av_samples_set_silence(decoded_frame_->data, 0, decoded_frame_->nb_samples,
-                                               decoded_frame_->channels,
-                                               static_cast<AVSampleFormat>(decoded_frame_->format));
-                    }
+                if (muted_)
+                    av_samples_set_silence(frame_->data, 0, frame_->nb_samples, frame_->channels,
+                                           static_cast<AVSampleFormat>(frame_->format));
 
-                    audio_buffer_.push([this](AVFrame *frame) {
-                        av_frame_unref(frame);
-                        av_frame_move_ref(frame, decoded_frame_);
-                    });
-                }
+                abuffer_.push(frame_);
             }
         } // decoding
     }
@@ -404,13 +433,17 @@ int Decoder::run_f()
     return 0;
 }
 
-void Decoder::seek(const std::chrono::microseconds& ts)
+void Decoder::seek(const std::chrono::microseconds& ts, int64_t lts, int64_t rts)
 {
-    seeking_ = ts.count();
+    assert(fmt_ctx_);
+
+    seek_.ts  = std::clamp(ts.count(), fmt_ctx_->start_time, fmt_ctx_->duration);
+    seek_.min = std::min(lts, duration() - 5'000);
+    seek_.max = std::max(rts, fmt_ctx_->start_time + 5'000);
 
     if (!running_) {
         eof_ = 0x00;
-        wait();
+        if (thread_.joinable()) thread_.join();
         run();
     }
 }
@@ -426,12 +459,15 @@ void Decoder::destroy()
 {
     std::lock_guard lock(mtx_);
 
+    eof_ = DECODING_EOF;
+
     running_ = false;
     ready_   = false;
 
-    eof_ = DECODING_EOF;
+    if (thread_.joinable()) thread_.join();
 
-    wait();
+    vbuffer_.clear();
+    abuffer_.clear();
 
     name_  = {};
     muted_ = false;
@@ -439,10 +475,9 @@ void Decoder::destroy()
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
 
-    enabled_.clear();
+    seek_.ts = AV_NOPTS_VALUE;
 
-    av_packet_free(&packet_);
-    av_frame_free(&decoded_frame_);
+    enabled_.clear();
 
     avcodec_free_context(&video_decoder_ctx_);
     avcodec_free_context(&audio_decoder_ctx_);

@@ -1,7 +1,12 @@
 #ifndef CAPTURER_MEDIA_H
 #define CAPTURER_MEDIA_H
 
+#include "clock.h"
+
+#include <fmt/format.h>
+
 extern "C" {
+#include <libavcodec/packet.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/pixdesc.h>
@@ -9,8 +14,6 @@ extern "C" {
 #include <libavutil/rational.h>
 #include <libavutil/samplefmt.h>
 }
-#include "clock.h"
-#include "fmt/format.h"
 
 namespace av
 {
@@ -18,6 +21,13 @@ namespace av
     {
         cfr,
         vfr,
+    };
+
+    enum class timing_t
+    {
+        none   = 0x00,
+        system = 0x01,
+        device = 0x02,
     };
 
     // video format options
@@ -30,6 +40,14 @@ namespace av
         AVRational framerate{ 24, 1 };
         AVRational sample_aspect_ratio{ 1, 1 };
         AVRational time_base{ 1, OS_TIME_BASE };
+
+        struct color_t
+        {
+            AVColorSpace space{ AVCOL_SPC_UNSPECIFIED };
+            AVColorPrimaries primaries{ AVCOL_PRI_UNSPECIFIED };
+            AVColorTransferCharacteristic transfer{ AVCOL_TRC_UNSPECIFIED };
+            AVColorRange range{ AVCOL_RANGE_UNSPECIFIED };
+        } color{};
 
         AVHWDeviceType hwaccel{ AV_HWDEVICE_TYPE_NONE };
     };
@@ -44,74 +62,6 @@ namespace av
         uint64_t channel_layout{ 0 };
 
         AVRational time_base{ 1, OS_TIME_BASE };
-    };
-
-    // wrapper to AVFrame
-    struct frame
-    {
-        frame() { ptr_ = av_frame_alloc(); }
-
-        frame(AVFrame *frame)
-        {
-            ptr_ = av_frame_alloc();
-            ref(frame);
-        }
-
-        frame(const frame& other)
-        {
-            ptr_  = av_frame_alloc();
-            *this = other;
-        }
-
-        frame(frame&& other) noexcept
-        {
-            ptr_  = av_frame_alloc();
-            *this = std::forward<frame>(other);
-        }
-
-        ~frame() { av_frame_free(&ptr_); }
-
-        frame& operator=(const frame& other)
-        {
-            unref();
-            ref(other);
-            return *this;
-        }
-
-        frame& operator=(const AVFrame *other)
-        {
-            unref();
-            ref(other);
-            return *this;
-        }
-
-        frame& operator=(frame&& other) noexcept
-        {
-            if (this != &other) {
-                unref();
-                av_frame_move_ref(ptr_, other.ptr_);
-            }
-            return *this;
-        }
-
-        auto get() const noexcept { return ptr_; }
-
-        auto put()
-        {
-            unref();
-            return ptr_;
-        }
-
-        void unref() { av_frame_unref(ptr_); }
-
-        int ref(const frame& other) { return av_frame_ref(ptr_, other.get()); }
-
-        int ref(const AVFrame *other) { return av_frame_ref(ptr_, other); }
-
-        AVFrame *operator->() const noexcept { return ptr_; }
-
-    private:
-        AVFrame *ptr_{ nullptr };
     };
 
     // convert <T> to string
@@ -139,6 +89,36 @@ namespace av
     {
         auto str = av_get_pix_fmt_name(fmt);
         return str ? str : std::string{};
+    }
+
+    inline std::string to_string(AVColorSpace cp)
+    {
+        auto str = av_color_space_name(cp);
+        return str ? str : std::string{};
+    }
+
+    inline std::string to_string(AVColorRange cr)
+    {
+        auto str = av_color_range_name(cr);
+        return str ? str : std::string{};
+    }
+
+    inline std::string to_string(AVColorPrimaries cp)
+    {
+        auto str = av_color_primaries_name(cp);
+        return str ? str : std::string{};
+    }
+
+    inline std::string to_string(AVColorTransferCharacteristic trc)
+    {
+        auto str = av_color_transfer_name(trc);
+        return str ? str : std::string{};
+    }
+
+    inline std::string to_string(vformat_t::color_t color)
+    {
+        return fmt::format("space={}:primaries={}:transfer={}:range={}", to_string(color.space),
+                           to_string(color.primaries), to_string(color.transfer), to_string(color.range));
     }
 
     inline std::string to_string(AVSampleFormat fmt)

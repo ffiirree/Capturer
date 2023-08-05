@@ -174,8 +174,8 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, lo
                 if (!monitor) break;
 
                 for (const auto& abe : std::vector<UINT>{ ABE_BOTTOM, ABE_TOP, ABE_LEFT, ABE_RIGHT }) {
-                    APPBARDATA abd{ .cbSize = sizeof(APPBARDATA), .uEdge = abe, .rc = monitor->rcMonitor };
-                    if (SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &abd)) {
+                    APPBARDATA pos{ .cbSize = sizeof(APPBARDATA), .uEdge = abe, .rc = monitor->rcMonitor };
+                    if (SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &pos)) {
                         taskbar_postion = abe;
                         break;
                     }

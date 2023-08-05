@@ -1,10 +1,9 @@
 #ifndef CAPTURER_DEVICES_H
 #define CAPTURER_DEVICES_H
 
-#include "probe/enum.h"
-
 #include <cstdint>
 #include <optional>
+#include <probe/enum.h>
 #include <string>
 #include <vector>
 

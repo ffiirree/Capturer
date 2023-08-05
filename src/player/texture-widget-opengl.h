@@ -1,6 +1,7 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_OPENGL_H
 #define CAPTURER_TEXTURE_WIDGET_OPENGL_H
 
+#include <libcap/ffmpeg-wrapper.h>
 #include <libcap/media.h>
 #include <memory>
 #include <QOpenGLBuffer>
@@ -17,7 +18,7 @@ public:
     explicit TextureGLWidget(QWidget *parent = nullptr);
     ~TextureGLWidget();
 
-    void present(AVFrame *frame);
+    void present(const av::frame& frame);
 
     std::vector<AVPixelFormat> pix_fmts() const;
 
@@ -33,15 +34,18 @@ public:
     AVRational DAR() const;
 
 protected:
-    virtual void initializeGL();
-    virtual void resizeGL(int w, int h);
-    virtual void paintGL();
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
 
 private:
-    void create_textures();
-    void delete_textures();
-    void reinit_shaders();
-    bool update_tex_params();
+    bool UpdateTextureParams();
+
+    void CreateTextures();
+    void DeleteTextures();
+
+    void RemoveAllShaders();
+    void InitializeShaders();
 
     // shader program
     QOpenGLShaderProgram program_{};
@@ -65,6 +69,8 @@ private:
     av::frame frame_{};
 
     std::mutex mtx_;
+
+    std::atomic<bool> config_dirty_{ true };
 };
 
 #endif // !CAPTURER_TEXTURE_WIDGET_OPENGL_H

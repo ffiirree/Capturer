@@ -2,13 +2,13 @@
 
 #ifdef _WIN32
 
-#include "logging.h"
 #include "libcap/platform.h"
-#include "probe/defer.h"
-#include "probe/util.h"
+#include "logging.h"
 
 #include <dshow.h>
 #include <fmt/format.h>
+#include <probe/defer.h>
+#include <probe/util.h>
 #include <windows.h>
 #include <winrt/base.h>
 

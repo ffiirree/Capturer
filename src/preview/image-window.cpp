@@ -20,7 +20,6 @@ ImageWindow::ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
     : FramelessWindow(parent)
 {
     setWindowFlags((windowFlags() & ~Qt::Window) | Qt::Tool | Qt::WindowStaysOnTopHint);
-    setAttribute(Qt::WA_DeleteOnClose);
 
     setWindowTitle("Image Window");
 

@@ -140,26 +140,30 @@ void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
     if (mimedata != nullptr) {
-        FramelessWindow *pwin = nullptr;
         if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
             QString("gif;mp4;mkv;m2ts;avi;wmv")
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
-            auto player = new VideoPlayer(this);
-            player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
 
-            pwin = player;
+            auto player = std::make_shared<VideoPlayer>();
+            player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+            mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
+
+            auto iter = windows_.emplace(windows_.end(), player);
+            connect(player.get(), &FramelessWindow::closed, [=, this]() {
+                mimedata->setData(clipboard::MIME_TYPE_STATUS, "N");
+                windows_.erase(iter);
+            });
         }
         else if (mimedata->hasColor()) {
-            pwin = new ColorWindow(mimedata, this);
+            auto iter = windows_.emplace(windows_.end(), std::make_shared<ColorWindow>(mimedata));
+            iter->get()->show();
+            connect(iter->get(), &FramelessWindow::closed, [=, this]() { windows_.erase(iter); });
         }
         else {
-            pwin = new ImageWindow(mimedata, this);
+            auto iter = windows_.emplace(windows_.end(), std::make_shared<ImageWindow>(mimedata));
+            iter->get()->show();
+            connect(iter->get(), &FramelessWindow::closed, [=, this]() { windows_.erase(iter); });
         }
-
-        pwin->show();
-
-        auto iter = windows_.insert(windows_.end(), pwin);
-        connect(pwin, &ImageWindow::closed, [=, this]() { windows_.erase(iter); });
     }
 }
 

@@ -37,9 +37,9 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, int) override;
+    int produce(AVFrame *, AVMediaType) override;
 
-    bool empty(int type) override
+    bool empty(AVMediaType type) override
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return buffer_.empty();
@@ -47,7 +47,7 @@ public:
         }
     }
 
-    bool has(int type) const override
+    bool has(AVMediaType type) const override
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return ready_;
@@ -55,8 +55,8 @@ public:
         }
     }
 
-    std::string format_str(int) const override;
-    AVRational time_base(int) const override;
+    std::string format_str(AVMediaType) const override;
+    AVRational time_base(AVMediaType) const override;
 
     std::vector<av::vformat_t> vformats() const override { return {}; }
 

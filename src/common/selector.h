@@ -3,9 +3,9 @@
 
 #include "hunter.h"
 #include "json.h"
-#include "probe/graphics.h"
 #include "resizer.h"
 
+#include <probe/graphics.h>
 #include <QPainter>
 #include <QWidget>
 

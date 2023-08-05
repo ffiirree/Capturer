@@ -1,6 +1,6 @@
 #include "texture-widget.h"
 
-#include <libcap/media.h>
+#include <libcap/ffmpeg-wrapper.h>
 #include <QPainter>
 
 TextureWidget::TextureWidget(QWidget *parent)

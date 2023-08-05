@@ -1,10 +1,10 @@
 #include "config.h"
 
-#include "libcap/devices.h"
 #include "logging.h"
-#include "probe/system.h"
 
 #include <fstream>
+#include <libcap/devices.h>
+#include <probe/system.h>
 #include <QApplication>
 #include <QDir>
 #include <QStandardPaths>

@@ -17,6 +17,7 @@ public slots:
     void setDuration(int64_t); // AV_TIME_BASE
     void setTime(int64_t);     // AV_TIME_BASE
     void setVolume(int);
+    void setMute(bool);
 
     bool paused() const;
 

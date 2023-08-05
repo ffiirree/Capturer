@@ -90,6 +90,7 @@ target_link_libraries(${PROJECT_NAME}
         nlohmann_json::nlohmann_json
         libcap::libcap
         $<$<PLATFORM_ID:Linux>:${QT}::X11Extras>
+        $<$<PLATFORM_ID:Windows>:Winmm>
 )
 
 target_include_directories(${PROJECT_NAME}
