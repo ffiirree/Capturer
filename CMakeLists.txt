@@ -73,6 +73,36 @@ add_executable(${PROJECT_NAME}
     $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
+if (WIN32)
+    # Build HLSL shaders
+    add_custom_target(shaders)
+
+    set(HLSL_SHADER_FILES src/resources/d3d11/VertexShader.hlsl src/resources/d3d11/PixelShader.hlsl)
+
+    set_source_files_properties(src/resources/d3d11/VertexShader.hlsl PROPERTIES ShaderType "vs")
+    set_source_files_properties(src/resources/d3d11/PixelShader.hlsl PROPERTIES ShaderType "ps")
+    set_source_files_properties(${HLSL_SHADER_FILES} PROPERTIES ShaderModel "5_0")
+
+    foreach(FILE ${HLSL_SHADER_FILES})
+        get_filename_component(FILE_WE ${FILE} NAME_WE)
+        list(APPEND CSO_SHADER_FILES ${PROJECT_BINARY_DIR}/${FILE_WE}.cso)
+        get_source_file_property(shadertype ${FILE} ShaderType)
+        get_source_file_property(shadermodel ${FILE} ShaderModel)
+        add_custom_command(TARGET shaders
+                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h  /Fo ${PROJECT_BINARY_DIR}/${FILE_WE}.cso /Fd ${PROJECT_BINARY_DIR}/${FILE_WE}.pdb ${FILE}
+                MAIN_DEPENDENCY ${FILE}
+                COMMENT "HLSL ${FILE}"
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                VERBATIM)
+    endforeach(FILE)
+
+    add_dependencies(${PROJECT_NAME} shaders)
+
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy ${CSO_SHADER_FILES} $<TARGET_FILE_DIR:${PROJECT_NAME}>
+            COMMAND_EXPAND_LISTS)
+endif ()
+
 target_compile_options(${PROJECT_NAME} 
     PRIVATE 
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
