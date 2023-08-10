@@ -54,6 +54,8 @@ namespace pulse
     // stream
     pa_stream *stream_new(const std::string& name, const pa_sample_spec *ss, const pa_channel_map *map);
 
+    pa_usec_t stream_latency(pa_stream *stream);
+
     int stream_cork(pa_stream *stream, bool cork, pa_stream_success_cb_t cb, void *userdata);
 
     int stream_set_sink_volume(pa_stream *stream, const pa_cvolume *volume);

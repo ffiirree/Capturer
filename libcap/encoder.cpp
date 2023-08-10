@@ -142,7 +142,7 @@ int Encoder::new_video_stream()
     }
 
     if (vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-        if (hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt.hwaccel) != 0) {
+        if (av::hwaccel::setup_for_encoding(video_encoder_ctx_, vfmt.hwaccel) != 0) {
             LOG(ERROR) << "[   ENCODER] failed to set hardware device for encoding.";
             return -1;
         }

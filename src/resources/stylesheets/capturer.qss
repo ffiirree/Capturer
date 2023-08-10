@@ -108,13 +108,13 @@ QSpinBox::down-arrow {
 /*///////////////////////////////////////////////////////////////*/
 
 QMenu {
-    border-radius: 5px;
-    padding: 0.35em;
+    border-radius: 7px;
+    padding: 0.25em;
 }
 
 QMenu::icon {
     position: absolute;
-    left: 1em;
+    left: 0.75em;
 }
 
 QMenu::item {
@@ -124,7 +124,7 @@ QMenu::item {
     font-family: "Microsoft YaHei";
     font-size: 10pt;
 
-    height: 1.75em;
+    height: 1.5em;
 
     padding-left: 0.75em;
     padding-right: 0.75em;
@@ -133,9 +133,78 @@ QMenu::item {
 QMenu::item::selected {
 }
 
+QMenu::indicator  {
+    height: 1em;
+    width: 2px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    margin-right: -4px;
+}
+
+QMenu::indicator:checked {
+}
+
+QMenu::right-arrow {
+    height: 1em;
+    width: 1em;
+    margin-right: 0.75em;
+}
+
 QMenu::separator {
     height: 1px;
     margin: 3px;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+
+QScrollBar {
+    background: transparent;
+    margin: 0px;
+    padding: 0px;
+}
+
+QScrollBar::sub-page,
+QScrollBar::add-page {
+    background: transparent;
+}
+
+QScrollBar::sub-line,
+QScrollBar::add-line {
+    height: 0px;
+}
+
+/* vertical */
+QScrollBar:vertical {
+    width: 10px;
+}
+
+QScrollBar::handle::vertical {
+    margin-left: 3px;
+    margin-right: 3px;
+    border-radius: 2px;
+}
+
+QScrollBar::handle::vertical:hover {
+    margin-left: 1px;
+    margin-right: 1px;
+    border-radius: 4px;
+}
+
+/*horizontal*/
+QScrollBar:horizontal {
+    height: 10px;
+}
+
+QScrollBar::handle::horizontal {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    border-radius: 2px;
+}
+
+QScrollBar::handle::horizontal:hover {
+    margin-top: 1px;
+    margin-bottom: 1px;
+    border-radius: 4px;
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -187,9 +256,15 @@ QSlider::handle:horizontal:hover {
 }
 
 /*///////////////////////////////////////////////////////////////*/
+
+QTreeView {
+    border: none;
+}
+
+/*///////////////////////////////////////////////////////////////*/
 QMenu#tray-menu::item {
-    padding-left: 1.5em;
-    padding-right: 3em;
+    padding-left: 0.75em;
+    padding-right: 0.5em;
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -247,11 +322,13 @@ TitleBar QCheckBox#icon-title {
 }
 
 TitleBar QCheckBox#icon-title::indicator {
-    font-size: 9pt;
-    height: 2.25em;
-    width: 2.25em;
+    font-size: 8pt;
+    height: 1.5em;
+    width: 1.5em;
 
-    padding: 0.25em 1.25em 0.25em 1.25em;
+    padding: 0.75em 1em;
+
+    image: url(:/icons/capturer);
 }
 
 /* buttons */
@@ -260,7 +337,7 @@ TitleBar QCheckBox::indicator {
     height: 1em;
     width: 1em;
 
-    padding: 1em 1.35em 1em 1.35em;
+    padding: 1em 1.35em;
 }
 
 TitleBar QCheckBox#pin-btn::indicator {

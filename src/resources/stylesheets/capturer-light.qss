@@ -123,8 +123,22 @@ QMenu::item::selected {
     background-color: #e6e6e6;
 }
 
+QMenu::indicator:checked {
+    border: 1px solid #7c7c7c;
+    background: #3c3c3c;
+}
+
+QMenu::right-arrow {
+    image: url(:/icons/arrow-right-dark);
+}
+
 QMenu::separator {
     background-color: #e5e5e6;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QScrollBar::handle {
+    background: #858585;
 }
 
 /*///////////////////////////////////////////////////////////////*/

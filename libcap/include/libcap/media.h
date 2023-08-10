@@ -4,6 +4,7 @@
 #include "clock.h"
 
 #include <fmt/format.h>
+#include <vector>
 
 extern "C" {
 #include <libavcodec/packet.h>
@@ -44,21 +45,22 @@ namespace av
         struct color_t
         {
             AVColorSpace space{ AVCOL_SPC_UNSPECIFIED };
+            AVColorRange range{ AVCOL_RANGE_UNSPECIFIED };
             AVColorPrimaries primaries{ AVCOL_PRI_UNSPECIFIED };
             AVColorTransferCharacteristic transfer{ AVCOL_TRC_UNSPECIFIED };
-            AVColorRange range{ AVCOL_RANGE_UNSPECIFIED };
         } color{};
 
         AVHWDeviceType hwaccel{ AV_HWDEVICE_TYPE_NONE };
+        AVPixelFormat sw_pix_fmt{ AV_PIX_FMT_NONE };
     };
 
     // audio format options
     struct aformat_t
     {
-        int sample_rate{ 48'000 };
+        int sample_rate{ 0 };
         AVSampleFormat sample_fmt{ AV_SAMPLE_FMT_NONE };
 
-        int channels{ 2 };
+        int channels{ 0 };
         uint64_t channel_layout{ 0 };
 
         AVRational time_base{ 1, OS_TIME_BASE };
@@ -184,6 +186,17 @@ namespace av
         if (str == "vfr" || str == "VFR") return vsync_t::vfr;
 
         return vsync_t::cfr;
+    }
+
+    inline std::vector<std::pair<std::string, std::string>> to_pairs(const AVDictionary *dict)
+    {
+        std::vector<std::pair<std::string, std::string>> kv{};
+
+        auto entry = av_dict_get(dict, "", nullptr, AV_DICT_IGNORE_SUFFIX);
+        for (; entry; entry = av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX)) {
+            kv.emplace_back(entry->key, entry->value);
+        }
+        return kv;
     }
 } // namespace av
 

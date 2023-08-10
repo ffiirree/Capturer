@@ -45,79 +45,99 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="138"/>
+        <location filename="../src/preview/image-window.cpp" line="139"/>
         <source>Open Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="150"/>
+        <location filename="../src/preview/image-window.cpp" line="151"/>
         <source>Save Image</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="167"/>
-        <source>Copy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../src/preview/image-window.cpp" line="168"/>
-        <source>Paste</source>
-        <translation type="unfinished"></translation>
+        <source>Copy</source>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="172"/>
-        <source>Open Image...</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/preview/image-window.cpp" line="169"/>
+        <source>Paste</source>
+        <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="173"/>
-        <source>Save As...</source>
-        <translation type="unfinished"></translation>
+        <source>Open Image...</source>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="177"/>
-        <source>Grayscale</source>
+        <location filename="../src/preview/image-window.cpp" line="174"/>
+        <source>Save As...</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="178"/>
-        <source>Rotate +90</source>
+        <source>Grayscale</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="179"/>
-        <source>Rotate -90</source>
+        <source>Rotate +90</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="180"/>
-        <source>H Flip</source>
+        <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="181"/>
+        <source>H Flip</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="182"/>
         <source>V Flip</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="188"/>
-        <location filename="../src/preview/image-window.cpp" line="200"/>
-        <source>Zoom : </source>
+        <location filename="../src/preview/image-window.cpp" line="186"/>
+        <source>Background</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="189"/>
-        <location filename="../src/preview/image-window.cpp" line="201"/>
-        <source>Opacity : </source>
+        <source>White</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="190"/>
+        <source>Gray</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="191"/>
+        <source>Black</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="195"/>
+        <location filename="../src/preview/image-window.cpp" line="207"/>
+        <source>Zoom : </source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="196"/>
+        <location filename="../src/preview/image-window.cpp" line="208"/>
+        <source>Opacity : </source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="200"/>
         <source>Recover</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="194"/>
+        <location filename="../src/preview/image-window.cpp" line="201"/>
         <source>Close</source>
         <translation></translation>
     </message>
@@ -367,6 +387,75 @@
     <message>
         <location filename="../src/setting/settingdialog.cpp" line="491"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
+    <name>VideoPlayer</name>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="443"/>
+        <source>Open File</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="446"/>
+        <source>Video</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="448"/>
+        <location filename="../src/player/videoplayer.cpp" line="471"/>
+        <source>Render</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="457"/>
+        <source>Rotate +90</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="458"/>
+        <source>Rotate -90</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="463"/>
+        <source>Audio</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="466"/>
+        <source>Select Audio Stream</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="480"/>
+        <source>Subtitles</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="482"/>
+        <source>Select Subtitles</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="485"/>
+        <source>Add Subtitles</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="486"/>
+        <source>Show/Hide Subtitles</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="491"/>
+        <source>Preferences</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="492"/>
+        <source>Properties</source>
         <translation></translation>
     </message>
 </context>

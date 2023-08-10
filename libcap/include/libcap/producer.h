@@ -82,6 +82,11 @@ public:
     virtual void set_timing(av::timing_t t) { timing_ = t; }
     [[nodiscard]] virtual av::timing_t timing() const { return timing_; }
 
+    virtual std::vector<std::vector<std::pair<std::string, std::string>>> properties(AVMediaType) const
+    {
+        return {};
+    }
+
     // current format
     av::aformat_t afmt{};
     av::vformat_t vfmt{};

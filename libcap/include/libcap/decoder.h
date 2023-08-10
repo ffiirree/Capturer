@@ -17,7 +17,8 @@ class Decoder : public Producer<AVFrame>
         DEMUXING_EOF  = 0x10,
         VDECODING_EOF = 0x01,
         ADECODING_EOF = 0x02,
-        DECODING_EOF  = DEMUXING_EOF | VDECODING_EOF | ADECODING_EOF
+        SDECODING_EOF = 0x02,
+        DECODING_EOF  = DEMUXING_EOF | VDECODING_EOF | ADECODING_EOF | SDECODING_EOF
     };
 
 public:
@@ -64,6 +65,8 @@ public:
 
     bool has_enough(AVMediaType type) const;
 
+    std::vector<std::vector<std::pair<std::string, std::string>>> properties(AVMediaType) const override;
+
 private:
     int decode_fn();
     void destroy();
@@ -73,9 +76,11 @@ private:
     AVFormatContext *fmt_ctx_{ nullptr };
     AVCodecContext *video_decoder_ctx_{ nullptr };
     AVCodecContext *audio_decoder_ctx_{ nullptr };
+    AVCodecContext *subtitle_decoder_ctx_{ nullptr };
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
+    int subtitle_idx_{ -1 };
 
     int64_t SYNC_PTS{ 0 };
 
@@ -87,6 +92,7 @@ private:
 
     lock_queue<av::frame> vbuffer_{};
     lock_queue<av::frame> abuffer_{};
+    lock_queue<AVSubtitle> sbuffer_{};
 };
 
 #endif //! CAPTURER_DECODER_H

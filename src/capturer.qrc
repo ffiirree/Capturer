@@ -148,6 +148,12 @@
         <file alias="title-pin-fill">resources/icons/title-pin-fill.png</file>
         <file alias="title-pin-fill-dark">resources/icons/title-pin-fill-dark.png</file>
         <file alias="title-pin-fill-light">resources/icons/title-pin-fill-light.png</file>
+        <file alias="subtitles">resources/icons/subtitles.png</file>
+        <file alias="subtitles-light">resources/icons/subtitles-light.png</file>
+        <file alias="subtitles-dark">resources/icons/subtitles-dark.png</file>
+        <file alias="arrow-right">resources/icons/arrow-right.png</file>
+        <file alias="arrow-right-light">resources/icons/arrow-right-light.png</file>
+        <file alias="arrow-right-dark">resources/icons/arrow-right-dark.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

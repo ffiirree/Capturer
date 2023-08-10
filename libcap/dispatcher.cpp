@@ -6,11 +6,9 @@
 #include "probe/defer.h"
 
 extern "C" {
-#include <libavcodec/avcodec.h>
 #include <libavfilter/avfilter.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
-#include <libavformat/avformat.h>
 #include <libavutil/opt.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/time.h>
@@ -107,8 +105,8 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
     }
 
     afmt.sample_fmt = (afmt.sample_fmt == AV_SAMPLE_FMT_NONE) ? encoder->afmt.sample_fmt : afmt.sample_fmt;
-    afmt.channels   = (afmt.channels == -1) ? encoder->afmt.channels : afmt.channels;
-    afmt.channel_layout = (afmt.channel_layout == -1) ? encoder->afmt.channel_layout : afmt.channel_layout;
+    afmt.channels   = (afmt.channels == 0) ? encoder->afmt.channels : afmt.channels;
+    afmt.channel_layout = (afmt.channel_layout == 0) ? encoder->afmt.channel_layout : afmt.channel_layout;
     afmt.sample_rate    = (afmt.sample_rate == -1) ? encoder->afmt.sample_rate : afmt.sample_rate;
 
     if (afmt.sample_fmt != AV_SAMPLE_FMT_NONE) {
@@ -287,7 +285,7 @@ int Dispatcher::create_filter_graph(enum AVMediaType type)
     }
 
     if (type == AVMEDIA_TYPE_VIDEO && vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-        if (hwaccel::setup_for_filter_graph(graph, vfmt.hwaccel) != 0) {
+        if (av::hwaccel::setup_for_filter_graph(graph, vfmt.hwaccel) != 0) {
             LOG(ERROR) << "[DISPATCHER]  can not set hareware device up for filter graph.";
             return -1;
         }
@@ -392,7 +390,7 @@ int Dispatcher::start()
 
     arunning_ = true;
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
-        auido_thread_ = std::thread([this]() {
+        audio_thread_ = std::thread([this]() {
             probe::thread::set_name("dispatch-audio");
             dispatch_fn(AVMEDIA_TYPE_AUDIO);
         });
@@ -542,13 +540,9 @@ void Dispatcher::seek(const std::chrono::microseconds& ts, int64_t lts, int64_t 
         vrunning_ = false;
         arunning_ = false;
 
-        if (video_thread_.joinable()) {
-            video_thread_.join();
-        }
+        if (video_thread_.joinable()) video_thread_.join();
 
-        if (auido_thread_.joinable()) {
-            auido_thread_.join();
-        }
+        if (audio_thread_.joinable()) audio_thread_.join();
 
         locked_ = false;
         start();
@@ -631,13 +625,9 @@ int Dispatcher::reset()
     arunning_ = false;
     draining_ = false;
 
-    if (video_thread_.joinable()) {
-        video_thread_.join();
-    }
+    if (video_thread_.joinable()) video_thread_.join();
 
-    if (auido_thread_.joinable()) {
-        auido_thread_.join();
-    }
+    if (audio_thread_.joinable()) audio_thread_.join();
 
     // clear
     aproducer_ctxs_.clear();

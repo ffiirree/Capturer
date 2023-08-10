@@ -50,11 +50,11 @@ Capturer::Capturer(QWidget *parent)
     // setting
     setting_dialog_ = std::make_shared<SettingWindow>();
 
+    updateConfig();
+
     // System tray icon
     // @attention Must after setting.
     setupSystemTray();
-
-    updateConfig();
 
     setWindowIcon(QIcon(":/icons/capturer"));
 
@@ -104,15 +104,15 @@ void Capturer::setupSystemTray()
 #endif
         // clang-format off
         menu->clear();
-        menu->addAction(QIcon(":/icons/screenshot-" + icon_color),   tr("Screenshot"),   sniper_, &ScreenShoter::start);
-        menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record);
-        menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_, &ScreenRecorder::record);
+        menu->addAction(QIcon(":/icons/screenshot-" + icon_color),   tr("Screenshot"),   sniper_,   &ScreenShoter::start,    snip_sc_->shortcut());
+        menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record, video_sc_->shortcut());
+        menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_,  &ScreenRecorder::record, gif_sc_->shortcut());
         menu->addSeparator();
         menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
         menu->addSeparator();
         menu->addAction(QIcon(":/icons/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
         menu->addSeparator();
-        menu->addAction(QIcon(":/icons/exit-" + icon_color),         tr("Quit"),         qApp, &QCoreApplication::exit);
+        menu->addAction(QIcon(":/icons/exit-" + icon_color),         tr("Quit"),         qApp,      &QCoreApplication::exit);
         // clang-format on
     };
 
@@ -140,30 +140,30 @@ void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
     if (mimedata != nullptr) {
+        std::list<FramelessWindow *>::iterator iter;
+
         if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
             QString("gif;mp4;mkv;m2ts;avi;wmv")
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
 
-            auto player = std::make_shared<VideoPlayer>();
+            auto player = new VideoPlayer();
             player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
 
-            auto iter = windows_.emplace(windows_.end(), player);
-            connect(player.get(), &FramelessWindow::closed, [=, this]() {
-                mimedata->setData(clipboard::MIME_TYPE_STATUS, "N");
-                windows_.erase(iter);
-            });
+            iter = windows_.emplace(windows_.end(), player);
         }
         else if (mimedata->hasColor()) {
-            auto iter = windows_.emplace(windows_.end(), std::make_shared<ColorWindow>(mimedata));
-            iter->get()->show();
-            connect(iter->get(), &FramelessWindow::closed, [=, this]() { windows_.erase(iter); });
+            iter = windows_.emplace(windows_.end(), new ColorWindow(mimedata));
         }
         else {
-            auto iter = windows_.emplace(windows_.end(), std::make_shared<ImageWindow>(mimedata));
-            iter->get()->show();
-            connect(iter->get(), &FramelessWindow::closed, [=, this]() { windows_.erase(iter); });
+            iter = windows_.emplace(windows_.end(), new ImageWindow(mimedata));
         }
+
+        (*iter)->show();
+        connect(*iter, &FramelessWindow::closed, [=, this]() {
+            (*iter)->deleteLater();
+            windows_.erase(iter);
+        });
     }
 }
 

@@ -16,11 +16,15 @@ FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags f)
     : QWidget(parent, f | Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint)
 {
 #ifdef Q_OS_WIN
+    setAttribute(Qt::WA_DontCreateNativeAncestors);
+    setAttribute(Qt::WA_NativeWindow);
+
     auto hwnd = reinterpret_cast<HWND>(winId());
 
     // shadow
     DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
     ::DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, &ncrp, sizeof(DWMNCRENDERINGPOLICY));
+
     MARGINS margins = { -1, -1, -1, -1 };
     ::DwmExtendFrameIntoClientArea(hwnd, &margins);
 

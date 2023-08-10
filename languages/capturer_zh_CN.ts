@@ -45,91 +45,79 @@
 <context>
     <name>ImageWindow</name>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="138"/>
+        <location filename="../src/preview/image-window.cpp" line="139"/>
         <source>Open Image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="150"/>
+        <location filename="../src/preview/image-window.cpp" line="151"/>
         <source>Save Image</source>
         <translation>保存图片</translation>
     </message>
     <message>
-        <source>Copy image</source>
-        <translation type="vanished">复制图片</translation>
-    </message>
-    <message>
-        <source>Paste image</source>
-        <translation type="vanished">粘贴图片</translation>
-    </message>
-    <message>
-        <source>Open image...</source>
-        <translation type="vanished">打开图片...</translation>
-    </message>
-    <message>
-        <source>Save as...</source>
-        <translation type="vanished">另存为...</translation>
-    </message>
-    <message>
-        <location filename="../src/preview/image-window.cpp" line="167"/>
-        <source>Copy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../src/preview/image-window.cpp" line="168"/>
-        <source>Paste</source>
-        <translation type="unfinished">粘贴</translation>
+        <source>Copy</source>
+        <translation>复制</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="172"/>
-        <source>Open Image...</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/preview/image-window.cpp" line="169"/>
+        <source>Paste</source>
+        <translation>粘贴</translation>
     </message>
     <message>
         <location filename="../src/preview/image-window.cpp" line="173"/>
-        <source>Save As...</source>
-        <translation type="unfinished"></translation>
+        <source>Open Image...</source>
+        <translation>打开图片...</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="177"/>
+        <location filename="../src/preview/image-window.cpp" line="174"/>
+        <source>Save As...</source>
+        <translation>另存为...</translation>
+    </message>
+    <message>
+        <location filename="../src/preview/image-window.cpp" line="178"/>
         <source>Grayscale</source>
         <translation>灰度图</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="178"/>
+        <location filename="../src/preview/image-window.cpp" line="179"/>
         <source>Rotate +90</source>
         <translation>旋转 +90°</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="179"/>
+        <location filename="../src/preview/image-window.cpp" line="180"/>
         <source>Rotate -90</source>
         <translation>旋转 -90°</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="180"/>
+        <location filename="../src/preview/image-window.cpp" line="181"/>
         <source>H Flip</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="181"/>
+        <location filename="../src/preview/image-window.cpp" line="182"/>
         <source>V Flip</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
+        <location filename="../src/preview/image-window.cpp" line="186"/>
         <source>Background</source>
-        <translation type="vanished">背景颜色</translation>
+        <translation>背景色</translation>
     </message>
     <message>
+        <location filename="../src/preview/image-window.cpp" line="189"/>
         <source>White</source>
-        <translation type="vanished">白色</translation>
+        <translation>白色</translation>
     </message>
     <message>
+        <location filename="../src/preview/image-window.cpp" line="190"/>
         <source>Gray</source>
-        <translation type="vanished">灰色</translation>
+        <translation>灰色</translation>
     </message>
     <message>
+        <location filename="../src/preview/image-window.cpp" line="191"/>
         <source>Black</source>
-        <translation type="vanished">黑色</translation>
+        <translation>黑色</translation>
     </message>
     <message>
         <source>Transparent</source>
@@ -144,24 +132,24 @@
         <translation type="vanished">阴影</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="188"/>
-        <location filename="../src/preview/image-window.cpp" line="200"/>
+        <location filename="../src/preview/image-window.cpp" line="195"/>
+        <location filename="../src/preview/image-window.cpp" line="207"/>
         <source>Zoom : </source>
         <translation>缩放 ：</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="189"/>
-        <location filename="../src/preview/image-window.cpp" line="201"/>
+        <location filename="../src/preview/image-window.cpp" line="196"/>
+        <location filename="../src/preview/image-window.cpp" line="208"/>
         <source>Opacity : </source>
         <translation>透明度 ：</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="190"/>
+        <location filename="../src/preview/image-window.cpp" line="200"/>
         <source>Recover</source>
         <translation>复原</translation>
     </message>
     <message>
-        <location filename="../src/preview/image-window.cpp" line="194"/>
+        <location filename="../src/preview/image-window.cpp" line="201"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
@@ -412,6 +400,75 @@
         <location filename="../src/setting/settingdialog.cpp" line="491"/>
         <source>Copyright © 2018 - 2023 ffiirree. All rights reserved</source>
         <translation></translation>
+    </message>
+</context>
+<context>
+    <name>VideoPlayer</name>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="443"/>
+        <source>Open File</source>
+        <translation>打开文件</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="446"/>
+        <source>Video</source>
+        <translation>视频</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="448"/>
+        <location filename="../src/player/videoplayer.cpp" line="471"/>
+        <source>Render</source>
+        <translation>渲染器</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="457"/>
+        <source>Rotate +90</source>
+        <translation>旋转 +90°</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="458"/>
+        <source>Rotate -90</source>
+        <translation>旋转 -90°</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="463"/>
+        <source>Audio</source>
+        <translation>音频</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="466"/>
+        <source>Select Audio Stream</source>
+        <translation>选择音频流</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="480"/>
+        <source>Subtitles</source>
+        <translation>字幕</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="482"/>
+        <source>Select Subtitles</source>
+        <translation>选择字幕</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="485"/>
+        <source>Add Subtitles</source>
+        <translation>添加字幕</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="486"/>
+        <source>Show/Hide Subtitles</source>
+        <translation>显示/隐藏字幕</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="491"/>
+        <source>Preferences</source>
+        <translation>选项</translation>
+    </message>
+    <message>
+        <location filename="../src/player/videoplayer.cpp" line="492"/>
+        <source>Properties</source>
+        <translation>属性</translation>
     </message>
 </context>
 </TS>

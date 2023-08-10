@@ -110,6 +110,7 @@ void TitleBar::mousePressEvent(QMouseEvent *event)
 {
     if (!window()->isFullScreen()) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+        Q_UNUSED(event);
         window()->windowHandle()->startSystemMove();
 #elif defined(Q_OS_WIN)
         if (window() && ReleaseCapture())

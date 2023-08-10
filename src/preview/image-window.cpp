@@ -69,7 +69,7 @@ void ImageWindow::present(const QPixmap& pixmap)
     setGeometry(_geometry);
 }
 
-void ImageWindow::mouseDoubleClickEvent(QMouseEvent *)
+void ImageWindow::mouseDoubleClickEvent(QMouseEvent * event)
 {
     thumbnail_ = !thumbnail_;
 
@@ -77,6 +77,7 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent *)
 
     if (thumbnail_) {
         _geometry.setSize(THUMBNAIL_SIZE_);
+        _geometry.moveCenter(event->pos());
         preview_->present(pixmap_.copy(_geometry));
     }
     else {
@@ -182,16 +183,22 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    //auto sub_menu = new Menu(tr("Background"), this);
-    //context_menu_->addMenu(sub_menu);
+    auto sub_menu = new Menu(tr("Background"), this);
 
-    zoom_action_ = context_menu_->addAction(tr("Zoom : ") + QString::number(static_cast<int>(scale_ * 100)) + "%");
+    auto group = new QActionGroup(this);
+    group->addAction(sub_menu->addAction(tr("White"),        [this]() { setStyleSheet("ImageWindow{ background: white; }"); }))->setCheckable(true);
+    group->addAction(sub_menu->addAction(tr("Gray"),         [this]() { setStyleSheet("ImageWindow{ background: gray; }"); }))->setCheckable(true);
+    group->addAction(sub_menu->addAction(tr("Black"),        [this]() { setStyleSheet("ImageWindow{ background: black; }"); }))->setCheckable(true);
+    group->actions().back()->trigger();
+    context_menu_->addMenu(sub_menu);
+
+    zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");
     opacity_action_ = context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
-    context_menu_->addAction(tr("Recover"), [this]() { preview(data_); });
 
     context_menu_->addSeparator();
 
-    context_menu_->addAction(tr("Close"), this, &ImageWindow::close, QKeySequence(Qt::Key_Escape));
+    context_menu_->addAction(tr("Recover"), [this]() { preview(data_); });
+    context_menu_->addAction(tr("Close"),   this, &ImageWindow::close, QKeySequence(Qt::Key_Escape));
 }
 // clang-format on
 
@@ -302,7 +309,13 @@ std::optional<QPixmap> ImageWindow::render(const std::shared_ptr<QMimeData>& mim
 
     // 4. text
     if (mimedata->hasText()) {
-        QLabel label(mimedata->text());
+        auto text = mimedata->text();
+
+        // remove the last '\n'
+        if (mimedata->hasUrls() && mimedata->urls().size() > 1 && text.back() == '\n')
+            text = text.mid(0, text.size() - 1);
+
+        QLabel label(text);
         label.setWordWrap(false);
         label.setMargin(10);
         label.setStyleSheet(Config::theme() == "light" ? "background-color:white; color: black;"

@@ -616,9 +616,9 @@ void TextureGLWidget::present(const av::frame& frame)
 
         format_.color = {
             frame_->colorspace,
+            frame_->color_range,
             frame_->color_primaries,
             frame_->color_trc,
-            frame_->color_range,
         };
 
         config_dirty_ = true;

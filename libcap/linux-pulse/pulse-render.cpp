@@ -5,7 +5,9 @@
 #include "libcap/linux-pulse/linux-pulse.h"
 #include "logging.h"
 
-int PulseAudioRender::open(const std::string& name, RenderFlags flags)
+#include <fmt/chrono.h>
+
+int PulseAudioRender::open(const std::string&, RenderFlags)
 {
     pulse::init();
 
@@ -39,16 +41,19 @@ int PulseAudioRender::open(const std::string& name, RenderFlags flags)
     pulse::loop_lock();
 
     ::pa_stream_set_state_callback(stream_, pulse_stream_state_callback, this);
+    ::pa_stream_set_latency_update_callback(stream_, pulse_stream_latency_callback, this);
 
     pa_buffer_attr buffer_attr{
         .maxlength = static_cast<uint32_t>(1'024 * bytes_per_frame_) * 2,
         .tlength   = static_cast<uint32_t>(1'024 * bytes_per_frame_),
         .prebuf    = 0,
         .minreq    = static_cast<uint32_t>(-1),
+        .fragsize  = 0,
     };
     if (::pa_stream_connect_playback(stream_, nullptr, &buffer_attr,
-                                     PA_STREAM_START_CORKED | PA_STREAM_ADJUST_LATENCY, nullptr,
-                                     nullptr) != 0) {
+                                     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
+                                         PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_ADJUST_LATENCY,
+                                     nullptr, nullptr) != 0) {
         pulse::loop_unlock();
         LOG(ERROR) << "[PULSE-AUDIO] failed to connect playback.";
         return -1;
@@ -85,6 +90,12 @@ void PulseAudioRender::pulse_stream_write_callback(pa_stream *stream, size_t byt
     // fixme: assume that we always have enough frames
     self->callback_(reinterpret_cast<uint8_t **>(&buffer), self->buffer_frames_, os_gettime_ns());
     ::pa_stream_write(stream, buffer, bytes, nullptr, 0, PA_SEEK_RELATIVE);
+}
+
+void PulseAudioRender::pulse_stream_latency_callback(pa_stream *, void *)
+{
+    DLOG(INFO) << "[PULSE-AUDIO] latency updated";
+    pulse::signal(0);
 }
 
 void PulseAudioRender::pulse_stream_state_callback(pa_stream *stream, void *userdata)
@@ -130,7 +141,7 @@ int PulseAudioRender::start(const std::function<uint32_t(uint8_t **, uint32_t, i
     return 0;
 }
 
-int PulseAudioRender::reset() {}
+int PulseAudioRender::reset() { return 0; }
 
 int PulseAudioRender::stop()
 {
@@ -163,7 +174,8 @@ int PulseAudioRender::stop()
 int PulseAudioRender::mute(bool muted)
 {
     assert(stream_);
-    pulse::stream_set_sink_mute(stream_, muted);
+
+    return pulse::stream_set_sink_mute(stream_, muted);
 }
 
 bool PulseAudioRender::muted() const
@@ -179,7 +191,7 @@ int PulseAudioRender::setVolume(float value)
 
     pa_cvolume volume{};
     ::pa_cvolume_set(&volume, format_.channels, pa_sw_volume_from_linear(value));
-    pulse::stream_set_sink_volume(stream_, &volume);
+    return pulse::stream_set_sink_volume(stream_, &volume);
 }
 
 float PulseAudioRender::volume() const
@@ -192,14 +204,14 @@ int PulseAudioRender::pause()
 {
     assert(stream_);
 
-    if (!paused()) pulse::stream_cork(stream_, true, pulse_stream_success_callback, this);
+    return !paused() ? pulse::stream_cork(stream_, true, pulse_stream_success_callback, this) : 0;
 }
 
 int PulseAudioRender::resume()
 {
     assert(stream_);
 
-    if (paused()) pulse::stream_cork(stream_, false, pulse_stream_success_callback, this);
+    return paused() ? pulse::stream_cork(stream_, false, pulse_stream_success_callback, this) : 0;
 }
 
 bool PulseAudioRender::paused() const { return stream_ && ::pa_stream_is_corked(stream_); }

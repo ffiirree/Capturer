@@ -10,6 +10,8 @@
 
 int main(int argc, char *argv[])
 {
+    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+
 #ifdef _WIN32
     ::SetConsoleOutputCP(CP_UTF8);
     ::setvbuf(stdout, nullptr, _IONBF, 0);

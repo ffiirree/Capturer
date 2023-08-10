@@ -55,19 +55,21 @@ private:
 
 private:
     winrt::Windows::Graphics::Capture::GraphicsCaptureItem item_{ nullptr };
-    winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice device_{ nullptr };
+
+    winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice winrt_device_{ nullptr };
+
     winrt::Windows::Graphics::Capture::GraphicsCaptureSession session_{ nullptr };
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool frame_pool_{ nullptr };
 
-    winrt::com_ptr<ID3D11DeviceContext> d3d11_ctx_{ nullptr };
+    winrt::Windows::Graphics::Capture::GraphicsCaptureItem::Closed_revoker onclosed_;
+    winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::FrameArrived_revoker onarrived_;
 
-    winrt::Windows::Graphics::Capture::GraphicsCaptureItem::Closed_revoker closed_;
-    winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::FrameArrived_revoker frame_arrived_;
+    // ffmpeg hardware device context
+    std::shared_ptr<av::hwaccel::context_t> hwctx_{};
 
-    AVBufferRef *device_ref_{ nullptr };
-
-    AVBufferRef *frames_ref_{ nullptr };
-    AVHWFramesContext *frames_ctx_{ nullptr };
+    // D3D11
+    winrt::com_ptr<ID3D11Device> device_{}; // same as hwctx_->native_device()
+    winrt::com_ptr<ID3D11DeviceContext> context_{};
 
     winrt::com_ptr<ID3D11Texture2D> resize_texture_{};
     winrt::com_ptr<ID3D11RenderTargetView> resize_render_target_{};

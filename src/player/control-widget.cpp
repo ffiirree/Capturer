@@ -52,7 +52,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         vl->addWidget(time_slider_);
 
         auto hl = new QHBoxLayout();
-        hl->setSpacing(10);
+        hl->setSpacing(7);
         hl->setContentsMargins({});
         vl->addLayout(hl);
 
@@ -85,6 +85,12 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
 
+        // subtitles
+        auto subtitles_btn = new QCheckBox();
+        subtitles_btn->setObjectName("subtitles-btn");
+        subtitles_btn->setCheckable(false);
+        hl->addWidget(subtitles_btn);
+
         // speed
         auto speed_box = new ComboBox();
         speed_box->setObjectName("speed-box");
@@ -112,7 +118,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
         volume_slider_ = new Slider(Qt::Horizontal);
         volume_slider_->setObjectName("volume-bar");
-        volume_slider_->setFixedWidth(125);
+        volume_slider_->setFixedWidth(100);
         volume_slider_->setRange(0, 100);
         connect(volume_slider_, &Slider::valueChanged, [this](int v) {
             volume_btn_->setChecked(v == 0);

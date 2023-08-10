@@ -39,6 +39,7 @@ private:
     static void pulse_stream_success_callback(pa_stream *, int success, void *);
     static void pulse_stream_write_callback(pa_stream *, size_t, void *);
     static void pulse_stream_state_callback(pa_stream *, void *);
+    static void pulse_stream_latency_callback(pa_stream *, void *);
     static void pulse_stream_underflow_callback(pa_stream*, void *);
     static void pulse_stream_update_timing_callback(pa_stream *, int, void *);
     static void pulse_stream_drain_callback(pa_stream *, int, void *);

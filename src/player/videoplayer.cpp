@@ -1,17 +1,22 @@
 #include "videoplayer.h"
 
 #include "logging.h"
+#include "titlebar.h"
 
 #include <fmt/chrono.h>
+#include <fmt/ranges.h>
 #include <libcap/devices.h>
 #include <probe/thread.h>
 #include <QCheckBox>
 #include <QChildEvent>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QMouseEvent>
 #include <QShortcut>
 #include <QStackedLayout>
+#include <QStandardItemModel>
+#include <QTreeView>
 #include <QVBoxLayout>
 
 #ifdef _WIN32
@@ -75,6 +80,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this]() { control_->setVolume(audio_render_->volume() * 100 + 5); }); // +10s
     connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this]() { control_->setVolume(audio_render_->volume() * 100 - 5); }); // -10s
     // clang-format on
+
+    initContextMenu();
 }
 
 void VideoPlayer::reset()
@@ -109,6 +116,11 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
 {
     std::map<std::string, std::string> decoder_options;
     if (options.contains("format")) decoder_options["format"] = options.at("format");
+
+#if 0
+    decoder_options["hwaccel"]         = "d3d11va";
+    decoder_options["hwaccel_pix_fmt"] = "d3d11";
+#endif
 
     // video decoder
     decoder_->set_timing(av::timing_t::none);
@@ -422,4 +434,178 @@ void VideoPlayer::mouseDoubleClickEvent(QMouseEvent *event)
         control_->paused() ? control_->resume() : control_->pause();
     }
     FramelessWindow::mouseDoubleClickEvent(event);
+}
+
+void VideoPlayer::initContextMenu()
+{
+    menu_ = new Menu(this);
+
+    menu_->addAction(tr("Open File"), this, &VideoPlayer::openFile, QKeySequence::Open);
+
+    // video
+    auto video_menu = new Menu(tr("Video"), this);
+    // video render
+    auto vrenders   = new Menu(tr("Render"), this);
+    auto vrg        = new QActionGroup(vrenders);
+    vrg->addAction(vrenders->addAction("OpenGL"))->setCheckable(true);
+    vrg->addAction(vrenders->addAction("D3D11"))->setCheckable(true);
+    vrg->actions()[0]->setChecked(true);
+    video_menu->addMenu(vrenders);
+
+    video_menu->addSeparator();
+
+    video_menu->addAction(tr("Rotate +90"));
+    video_menu->addAction(tr("Rotate -90"));
+
+    menu_->addMenu(video_menu);
+
+    // audio
+    auto audio_menu = new Menu(tr("Audio"), this);
+
+    // audio streams
+    asmenu_  = new Menu(tr("Select Audio Stream"), this);
+    asgroup_ = new QActionGroup(this);
+    audio_menu->addMenu(asmenu_);
+
+    // audio renders
+    auto arenders = new Menu(tr("Render"), this);
+    auto arg      = new QActionGroup(arenders);
+    arg->addAction(arenders->addAction("WASAPI"))->setCheckable(true);
+    arg->actions()[0]->setChecked(true);
+    audio_menu->addMenu(arenders);
+
+    menu_->addMenu(audio_menu);
+
+    // subtitles
+    auto subtitles_menu = new Menu(tr("Subtitles"), this);
+
+    ssmenu_  = new Menu(tr("Select Subtitles"), this);
+    ssgroup_ = new QActionGroup(this);
+    subtitles_menu->addMenu(ssmenu_);
+    subtitles_menu->addAction(tr("Add Subtitles"));
+    subtitles_menu->addAction(tr("Show/Hide Subtitles"))->setCheckable(true);
+    menu_->addMenu(subtitles_menu);
+
+    menu_->addSeparator();
+
+    menu_->addAction(tr("Preferences"), this, &VideoPlayer::showPreferences, QKeySequence(Qt::Key_F5));
+    menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
+                     QKeySequence(Qt::CTRL | Qt::Key_I));
+}
+
+void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
+{
+    asmenu_->clear();
+    for (auto& p : decoder_->properties(AVMEDIA_TYPE_AUDIO)) {
+        std::string name{};
+        for (auto& [k, v] : p) {
+            if (k == "Index") {
+                name = "#" + v + ": " + name;
+            }
+        }
+        asgroup_->addAction(asmenu_->addAction(name.c_str()))->setCheckable(true);
+    }
+
+    ssmenu_->clear();
+    for (auto& p : decoder_->properties(AVMEDIA_TYPE_SUBTITLE)) {
+        std::string name{};
+        for (auto& [k, v] : p) {
+            if (k == "Index") {
+                name = "#" + v + ": " + name;
+            }
+        }
+        ssgroup_->addAction(ssmenu_->addAction(name.c_str()))->setCheckable(true);
+    }
+
+    menu_->exec(event->globalPos());
+}
+
+void VideoPlayer::openFile() {}
+
+void VideoPlayer::showPreferences()
+{
+    auto win = new FramelessWindow(this);
+
+    win->setMinimumSize(400, 300);
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->setWindowTitle("Preferences");
+
+    auto vlayout = new QVBoxLayout();
+    vlayout->setSpacing(0);
+    vlayout->setContentsMargins({});
+    win->setLayout(vlayout);
+
+    vlayout->addWidget(new TitleBar(win));
+    vlayout->addStretch();
+
+    win->show();
+}
+
+void VideoPlayer::showProperties()
+{
+    assert(decoder_);
+
+    auto fp = decoder_->properties(AVMEDIA_TYPE_UNKNOWN);
+    auto vp = decoder_->properties(AVMEDIA_TYPE_VIDEO);
+    auto ap = decoder_->properties(AVMEDIA_TYPE_AUDIO);
+    auto sp = decoder_->properties(AVMEDIA_TYPE_SUBTITLE);
+
+    auto win = new QWidget(this, Qt::Dialog);
+    win->setMinimumSize(600, 800);
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->setWindowTitle("Properties");
+    win->setStyleSheet("QWidget { background: white; color: black; } QLabel { padding-left: 2em; }");
+
+    auto layout = new QVBoxLayout();
+    layout->setContentsMargins({});
+    win->setLayout(layout);
+
+    auto view = new QTreeView();
+    view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    view->setHeaderHidden(true);
+    view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    layout->addWidget(view);
+
+    auto model = new QStandardItemModel();
+
+    for (size_t i = 0; i < fp.size(); ++i) {
+        auto item = new QStandardItem(QString{ "General #%1" }.arg(i + 1));
+        model->appendRow({ item, new QStandardItem() });
+
+        for (const auto& [k, v] : fp[i]) {
+            item->appendRow({ new QStandardItem(k.c_str()), new QStandardItem(v.c_str()) });
+        }
+    }
+
+    for (size_t i = 0; i < vp.size(); ++i) {
+        auto item = new QStandardItem(QString{ "Video #%1" }.arg(i + 1));
+        model->appendRow({ item, new QStandardItem() });
+
+        for (const auto& [k, v] : vp[i]) {
+            item->appendRow({ new QStandardItem(k.c_str()), new QStandardItem(v.c_str()) });
+        }
+    }
+
+    for (size_t i = 0; i < ap.size(); ++i) {
+        auto item = new QStandardItem(QString{ "Audio #%1" }.arg(i + 1));
+        model->appendRow({ item, new QStandardItem() });
+
+        for (const auto& [k, v] : ap[i]) {
+            item->appendRow({ new QStandardItem(k.c_str()), new QStandardItem(v.c_str()) });
+        }
+    }
+
+    for (size_t i = 0; i < sp.size(); ++i) {
+        auto item = new QStandardItem(QString{ "Subtitle #%1" }.arg(i + 1));
+        model->appendRow({ item, new QStandardItem() });
+
+        for (const auto& [k, v] : sp[i]) {
+            item->appendRow({ new QStandardItem(k.c_str()), new QStandardItem(v.c_str()) });
+        }
+    }
+
+    view->setModel(model);
+    view->expandAll();
+
+    win->show();
 }

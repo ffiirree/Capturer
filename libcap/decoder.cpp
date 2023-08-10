@@ -1,6 +1,7 @@
 #include "libcap/decoder.h"
 
 #include "libcap/clock.h"
+#include "libcap/hwaccel.h"
 
 #include <cassert>
 #include <filesystem>
@@ -19,6 +20,55 @@ extern "C" {
 }
 
 #define MIN_FRAMES 8
+
+enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts)
+{
+    auto pix_fmt = pix_fmts;
+    for (; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++) {
+        const auto desc = av_pix_fmt_desc_get(*pix_fmt);
+
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) break;
+
+        const AVCodecHWConfig *config = nullptr;
+        for (auto i = 0;; ++i) {
+            config = avcodec_get_hw_config(ctx->codec, i);
+            if (!config) break;
+
+            if (!(config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)) continue;
+
+            if (config->pix_fmt == *pix_fmt) break;
+        }
+        break;
+    }
+
+    LOG(INFO) << "pixel format : " << av_get_pix_fmt_name(*pix_fmt);
+    return *pix_fmt;
+}
+
+static const AVCodec *choose_decoder(AVStream *stream, AVHWDeviceType hwaccel)
+{
+    if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
+        void *idx = nullptr;
+        for (auto codec = av_codec_iterate(&idx); codec; codec = av_codec_iterate(&idx)) {
+            if (codec->id != stream->codecpar->codec_id || !av_codec_is_decoder(codec)) continue;
+
+            for (int j = 0;; j++) {
+                auto config = avcodec_get_hw_config(codec, j);
+                if (!config) break;
+
+                if (config->device_type == hwaccel) {
+                    LOG(INFO) << fmt::format(
+                        "[   DECODER] [{}] select decoder '{}' because of requested hwaccel method '{}'",
+                        av::to_char(stream->codecpar->codec_type), codec->name,
+                        av_hwdevice_get_type_name(hwaccel));
+                    return codec;
+                }
+            }
+        }
+    }
+
+    return avcodec_find_decoder(stream->codecpar->codec_id);
+}
 
 int Decoder::open(const std::string& name, std::map<std::string, std::string> options)
 {
@@ -42,6 +92,18 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             LOG(ERROR) << "[   DECODER] av_find_input_format";
             return -1;
         }
+        options.erase("format");
+    }
+
+    // hwaccel
+    if (options.contains("hwaccel") && options.contains("hwaccel_pix_fmt")) {
+        vfmt.hwaccel = av_hwdevice_find_type_by_name(options.at("hwaccel").c_str());
+        vfmt.pix_fmt = av_get_pix_fmt(options.at("hwaccel_pix_fmt").c_str());
+
+        LOG(INFO) << fmt::format("[   DECODER] hwaccel = {}, pix_fmt = {}", av::to_string(vfmt.hwaccel),
+                                 av::to_string(vfmt.pix_fmt));
+        options.erase("hwaccel");
+        options.erase("hwaccel_pix_fmt");
     }
 
     // options
@@ -76,15 +138,9 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
 
     // find video & audio streams
-#if LIBAVCODEC_VERSION_MAJOR >= 59
-    const AVCodec *video_decoder = nullptr;
-    const AVCodec *audio_decoder = nullptr;
-#else
-    AVCodec *video_decoder   = nullptr;
-    AVCodec *audio_decoder   = nullptr;
-#endif
-    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, &video_decoder, 0);
-    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_decoder, 0);
+    video_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    audio_stream_idx_ = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    subtitle_idx_     = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_SUBTITLE, -1, -1, nullptr, 0);
     if (video_stream_idx_ < 0 && audio_stream_idx_ < 0) {
         LOG(ERROR) << "[   DECODER] not found any stream";
         return -1;
@@ -92,6 +148,8 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // video stream
     if (video_stream_idx_ >= 0) {
+        auto video_decoder = choose_decoder(fmt_ctx_->streams[video_stream_idx_], vfmt.hwaccel);
+
         // decoder context
         if (video_decoder_ctx_ = avcodec_alloc_context3(video_decoder); !video_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [V] failed to alloc decoder context";
@@ -102,6 +160,16 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
                                           fmt_ctx_->streams[video_stream_idx_]->codecpar) < 0) {
             LOG(ERROR) << "[   DECODER] [V] avcodec_parameters_to_context";
             return -1;
+        }
+
+        if (vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+            auto hwctx                        = av::hwaccel::get_context(vfmt.hwaccel);
+            video_decoder_ctx_->opaque        = &vfmt;
+            video_decoder_ctx_->hw_device_ctx = hwctx->device_ctx_ref();
+            video_decoder_ctx_->get_format    = get_hw_format;
+            if (!video_decoder_ctx_->hw_device_ctx) {
+                LOG(ERROR) << "[   DECODER] [V] can not create hardware device";
+            }
         }
 
         // open codec
@@ -116,24 +184,51 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
         vfmt = av::vformat_t{
             .width     = video_decoder_ctx_->width,
             .height    = video_decoder_ctx_->height,
-            .pix_fmt   = video_decoder_ctx_->pix_fmt,
+            .pix_fmt   = (vfmt.pix_fmt == AV_PIX_FMT_NONE) ? video_decoder_ctx_->pix_fmt : vfmt.pix_fmt,
             .framerate = av_guess_frame_rate(fmt_ctx_, fmt_ctx_->streams[video_stream_idx_], nullptr),
             .sample_aspect_ratio = video_decoder_ctx_->sample_aspect_ratio,
             .time_base           = fmt_ctx_->streams[video_stream_idx_]->time_base,
             .color               = {
                 .space      = video_decoder_ctx_->colorspace,
+                .range      = video_decoder_ctx_->color_range,
                 .primaries  = video_decoder_ctx_->color_primaries,
                 .transfer   = video_decoder_ctx_->color_trc,
-                .range      = video_decoder_ctx_->color_range,
             },
+            .hwaccel         = vfmt.hwaccel,
         };
 
-        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>10}] {}({})", name_, av::to_string(vfmt),
-                                 av::to_string(vfmt.color));
+        LOG(INFO) << fmt::format("[   DECODER] [V] [{:>6}] {}({})", video_decoder->name,
+                                 av::to_string(vfmt), av::to_string(vfmt.color));
+    }
+
+    // subtitle stream
+    if (video_stream_idx_ >= 0 && subtitle_idx_ >= 0) {
+        auto subtitle_decoder = choose_decoder(fmt_ctx_->streams[subtitle_idx_], AV_HWDEVICE_TYPE_NONE);
+
+        if (subtitle_decoder_ctx_ = avcodec_alloc_context3(subtitle_decoder); !subtitle_decoder_ctx_) {
+            LOG(ERROR) << "[   DECODER] [S] failed to alloc decoder context";
+            return -1;
+        }
+
+        if (avcodec_parameters_to_context(subtitle_decoder_ctx_,
+                                          fmt_ctx_->streams[subtitle_idx_]->codecpar) < 0) {
+            LOG(ERROR) << "[   DECODER] [S] avcodec_parameters_to_context";
+            return -1;
+        }
+
+        if (avcodec_open2(subtitle_decoder_ctx_, subtitle_decoder, nullptr) < 0) {
+            LOG(ERROR) << "[   DECODER] [S] can not open the subtitle decoder";
+            return -1;
+        }
+
+        LOG(INFO) << fmt::format("[   DECODER] [S] [{:>6}] start_time = {}", subtitle_decoder->name,
+                                 fmt_ctx_->streams[subtitle_idx_]->start_time);
     }
 
     // audio stream
     if (audio_stream_idx_ >= 0) {
+        auto audio_decoder = choose_decoder(fmt_ctx_->streams[audio_stream_idx_], AV_HWDEVICE_TYPE_NONE);
+
         if (audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder); !audio_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [A] failed to alloc decoder context";
             return -1;
@@ -161,9 +256,8 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
         audio_next_pts_ = av_rescale_q(fmt_ctx_->streams[audio_stream_idx_]->start_time,
                                        fmt_ctx_->streams[audio_stream_idx_]->time_base, afmt.time_base);
 
-        LOG(INFO) << fmt::format("[   DECODER] [A] [{:>10}] {}, frame_size = {}, start_time = {}", name_,
-                                 av::to_string(afmt), audio_decoder_ctx_->frame_size,
-                                 fmt_ctx_->streams[audio_stream_idx_]->start_time);
+        LOG(INFO) << fmt::format("[   DECODER] [A] [{:>6}] {}, start_time = {}", audio_decoder->name,
+                                 av::to_string(afmt), fmt_ctx_->streams[audio_stream_idx_]->start_time);
     }
 
     ready_ = true;
@@ -177,6 +271,7 @@ bool Decoder::has(AVMediaType type) const
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ >= 0;
     case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ >= 0;
+    case AVMEDIA_TYPE_SUBTITLE: return subtitle_idx_ >= 0;
     default: return false;
     }
 }
@@ -209,6 +304,16 @@ AVRational Decoder::time_base(AVMediaType type) const
 
         return vfmt.time_base;
     }
+
+    case AVMEDIA_TYPE_SUBTITLE: {
+        if (subtitle_idx_ < 0) {
+            LOG(WARNING) << "[   DECODER] [S] no subtitle stream";
+            return OS_TIME_BASE_Q;
+        }
+
+        return fmt_ctx_->streams[subtitle_idx_]->time_base;
+    }
+
     default: LOG(ERROR) << "[   DECODER] [X] unknown meida type."; return OS_TIME_BASE_Q;
     }
 }
@@ -241,11 +346,11 @@ int Decoder::produce(AVFrame *frame, AVMediaType type)
 bool Decoder::has_enough(AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ < 0 || vbuffer_.size() > MIN_FRAMES; break;
-    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ < 0 || abuffer_.size() > MIN_FRAMES; break;
-    default: break;
+    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ < 0 || vbuffer_.size() > MIN_FRAMES;
+    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ < 0 || abuffer_.size() > MIN_FRAMES;
+    case AVMEDIA_TYPE_SUBTITLE: return audio_stream_idx_ < 0 || sbuffer_.size() > 2;
+    default: return true;
     }
-    return true;
 }
 
 int Decoder::run()
@@ -274,9 +379,11 @@ int Decoder::decode_fn()
     // reset the buffer
     vbuffer_.clear();
     abuffer_.clear();
+    sbuffer_.clear();
 
     eof_ |= audio_stream_idx_ < 0 ? ADECODING_EOF : 0x00;
     eof_ |= video_stream_idx_ < 0 ? VDECODING_EOF : 0x00;
+    eof_ |= subtitle_idx_ < 0 ? SDECODING_EOF : 0x00;
 
     while (running_) {
         if (seeking()) {
@@ -292,9 +399,11 @@ int Decoder::decode_fn()
             else {
                 if (audio_stream_idx_ >= 0) avcodec_flush_buffers(audio_decoder_ctx_);
                 if (video_stream_idx_ >= 0) avcodec_flush_buffers(video_decoder_ctx_);
+                if (subtitle_idx_ >= 0) avcodec_flush_buffers(subtitle_decoder_ctx_);
 
                 vbuffer_.clear();
                 abuffer_.clear();
+                sbuffer_.clear();
 
                 audio_next_pts_ = AV_NOPTS_VALUE;
             }
@@ -360,6 +469,34 @@ int Decoder::decode_fn()
                 vbuffer_.push(frame_);
             }
         }
+
+        // subtitle decoding
+        // if (packet_->stream_index == subtitle_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & SDECODING_EOF)))
+        // {
+        //     AVSubtitle subtitle;
+        //     int got_frame = 0;
+        //     if (avcodec_decode_subtitle2(subtitle_decoder_ctx_, &subtitle, &got_frame, packet_.get()) >=
+        //     0) {
+        //         if (got_frame) {
+        //             while ((has_enough(AVMEDIA_TYPE_VIDEO) && has_enough(AVMEDIA_TYPE_AUDIO) &&
+        //                     has_enough(AVMEDIA_TYPE_SUBTITLE)) &&
+        //                    running_ && !seeking()) {
+        //                 std::this_thread::sleep_for(10ms);
+        //             }
+
+        //             DLOG(INFO) << fmt::format("[S] start = {:%H:%M:%S}, end = {:%H:%M:%S}",
+        //                                       std::chrono::milliseconds{ subtitle.start_display_time },
+        //                                       std::chrono::milliseconds{ subtitle.end_display_time });
+        //             avsubtitle_free(&subtitle);
+        //         }
+        //         else if (!got_frame && !packet_->data) { // AVERROR_EOF
+        //             avcodec_flush_buffers(subtitle_decoder_ctx_);
+
+        //             LOG(INFO) << "[S] EOF";
+        //             eof_ |= SDECODING_EOF;
+        //         }
+        //     }
+        // }
 
         // audio decoding
         if (packet_->stream_index == audio_stream_idx_ ||
@@ -474,6 +611,7 @@ void Decoder::destroy()
 
     video_stream_idx_ = -1;
     audio_stream_idx_ = -1;
+    subtitle_idx_     = -1;
 
     seek_.ts = AV_NOPTS_VALUE;
 
@@ -482,4 +620,84 @@ void Decoder::destroy()
     avcodec_free_context(&video_decoder_ctx_);
     avcodec_free_context(&audio_decoder_ctx_);
     avformat_close_input(&fmt_ctx_);
+}
+
+std::vector<std::vector<std::pair<std::string, std::string>>> Decoder::properties(AVMediaType mt) const
+{
+    std::vector<std::vector<std::pair<std::string, std::string>>> properties{};
+
+    switch (mt) {
+    case AVMEDIA_TYPE_UNKNOWN: {
+        auto pairs = av::to_pairs(fmt_ctx_->metadata);
+        pairs.emplace_back("Format", fmt_ctx_->iformat->long_name);
+        pairs.emplace_back("Bitrate",
+                           fmt_ctx_->bit_rate ? fmt::format("{} kb/s", fmt_ctx_->bit_rate / 1'000) : "N/A");
+        pairs.emplace_back("Duration",
+                           fmt::format("{:%H:%M:%S}", std::chrono::microseconds{ fmt_ctx_->duration }));
+        properties.push_back(pairs);
+        break;
+    }
+    default:
+        for (unsigned int i = 0; i < fmt_ctx_->nb_streams; ++i) {
+            auto stream = fmt_ctx_->streams[i];
+            if (stream->codecpar->codec_type == mt) {
+                auto pairs = av::to_pairs(stream->metadata);
+                pairs.emplace_back("Index", std::to_string(stream->index));
+                pairs.emplace_back("Duration",
+                                   (stream->duration == AV_NOPTS_VALUE)
+                                       ? "N/A"
+                                       : fmt::format("{:%H:%M:%S}", std::chrono::microseconds{ av_rescale_q(
+                                                                        stream->duration, stream->time_base,
+                                                                        { 1, AV_TIME_BASE }) }));
+                pairs.emplace_back("Codec ID",
+                                   probe::util::toupper(avcodec_get_name(stream->codecpar->codec_id)));
+
+                switch (mt) {
+                case AVMEDIA_TYPE_VIDEO:
+                    pairs.emplace_back("Profile", avcodec_profile_name(stream->codecpar->codec_id,
+                                                                       stream->codecpar->profile));
+                    pairs.emplace_back("Width", fmt::format("{}", stream->codecpar->width));
+                    pairs.emplace_back("Height", fmt::format("{}", stream->codecpar->height));
+                    pairs.emplace_back(
+                        "Framerate",
+                        fmt::format("{:.2f}", av_q2d(av_guess_frame_rate(fmt_ctx_, stream, nullptr))));
+                    pairs.emplace_back("Bitrate",
+                                       stream->codecpar->bit_rate
+                                           ? fmt::format("{}", stream->codecpar->bit_rate / 1'000)
+                                           : "N/A");
+                    pairs.emplace_back("SAR", av::to_string(stream->codecpar->sample_aspect_ratio));
+                    pairs.emplace_back("Pixel Format",
+                                       probe::util::toupper(av::to_string(
+                                           static_cast<AVPixelFormat>(stream->codecpar->format))));
+                    pairs.emplace_back("Color Space",
+                                       probe::util::toupper(av::to_string(stream->codecpar->color_space)));
+                    pairs.emplace_back("Color Range",
+                                       probe::util::toupper(av::to_string(stream->codecpar->color_range)));
+                    break;
+
+                case AVMEDIA_TYPE_AUDIO:
+                    pairs.emplace_back("Sample Format",
+                                       probe::util::toupper(av::to_string(
+                                           static_cast<AVSampleFormat>(stream->codecpar->format))));
+                    pairs.emplace_back("Bitrate",
+                                       stream->codecpar->bit_rate
+                                           ? fmt::format("{} kb/s", stream->codecpar->bit_rate / 1'000)
+                                           : "N/A");
+                    pairs.emplace_back("Channels", std::to_string(stream->codecpar->channels));
+                    pairs.emplace_back("Channel Layout",
+                                       av::channel_layout_name(stream->codecpar->channels,
+                                                               stream->codecpar->channel_layout));
+                    pairs.emplace_back("Sample Rate", fmt::format("{} Hz", stream->codecpar->sample_rate));
+                    break;
+                case AVMEDIA_TYPE_SUBTITLE:
+                default: break;
+                }
+
+                properties.push_back(pairs);
+            }
+        }
+        break;
+    }
+
+    return properties;
 }

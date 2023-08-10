@@ -328,6 +328,16 @@ namespace pulse
         return ::pa_stream_new(pulse_ctx, name.c_str(), ss, map);
     }
 
+    pa_usec_t stream_latency(pa_stream *stream)
+    {
+        pa_usec_t latency = 0;
+        int negative      = 0;
+        if (::pa_stream_get_latency(stream, &latency, &negative) < 0 || negative) {
+            return 0;
+        }
+        return latency;
+    }
+
     int stream_cork(pa_stream * stream, bool cork, pa_stream_success_cb_t cb, void * userdata)
     {
         if (!pulse::context_is_ready()) return -1;
@@ -358,7 +368,7 @@ namespace pulse
         if(!wait_operation(::pa_context_get_sink_input_info(
             pulse_ctx,
             ::pa_stream_get_index(stream),
-            [](pa_context *c, const pa_sink_input_info *info, int eol, void *userdata){
+            [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata){
                 auto volume = reinterpret_cast<float *>(userdata);
 
                 if (eol == 0)
@@ -386,14 +396,14 @@ namespace pulse
     {
         bool muted = false;
         if(!wait_operation(::pa_context_get_sink_input_info(
-        pulse_ctx,
-        ::pa_stream_get_index(stream),
-        [](pa_context *c, const pa_sink_input_info *info, int eol, void *userdata){
-            auto muted = reinterpret_cast<bool *>(userdata);
-            if (eol == 0) *muted = info->mute;
+            pulse_ctx,
+            ::pa_stream_get_index(stream),
+            [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata){
+                auto muted = reinterpret_cast<bool *>(userdata);
+                if (eol == 0) *muted = info->mute;
 
-            pulse::signal(0);
-        }, &muted)))
+                pulse::signal(0);
+            }, &muted)))
             return false;
         return muted;
     }

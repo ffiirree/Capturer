@@ -114,10 +114,23 @@ QMenu::item::selected {
     background-color: #323232;
 }
 
+QMenu::indicator:checked {
+    border: 1px solid #969696;
+    background: #e6e6e6;
+}
+
+QMenu::right-arrow {
+    image: url(:/icons/arrow-right-light);
+}
+
 QMenu::separator {
     background-color: #323232;
 }
 
+/*///////////////////////////////////////////////////////////////*/
+QScrollBar::handle {
+    background: #959595;
+}
 
 /*///////////////////////////////////////////////////////////////*/
 QColorDialog {

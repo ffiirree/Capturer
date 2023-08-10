@@ -67,7 +67,7 @@ public:
     [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1'000; }
 
     void set_timing(av::timing_t t) { timing_ = t; }
-    av::timing_t timing() const { return timing_; }
+    [[nodiscard]] av::timing_t timing() const { return timing_; }
 
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
@@ -140,7 +140,7 @@ private:
     std::atomic<bool> ready_{ false };
 
     std::thread video_thread_;
-    std::thread auido_thread_;
+    std::thread audio_thread_;
 
     std::atomic<bool> vseeking_{ false };
     std::atomic<bool> aseeking_{ false };

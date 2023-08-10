@@ -3,6 +3,8 @@
 
 #include "control-widget.h"
 #include "framelesswindow.h"
+#include "menu.h"
+#include "texture-widget-d3d11.h"
 #include "texture-widget-opengl.h"
 #include "texture-widget.h"
 
@@ -99,6 +101,9 @@ public slots:
     void mute(bool);
     void setSpeed(float);
     void setVolume(int);
+    void openFile();
+    void showPreferences();
+    void showProperties();
 
 signals:
     void started();
@@ -108,16 +113,26 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
+    void contextMenuEvent(QContextMenuEvent *) override;
+
     bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void video_thread_f();
+
+    void initContextMenu();
 
     // UI
     TextureGLWidget *texture_{};
 
     ControlWidget *control_{};
     QTimer *timer_{};
+
+    Menu *menu_{};
+    QMenu *asmenu_{};
+    QActionGroup *asgroup_{};
+    QMenu *ssmenu_{};
+    QActionGroup *ssgroup_{};
 
     // video & audio
     std::thread video_thread_;
