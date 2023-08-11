@@ -107,7 +107,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
     afmt.sample_fmt = (afmt.sample_fmt == AV_SAMPLE_FMT_NONE) ? encoder->afmt.sample_fmt : afmt.sample_fmt;
     afmt.channels   = (afmt.channels == 0) ? encoder->afmt.channels : afmt.channels;
     afmt.channel_layout = (afmt.channel_layout == 0) ? encoder->afmt.channel_layout : afmt.channel_layout;
-    afmt.sample_rate    = (afmt.sample_rate == -1) ? encoder->afmt.sample_rate : afmt.sample_rate;
+    afmt.sample_rate    = (afmt.sample_rate == 0) ? encoder->afmt.sample_rate : afmt.sample_rate;
 
     if (afmt.sample_fmt != AV_SAMPLE_FMT_NONE) {
         // sample_fmts (int list)

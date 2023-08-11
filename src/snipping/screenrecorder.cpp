@@ -250,23 +250,23 @@ void ScreenRecorder::setup()
     name              = fmt::format("{}.0+{},{}", getenv("DISPLAY"), region.x(), region.y());
     options["format"] = "x11grab";
 #elif _WIN32
-    options["offset_x"]    = std::to_string(region.x());
-    options["offset_y"]    = std::to_string(region.y());
     // TODO:
-    //   1. rectanle mode: OK, display mode
-    //   2. widget   mode: NO, display mode
-    //   3. window   mode: NO, display mode
+    //   1. rectanle mode: OK, use display mode
+    //   2. widget   mode: NO, use display mode
+    //   3. window   mode: OK
     //   4. display  mode: OK
     //   5. desktop  mode: NO, not supported
     options["show_region"] = "false";
     switch (selector_->prey().type) {
     case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
-    case hunter::prey_type_t::widget:
-    case hunter::prey_type_t::window: {
-        auto display = probe::graphics::display_contains(selector_->selected().center()).value();
-        name         = "display=" + std::to_string(display.handle);
+    case hunter::prey_type_t::widget: {
+        options["offset_x"] = std::to_string(region.x());
+        options["offset_y"] = std::to_string(region.y());
+        auto display        = probe::graphics::display_contains(selector_->selected().center()).value();
+        name                = "display=" + std::to_string(display.handle);
         break;
     }
+    case hunter::prey_type_t::window: name = "window=" + std::to_string(selector_->prey().handle); break;
     case hunter::prey_type_t::display: name = "display=" + std::to_string(selector_->prey().handle); break;
     default: LOG(ERROR) << "unsuppored mode"; return;
     }
@@ -307,14 +307,15 @@ void ScreenRecorder::setup()
 
     encoder_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
 
-    // prepare the filter graph and properties of encoder
-    // let dispather decide which pixel format to be used for encoding
+    // prepare the filter graph and properties of encoder, let dispather decide which pixel format to be
+    // used for encoding
     dispatcher_->vfmt.pix_fmt        = pix_fmt_;
     dispatcher_->vfmt.hwaccel        = hwaccel;
     dispatcher_->vfmt.framerate      = { framerate_, 1 };
     dispatcher_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     dispatcher_->afmt.channels       = 2;
     dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
+    dispatcher_->afmt.sample_rate    = 48'000;
     if (dispatcher_->initialize(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         stop();

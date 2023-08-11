@@ -131,6 +131,8 @@ void TitleBar::mouseMoveEvent(QMouseEvent *event)
     if ((event->buttons() & Qt::LeftButton) && moving_) {
         window()->move(event->globalPos() - begin_);
     }
+#else
+    Q_UNUSED(event);
 #endif
 }
 

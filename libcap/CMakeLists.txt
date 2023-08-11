@@ -51,6 +51,7 @@ target_include_directories(libcap
         ${PROJECT_SOURCE_DIR}/3rdparty
         ${PROJECT_SOURCE_DIR}/src/common
         ${PULSEAUDIO_INCLUDE_DIR}
+        ${PROJECT_BINARY_DIR} # Generated header files
 )
 
 set_target_properties(libcap

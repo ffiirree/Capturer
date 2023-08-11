@@ -2,10 +2,10 @@
 
 #ifdef Q_OS_WIN
 
+#include "ConvertPixelShader.h"
+#include "ConvertVertexShader.h"
 #include "libcap/hwaccel.h"
 #include "logging.h"
-#include "PixelShader.h"
-#include "VertexShader.h"
 
 #include <dxgi1_3.h>
 #include <fmt/format.h>

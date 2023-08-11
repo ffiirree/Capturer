@@ -6,6 +6,8 @@
 #include "fmt/ranges.h"
 #include "logging.h"
 #include "probe/defer.h"
+#include "ResizingPixelShader.h"
+#include "ResizingVertexShader.h"
 
 #include <regex>
 
@@ -16,6 +18,18 @@ extern "C" {
 using namespace winrt::Windows::Graphics::Capture;
 using namespace winrt::Windows::Graphics::DirectX;
 using namespace winrt::Windows::Graphics::DirectX::Direct3D11;
+
+// clang-format off
+// triangle strip: {0, 1, 2}, {1, 3, 2}
+static constexpr float vertices[] = {
+    -1.0f, -1.0f, 0.0f, /* bottom left  */ 0.0, 1.0,
+    -1.0f, +1.0f, 0.0f, /* top    left  */ 0.0, 0.0,
+    +1.0f, -1.0f, 0.0f, /* bottom right */ 1.0, 1.0,
+    +1.0f, +1.0f, 0.0f, /* top    right */ 1.0, 0.0
+};
+// clang-format on
+
+static constexpr FLOAT black[4]{ 0.0, 0.0, 0.0, 0.0 };
 
 void WindowsGraphicsCapturer::parse_options(std::map<std::string, std::string>& options)
 {
@@ -50,16 +64,18 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     std::lock_guard lock(mtx_);
 
     LOG(INFO) << fmt::format("[     WGC] [{}] options = {}", name, options);
-
+    
     parse_options(options);
 
     // parse capture item
     std::smatch matches;
     if (std::regex_match(name, matches, std::regex("window=(\\d+)"))) {
         item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(std::stoull(matches[1])));
+        mode_ = mode_t::window;
     }
     else if (std::regex_match(name, matches, std::regex("display=(\\d+)"))) {
         item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(std::stoull(matches[1])));
+        mode_ = mode_t::monitor;
     }
 
     if (!item_) {
@@ -138,44 +154,10 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
         .sw_pix_fmt          = AV_PIX_FMT_BGRA,
     };
 
-    // TODO: Window Capture Mode: resize the texture2d
-    D3D11_TEXTURE2D_DESC desc{
-        .Width          = static_cast<UINT>(vfmt.width),
-        .Height         = static_cast<UINT>(vfmt.height),
-        .MipLevels      = 1,
-        .ArraySize      = 1,
-        .Format         = DXGI_FORMAT_B8G8R8A8_UNORM,
-        .SampleDesc     = { 1, 0 },
-        .Usage          = D3D11_USAGE_DEFAULT,
-        .BindFlags      = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-        .CPUAccessFlags = 0,
-        .MiscFlags      = 0,
-    };
-    if (FAILED(device_->CreateTexture2D(&desc, 0, resize_texture_.put()))) {
-        LOG(INFO) << "[       WGC] failed to create render texture.";
-        return -1;
-    }
-
-    D3D11_RENDER_TARGET_VIEW_DESC target_desc{
-        .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
-        .ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
-        .Texture2D     = { .MipSlice = 0 },
-    };
-
-    device_->CreateRenderTargetView(reinterpret_cast<ID3D11Resource *>(resize_texture_.get()), &target_desc,
-                                    resize_render_target_.put());
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{
-        .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
-        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
-        .Texture2D     = { .MostDetailedMip = 0, .MipLevels = 1 },
-    };
-
-    device_->CreateShaderResourceView(reinterpret_cast<ID3D11Resource *>(resize_texture_.get()), &view_desc,
-                                      resize_shader_view_.put());
-
     // FFmpeg hardware frame pool
     if (InitializeHWFramesContext() < 0) return -1;
+
+    if (mode_ == mode_t::window && InitalizeResizingResources() < 0) return -1;
 
     eof_   = 0x00;
     ready_ = true;
@@ -243,6 +225,128 @@ std::vector<av::vformat_t> WindowsGraphicsCapturer::vformats() const
     };
 }
 
+int WindowsGraphicsCapturer::InitalizeResizingResources()
+{
+    // 1. Input-Assembler State
+    // 1.1 vertex buffer
+    D3D11_BUFFER_DESC vbd{
+        .ByteWidth           = sizeof(vertices),
+        .BindFlags           = D3D11_BIND_VERTEX_BUFFER,
+        .StructureByteStride = sizeof(float) * 5,
+    };
+    D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
+    winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
+
+    ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
+    UINT strides[1]                = { sizeof(float) * 5 };
+    UINT offsets[1]                = { 0 };
+    context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
+
+    // 1.2 index buffer : optional
+
+    // 1.3 input layout
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    winrt::check_hresult(device_->CreateInputLayout(layout, static_cast<UINT>(std::size(layout)), g_vs_main,
+                                                    sizeof(g_vs_main), vertex_layout_.put()));
+    context_->IASetInputLayout(vertex_layout_.get());
+
+    context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+    // 2. Vertex Shader Stage
+    proj_ = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+
+    D3D11_BUFFER_DESC cbd = {
+        .ByteWidth      = sizeof(proj_),
+        .Usage          = D3D11_USAGE_DYNAMIC,
+        .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+    };
+    D3D11_SUBRESOURCE_DATA csd = { .pSysMem = &proj_ };
+    winrt::check_hresult(device_->CreateBuffer(&cbd, &csd, proj_buffer_.put()));
+
+    ID3D11Buffer *cbs[] = { proj_buffer_.get() };
+    context_->VSSetConstantBuffers(0, 1, cbs);
+
+    winrt::check_hresult(
+        device_->CreateVertexShader(g_vs_main, sizeof(g_vs_main), nullptr, vertex_shader_.put()));
+    context_->VSSetShader(vertex_shader_.get(), 0, 0);
+
+    // 3. Tesselation Stages
+
+    // 4. Geometry Shader Stage
+
+    // 5. Stream-Output Stage
+
+    // 6. Resterizer Stage
+    D3D11_VIEWPORT viewport{
+        .TopLeftX = 0,
+        .TopLeftY = 0,
+        .Width    = static_cast<FLOAT>(vfmt.width),
+        .Height   = static_cast<FLOAT>(vfmt.height),
+        .MinDepth = 0.0f,
+        .MaxDepth = 1.0f,
+    };
+    context_->RSSetViewports(1, &viewport);
+
+    // 7. Pixel Shader Stage
+    // sampler
+    D3D11_SAMPLER_DESC sampler_desc{
+        .Filter         = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+        .AddressU       = D3D11_TEXTURE_ADDRESS_WRAP,
+        .AddressV       = D3D11_TEXTURE_ADDRESS_WRAP,
+        .AddressW       = D3D11_TEXTURE_ADDRESS_WRAP,
+        .ComparisonFunc = D3D11_COMPARISON_NEVER,
+        .MinLOD         = 0,
+        .MaxLOD         = D3D11_FLOAT32_MAX,
+    };
+    device_->CreateSamplerState(&sampler_desc, sampler_.put());
+    ID3D11SamplerState *samplers[] = { sampler_.get() };
+    context_->PSSetSamplers(0, 1, samplers);
+
+    // pixel shader
+    winrt::check_hresult(
+        device_->CreatePixelShader(g_ps_main, sizeof(g_ps_main), nullptr, pixel_shader_.put()));
+    context_->PSSetShader(pixel_shader_.get(), 0, 0);
+
+    // 8. Output-Merger Stage
+    D3D11_TEXTURE2D_DESC target_desc{
+        .Width          = static_cast<UINT>(vfmt.width),
+        .Height         = static_cast<UINT>(vfmt.height),
+        .MipLevels      = 1,
+        .ArraySize      = 1,
+        .Format         = DXGI_FORMAT_B8G8R8A8_UNORM,
+        .SampleDesc     = { 1, 0 },
+        .Usage          = D3D11_USAGE_DEFAULT,
+        .BindFlags      = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+        .CPUAccessFlags = 0,
+        .MiscFlags      = 0,
+    };
+    if (FAILED(device_->CreateTexture2D(&target_desc, 0, target_.put()))) {
+        LOG(INFO) << "[       WGC] failed to create render target texture.";
+        return -1;
+    }
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtv_desc{
+        .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
+        .ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
+        .Texture2D     = { .MipSlice = 0 },
+    };
+
+    if (FAILED(device_->CreateRenderTargetView(reinterpret_cast<ID3D11Resource *>(target_.get()), &rtv_desc,
+                                               rtv_.put()))) {
+        LOG(INFO) << "[       WGC] failed to create render target view.";
+        return -1;
+    }
+
+    ID3D11RenderTargetView *rtvs[] = { rtv_.get() };
+    context_->OMSetRenderTargets(1, rtvs, nullptr);
+
+    return 0;
+}
+
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
     auto frames_ctx_ref = hwctx_->frames_ctx_alloc();
@@ -274,17 +378,19 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     if (!running_) return;
 
     auto frame         = sender.TryGetNextFrame();
-    auto frame_surface = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
+    auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
 
-    D3D11_TEXTURE2D_DESC desc{};
-    frame_surface->GetDesc(&desc);
+    // surface size
+    D3D11_TEXTURE2D_DESC tex_desc{};
+    frame_texture->GetDesc(&tex_desc);
 
-    // TODO: Window Capture Mode: resize the frame pool
-    // if (static_cast<int>(desc.Width) != framepool_size.width || static_cast<int>(desc.Height) !=
-    // framepool_size.height) {
-    //     frame_pool_.Recreate(winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
-    //                          { static_cast<int32_t>(desc.Width), static_cast<int32_t>(desc.Height) });
-    // }
+    // Window Capture Mode: resize the frame pool to frame size
+    if (mode_ == mode_t::window && frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
+                                                              static_cast<int32_t>(tex_desc.Height),
+                                                              static_cast<int32_t>(tex_desc.Width) }) {
+        frame_pool_.Recreate(winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
+                             frame.ContentSize());
+    }
 
     // allocate texture for hardware frame
     if (av_hwframe_get_buffer(hwctx_->frames_ctx_buf(), frame_.put(), 0) < 0) {
@@ -304,13 +410,79 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     // 1. Display   Mode: CopyResource
     // 2. Window    Mode: CopyResource and reisze the texture2d [TODO]
     // 3. Rectangle Mode: Rectangle region of Display, CopySubresourceRegion
-    if (vfmt.height != static_cast<int>(desc.Height) || vfmt.width != static_cast<int>(desc.Width)) {
-        context_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
-                                        static_cast<UINT>(reinterpret_cast<intptr_t>(frame_->data[1])), 0,
-                                        0, 0, frame_surface.get(), 0, &box_);
-    }
-    else {
-        context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]), frame_surface.get());
+    switch (mode_) {
+    case mode_t::window:
+        if (vfmt.height != static_cast<int>(tex_desc.Height) ||
+            vfmt.width != static_cast<int>(tex_desc.Width)) {
+            context_->ClearRenderTargetView(rtv_.get(), black);
+
+            proj_    = DirectX::XMMatrixScaling(1, 1, 1);
+            float r1 = tex_desc.Width / static_cast<float>(tex_desc.Height);
+            float r2 = vfmt.width / static_cast<float>(vfmt.height);
+            auto w   = r1 > r2 ? vfmt.width : vfmt.height * r1;
+            auto h   = r1 > r2 ? vfmt.width / r1 : vfmt.height;
+            proj_    = DirectX::XMMatrixScaling(w / vfmt.width, h / vfmt.height, 1);
+
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            memcpy(mapped.pData, &proj_, sizeof(proj_));
+            context_->Unmap(proj_buffer_.get(), 0);
+
+            ID3D11Buffer *cbs[] = { proj_buffer_.get() };
+            context_->VSSetConstantBuffers(0, 1, cbs);
+
+            D3D11_TEXTURE2D_DESC source_desc{
+                .Width          = tex_desc.Width,
+                .Height         = tex_desc.Height,
+                .MipLevels      = 1,
+                .ArraySize      = 1,
+                .Format         = DXGI_FORMAT_B8G8R8A8_UNORM,
+                .SampleDesc     = { 1, 0 },
+                .Usage          = D3D11_USAGE_DEFAULT,
+                .BindFlags      = D3D11_BIND_SHADER_RESOURCE,
+                .CPUAccessFlags = 0,
+                .MiscFlags      = D3D11_RESOURCE_MISC_SHARED,
+            };
+            device_->CreateTexture2D(&source_desc, nullptr, source_.put());
+
+            CD3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{
+                source_.get(),
+                D3D11_SRV_DIMENSION_TEXTURE2D,
+                DXGI_FORMAT_B8G8R8A8_UNORM,
+                tex_desc.MipLevels - 1,
+                tex_desc.MipLevels,
+            };
+            device_->CreateShaderResourceView(source_.get(), &srv_desc, srv_.put());
+
+            ID3D11ShaderResourceView *srvs[] = { srv_.get() };
+            context_->PSSetShaderResources(0, static_cast<UINT>(std::size(srvs)), srvs);
+
+            ID3D11RenderTargetView *rtvs[] = { rtv_.get() };
+            context_->OMSetRenderTargets(1, rtvs, nullptr);
+
+            context_->CopyResource(source_.get(), frame_texture.get());
+            context_->Draw(4, 0);
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]), target_.get());
+        }
+        else {
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+                                   frame_texture.get());
+        }
+        break;
+    case mode_t::monitor:
+        // Rectangle
+        if (vfmt.height != static_cast<int>(tex_desc.Height) ||
+            vfmt.width != static_cast<int>(tex_desc.Width)) {
+            context_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+                                            static_cast<UINT>(reinterpret_cast<intptr_t>(frame_->data[1])),
+                                            0, 0, 0, frame_texture.get(), 0, &box_);
+        }
+        // Monitor
+        else {
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+                                   frame_texture.get());
+        }
+        break;
     }
 
     // transfer frame to CPU if needed

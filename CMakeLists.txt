@@ -77,10 +77,12 @@ if (WIN32)
     # Build HLSL shaders
     add_custom_target(shaders)
 
-    set(HLSL_SHADER_FILES src/resources/d3d11/VertexShader.hlsl src/resources/d3d11/PixelShader.hlsl)
+    set(HLSL_SHADER_FILES src/resources/d3d11/ConvertVertexShader.hlsl src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ConvertPixelShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
 
-    set_source_files_properties(src/resources/d3d11/VertexShader.hlsl PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/PixelShader.hlsl PROPERTIES ShaderType "ps")
+    set_source_files_properties(src/resources/d3d11/ConvertVertexShader.hlsl PROPERTIES ShaderType "vs")
+    set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl PROPERTIES ShaderType "vs")
+    set_source_files_properties(src/resources/d3d11/ConvertPixelShader.hlsl PROPERTIES ShaderType "ps")
+    set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl PROPERTIES ShaderType "ps")
     set_source_files_properties(${HLSL_SHADER_FILES} PROPERTIES ShaderModel "5_0")
 
     foreach(FILE ${HLSL_SHADER_FILES})
@@ -89,7 +91,7 @@ if (WIN32)
         get_source_file_property(shadertype ${FILE} ShaderType)
         get_source_file_property(shadermodel ${FILE} ShaderModel)
         add_custom_command(TARGET shaders
-                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h  /Fo ${PROJECT_BINARY_DIR}/${FILE_WE}.cso /Fd ${PROJECT_BINARY_DIR}/${FILE_WE}.pdb ${FILE}
+                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
                 MAIN_DEPENDENCY ${FILE}
                 COMMENT "HLSL ${FILE}"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -97,10 +99,6 @@ if (WIN32)
     endforeach(FILE)
 
     add_dependencies(${PROJECT_NAME} shaders)
-
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy ${CSO_SHADER_FILES} $<TARGET_FILE_DIR:${PROJECT_NAME}>
-            COMMAND_EXPAND_LISTS)
 endif ()
 
 target_compile_options(${PROJECT_NAME} 
