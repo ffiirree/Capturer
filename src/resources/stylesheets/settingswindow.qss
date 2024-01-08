@@ -18,11 +18,12 @@ SettingWindow QListWidget {
 }
 
 SettingWindow QListWidget::item {
-    height: 2.25em;
+    font-size: 10.5pt;
+    height: 1.5em;
     border: none;
     border-radius: 5px;
-    padding: 0.25em 0em 0.25em 1.5em;
-    margin: 0.15em 0.5em;
+    padding: 0.25em 0em 0.25em 0.5em;
+    margin: 0.125em 0.5em;
 }
 
 /*///////////////////////////////////////////////////////////////*/
