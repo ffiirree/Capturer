@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 # Windows SDK >= 10.0.22621.0
 if (WIN32 AND "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_LESS "10.0.22621.0")
@@ -10,7 +10,7 @@ if(WIN32)
     # >= 6 required by nvenc for encoding d3d11 format
     find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
-    find_package(FFmpeg 3.4 REQUIRED)
+    find_package(FFmpeg 4.2 REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
 endif()

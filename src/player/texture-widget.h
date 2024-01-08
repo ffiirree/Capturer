@@ -1,6 +1,7 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_H
 #define CAPTURER_TEXTURE_WIDGET_H
 
+#include <mutex>
 #include <QWidget>
 
 extern "C" {

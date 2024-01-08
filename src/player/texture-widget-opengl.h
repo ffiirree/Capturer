@@ -4,6 +4,7 @@
 #include <libcap/ffmpeg-wrapper.h>
 #include <libcap/media.h>
 #include <memory>
+#include <mutex>
 #include <QOpenGLBuffer>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>

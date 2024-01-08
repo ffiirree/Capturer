@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 project(capturer VERSION 1.6.0 LANGUAGES C CXX)
 
@@ -47,7 +47,7 @@ if(WIN32)
     
     find_package(FFmpeg 6 REQUIRED)
 elseif(UNIX AND NOT APPLE)
-    find_package(FFmpeg 3.4 REQUIRED)
+    find_package(FFmpeg 4.2 REQUIRED)
 
     find_package(${QT} COMPONENTS X11Extras REQUIRED)
 endif()
@@ -60,10 +60,11 @@ configure_file(src/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
+
 if(QT_DEFAULT_MAJOR_VERSION EQUAL 5)
-    qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+    qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
 elseif(QT_DEFAULT_MAJOR_VERSION EQUAL 6)
-    qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES})
+    qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
 endif()
 
 add_executable(${PROJECT_NAME}

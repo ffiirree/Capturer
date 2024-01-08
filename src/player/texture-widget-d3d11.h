@@ -1,6 +1,7 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_D3D11_H
 #define CAPTURER_TEXTURE_WIDGET_D3D11_H
 
+#include <mutex>
 #include <QWidget>
 
 #ifdef Q_OS_WIN

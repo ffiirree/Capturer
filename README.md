@@ -131,13 +131,13 @@ git submodule update --init --recursive
 
 - `C++` :  `C++20`
 - `Qt` : `5.12.x` / `5.15.x`
-- `CMake` : `>= 3.16`
+- `CMake` : `>= 3.21`
 - Windows
   - `Windows` : `>= Windows 10 1803`
   - `Windows SDK` : `>= 10.0.22621.0`
   - `FFmpeg` : `>= 6.0`
 - Linux
-  - `FFmpeg` : `>= 4.4`
+  - `FFmpeg` : `>= 4.2`
   - `Window System` : `X11`
 
 ### Windows
@@ -210,20 +210,6 @@ sudo apt install libssl-dev
 ./bootstrap
 make -j8
 sudo make install
-```
-
-### Install GCC/G++-11 on Ubuntu 18.04
-
-Ubuntu 18.04 上的 GCC-7 不支持 `<filesystem>`, 更新一下GCC:
-
-```bash
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt update
-sudo apt install gcc-11 g++-11
-
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 --slave /usr/bin/g++ g++ /usr/bin/g++-11
-sudo update-alternatives --config gcc
 ```
 
 ## FFmpeg代码示例
