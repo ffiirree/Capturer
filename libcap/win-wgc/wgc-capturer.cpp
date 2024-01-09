@@ -5,7 +5,6 @@
 #include "fmt/format.h"
 #include "fmt/ranges.h"
 #include "logging.h"
-#include "probe/defer.h"
 #include "ResizingPixelShader.h"
 #include "ResizingVertexShader.h"
 
@@ -64,12 +63,11 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     std::lock_guard lock(mtx_);
 
     LOG(INFO) << fmt::format("[     WGC] [{}] options = {}", name, options);
-    
+
     parse_options(options);
 
     // parse capture item
-    std::smatch matches;
-    if (std::regex_match(name, matches, std::regex("window=(\\d+)"))) {
+    if (std::smatch matches; std::regex_match(name, matches, std::regex("window=(\\d+)"))) {
         item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(std::stoull(matches[1])));
         mode_ = mode_t::window;
     }
@@ -101,7 +99,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     // This represents an IDXGIDevice, and can be used to interop between Windows Runtime components that
     // need to exchange IDXGIDevice references.
     winrt::com_ptr<::IInspectable> inspectable{};
-    auto dxgi_device = device_.as<IDXGIDevice>();
+    const auto dxgi_device = device_.as<IDXGIDevice>();
     if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()))) {
         LOG(ERROR) << "[       WGC] CreateDirect3D11DeviceFromDXGIDevice failed.";
         return -1;
@@ -229,23 +227,23 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 {
     // 1. Input-Assembler State
     // 1.1 vertex buffer
-    D3D11_BUFFER_DESC vbd{
+    constexpr D3D11_BUFFER_DESC vbd{
         .ByteWidth           = sizeof(vertices),
         .BindFlags           = D3D11_BIND_VERTEX_BUFFER,
         .StructureByteStride = sizeof(float) * 5,
     };
-    D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
+    constexpr D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
     winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
 
-    ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
-    UINT strides[1]                = { sizeof(float) * 5 };
-    UINT offsets[1]                = { 0 };
+    ID3D11Buffer *vertex_buffers[]       = { vertex_buffer_.get() };
+    constexpr UINT strides[1]            = { sizeof(float) * 5 };
+    constexpr UINT offsets[1]                = { 0 };
     context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
 
     // 1.2 index buffer : optional
 
     // 1.3 input layout
-    D3D11_INPUT_ELEMENT_DESC layout[] = {
+    constexpr D3D11_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
@@ -258,13 +256,13 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
     // 2. Vertex Shader Stage
     proj_ = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 
-    D3D11_BUFFER_DESC cbd = {
+    constexpr D3D11_BUFFER_DESC cbd = {
         .ByteWidth      = sizeof(proj_),
         .Usage          = D3D11_USAGE_DYNAMIC,
         .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
     };
-    D3D11_SUBRESOURCE_DATA csd = { .pSysMem = &proj_ };
+    const D3D11_SUBRESOURCE_DATA csd = { .pSysMem = &proj_ };
     winrt::check_hresult(device_->CreateBuffer(&cbd, &csd, proj_buffer_.put()));
 
     ID3D11Buffer *cbs[] = { proj_buffer_.get() };
@@ -281,7 +279,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
     // 5. Stream-Output Stage
 
     // 6. Resterizer Stage
-    D3D11_VIEWPORT viewport{
+    const D3D11_VIEWPORT viewport{
         .TopLeftX = 0,
         .TopLeftY = 0,
         .Width    = static_cast<FLOAT>(vfmt.width),
@@ -293,7 +291,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
     // 7. Pixel Shader Stage
     // sampler
-    D3D11_SAMPLER_DESC sampler_desc{
+    constexpr D3D11_SAMPLER_DESC sampler_desc{
         .Filter         = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
         .AddressU       = D3D11_TEXTURE_ADDRESS_WRAP,
         .AddressV       = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -312,7 +310,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
     context_->PSSetShader(pixel_shader_.get(), 0, 0);
 
     // 8. Output-Merger Stage
-    D3D11_TEXTURE2D_DESC target_desc{
+    const D3D11_TEXTURE2D_DESC target_desc{
         .Width          = static_cast<UINT>(vfmt.width),
         .Height         = static_cast<UINT>(vfmt.height),
         .MipLevels      = 1,
@@ -329,7 +327,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
         return -1;
     }
 
-    D3D11_RENDER_TARGET_VIEW_DESC rtv_desc{
+    constexpr D3D11_RENDER_TARGET_VIEW_DESC rtv_desc{
         .Format        = DXGI_FORMAT_B8G8R8A8_UNORM,
         .ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
         .Texture2D     = { .MipSlice = 0 },
@@ -349,13 +347,12 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
-    auto frames_ctx_ref = hwctx_->frames_ctx_alloc();
-    if (!frames_ctx_ref) {
+    if (const auto frames_ctx_ref = hwctx_->frames_ctx_alloc(); !frames_ctx_ref) {
         LOG(ERROR) << "[       WGC] av_hwframe_ctx_alloc";
         return -1;
     }
 
-    auto frames_ctx = hwctx_->frames_ctx();
+    const auto frames_ctx = hwctx_->frames_ctx();
 
     frames_ctx->format    = AV_PIX_FMT_D3D11;
     frames_ctx->height    = vfmt.height;
@@ -377,8 +374,8 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
 
     if (!running_) return;
 
-    auto frame         = sender.TryGetNextFrame();
-    auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
+    const auto frame         = sender.TryGetNextFrame();
+    const auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
 
     // surface size
     D3D11_TEXTURE2D_DESC tex_desc{};
@@ -399,7 +396,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     }
 
     frame_->sample_aspect_ratio = { 1, 1 };
-    frame_->pts                 = os_gettime_ns();
+    frame_->pts                 = av::clock::ns().count();
     // According to MSDN, all integer formats contain sRGB image data
     frame_->color_range         = AVCOL_RANGE_JPEG;
     frame_->color_primaries     = AVCOL_PRI_BT709;
@@ -431,7 +428,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
             ID3D11Buffer *cbs[] = { proj_buffer_.get() };
             context_->VSSetConstantBuffers(0, 1, cbs);
 
-            D3D11_TEXTURE2D_DESC source_desc{
+            const D3D11_TEXTURE2D_DESC source_desc{
                 .Width          = tex_desc.Width,
                 .Height         = tex_desc.Height,
                 .MipLevels      = 1,
@@ -445,7 +442,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
             };
             device_->CreateTexture2D(&source_desc, nullptr, source_.put());
 
-            CD3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{
+            const CD3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{
                 source_.get(),
                 D3D11_SRV_DIMENSION_TEXTURE2D,
                 DXGI_FORMAT_B8G8R8A8_UNORM,
@@ -501,8 +498,10 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
 void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
                                        const winrt::Windows::Foundation::IInspectable&)
 {
-    // TODO: Window Capture Mode
-    LOG(INFO) << "OnClosed";
+    // the captured window is closed
+    eof_ = 0x01;
+
+    LOG(INFO) << "[       WGC] window is closed.";
 }
 
 // Process captured frames

@@ -8,7 +8,7 @@
 #include "texture-widget-opengl.h"
 #include "texture-widget.h"
 
-#include <libcap/audio-render.h>
+#include <libcap/audio-renderer.h>
 #include <libcap/consumer.h>
 #include <libcap/decoder.h>
 #include <libcap/dispatcher.h>
@@ -18,20 +18,14 @@ extern "C" {
 #include <libavutil/audio_fifo.h>
 }
 
-class VideoPlayer : public FramelessWindow, public Consumer<AVFrame>
+class VideoPlayer final : public FramelessWindow, public Consumer<AVFrame>
 {
     Q_OBJECT
 
-    enum avsync_t
-    {
-        AUDIO_MASTER   = 0x00,
-        VIDEO_MASTER   = 0x01,
-        EXTERNAL_CLOCK = 0x02,
-    };
-
 public:
     explicit VideoPlayer(QWidget *parent = nullptr);
-    ~VideoPlayer();
+
+    ~VideoPlayer() override;
 
     int open(const std::string&, std::map<std::string, std::string>) override;
 
@@ -62,55 +56,25 @@ public:
                (((eof_ & 0x02) && audio_enabled_) || !audio_enabled_);
     }
 
-    avsync_t sync_type()
-    {
-        if (avsync_ == avsync_t::AUDIO_MASTER && audio_enabled_) return avsync_t::AUDIO_MASTER;
-
-        return avsync_t::EXTERNAL_CLOCK;
-    }
-
-    int64_t clock_ns()
-    {
-        if (paused_) return clock_.pts;
-
-        return clock_.pts + (os_gettime_ns() - clock_.updated) * clock_.speed;
-    }
-
-    float get_speed() { return clock_.speed; }
-
-    void set_clock(int64_t pts, int64_t base_time = AV_NOPTS_VALUE)
-    {
-        auto systime = (base_time == AV_NOPTS_VALUE) ? os_gettime_ns() : base_time;
-
-        clock_.pts     = pts;
-        clock_.updated = systime;
-    }
-
-    void set_speed(float speed)
-    {
-        set_clock(clock_ns());
-        clock_.speed = speed;
-    }
-
     bool paused() const { return paused_; }
 
 public slots:
     void pause();
     void resume();
-    void seek(int64_t, int64_t); // us
+    void seek(std::chrono::nanoseconds, std::chrono::nanoseconds); // us
     void mute(bool);
     void setSpeed(float);
     void setVolume(int);
-    void openFile();
     void showPreferences();
     void showProperties();
 
 signals:
     void started();
-    void timeChanged(int64_t);
+    void timeChanged(std::chrono::nanoseconds);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
     void contextMenuEvent(QContextMenuEvent *) override;
@@ -137,32 +101,29 @@ private:
     // video & audio
     std::thread video_thread_;
 
-    std::unique_ptr<Decoder> decoder_{ nullptr };
-    std::unique_ptr<AudioRender> audio_render_{ nullptr };
-    std::unique_ptr<Dispatcher> dispatcher_{ nullptr }; // TODO: ctor & dtor order
+    std::unique_ptr<Decoder> decoder_{};
+    std::unique_ptr<AudioRenderer> audio_render_{};
+    std::unique_ptr<Dispatcher> dispatcher_{}; // TODO: ctor & dtor order
 
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
     lock_queue<av::frame> vbuffer_{};
-    AVAudioFifo *abuffer_{ nullptr };
-    std::atomic<int64_t> audio_pts_{ AV_NOPTS_VALUE };
+    AVAudioFifo *abuffer_{};
 
     std::atomic<bool> seeking_{ false };
     std::atomic<int> step_{ 0 };
 
     std::atomic<bool> paused_{ false };
 
-    // clock @{
-    avsync_t avsync_{ avsync_t::AUDIO_MASTER };
+    // clock & timeline @{
+    // | audio renderer buffered samples |   abuffer samples  |  decoding
+    //                                                        ^
+    //                                                        |
+    //                                                    audio pts
+    std::atomic<std::chrono::nanoseconds> audio_pts_{ av::clock::nopts };
 
-    struct clock_t
-    {
-        std::atomic<int64_t> pts{ AV_NOPTS_VALUE };
-
-        std::atomic<float> speed{ 1.0 };
-        std::atomic<int64_t> updated{ AV_NOPTS_VALUE };
-    } clock_{};
+    av::timeline_t timeline_{};
     // @}
 };
 

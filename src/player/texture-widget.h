@@ -8,7 +8,7 @@ extern "C" {
 #include <libavutil/frame.h>
 }
 
-class TextureWidget : public QWidget
+class TextureWidget final : public QWidget
 {
     Q_OBJECT
 public:

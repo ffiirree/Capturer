@@ -224,7 +224,7 @@
     </message>
     <message>
         <source>Software x264 [H.264 / AVC]</source>
-        <translation type="unfinished"></translation>
+        <translation>软件编码 x264 [H.264 / AVC]</translation>
     </message>
     <message>
         <source>Software x265 [H.265 / HEVC]</source>
@@ -296,7 +296,7 @@
     </message>
     <message>
         <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -310,7 +310,7 @@
         <translation>视频</translation>
     </message>
     <message>
-        <source>Render</source>
+        <source>Renderer</source>
         <translation>渲染器</translation>
     </message>
     <message>

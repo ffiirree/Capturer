@@ -10,7 +10,7 @@
 #include <memory>
 #include <QSystemTrayIcon>
 
-class Capturer : public QWidget
+class Capturer final : public QWidget
 {
     Q_OBJECT
 

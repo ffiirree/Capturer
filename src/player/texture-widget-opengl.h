@@ -12,12 +12,13 @@
 #include <tuple>
 #include <vector>
 
-class TextureGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
+class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 public:
     explicit TextureGLWidget(QWidget *parent = nullptr);
-    ~TextureGLWidget();
+
+    ~TextureGLWidget() override;
 
     void present(const av::frame& frame);
 

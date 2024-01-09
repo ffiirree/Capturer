@@ -6,11 +6,9 @@
 #include <fmt/chrono.h>
 #include <fmt/ranges.h>
 #include <libcap/devices.h>
+#include <probe/graphics.h>
 #include <probe/thread.h>
-#include <QCheckBox>
-#include <QChildEvent>
 #include <QFileInfo>
-#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QShortcut>
@@ -20,10 +18,9 @@
 #include <QVBoxLayout>
 
 #ifdef _WIN32
-#include <libcap/win-wasapi/wasapi-render.h>
-#include <libcap/win-wasapi/win-wasapi.h>
+#include <libcap/win-wasapi/wasapi-renderer.h>
 #elif __linux__
-#include <libcap/linux-pulse/pulse-render.h>
+#include <libcap/linux-pulse/pulse-renderer.h>
 #endif
 
 using namespace std::chrono;
@@ -38,12 +35,12 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     decoder_    = std::make_unique<Decoder>();
     dispatcher_ = std::make_unique<Dispatcher>();
 #ifdef _WIN32
-    audio_render_ = std::make_unique<WasapiRender>();
+    audio_render_ = std::make_unique<WasapiRenderer>();
 #else
-    audio_render_ = std::make_unique<PulseAudioRender>();
+    audio_render_ = std::make_unique<PulseAudioRenderer>();
 #endif
 
-    auto stacked_layout = new QStackedLayout(this);
+    const auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
     setLayout(stacked_layout);
 
@@ -53,8 +50,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_, &ControlWidget::resume, this, &VideoPlayer::resume);
     connect(control_, &ControlWidget::seek, this, &VideoPlayer::seek);
     connect(control_, &ControlWidget::speed, this, &VideoPlayer::setSpeed);
-    connect(control_, &ControlWidget::volume, [this](int val) { audio_render_->setVolume(val / 100.0f); });
-    connect(control_, &ControlWidget::mute, [this](bool muted) { audio_render_->mute(muted); });
+    connect(control_, &ControlWidget::volume, [this](auto val) { audio_render_->setVolume(val / 100.0f); });
+    connect(control_, &ControlWidget::mute, [this](auto muted) { audio_render_->mute(muted); });
     connect(this, &VideoPlayer::timeChanged, [this](auto t) {
         if (!seeking_) control_->setTime(t);
     });
@@ -74,11 +71,11 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     timer_->start(2'000ms);
 
     // clang-format off
-    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { seek(clock_ns() / 1'000 + 10'000'000, + 10'000'000); }); // +10s
-    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this]() { seek(clock_ns() / 1'000 - 10'000'000, - 10'000'000); }); // -10s
-    connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this]() { control_->paused() ? control_->resume() : control_->pause(); });
-    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this]() { control_->setVolume(audio_render_->volume() * 100 + 5); }); // +10s
-    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this]() { control_->setVolume(audio_render_->volume() * 100 - 5); }); // -10s
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 10s, + 10s); });
+    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { seek(timeline_.time() - 10s, - 10s); });
+    connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this] { control_->paused() ? control_->resume() : control_->pause(); });
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_render_->volume() * 100 + 5); }); // +10s
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_render_->volume() * 100 - 5); }); // -10s
     // clang-format on
 
     initContextMenu();
@@ -98,12 +95,13 @@ void VideoPlayer::reset()
 
     vbuffer_.clear();
     if (abuffer_) av_audio_fifo_reset(abuffer_);
-    audio_pts_ = AV_NOPTS_VALUE;
+
+    audio_pts_ = av::clock::nopts;
     step_      = 0;
     paused_    = false;
 
-    set_clock(AV_NOPTS_VALUE);
-    set_speed(1.0);
+    timeline_ = av::clock::nopts;
+    timeline_.set_speed({ 1, 1 });
 }
 
 VideoPlayer ::~VideoPlayer()
@@ -133,8 +131,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     dispatcher_->append(decoder_.get());
 
     // audio render
-    auto default_render = av::default_audio_sink();
-    if (!default_render || audio_render_->open(default_render->id, {}) != 0) {
+    if (const auto default_render = av::default_audio_sink();
+        !default_render || audio_render_->open(default_render->id, {}) != 0) {
         audio_render_->reset();
         LOG(INFO) << "[    PLAYER] failed to open audio render";
         return -1;
@@ -183,8 +181,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return false;
     }
 
-    QFileInfo info(QString::fromStdString(filename));
-    QWidget::setWindowTitle(info.isFile() ? info.fileName() : info.filePath());
+    const QFileInfo info(QString::fromStdString(filename));
+    setWindowTitle(info.isFile() ? info.fileName() : info.filePath());
     control_->setDuration(decoder_->duration());
 
     return true;
@@ -219,11 +217,12 @@ bool VideoPlayer::accepts(AVMediaType type) const
 
 int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 {
-    if (seeking_ &&
-        ((type == AVMEDIA_TYPE_AUDIO && sync_type() == AUDIO_MASTER) || type == AVMEDIA_TYPE_VIDEO)) {
-        auto time_base = (type == AVMEDIA_TYPE_VIDEO) ? vfmt.time_base : afmt.time_base;
-        set_clock(av_rescale_q(frame->pts, time_base, OS_TIME_BASE_Q));
-        LOG(INFO) << fmt::format("[{}] clock: {:%H:%M:%S}", av::to_char(type), nanoseconds(clock_ns()));
+    if (seeking_ && ((type == AVMEDIA_TYPE_AUDIO && audio_enabled_) || type == AVMEDIA_TYPE_VIDEO)) {
+        const auto time_base = (type == AVMEDIA_TYPE_VIDEO) ? vfmt.time_base : afmt.time_base;
+
+        timeline_ = av::clock::ns(frame->pts, time_base);
+
+        LOG(INFO) << fmt::format("[{}] clock: {:%T}", av::to_char(type), timeline_.time());
         seeking_ = false;
     }
 
@@ -251,14 +250,19 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 
         std::lock_guard lock(mtx_);
 
-        auto buffer_size = av_audio_fifo_size(abuffer_);
-        if (av_audio_fifo_realloc(abuffer_, buffer_size + frame->nb_samples) < 0) return -1;
+        // buffer
+        if (const auto buffer_size = av_audio_fifo_size(abuffer_);
+            av_audio_fifo_realloc(abuffer_, buffer_size + frame->nb_samples) < 0)
+            return -1;
         av_audio_fifo_write(abuffer_, reinterpret_cast<void **>(frame->data), frame->nb_samples);
 
         // TODO: speed
-        if (audio_pts_ == AV_NOPTS_VALUE) audio_pts_ = frame->pts;
-        audio_pts_ +=
-            av_rescale_q(frame->nb_samples, { 1, afmt.sample_rate }, afmt.time_base) * get_speed();
+        if (audio_pts_.load() == av::clock::nopts) audio_pts_ = av::clock::ns(frame->pts, afmt.time_base);
+
+        const auto duration = av::clock::ns(frame->nb_samples, { 1, afmt.sample_rate });
+
+        audio_pts_ = audio_pts_.load() + duration * timeline_.speed();
+
         return 0;
     }
 
@@ -268,7 +272,7 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 
 void VideoPlayer::pause()
 {
-    set_clock(clock_ns());
+    timeline_.pause();
     audio_render_->pause();
     paused_ = true;
 }
@@ -276,33 +280,34 @@ void VideoPlayer::pause()
 void VideoPlayer::resume()
 {
     if (eof()) {
-        seek(0, 0);
+        seek(0ns, 0ns);
         eof_ = 0;
     }
 
-    set_clock(clock_ns());
+    timeline_.resume();
     paused_ = false;
     audio_render_->resume();
 }
 
-void VideoPlayer::seek(int64_t ts, int64_t rel)
+void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel)
 {
     if (seeking_) return;
 
     std::lock_guard lock(mtx_);
 
-    ts = std::clamp<int64_t>(ts, 0, decoder_->duration());
+    ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, microseconds{ decoder_->duration() });
 
-    LOG(INFO) << fmt::format("seek: {:%H:%M:%S}", std::chrono::microseconds(ts));
+    LOG(INFO) << fmt::format("seek: {:%T}", ts);
 
-    auto lts = rel < 0 ? std::numeric_limits<int64_t>::min() : ts - rel * 3 / 4;
-    auto rts = rel > 0 ? std::numeric_limits<int64_t>::max() : ts - rel * 3 / 4;
-    dispatcher_->seek(std::chrono::microseconds{ ts }, lts, rts);
+    const auto lts = rel < 0ns ? av::clock::min : ts - rel * 3 / 4;
+    const auto rts = rel > 0ns ? av::clock::max : ts - rel * 3 / 4;
 
-    seeking_ = true;
-    eof_     = 0;
-    set_clock(AV_NOPTS_VALUE);
-    audio_pts_ = AV_NOPTS_VALUE;
+    dispatcher_->seek(ts, lts, rts);
+
+    seeking_   = true;
+    eof_       = 0;
+    timeline_  = av::clock::nopts;
+    audio_pts_ = av::clock::nopts;
 
     vbuffer_.clear();
     av_audio_fifo_reset(abuffer_);
@@ -317,7 +322,7 @@ void VideoPlayer::setSpeed(float speed)
 {
     dispatcher_->afilters = fmt::format("atempo={:4.2f}", speed);
     dispatcher_->send_command(AVMEDIA_TYPE_AUDIO, "atempo", "tempo", fmt::format("{:4.2f}", speed));
-    set_speed(speed);
+    timeline_.set_speed({ static_cast<intmax_t>(speed * 1'000'000), 1'000'000 });
 }
 
 void VideoPlayer::mute(bool muted) { control_->setMute(muted); }
@@ -337,26 +342,23 @@ int VideoPlayer::run()
     }
 
     running_ = true;
-    set_clock(0);
+    timeline_.set(0ns);
 
     // video thread
     video_thread_ = std::thread([this]() { video_thread_f(); });
 
     // audio thread
     if (audio_enabled_ &&
-        audio_render_->start([this](uint8_t **ptr, uint32_t request_frames, int64_t ts) -> uint32_t {
+        audio_render_->start([this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
             std::lock_guard lock(mtx_);
 
-            uint32_t buffer_frames = av_audio_fifo_size(abuffer_); // per channel
+            const uint32_t buffer_frames = av_audio_fifo_size(abuffer_); // per channel
             if (!buffer_frames || seeking_ || paused()) return 0;
 
-            if (sync_type() == AUDIO_MASTER) {
-                uint32_t remaining = buffer_frames + (audio_render_->bufferSize() - request_frames);
-                set_clock(av_rescale_q(audio_pts_, afmt.time_base, OS_TIME_BASE_Q) -
-                              av_rescale_q(remaining, { 1, afmt.sample_rate }, OS_TIME_BASE_Q) *
-                                  get_speed(),
+            const uint32_t remaining = buffer_frames + (audio_render_->bufferSize() - request_frames);
+            timeline_.set(audio_pts_.load() -
+                              av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(),
                           ts);
-            }
 
             return av_audio_fifo_read(abuffer_, reinterpret_cast<void **>(ptr), request_frames);
         }) < 0) {
@@ -365,6 +367,13 @@ int VideoPlayer::run()
     }
 
     emit started();
+
+#ifdef _WIN32
+    if (const auto primary_display = probe::graphics::display_contains(0, 0); primary_display.has_value()) {
+        move(primary_display->geometry.width / 2 - vfmt.width / 2,
+             primary_display->geometry.height / 2 - vfmt.height / 2);
+    }
+#endif
     QWidget::show();
 
     return 0;
@@ -381,27 +390,26 @@ void VideoPlayer::video_thread_f()
 
     while (video_enabled_ && running_) {
         if (vbuffer_.empty() || (paused() && !step_) || seeking_) {
-            std::this_thread::sleep_for(10ms);
+            std::this_thread::sleep_for(5ms);
             continue;
         }
 
-        // TODO: vbuffer is cleared, then pop on empty quene case a crush
+        // FIXME: if vbuffer is cleared, then pop will cause a crush
         av::frame frame(vbuffer_.pop());
+        texture_->present(frame);
 
         if (!step_) {
-            auto pts      = av_rescale_q(frame->pts, vfmt.time_base, OS_TIME_BASE_Q);
-            auto sleep_ns = std::clamp<int64_t>((pts - clock_ns()) / get_speed(), 1'000'000, 250'000'000);
+            auto pts      = av::clock::ns(frame->pts, vfmt.time_base);
+            auto sleep_ns = std::clamp<std::chrono::nanoseconds>(
+                (pts - timeline_.time()) / timeline_.speed(), 1ms, 2'500ms);
 
-            DLOG(INFO) << fmt::format(
-                "[V] pts = {:%H:%M:%S}, time = {:%H:%M:%S}, sleep = {:7.3f}ms, speed = {:4.2f}x",
-                milliseconds{ pts / 1'000'000 }, milliseconds{ clock_ns() / 1'000'000 },
-                sleep_ns / 1'000'000.0, get_speed());
+            DLOG(INFO) << fmt::format("[V] pts = {:%T}, time = {:%T}, sleep = {:.3%S}, speed = {:4.2f}x",
+                                      pts, timeline_.time(), sleep_ns, timeline_.speed().get<float>());
 
-            os_nsleep(sleep_ns);
+            std::this_thread::sleep_for(sleep_ns);
         }
 
-        texture_->present(frame);
-        emit timeChanged(av_rescale_q(frame->pts, vfmt.time_base, { 1, AV_TIME_BASE }));
+        emit timeChanged(timeline_.time());
 
         step_ = std::max<int>(0, step_ - 1);
     }
@@ -428,6 +436,18 @@ void VideoPlayer::closeEvent(QCloseEvent *event)
     FramelessWindow::closeEvent(event);
 }
 
+void VideoPlayer::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::BackButton) {
+        seek(timeline_.time() - 10s, -10s);
+    }
+    else if (event->button() == Qt::ForwardButton) {
+        seek(timeline_.time() + 10s, +10s);
+    }
+
+    FramelessWindow::mouseReleaseEvent(event);
+}
+
 void VideoPlayer::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -440,51 +460,67 @@ void VideoPlayer::initContextMenu()
 {
     menu_ = new Menu(this);
 
-    menu_->addAction(tr("Open File"), this, &VideoPlayer::openFile, QKeySequence::Open);
+    // video menu
+    {
+        const auto video_menu = new Menu(tr("Video"), this);
 
-    // video
-    auto video_menu = new Menu(tr("Video"), this);
-    // video render
-    auto vrenders   = new Menu(tr("Render"), this);
-    auto vrg        = new QActionGroup(vrenders);
-    vrg->addAction(vrenders->addAction("OpenGL"))->setCheckable(true);
-    vrg->addAction(vrenders->addAction("D3D11"))->setCheckable(true);
-    vrg->actions()[0]->setChecked(true);
-    video_menu->addMenu(vrenders);
+        // video renderers
+        {
+            const auto renders = new Menu(tr("Renderer"), this);
 
-    video_menu->addSeparator();
+            const auto group = new QActionGroup(renders);
+            group->addAction(renders->addAction("OpenGL"))->setCheckable(true);
+            group->addAction(renders->addAction("D3D11"))->setCheckable(true);
 
-    video_menu->addAction(tr("Rotate +90"));
-    video_menu->addAction(tr("Rotate -90"));
+            group->actions()[0]->setChecked(true);
 
-    menu_->addMenu(video_menu);
+            video_menu->addMenu(renders);
+        }
 
-    // audio
-    auto audio_menu = new Menu(tr("Audio"), this);
+        video_menu->addSeparator();
 
-    // audio streams
-    asmenu_  = new Menu(tr("Select Audio Stream"), this);
-    asgroup_ = new QActionGroup(this);
-    audio_menu->addMenu(asmenu_);
+        video_menu->addAction(tr("Rotate +90"));
+        video_menu->addAction(tr("Rotate -90"));
 
-    // audio renders
-    auto arenders = new Menu(tr("Render"), this);
-    auto arg      = new QActionGroup(arenders);
-    arg->addAction(arenders->addAction("WASAPI"))->setCheckable(true);
-    arg->actions()[0]->setChecked(true);
-    audio_menu->addMenu(arenders);
+        menu_->addMenu(video_menu);
+    }
 
-    menu_->addMenu(audio_menu);
+    // audio menu
+    {
+        const auto audio_menu = new Menu(tr("Audio"), this);
 
-    // subtitles
-    auto subtitles_menu = new Menu(tr("Subtitles"), this);
+        // audio streams
+        {
+            asmenu_  = new Menu(tr("Select Audio Stream"), this);
+            asgroup_ = new QActionGroup(this);
+            audio_menu->addMenu(asmenu_);
+        }
 
-    ssmenu_  = new Menu(tr("Select Subtitles"), this);
-    ssgroup_ = new QActionGroup(this);
-    subtitles_menu->addMenu(ssmenu_);
-    subtitles_menu->addAction(tr("Add Subtitles"));
-    subtitles_menu->addAction(tr("Show/Hide Subtitles"))->setCheckable(true);
-    menu_->addMenu(subtitles_menu);
+        // audio renderers
+        {
+            const auto renders = new Menu(tr("Renderer"));
+
+            const auto group = new QActionGroup(renders);
+            group->addAction(renders->addAction("WASAPI"))->setCheckable(true);
+            group->actions()[0]->setChecked(true);
+
+            audio_menu->addMenu(renders);
+        }
+
+        menu_->addMenu(audio_menu);
+    }
+
+    // subtitle menu
+    {
+        const auto subtitles_menu = new Menu(tr("Subtitles"), this);
+
+        ssmenu_  = new Menu(tr("Select Subtitles"), this);
+        ssgroup_ = new QActionGroup(this);
+        subtitles_menu->addMenu(ssmenu_);
+        subtitles_menu->addAction(tr("Add Subtitles"));
+        subtitles_menu->addAction(tr("Show/Hide Subtitles"))->setCheckable(true);
+        menu_->addMenu(subtitles_menu);
+    }
 
     menu_->addSeparator();
 
@@ -497,34 +533,42 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
 {
     asmenu_->clear();
     for (auto& p : decoder_->properties(AVMEDIA_TYPE_AUDIO)) {
-        std::string name{};
-        for (auto& [k, v] : p) {
-            if (k == "Index") {
-                name = "#" + v + ": " + name;
-            }
-        }
+        std::vector<std::string> title{};
+        std::vector<std::string> attrs{};
+
+        if (p.contains("language")) title.push_back(p["language"]);
+        if (p.contains("title")) title.push_back(p["title"]);
+
+        if (p.contains("Sample Format")) attrs.push_back(p["Sample Format"]);
+        if (p.contains("Channel Layout")) attrs.push_back(p["Channel Layout"]);
+        if (p.contains("Sample Rate")) attrs.push_back(p["Sample Rate"]);
+        if (p.contains("Bitrate") && p["Bitrate"] != "N/A") attrs.push_back(p["Bitrate"]);
+
+        std::string name = fmt::format("{} - {}", fmt::join(title, ", "), fmt::join(attrs, ", "));
+
         asgroup_->addAction(asmenu_->addAction(name.c_str()))->setCheckable(true);
     }
 
     ssmenu_->clear();
     for (auto& p : decoder_->properties(AVMEDIA_TYPE_SUBTITLE)) {
-        std::string name{};
-        for (auto& [k, v] : p) {
-            if (k == "Index") {
-                name = "#" + v + ": " + name;
-            }
-        }
+        std::vector<std::string> title{};
+        std::vector<std::string> attrs{};
+
+        if (p.contains("Codec")) attrs.push_back(p["Codec"]);
+
+        if (p.contains("language")) title.push_back(p["language"]);
+        if (p.contains("title")) title.push_back(p["title"]);
+
+        std::string name = fmt::format("{} - {}", fmt::join(attrs, ", "), fmt::join(title, ", "));
         ssgroup_->addAction(ssmenu_->addAction(name.c_str()))->setCheckable(true);
     }
 
     menu_->exec(event->globalPos());
 }
 
-void VideoPlayer::openFile() {}
-
 void VideoPlayer::showPreferences()
 {
-    auto win = new FramelessWindow(this);
+    const auto win = new FramelessWindow(this);
 
     win->setMinimumSize(400, 300);
     win->setAttribute(Qt::WA_DeleteOnClose);
@@ -550,23 +594,23 @@ void VideoPlayer::showProperties()
     auto ap = decoder_->properties(AVMEDIA_TYPE_AUDIO);
     auto sp = decoder_->properties(AVMEDIA_TYPE_SUBTITLE);
 
-    auto win = new QWidget(this, Qt::Dialog);
+    const auto win = new QWidget(this, Qt::Dialog);
     win->setMinimumSize(600, 800);
     win->setAttribute(Qt::WA_DeleteOnClose);
     win->setWindowTitle("Properties");
     win->setStyleSheet("QWidget { background: white; color: black; } QLabel { padding-left: 2em; }");
 
-    auto layout = new QVBoxLayout();
+    const auto layout = new QVBoxLayout();
     layout->setContentsMargins({});
     win->setLayout(layout);
 
-    auto view = new QTreeView();
+    const auto view = new QTreeView();
     view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
     view->setHeaderHidden(true);
     view->setEditTriggers(QAbstractItemView::NoEditTriggers);
     layout->addWidget(view);
 
-    auto model = new QStandardItemModel();
+    const auto model = new QStandardItemModel();
 
     for (size_t i = 0; i < fp.size(); ++i) {
         auto item = new QStandardItem(QString{ "General #%1" }.arg(i + 1));

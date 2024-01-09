@@ -14,8 +14,7 @@ extern "C" {
 #include <libavutil/time.h>
 }
 
-int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterContext **ctx,
-                                  enum AVMediaType type)
+int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterContext **ctx, AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return create_video_src(decoder, ctx);
@@ -25,7 +24,7 @@ int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterCont
 }
 
 int Dispatcher::create_sink_filter(const Consumer<AVFrame> *encoder, AVFilterContext **ctx,
-                                   enum AVMediaType type)
+                                   AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return create_video_sink(encoder, ctx);
@@ -63,7 +62,7 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame> *encoder, AVFilterCont
 
     vfmt.pix_fmt = (vfmt.pix_fmt == AV_PIX_FMT_NONE) ? encoder->vfmt.pix_fmt : vfmt.pix_fmt;
     if (vfmt.pix_fmt != AV_PIX_FMT_NONE) {
-        enum AVPixelFormat pix_fmts[] = { vfmt.pix_fmt, AV_PIX_FMT_NONE };
+        const AVPixelFormat pix_fmts[] = { vfmt.pix_fmt, AV_PIX_FMT_NONE };
 
         if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, static_cast<uint64_t>(AV_PIX_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
@@ -115,7 +114,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
         // channel_layouts(int64_t) / >= 5.1  ch_layouts(string)
         // channel_counts(int list)
         // all_channel_counts(bool)
-        enum AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
+        const AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
         if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, static_cast<uint64_t>(AV_SAMPLE_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
@@ -145,8 +144,8 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
             return -1;
         }
 
-        int64_t sample_rates[] = { afmt.sample_rate, -1 };
-        if (av_opt_set_int_list(*ctx, "sample_rates", sample_rates, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
+        if (const int64_t sample_rates[] = { afmt.sample_rate, -1 };
+            av_opt_set_int_list(*ctx, "sample_rates", sample_rates, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] failed to set 'sample_rates' option.";
             return -1;
         }
@@ -251,6 +250,7 @@ int Dispatcher::create_filter_graph(enum AVMediaType type)
 
     // 4.
     LOG(INFO) << fmt::format("[DISPATCHER] [{}] creating filter graph: '{}'", av::to_char(type), filters);
+
     if (filters.empty()) {
         // 1 input & 1 output
         if (avfilter_link(producer_ctxs[0].src_ctx, 0, sink, 0) < 0) {
@@ -365,7 +365,7 @@ int Dispatcher::start()
     }
 
     //
-    start_time_ = resumed_pts_ = os_gettime_ns();
+    start_time_ = resumed_pts_ = av::clock::ns().count();
 
     for (auto& coder : vproducer_ctxs_) {
         coder.producer->run();
@@ -401,7 +401,7 @@ int Dispatcher::start()
 
 bool Dispatcher::is_valid_pts(int64_t pts)
 {
-    std::lock_guard<std::mutex> lock(pause_mtx_);
+    std::lock_guard lock(pause_mtx_);
 
     // [-, max(start_time_, resumed_pts_))
     if (pts < resumed_pts_) {
@@ -469,7 +469,7 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
                 if (frame->data[0] && !is_valid_pts(av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q))) {
                     LOG(WARNING) << fmt::format("[{}] drop frame {} -- [-, {}) || [{}, +)", av::to_char(mt),
                                                 av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q),
-                                                std::max(start_time_.load(), resumed_pts_), paused_pts_);
+                                                std::max(start_time_, resumed_pts_), paused_pts_);
                     continue;
                 }
                 frame->pts -= av_rescale_q(start_time_, OS_TIME_BASE_Q, frame_tb);
@@ -527,7 +527,8 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
     return 0;
 }
 
-void Dispatcher::seek(const std::chrono::microseconds& ts, int64_t lts, int64_t rts)
+void Dispatcher::seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
+                      std::chrono::nanoseconds rts)
 {
     for (auto& [_0, coder, _2] : vproducer_ctxs_) {
         coder->seek(ts, lts, rts);
@@ -551,19 +552,19 @@ void Dispatcher::seek(const std::chrono::microseconds& ts, int64_t lts, int64_t 
 
 void Dispatcher::pause()
 {
-    std::lock_guard<std::mutex> lock(pause_mtx_);
+    std::lock_guard lock(pause_mtx_);
 
     if (paused_pts_ == AV_NOPTS_VALUE) {
-        paused_pts_ = os_gettime_ns();
+        paused_pts_ = av::clock::ns().count();
     }
 }
 
 void Dispatcher::resume()
 {
-    std::lock_guard<std::mutex> lock(pause_mtx_);
+    std::lock_guard lock(pause_mtx_);
 
     if (paused_pts_ != AV_NOPTS_VALUE) {
-        auto now = os_gettime_ns();
+        auto now = av::clock::ns().count();
         paused_time_ += (now - paused_pts_);
         paused_pts_  = AV_NOPTS_VALUE;
         resumed_pts_ = now;
@@ -572,10 +573,10 @@ void Dispatcher::resume()
 
 int64_t Dispatcher::paused_time()
 {
-    std::lock_guard<std::mutex> lock(pause_mtx_);
+    std::lock_guard lock(pause_mtx_);
 
     if (paused_pts_ != AV_NOPTS_VALUE) {
-        return paused_time_ + (os_gettime_ns() - paused_pts_);
+        return paused_time_ + (av::clock::ns().count() - paused_pts_);
     }
     return paused_time_;
 }
@@ -615,7 +616,7 @@ int Dispatcher::reset()
                 break;
             }
 
-            os_sleep(30ms);
+            std::this_thread::sleep_for(30ms);
         }
         consumer_ctx_.consumer->reset();
     }
@@ -662,5 +663,5 @@ int64_t Dispatcher::escaped_us()
     if (!running()) {
         return 0;
     }
-    return std::max<int64_t>(0, (os_gettime_ns() - start_time_ - paused_time()) / 1'000);
+    return std::max<int64_t>(0, (av::clock::ns().count() - start_time_ - paused_time()) / 1'000);
 }

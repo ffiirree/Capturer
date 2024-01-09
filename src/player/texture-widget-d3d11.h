@@ -13,12 +13,13 @@
 #include <memory>
 #include <winrt/base.h>
 
-class TextureD3D11Widget : public QWidget
+class TextureD3D11Widget final : public QWidget
 {
     Q_OBJECT
 public:
     explicit TextureD3D11Widget(QWidget *parent = nullptr);
-    ~TextureD3D11Widget();
+
+    ~TextureD3D11Widget() override;
 
     void present(const av::frame& frame);
 

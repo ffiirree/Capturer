@@ -1,7 +1,6 @@
 #ifndef CAPTURER_CONSUMER_H
 #define CAPTURER_CONSUMER_H
 
-#include "clock.h"
 #include "ffmpeg-wrapper.h"
 #include "media.h"
 

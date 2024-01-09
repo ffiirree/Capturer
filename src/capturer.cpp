@@ -87,7 +87,7 @@ void Capturer::updateConfig()
 
 void Capturer::setupSystemTray()
 {
-    auto menu = new Menu(this);
+    const auto menu = new Menu(this);
     menu->setObjectName("tray-menu");
 
     // SystemTrayIcon

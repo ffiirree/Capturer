@@ -1,6 +1,7 @@
 #ifndef CAPTURER_DECODER_H
 #define CAPTURER_DECODER_H
 
+#include "ffmpeg-wrapper.h"
 #include "logging.h"
 #include "producer.h"
 #include "queue.h"
@@ -47,7 +48,8 @@ public:
     }
 
     // AV_TIME_BASE
-    void seek(const std::chrono::microseconds& ts, int64_t lts, int64_t rts) override;
+    void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
+              std::chrono::nanoseconds rts) override;
 
     bool has(AVMediaType) const override;
 
@@ -65,7 +67,7 @@ public:
 
     bool has_enough(AVMediaType type) const;
 
-    std::vector<std::vector<std::pair<std::string, std::string>>> properties(AVMediaType) const override;
+    std::vector<std::map<std::string, std::string>> properties(AVMediaType) const override;
 
 private:
     int decode_fn();
@@ -73,10 +75,10 @@ private:
 
     std::string name_{ "unknown" };
 
-    AVFormatContext *fmt_ctx_{ nullptr };
-    AVCodecContext *video_decoder_ctx_{ nullptr };
-    AVCodecContext *audio_decoder_ctx_{ nullptr };
-    AVCodecContext *subtitle_decoder_ctx_{ nullptr };
+    AVFormatContext *fmt_ctx_{};
+    AVCodecContext *video_decoder_ctx_{};
+    AVCodecContext *audio_decoder_ctx_{};
+    AVCodecContext *subtitle_decoder_ctx_{};
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };

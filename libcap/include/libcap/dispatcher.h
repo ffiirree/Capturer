@@ -8,7 +8,6 @@
 
 #include <future>
 #include <thread>
-#include <tuple>
 
 extern "C" {
 #include <libavfilter/avfilter.h>
@@ -56,7 +55,8 @@ public:
     int reset();
 
     // AV_TIME_BESE
-    void seek(const std::chrono::microseconds& ts, int64_t = 0, int64_t = 0);
+    void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds = 0ns,
+              std::chrono::nanoseconds = 0ns);
 
     void stop() { reset(); }
 
@@ -92,8 +92,8 @@ private:
         bool veof;
     };
 
-    int create_src_filter(const Producer<AVFrame> *, AVFilterContext **, enum AVMediaType);
-    int create_sink_filter(const Consumer<AVFrame> *, AVFilterContext **, enum AVMediaType);
+    int create_src_filter(const Producer<AVFrame> *, AVFilterContext **, AVMediaType);
+    int create_sink_filter(const Consumer<AVFrame> *, AVFilterContext **, AVMediaType);
 
     int create_video_src(const Producer<AVFrame> *, AVFilterContext **);
     int create_video_sink(const Consumer<AVFrame> *, AVFilterContext **);
@@ -101,11 +101,11 @@ private:
     int create_audio_src(const Producer<AVFrame> *, AVFilterContext **);
     int create_audio_sink(const Consumer<AVFrame> *, AVFilterContext **);
 
-    int create_filter_graph(enum AVMediaType);
+    int create_filter_graph(AVMediaType);
 
     int set_encoder_format_by_sinks();
 
-    int dispatch_fn(enum AVMediaType mt);
+    int dispatch_fn(AVMediaType mt);
 
     // pts must in OS_TIME_BASE_Q
     bool is_valid_pts(int64_t);
@@ -116,7 +116,7 @@ private:
     int64_t paused_pts_{ AV_NOPTS_VALUE }; //
     int64_t resumed_pts_{ AV_NOPTS_VALUE };
     int64_t paused_time_{ 0 };             // do not include the time being paused, please use paused_time()
-    std::atomic<int64_t> start_time_{ AV_NOPTS_VALUE };
+    int64_t start_time_{ AV_NOPTS_VALUE };
     //@}
 
     // filter graphs @{

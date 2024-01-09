@@ -3,6 +3,7 @@
 
 #ifdef _WIN32
 
+#include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
 #include "libcap/queue.h"
 
@@ -27,9 +28,9 @@ public:
 
     AVRational time_base(AVMediaType) const override;
 
-    bool enabled(AVMediaType t) { return (enabled_.count(t) > 0) && enabled_[t]; }
+    bool enabled(AVMediaType t) override { return enabled_.contains(t) && enabled_[t]; }
 
-    void enable(AVMediaType t) { enabled_[t] = true; }
+    void enable(AVMediaType t) override { enabled_[t] = true; }
 
     // supported formats
     std::vector<av::vformat_t> vformats() const override;

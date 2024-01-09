@@ -143,7 +143,7 @@ int WasapiCapturer::run()
     running_ = true;
     eof_     = 0x00;
 
-    start_time_ = os_gettime_ns();
+    start_time_ = av::clock::ns().count();
     thread_     = std::thread([this]() {
         probe::thread::set_name("WASAPI-C-" + device_.id);
         run_f();
@@ -216,12 +216,12 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
 {
     frame_.unref();
 
-    frame_->pts            = os_gettime_ns() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
-    frame_->pkt_dts        = frame_->pts;
-    frame_->nb_samples     = nb_samples;
-    frame_->format         = afmt.sample_fmt;
-    frame_->sample_rate    = afmt.sample_rate;
-    frame_->channels       = afmt.channels;
+    frame_->pts         = av::clock::ns().count() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
+    frame_->pkt_dts     = frame_->pts;
+    frame_->nb_samples  = nb_samples;
+    frame_->format      = afmt.sample_fmt;
+    frame_->sample_rate = afmt.sample_rate;
+    frame_->channels    = afmt.channels;
     frame_->channel_layout = afmt.channel_layout;
 
     av_frame_get_buffer(frame_.get(), 0);

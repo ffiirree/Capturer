@@ -41,15 +41,12 @@ namespace wgc
     {
         if (!hwnd) return nullptr;
 
-        auto factory =
-            winrt::get_activation_factory<GraphicsCaptureItem>().as<::IGraphicsCaptureItemInterop>();
-
+        auto factory = winrt::get_activation_factory<GraphicsCaptureItem, ::IGraphicsCaptureItemInterop>();
         GraphicsCaptureItem item = nullptr;
 
         try {
-            winrt::check_hresult(factory->CreateForWindow(
-                hwnd, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-                winrt::put_abi(item)));
+            winrt::check_hresult(factory->CreateForWindow(hwnd, winrt::guid_of<GraphicsCaptureItem>(),
+                                                          winrt::put_abi(item)));
         }
         catch (...) {
             return nullptr;
@@ -62,16 +59,12 @@ namespace wgc
     {
         if (!monitor) return nullptr;
 
-        auto factory =
-            winrt::get_activation_factory<GraphicsCaptureItem>().as<::IGraphicsCaptureItemInterop>();
-
+        auto factory = winrt::get_activation_factory<GraphicsCaptureItem, ::IGraphicsCaptureItemInterop>();
         GraphicsCaptureItem item = nullptr;
 
         try {
-            if (FAILED(factory->CreateForMonitor(
-                    monitor, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-                    winrt::put_abi(item))))
-                return nullptr;
+            winrt::check_hresult(factory->CreateForMonitor(monitor, winrt::guid_of<GraphicsCaptureItem>(),
+                                                           winrt::put_abi(item)));
         }
         catch (...) {
             return nullptr;

@@ -275,7 +275,7 @@ int Encoder::run_f()
     int ret = 0;
     while (running_ && !eof()) {
         if (video_buffer_.empty() && audio_buffer_.empty()) {
-            os_sleep(20ms);
+            std::this_thread::sleep_for(20ms);
             continue;
         }
 

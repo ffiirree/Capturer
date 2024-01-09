@@ -1,6 +1,6 @@
 #ifdef _WIN32
 
-#include "libcap/win-wasapi/wasapi-render.h"
+#include "libcap/win-wasapi/wasapi-renderer.h"
 
 #include "libcap/platform.h"
 #include "libcap/win-wasapi/win-wasapi.h"
@@ -10,7 +10,7 @@
 #include <probe/defer.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
-int WasapiRender::open(const std::string& name, RenderFlags flags)
+int WasapiRenderer::open(const std::string&, RenderFlags flags)
 {
     flags_ = flags;
 
@@ -51,7 +51,7 @@ int WasapiRender::open(const std::string& name, RenderFlags flags)
     return 0;
 }
 
-void WasapiRender::InitializeWaveFormat(WAVEFORMATEX *wfex)
+void WasapiRenderer::InitializeWaveFormat(WAVEFORMATEX *wfex)
 {
     DWORD layout = 0;
     if (wfex->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
@@ -70,7 +70,7 @@ void WasapiRender::InitializeWaveFormat(WAVEFORMATEX *wfex)
     LOG(INFO) << fmt::format("[  WASAPI-R] [{:>10}] {}", devinfo_.name, av::to_string(format_));
 }
 
-HRESULT WasapiRender::InitializeAudioEngine()
+HRESULT WasapiRenderer::InitializeAudioEngine()
 {
     RETURN_IF_FAILED(audio_client_->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
                                                300'000 /*100-nanosecond*/, 0, wfex_, nullptr));
@@ -96,7 +96,7 @@ HRESULT WasapiRender::InitializeAudioEngine()
     return S_OK;
 }
 
-HRESULT WasapiRender::InitializeStreamSwitch()
+HRESULT WasapiRenderer::InitializeStreamSwitch()
 {
     if (SWITCH_COMPLETE_EVENT.attach(::CreateEvent(nullptr, true, false, nullptr));
         !SWITCH_COMPLETE_EVENT) {
@@ -111,7 +111,8 @@ HRESULT WasapiRender::InitializeStreamSwitch()
     return S_OK;
 }
 
-int WasapiRender::start(const std::function<uint32_t(uint8_t **ptr, uint32_t samples, int64_t ts)>& cb)
+int WasapiRenderer::start(
+    const std::function<uint32_t(uint8_t **ptr, uint32_t samples, std::chrono::nanoseconds ts)>& cb)
 {
     if (!ready_ || running_) {
         LOG(ERROR) << "[  WASAPI-R] not ready or running.";
@@ -144,8 +145,8 @@ int WasapiRender::start(const std::function<uint32_t(uint8_t **ptr, uint32_t sam
                 break;
 
             case WAIT_OBJECT_0 + 1: // REQUEST_EVENT
-                if (FAILED(RequestEventHandler(os_gettime_ns())))
-                    LOG(ERROR) << "failed to write data to render buffer";
+                if (FAILED(RequestEventHandler(av::clock::ns())))
+                    LOG(ERROR) << "failed to write data to the renderer buffer";
                 break;
 
             case WAIT_OBJECT_0 + 2: // SWITCH_EVENT
@@ -162,7 +163,7 @@ int WasapiRender::start(const std::function<uint32_t(uint8_t **ptr, uint32_t sam
     return 0;
 }
 
-int WasapiRender::pause()
+int WasapiRenderer::pause()
 {
     std::lock_guard lock(mtx_);
 
@@ -172,7 +173,7 @@ int WasapiRender::pause()
     return 0;
 }
 
-int WasapiRender::resume()
+int WasapiRenderer::resume()
 {
     std::lock_guard lock(mtx_);
 
@@ -182,7 +183,7 @@ int WasapiRender::resume()
     return 0;
 }
 
-bool WasapiRender::paused() const
+bool WasapiRenderer::paused() const
 {
     std::lock_guard lock(mtx_);
 
@@ -192,7 +193,7 @@ bool WasapiRender::paused() const
     return FAILED(session_->GetState(&state)) || state != AudioSessionStateActive;
 }
 
-int WasapiRender::mute(bool muted)
+int WasapiRenderer::mute(bool muted)
 {
     std::lock_guard lock(mtx_);
 
@@ -202,7 +203,7 @@ int WasapiRender::mute(bool muted)
     return 0;
 }
 
-bool WasapiRender::muted() const
+bool WasapiRenderer::muted() const
 {
     std::lock_guard lock(mtx_);
 
@@ -212,7 +213,7 @@ bool WasapiRender::muted() const
     return SUCCEEDED(volume_->GetMute(&muted)) && muted;
 }
 
-int WasapiRender::setVolume(float volume)
+int WasapiRenderer::setVolume(float volume)
 {
     std::lock_guard lock(mtx_);
 
@@ -222,7 +223,7 @@ int WasapiRender::setVolume(float volume)
     return 0;
 }
 
-float WasapiRender::volume() const
+float WasapiRenderer::volume() const
 {
     std::lock_guard lock(mtx_);
 
@@ -233,23 +234,23 @@ float WasapiRender::volume() const
     return volume;
 }
 
-HRESULT WasapiRender::RequestEventHandler(int64_t ts)
+HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
 {
     BYTE *buffer          = nullptr;
     UINT32 padding_frames = 0;
 
     RETURN_IF_FAILED(audio_client_->GetCurrentPadding(&padding_frames));
-    UINT32 request_frames = buffer_frames_ - padding_frames;
+    const UINT32 request_frames = buffer_frames_ - padding_frames;
 
     // Grab all the available space in the shared buffer.
     RETURN_IF_FAILED(render_->GetBuffer(request_frames, &buffer));
-    UINT32 wframes = callback_(&buffer, request_frames, ts);
+    const UINT32 wframes = callback_(&buffer, request_frames, ts);
     RETURN_IF_FAILED(render_->ReleaseBuffer(wframes, wframes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT));
 
     return S_OK;
 }
 
-HRESULT WasapiRender::SwitchEventHandler()
+HRESULT WasapiRenderer::SwitchEventHandler()
 {
     if (switching_ == false) return S_FALSE;
 
@@ -296,7 +297,7 @@ HRESULT WasapiRender::SwitchEventHandler()
     RETURN_IF_FAILED(audio_client_->GetMixFormat(&wfex));
     defer(CoTaskMemFree(wfex));
 
-    if (std::memcmp(wfex, wfex_, sizeof(WAVEFORMATEX) + wfex->cbSize)) {
+    if (std::memcmp(wfex, wfex_, sizeof(WAVEFORMATEX) + wfex->cbSize) != 0) {
         LOG(ERROR) << "WAVE FORMAT ERROR";
         return E_UNEXPECTED;
     }
@@ -322,7 +323,7 @@ HRESULT WasapiRender::SwitchEventHandler()
 }
 
 // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/WASAPIRendering/WASAPIRendering.cpp
-HRESULT WasapiRender::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR)
+HRESULT WasapiRenderer::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR)
 {
     if (flow == eRender && role == eMultimedia) {
         if (!switching_) {
@@ -334,7 +335,7 @@ HRESULT WasapiRender::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR
     return S_OK;
 }
 
-HRESULT WasapiRender::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
+HRESULT WasapiRenderer::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
 {
     switch (DisconnectReason) {
     case DisconnectReasonDeviceRemoval:
@@ -347,12 +348,13 @@ HRESULT WasapiRender::OnSessionDisconnected(AudioSessionDisconnectReason Disconn
         ::SetEvent(SWITCH_EVENT.get());
         ::SetEvent(SWITCH_COMPLETE_EVENT.get());
         break;
+    default: break;
     }
 
     return S_OK;
 }
 
-int WasapiRender::reset()
+int WasapiRenderer::reset()
 {
     std::lock_guard lock(mtx_);
 
@@ -362,7 +364,7 @@ int WasapiRender::reset()
     return 0;
 }
 
-int WasapiRender::stop()
+int WasapiRenderer::stop()
 {
     running_ = false;
     ready_   = false;
@@ -378,7 +380,7 @@ int WasapiRender::stop()
     return 0;
 }
 
-HRESULT WasapiRender::QueryInterface(REFIID riid, void **ptr)
+HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)
 {
     if (riid == __uuidof(IMMNotificationClient)) {
         *ptr = static_cast<IMMNotificationClient *>(this);
@@ -395,11 +397,11 @@ HRESULT WasapiRender::QueryInterface(REFIID riid, void **ptr)
     return NOERROR;
 }
 
-ULONG WasapiRender::AddRef() { return static_cast<ULONG>(InterlockedIncrement(&refs)); }
+ULONG WasapiRenderer::AddRef() { return static_cast<ULONG>(InterlockedIncrement(&refs)); }
 
-ULONG WasapiRender::Release()
+ULONG WasapiRenderer::Release()
 {
-    auto refcount = static_cast<ULONG>(InterlockedDecrement(&refs));
+    const auto refcount = static_cast<ULONG>(InterlockedDecrement(&refs));
 
     if (refcount == 0) {
         delete this;

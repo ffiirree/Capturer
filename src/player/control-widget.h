@@ -7,7 +7,7 @@
 #include <QCheckBox>
 #include <QLabel>
 
-class ControlWidget : public QWidget
+class ControlWidget final : public QWidget
 {
     Q_OBJECT
 public:
@@ -15,7 +15,7 @@ public:
 
 public slots:
     void setDuration(int64_t); // AV_TIME_BASE
-    void setTime(int64_t);     // AV_TIME_BASE
+    void setTime(std::chrono::nanoseconds);     // AV_TIME_BASE
     void setVolume(int);
     void setMute(bool);
 
@@ -24,7 +24,7 @@ public slots:
 signals:
     void pause();
     void resume();
-    void seek(int64_t, int64_t); // us
+    void seek(std::chrono::nanoseconds, std::chrono::nanoseconds); // us
     void speed(float);
     void volume(int);
     void mute(bool);

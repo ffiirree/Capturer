@@ -15,9 +15,8 @@
 #include <QPixmap>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
-#include <QPixmap>
 
-class ScreenShoter : public QGraphicsView
+class ScreenShoter final : public QGraphicsView
 {
     Q_OBJECT
 

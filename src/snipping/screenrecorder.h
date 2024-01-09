@@ -1,7 +1,6 @@
 #ifndef CAPTURER_SCREEN_RECORDER_H
 #define CAPTURER_SCREEN_RECORDER_H
 
-#include "config.h"
 #include "libcap/consumer.h"
 #include "libcap/dispatcher.h"
 #include "libcap/producer.h"

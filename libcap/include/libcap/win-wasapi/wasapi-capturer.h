@@ -3,25 +3,19 @@
 
 #ifdef _WIN32
 
-#include "libcap/clock.h"
 #include "libcap/devices.h"
+#include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
 #include "libcap/ringvector.h"
 
 #include <atomic>
 #include <Audioclient.h>
-#include <functiondiscoverykeys.h>
 #include <mmdeviceapi.h>
-#include <mutex>
-#include <optional>
-#include <propsys.h>
-#include <thread>
 #include <Windows.h>
 #include <winrt/base.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libavutil/time.h>
 }

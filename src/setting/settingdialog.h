@@ -7,7 +7,7 @@
 #include <QCheckBox>
 #include <QStackedWidget>
 
-class SettingWindow : public FramelessWindow
+class SettingWindow final : public FramelessWindow
 {
     Q_OBJECT
 

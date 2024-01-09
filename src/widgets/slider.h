@@ -1,9 +1,11 @@
 #ifndef CAPTURER_SLIDER_H
 #define CAPTURER_SLIDER_H
 
+#include "libcap/clock.h"
+
 #include <QSlider>
 
-class Slider : public QSlider
+class Slider final : public QSlider
 {
     Q_OBJECT
 public:
@@ -11,7 +13,7 @@ public:
     explicit Slider(Qt::Orientation orientation, QWidget *parent = nullptr);
 
 signals:
-    void seek(int64_t, int64_t); // AV_TIME_BASE
+    void seek(std::chrono::nanoseconds, std::chrono::nanoseconds); // AV_TIME_BASE
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

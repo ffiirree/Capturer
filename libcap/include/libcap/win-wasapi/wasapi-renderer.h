@@ -3,7 +3,7 @@
 
 #ifdef _WIN32
 
-#include "libcap/audio-render.h"
+#include "libcap/audio-renderer.h"
 #include "libcap/devices.h"
 
 #include <atomic>
@@ -16,12 +16,12 @@
 #include <Windows.h>
 #include <winrt/base.h>
 
-class WasapiRender : public AudioRender, public IMMNotificationClient, public IAudioSessionEvents
+class WasapiRenderer : public AudioRenderer, public IMMNotificationClient, public IAudioSessionEvents
 {
 public:
-    WasapiRender() { InterlockedIncrement(&refs); }
+    WasapiRenderer() { InterlockedIncrement(&refs); }
 
-    ~WasapiRender() override
+    ~WasapiRenderer() override
     {
         ::SetEvent(STOP_EVENT.get());
 
@@ -33,9 +33,9 @@ public:
     }
 
     int open(const std::string& name, RenderFlags flags) override;
-    bool ready() const { return ready_; }
+    bool ready() const override { return ready_; }
 
-    int start(const std::function<uint32_t(uint8_t **, uint32_t, int64_t)>& cb) override;
+    int start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>& cb) override;
     int reset() override;
     int stop() override;
 
@@ -83,7 +83,7 @@ protected:
     HRESULT InitializeStreamSwitch();
 
     // handler
-    HRESULT RequestEventHandler(int64_t);
+    HRESULT RequestEventHandler(std::chrono::nanoseconds);
     HRESULT SwitchEventHandler();
 
 private:
@@ -97,7 +97,7 @@ private:
 
     std::thread thread_{};
 
-    std::function<uint32_t(uint8_t **, uint32_t, int64_t)> callback_;
+    std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)> callback_;
 
     // WASAPI Render@{
     winrt::com_ptr<IMMDeviceEnumerator> enumerator_{};

@@ -2,12 +2,13 @@
 #define CAPTURER_MEDIA_H
 
 #include "clock.h"
+#include "probe/util.h"
 
 #include <fmt/format.h>
+#include <map>
 #include <vector>
 
 extern "C" {
-#include <libavcodec/packet.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/pixdesc.h>
@@ -87,61 +88,61 @@ namespace av
 #endif
     }
 
-    inline std::string to_string(AVPixelFormat fmt)
+    inline std::string to_string(const AVPixelFormat fmt)
     {
         auto str = av_get_pix_fmt_name(fmt);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(AVColorSpace cp)
+    inline std::string to_string(const AVColorSpace cp)
     {
         auto str = av_color_space_name(cp);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(AVColorRange cr)
+    inline std::string to_string(const AVColorRange cr)
     {
         auto str = av_color_range_name(cr);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(AVColorPrimaries cp)
+    inline std::string to_string(const AVColorPrimaries cp)
     {
         auto str = av_color_primaries_name(cp);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(AVColorTransferCharacteristic trc)
+    inline std::string to_string(const AVColorTransferCharacteristic trc)
     {
         auto str = av_color_transfer_name(trc);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(vformat_t::color_t color)
+    inline std::string to_string(const vformat_t::color_t color)
     {
         return fmt::format("space={}:primaries={}:transfer={}:range={}", to_string(color.space),
                            to_string(color.primaries), to_string(color.transfer), to_string(color.range));
     }
 
-    inline std::string to_string(AVSampleFormat fmt)
+    inline std::string to_string(const AVSampleFormat fmt)
     {
         auto str = av_get_sample_fmt_name(fmt);
         return str ? str : std::string{};
     }
 
-    inline std::string to_string(AVMediaType type)
+    inline std::string to_string(const AVMediaType type)
     {
         auto str = av_get_media_type_string(type);
         return str ? str : std::string{};
     }
 
-    inline char to_char(AVMediaType type)
+    inline char to_char(const AVMediaType type)
     {
-        auto str = av_get_media_type_string(type);
+        const auto str = av_get_media_type_string(type);
         return str ? static_cast<char>(std::toupper(to_string(type)[0])) : '-';
     }
 
-    inline std::string to_string(AVHWDeviceType type)
+    inline std::string to_string(const AVHWDeviceType type)
     {
         auto str = av_hwdevice_get_type_name(type);
         return str ? str : std::string{};
@@ -172,11 +173,11 @@ namespace av
                            fmt.time_base.num, fmt.time_base.den);
     }
 
-    inline std::string to_string(vsync_t m)
+    inline std::string to_string(const vsync_t m)
     {
         switch (m) {
-        case vsync_t::cfr: return "CFR"; break;
-        case vsync_t::vfr: return "VFR"; break;
+        case vsync_t::cfr: return "CFR";
+        case vsync_t::vfr: return "VFR";
         default: return "unknown";
         }
     }
@@ -197,6 +198,17 @@ namespace av
             kv.emplace_back(entry->key, entry->value);
         }
         return kv;
+    }
+
+    inline std::map<std::string, std::string> to_map(const AVDictionary *dict)
+    {
+        std::map<std::string, std::string> map{};
+
+        auto entry = av_dict_get(dict, "", nullptr, AV_DICT_IGNORE_SUFFIX);
+        for (; entry; entry = av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX)) {
+            map[entry->key] = entry->value;
+        }
+        return map;
     }
 } // namespace av
 

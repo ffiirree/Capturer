@@ -2,7 +2,6 @@
 #define CAPTURER_QUEUE_H
 
 #include <mutex>
-#include <optional>
 #include <queue>
 #include <utility>
 

@@ -7,7 +7,6 @@
 
 #include <mmdeviceapi.h>
 #include <optional>
-#include <string>
 #include <vector>
 
 namespace wasapi

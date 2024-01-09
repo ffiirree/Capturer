@@ -1,21 +1,20 @@
 #ifndef CAPTURER_PULSE_RENDER_H
 #define CAPTURER_PULSE_RENDER_H
 
-#include "libcap/audio-render.h"
+#include "libcap/audio-renderer.h"
 #include "libcap/devices.h"
 
-#include <mutex>
 extern "C" {
 #include <pulse/pulseaudio.h>
 }
 
-class PulseAudioRender : public AudioRender
+class PulseAudioRenderer : public AudioRenderer
 {
 public:
     int open(const std::string& name, RenderFlags flags) override;
     [[nodiscard]] bool ready() const override { return ready_; }
 
-    int start(const std::function<uint32_t(uint8_t **, uint32_t, int64_t)>&) override;
+    int start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>&) override;
     int reset() override;
     int stop() override;
 
@@ -40,14 +39,14 @@ private:
     static void pulse_stream_write_callback(pa_stream *, size_t, void *);
     static void pulse_stream_state_callback(pa_stream *, void *);
     static void pulse_stream_latency_callback(pa_stream *, void *);
-    static void pulse_stream_underflow_callback(pa_stream*, void *);
+    static void pulse_stream_underflow_callback(pa_stream *, void *);
     static void pulse_stream_update_timing_callback(pa_stream *, int, void *);
     static void pulse_stream_drain_callback(pa_stream *, int, void *);
 
     av::aformat_t format_{};
     av::device_t devinfo_{};
 
-    std::function<uint32_t(uint8_t **, uint32_t, int64_t)> callback_;
+    std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)> callback_;
 
     uint32_t buffer_frames_{ 0 };
     uint32_t bytes_per_frame_{ 1 };

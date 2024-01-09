@@ -5,7 +5,6 @@
 
 #include <fmt/chrono.h>
 #include <libcap/media.h>
-#include <QHBoxLayout>
 #include <QVBoxLayout>
 
 ControlWidget::ControlWidget(FramelessWindow *parent)
@@ -139,15 +138,16 @@ void ControlWidget::setDuration(int64_t time)
     emit validDruation(time != AV_NOPTS_VALUE);
 
     time_slider_->setMaximum(static_cast<int>(time / 1'000));
-    duration_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time / 1'000'000 }).c_str());
+    duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ time / 1'000'000 }).c_str());
 }
 
-void ControlWidget::setTime(int64_t time)
+void ControlWidget::setTime(std::chrono::nanoseconds time)
 {
     if (time_slider_ && !time_slider_->isSliderDown() && time_slider_->isVisible()) {
-        time_slider_->setValue(static_cast<int>(time / 1'000));
+        time_slider_->setValue(static_cast<int>(time.count() / 1'000'000));
     }
-    time_label_->setText(fmt::format("{:%H:%M:%S}", std::chrono::seconds{ time / 1'000'000 }).c_str());
+    time_label_->setText(
+        fmt::format("{:%T}", std::chrono::duration_cast<std::chrono::seconds>(time)).c_str());
 }
 
 void ControlWidget::setVolume(int v)

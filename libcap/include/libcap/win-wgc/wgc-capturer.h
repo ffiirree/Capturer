@@ -3,12 +3,13 @@
 #ifndef CAPTURER_WGC_CAPTURER_H
 #define CAPTURER_WGC_CAPTURER_H
 
+#include "libcap/ffmpeg-wrapper.h"
 #include "libcap/hwaccel.h"
 #include "libcap/producer.h"
 #include "libcap/ringvector.h"
 #include "win-wgc.h"
 
-class WindowsGraphicsCapturer : public Producer<AVFrame>
+class WindowsGraphicsCapturer final : public Producer<AVFrame>
 {
     enum mode_t
     {
@@ -17,7 +18,7 @@ class WindowsGraphicsCapturer : public Producer<AVFrame>
     };
 
 public:
-    ~WindowsGraphicsCapturer() { reset(); }
+    ~WindowsGraphicsCapturer() override { reset(); }
 
     /**
      * @param name      window  capture: "window=<HWND>"

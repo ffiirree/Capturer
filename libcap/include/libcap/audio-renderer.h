@@ -6,7 +6,7 @@
 #include <functional>
 #include <string>
 
-struct AudioRender
+struct AudioRenderer
 {
     enum RenderFlags
     {
@@ -14,16 +14,17 @@ struct AudioRender
         RENDER_ALLOW_STREAM_SWITCH = 0x01,
     };
 
-    virtual ~AudioRender() = default;
+    virtual ~AudioRenderer() = default;
 
     [[nodiscard]] virtual int open(const std::string& name, RenderFlags flags) = 0;
     [[nodiscard]] virtual bool ready() const                                   = 0;
 
     // callback: buffer address, samples (per channels), timestamp -> written samples
-    [[nodiscard]] virtual int start(const std::function<uint32_t(uint8_t **, uint32_t, int64_t)>&) = 0;
+    [[nodiscard]] virtual int
+    start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>&) = 0;
     // resetting the stream flushes all pending data and resets the audio clock stream position to 0.
-    virtual int reset()                                                                            = 0;
-    virtual int stop()                                                                             = 0;
+    virtual int reset()                                                                   = 0;
+    virtual int stop()                                                                    = 0;
 
     virtual int mute(bool)                   = 0;
     [[nodiscard]] virtual bool muted() const = 0;

@@ -296,7 +296,7 @@
     </message>
     <message>
         <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -310,7 +310,7 @@
         <translation></translation>
     </message>
     <message>
-        <source>Render</source>
+        <source>Renderer</source>
         <translation></translation>
     </message>
     <message>
