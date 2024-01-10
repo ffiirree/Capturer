@@ -1,6 +1,6 @@
 [submodule "3rdparty/QHotkey"]
 	path = 3rdparty/QHotkey
-	url = https://github.com/Skycoder42/QHotkey.git
+	url = https://github.com/ffiirree/QHotkey.git
 [submodule "3rdparty/glog"]
 	path = 3rdparty/glog
 	url = https://github.com/google/glog.git

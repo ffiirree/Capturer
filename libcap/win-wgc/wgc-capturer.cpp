@@ -235,9 +235,9 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
     constexpr D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
     winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
 
-    ID3D11Buffer *vertex_buffers[]       = { vertex_buffer_.get() };
-    constexpr UINT strides[1]            = { sizeof(float) * 5 };
-    constexpr UINT offsets[1]                = { 0 };
+    ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
+    constexpr UINT strides[1]      = { sizeof(float) * 5 };
+    constexpr UINT offsets[1]      = { 0 };
     context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
 
     // 1.2 index buffer : optional
