@@ -21,6 +21,12 @@ extern "C" {
 
 #define MIN_FRAMES 8
 
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+#define FFMPEG_59_CONST const
+#else
+#define FFMPEG_59_CONST
+#endif
+
 AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts)
 {
     auto pix_fmt = pix_fmts;
@@ -82,7 +88,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     avdevice_register_all();
 
     // input format
-    ff_const59 AVInputFormat *input_fmt = nullptr;
+    FFMPEG_59_CONST AVInputFormat *input_fmt = nullptr;
     if (options.contains("format")) {
         if (input_fmt = av_find_input_format(options.at("format").c_str()); !input_fmt) {
             LOG(ERROR) << "[   DECODER] av_find_input_format";

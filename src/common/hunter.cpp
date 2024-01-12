@@ -59,19 +59,18 @@ namespace hunter
         auto scoped = __preys.back();
 
         if (!!(__scope & window_filter_t::capturable)) {
-            for(const auto& display : probe::graphics::displays()) {
+#ifdef _WIN32
+            scoped = prey_t::from(display_contains(pos).value());
+#else
+            for (const auto& display : probe::graphics::displays()) {
                 if (display.geometry.contains(pos.x(), pos.y())) {
                     scoped = prey_t::from(display);
                     break;
                 }
             }
+#endif
         }
 
-#ifdef _WIN32
-        if (any(__scope & window_filter_t::capturable)) {
-            hunted = prey_t::from(display_contains(pos).value());
-        }
-#endif
         for (auto& prey : __preys) {
             if (prey.geometry.contains(pos.x(), pos.y())) {
                 prey.geometry = scoped.geometry.intersected(prey.geometry);
