@@ -1,11 +1,13 @@
 #include "libcap/encoder.h"
 
-#include "fmt/format.h"
-#include "fmt/ranges.h"
 #include "libcap/clock.h"
 #include "libcap/hwaccel.h"
 #include "logging.h"
-#include "probe/defer.h"
+
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <probe/defer.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -409,11 +411,9 @@ int Encoder::process_video_frames()
             v_last_dts_ = packet_->dts;
 
             DLOG(INFO) << fmt::format(
-                "[V] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:>10.6f}",
+                "[V] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:%T}",
                 video_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size,
-                av_rescale_q(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base,
-                             av_get_time_base_q()) /
-                    (double)AV_TIME_BASE);
+                av::clock::ns(packet_->pts, fmt_ctx_->streams[video_stream_idx_]->time_base));
 
             packet_->stream_index = video_stream_idx_;
             if (av_interleaved_write_frame(fmt_ctx_, packet_.get()) != 0) {
@@ -514,11 +514,9 @@ int Encoder::process_audio_frames()
             a_last_dts_ = packet_->dts;
 
             DLOG(INFO) << fmt::format(
-                "[A] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:>10.6f}",
+                "[A] packet = {:>5d}, pts = {:>14d}, dts = {:>14d}, size = {:>6d}, ts = {:%T}",
                 audio_encoder_ctx_->frame_number, packet_->pts, packet_->dts, packet_->size,
-                av_rescale_q(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base,
-                             av_get_time_base_q()) /
-                    (double)AV_TIME_BASE);
+                av::clock::ns(packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base));
 
             packet_->stream_index = audio_stream_idx_;
 

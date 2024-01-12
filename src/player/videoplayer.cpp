@@ -35,9 +35,9 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     decoder_    = std::make_unique<Decoder>();
     dispatcher_ = std::make_unique<Dispatcher>();
 #ifdef _WIN32
-    audio_render_ = std::make_unique<WasapiRenderer>();
+    audio_renderer_ = std::make_unique<WasapiRenderer>();
 #else
-    audio_render_ = std::make_unique<PulseAudioRenderer>();
+    audio_renderer_ = std::make_unique<PulseAudioRenderer>();
 #endif
 
     const auto stacked_layout = new QStackedLayout(this);
@@ -50,8 +50,9 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_, &ControlWidget::resume, this, &VideoPlayer::resume);
     connect(control_, &ControlWidget::seek, this, &VideoPlayer::seek);
     connect(control_, &ControlWidget::speed, this, &VideoPlayer::setSpeed);
-    connect(control_, &ControlWidget::volume, [this](auto val) { audio_render_->setVolume(val / 100.0f); });
-    connect(control_, &ControlWidget::mute, [this](auto muted) { audio_render_->mute(muted); });
+    connect(control_, &ControlWidget::volume,
+            [this](auto val) { audio_renderer_->setVolume(val / 100.0f); });
+    connect(control_, &ControlWidget::mute, [this](auto muted) { audio_renderer_->mute(muted); });
     connect(this, &VideoPlayer::timeChanged, [this](auto t) {
         if (!seeking_) control_->setTime(t);
     });
@@ -74,8 +75,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 10s, + 10s); });
     connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { seek(timeline_.time() - 10s, - 10s); });
     connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this] { control_->paused() ? control_->resume() : control_->pause(); });
-    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_render_->volume() * 100 + 5); }); // +10s
-    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_render_->volume() * 100 - 5); }); // -10s
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 + 5); }); // +10s
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 - 5); }); // -10s
     // clang-format on
 
     initContextMenu();
@@ -85,7 +86,7 @@ void VideoPlayer::reset()
 {
     running_ = false;
     if (video_thread_.joinable()) video_thread_.join();
-    audio_render_->stop();
+    audio_renderer_->stop();
 
     eof_   = 0x00;
     ready_ = false;
@@ -121,7 +122,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
 #endif
 
     // video decoder
-    decoder_->set_timing(av::timing_t::none);
+    decoder_->set_clock(av::clock_t::none);
     if (decoder_->open(filename, decoder_options) != 0) {
         decoder_->reset();
         LOG(INFO) << "[    PLAYER] failed to open video decoder";
@@ -130,17 +131,17 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
 
     dispatcher_->append(decoder_.get());
 
-    // audio render
+    // audio renderer
     if (const auto default_render = av::default_audio_sink();
-        !default_render || audio_render_->open(default_render->id, {}) != 0) {
-        audio_render_->reset();
+        !default_render || audio_renderer_->open(default_render->id, {}) != 0) {
+        audio_renderer_->reset();
         LOG(INFO) << "[    PLAYER] failed to open audio render";
         return -1;
     }
 
-    afmt = audio_render_->format();
-    setVolume(static_cast<int>(audio_render_->volume() * 100));
-    mute(audio_render_->muted());
+    afmt = audio_renderer_->format();
+    setVolume(static_cast<int>(audio_renderer_->volume() * 100));
+    mute(audio_renderer_->muted());
 
     if (abuffer_) av_audio_fifo_free(abuffer_);
     if (abuffer_ = av_audio_fifo_alloc(afmt.sample_fmt, afmt.channels, 1); !abuffer_) {
@@ -148,7 +149,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return -1;
     }
 
-    dispatcher_->afmt = audio_render_->format();
+    dispatcher_->afmt = audio_renderer_->format();
 
     // dispatcher
     dispatcher_->set_encoder(this);
@@ -156,7 +157,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     dispatcher_->vfmt.pix_fmt =
         texture_->isSupported(decoder_->vfmt.pix_fmt) ? decoder_->vfmt.pix_fmt : texture_->pix_fmts()[0];
 
-    dispatcher_->set_timing(av::timing_t::device);
+    dispatcher_->set_clock(av::clock_t::device);
     if (dispatcher_->initialize((options.contains("filters") ? options.at("filters") : ""), "atempo=1.0")) {
         LOG(INFO) << "[    PLAYER] failed to create filter graph";
         return false;
@@ -273,7 +274,7 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 void VideoPlayer::pause()
 {
     timeline_.pause();
-    audio_render_->pause();
+    audio_renderer_->pause();
     paused_ = true;
 }
 
@@ -286,7 +287,7 @@ void VideoPlayer::resume()
 
     timeline_.resume();
     paused_ = false;
-    audio_render_->resume();
+    audio_renderer_->resume();
 }
 
 void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel)
@@ -311,7 +312,7 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
 
     vbuffer_.clear();
     av_audio_fifo_reset(abuffer_);
-    audio_render_->reset();
+    audio_renderer_->reset();
 
     if (paused()) {
         step_ = 1;
@@ -349,13 +350,13 @@ int VideoPlayer::run()
 
     // audio thread
     if (audio_enabled_ &&
-        audio_render_->start([this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
+        audio_renderer_->start([this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
             std::lock_guard lock(mtx_);
 
             const uint32_t buffer_frames = av_audio_fifo_size(abuffer_); // per channel
             if (!buffer_frames || seeking_ || paused()) return 0;
 
-            const uint32_t remaining = buffer_frames + (audio_render_->bufferSize() - request_frames);
+            const uint32_t remaining = buffer_frames + (audio_renderer_->bufferSize() - request_frames);
             timeline_.set(audio_pts_.load() -
                               av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(),
                           ts);

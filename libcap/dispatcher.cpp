@@ -1,9 +1,11 @@
 #include "libcap/dispatcher.h"
 
-#include "fmt/format.h"
 #include "libcap/clock.h"
 #include "logging.h"
-#include "probe/defer.h"
+
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <probe/defer.h>
 
 extern "C" {
 #include <libavfilter/avfilter.h>
@@ -365,7 +367,7 @@ int Dispatcher::start()
     }
 
     //
-    start_time_ = resumed_pts_ = av::clock::ns().count();
+    start_time_ = resumed_pts_ = av::clock::ns();
 
     for (auto& coder : vproducer_ctxs_) {
         coder.producer->run();
@@ -399,7 +401,7 @@ int Dispatcher::start()
     return 0;
 }
 
-bool Dispatcher::is_valid_pts(int64_t pts)
+bool Dispatcher::is_valid_pts(const std::chrono::nanoseconds& pts)
 {
     std::lock_guard lock(pause_mtx_);
 
@@ -410,14 +412,14 @@ bool Dispatcher::is_valid_pts(int64_t pts)
 
     // pausing:
     //     [paused_pts_, +)
-    if (paused_pts_ != AV_NOPTS_VALUE) {
+    if (paused_pts_ != av::clock::nopts) {
         return pts <= paused_pts_;
     }
 
     return true;
 }
 
-int Dispatcher::dispatch_fn(enum AVMediaType mt)
+int Dispatcher::dispatch_fn(AVMediaType mt)
 {
     LOG(INFO) << fmt::format("[{}] STARTED", av::to_char(mt));
     defer(LOG(INFO) << fmt::format("[{}] EXITED", av::to_char(mt)));
@@ -465,20 +467,20 @@ int Dispatcher::dispatch_fn(enum AVMediaType mt)
             auto frame_tb = producer->time_base(mt);
 
             // pts
-            if (timing_ == av::timing_t::system) {
-                if (frame->data[0] && !is_valid_pts(av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q))) {
+            if (clock() == av::clock_t::system) {
+                if (frame->data[0] && !is_valid_pts(av::clock::ns(frame->pts, frame_tb))) {
                     LOG(WARNING) << fmt::format("[{}] drop frame {} -- [-, {}) || [{}, +)", av::to_char(mt),
-                                                av_rescale_q(frame->pts, frame_tb, OS_TIME_BASE_Q),
+                                                av::clock::ns(frame->pts, frame_tb),
                                                 std::max(start_time_, resumed_pts_), paused_pts_);
                     continue;
                 }
-                frame->pts -= av_rescale_q(start_time_, OS_TIME_BASE_Q, frame_tb);
+                frame->pts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, frame_tb);
                 if (frame->pkt_dts != AV_NOPTS_VALUE)
-                    frame->pkt_dts -= av_rescale_q(start_time_, OS_TIME_BASE_Q, frame_tb);
+                    frame->pkt_dts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, frame_tb);
             }
-            frame->pts -= av_rescale_q(paused_time(), OS_TIME_BASE_Q, frame_tb);
+            frame->pts -= av_rescale_q(paused_time().count(), OS_TIME_BASE_Q, frame_tb);
             if (frame->pkt_dts != AV_NOPTS_VALUE)
-                frame->pkt_dts -= av_rescale_q(paused_time(), OS_TIME_BASE_Q, frame_tb);
+                frame->pkt_dts -= av_rescale_q(paused_time().count(), OS_TIME_BASE_Q, frame_tb);
 
             // send the frame to graph
             if (av_buffersrc_add_frame_flags(src_ctx, frame.get(), AV_BUFFERSRC_FLAG_PUSH) < 0) {
@@ -554,8 +556,8 @@ void Dispatcher::pause()
 {
     std::lock_guard lock(pause_mtx_);
 
-    if (paused_pts_ == AV_NOPTS_VALUE) {
-        paused_pts_ = av::clock::ns().count();
+    if (paused_pts_ == av::clock::nopts) {
+        paused_pts_ = av::clock::ns();
     }
 }
 
@@ -563,20 +565,20 @@ void Dispatcher::resume()
 {
     std::lock_guard lock(pause_mtx_);
 
-    if (paused_pts_ != AV_NOPTS_VALUE) {
-        auto now = av::clock::ns().count();
+    if (paused_pts_ != av::clock::nopts) {
+        auto now = av::clock::ns();
         paused_time_ += (now - paused_pts_);
-        paused_pts_  = AV_NOPTS_VALUE;
+        paused_pts_  = av::clock::nopts;
         resumed_pts_ = now;
     }
 }
 
-int64_t Dispatcher::paused_time()
+std::chrono::nanoseconds Dispatcher::paused_time()
 {
     std::lock_guard lock(pause_mtx_);
 
-    if (paused_pts_ != AV_NOPTS_VALUE) {
-        return paused_time_ + (av::clock::ns().count() - paused_pts_);
+    if (paused_pts_ != av::clock::nopts) {
+        return paused_time_ + (av::clock::ns() - paused_pts_);
     }
     return paused_time_;
 }
@@ -647,10 +649,10 @@ int Dispatcher::reset()
     avfilter_graph_free(&vgraph_);
     avfilter_graph_free(&agraph_);
 
-    paused_pts_  = AV_NOPTS_VALUE;
-    paused_time_ = 0;
-    start_time_  = 0;
-    resumed_pts_ = 0;
+    paused_pts_  = av::clock::nopts;
+    paused_time_ = 0ns;
+    start_time_  = av::clock::nopts;
+    resumed_pts_ = av::clock::nopts;
 
     locked_ = false;
 
@@ -658,10 +660,10 @@ int Dispatcher::reset()
     return 0;
 }
 
-int64_t Dispatcher::escaped_us()
+std::chrono::nanoseconds Dispatcher::escaped()
 {
     if (!running()) {
-        return 0;
+        return 0ns;
     }
-    return std::max<int64_t>(0, (av::clock::ns().count() - start_time_ - paused_time()) / 1'000);
+    return std::max(0ns, av::clock::ns() - start_time_ - paused_time());
 }

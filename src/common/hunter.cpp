@@ -55,7 +55,18 @@ namespace hunter
 
     prey_t hunt(const QPoint& pos)
     {
-        auto hunted = __preys.back();
+        // virtual screen or corresponding display
+        auto scoped = __preys.back();
+
+        if (!!(__scope & window_filter_t::capturable)) {
+            for(const auto& display : probe::graphics::displays()) {
+                if (display.geometry.contains(pos.x(), pos.y())) {
+                    scoped = prey_t::from(display);
+                    break;
+                }
+            }
+        }
+
 #ifdef _WIN32
         if (any(__scope & window_filter_t::capturable)) {
             hunted = prey_t::from(display_contains(pos).value());
@@ -63,12 +74,12 @@ namespace hunter
 #endif
         for (auto& prey : __preys) {
             if (prey.geometry.contains(pos.x(), pos.y())) {
-                prey.geometry = hunted.geometry.intersected(prey.geometry);
+                prey.geometry = scoped.geometry.intersected(prey.geometry);
                 return prey;
             }
         }
 
-        return hunted;
+        return scoped;
     }
 
     void ready(window_filter_t flags)
@@ -83,7 +94,7 @@ namespace hunter
                               [&](const auto& dis) { __preys.emplace_back(prey_t::from(dis)); });
 
         if (!any(flags & window_filter_t::capturable)) {
-            auto desktop = probe::graphics::virtual_screen();
+            const auto desktop = probe::graphics::virtual_screen();
 
             __preys.emplace_back(prey_t{
                 .type     = prey_type_t::desktop,

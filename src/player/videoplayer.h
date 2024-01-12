@@ -33,8 +33,8 @@ public:
 
     [[nodiscard]] bool ready() const override
     {
-        return decoder_ && decoder_->ready() && audio_render_ &&
-               ((audio_render_->ready() && audio_enabled_) || !audio_enabled_);
+        return decoder_ && decoder_->ready() && audio_renderer_ &&
+               ((audio_renderer_->ready() && audio_enabled_) || !audio_enabled_);
     }
 
     void stop() override
@@ -102,7 +102,7 @@ private:
     std::thread video_thread_;
 
     std::unique_ptr<Decoder> decoder_{};
-    std::unique_ptr<AudioRenderer> audio_render_{};
+    std::unique_ptr<AudioRenderer> audio_renderer_{};
     std::unique_ptr<Dispatcher> dispatcher_{}; // TODO: ctor & dtor order
 
     std::atomic<bool> video_enabled_{ false };

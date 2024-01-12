@@ -29,7 +29,7 @@ signals:
 
 public slots:
     void start();
-    void time(int64_t);
+    void time(const std::chrono::seconds&);
     void mute(int, bool);
     void camera_checked(bool);
 

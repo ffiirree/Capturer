@@ -51,7 +51,7 @@ public:
     int start();
     void pause();
     void resume();
-    int64_t paused_time();
+    std::chrono::nanoseconds paused_time();
     int reset();
 
     // AV_TIME_BESE
@@ -62,12 +62,10 @@ public:
 
     [[nodiscard]] bool running() const { return vrunning_ || arunning_; }
 
-    [[nodiscard]] int64_t escaped_us();
+    [[nodiscard]] std::chrono::nanoseconds escaped();
 
-    [[nodiscard]] int64_t escaped_ms() { return escaped_us() / 1'000; }
-
-    void set_timing(av::timing_t t) { timing_ = t; }
-    [[nodiscard]] av::timing_t timing() const { return timing_; }
+    void set_clock(const av::clock_t t) { clock_ = t; }
+    [[nodiscard]] av::clock_t clock() const { return clock_; }
 
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
@@ -107,16 +105,16 @@ private:
 
     int dispatch_fn(AVMediaType mt);
 
-    // pts must in OS_TIME_BASE_Q
-    bool is_valid_pts(int64_t);
+    bool is_valid_pts(const std::chrono::nanoseconds&);
 
     // clock @{
     std::mutex pause_mtx_;
 
-    int64_t paused_pts_{ AV_NOPTS_VALUE }; //
-    int64_t resumed_pts_{ AV_NOPTS_VALUE };
-    int64_t paused_time_{ 0 };             // do not include the time being paused, please use paused_time()
-    int64_t start_time_{ AV_NOPTS_VALUE };
+    std::chrono::nanoseconds paused_pts_{ av::clock::nopts }; //
+    std::chrono::nanoseconds resumed_pts_{ av::clock::nopts };
+    // do not include the time being paused, please use paused_time()
+    std::chrono::nanoseconds paused_time_{};
+    std::chrono::nanoseconds start_time_{ av::clock::nopts };
     //@}
 
     // filter graphs @{
@@ -130,8 +128,8 @@ private:
 
     ConsumerContext consumer_ctx_{};
 
-    AVFilterGraph *agraph_{ nullptr };
-    AVFilterGraph *vgraph_{ nullptr };
+    AVFilterGraph *agraph_{};
+    AVFilterGraph *vgraph_{};
     // @}
 
     std::atomic<bool> vrunning_{ false };
@@ -144,7 +142,7 @@ private:
 
     std::atomic<bool> vseeking_{ false };
     std::atomic<bool> aseeking_{ false };
-    std::atomic<av::timing_t> timing_{ av::timing_t::system };
+    std::atomic<av::clock_t> clock_{ av::clock_t::system };
 };
 
 #endif //! CAPTURER_DISPATCHER_H

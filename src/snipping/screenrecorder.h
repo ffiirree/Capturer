@@ -11,7 +11,7 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 
-class ScreenRecorder : public QWidget
+class ScreenRecorder final : public QWidget
 {
     Q_OBJECT
 

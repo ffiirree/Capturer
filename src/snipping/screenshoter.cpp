@@ -1,10 +1,10 @@
 #include "screenshoter.h"
 
 #include "clipboard.h"
+#include "config.h"
 #include "logging.h"
 
 #include <QApplication>
-#include <QClipboard>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QMouseEvent>
@@ -20,8 +20,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 #endif
 
     setFrameStyle(QGraphicsView::NoFrame);
-    setContentsMargins({ 0, 0, 0, 0 });
-    setViewportMargins({ 0, 0, 0, 0 });
+    setContentsMargins({});
+    setViewportMargins({});
 
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -131,7 +131,7 @@ void ScreenShoter::start()
 {
     if (isVisible()) return;
 
-    auto virtual_geometry = probe::graphics::virtual_screen_geometry();
+    const auto virtual_geometry = probe::graphics::virtual_screen_geometry();
 
     // geometry
     setGeometry(QRect{ virtual_geometry });  // window geometry == virtual geometry, absolute coordinate

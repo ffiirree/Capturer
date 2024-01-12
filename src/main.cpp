@@ -33,6 +33,9 @@ int main(int argc, char *argv[])
     LOG(INFO) << " -- CPU              : " << probe::cpu::info().name;
     LOG(INFO) << " -- Architecture     : " << probe::to_string(probe::cpu::architecture());
     LOG(INFO) << " -- Virtual Screen   : " << probe::to_string(probe::graphics::virtual_screen_geometry());
+    for (const auto& display : probe::graphics::displays()) {
+        LOG(INFO) << fmt::format(" -- # {:>14} : ", display.id) << probe::to_string(display.geometry);
+    }
     LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop()) << " ("
               << probe::to_string(probe::system::desktop_version()) << ")";
 

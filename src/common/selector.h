@@ -41,9 +41,9 @@ public:
     explicit Selector(QWidget *parent = nullptr);
     ~Selector() override = default;
 
-    SelectorStatus status() const { return status_; }
+    [[nodiscard]] SelectorStatus status() const { return status_; }
 
-    hunter::prey_t prey() const { return prey_; }
+    [[nodiscard]] hunter::prey_t prey() const { return prey_; }
 
     // painter window
     void coordinate(const QRect& window) { coordinate_ = window; }
@@ -51,10 +51,10 @@ public:
     // scope: display or desktop
     void scope(scope_t scope) { scope_ = scope; }
 
-    scope_t scope() const { return scope_; }
+    [[nodiscard]] scope_t scope() const { return scope_; }
 
     // selected area
-    [[nodiscard]] inline QRect selected(bool relative = false) const
+    [[nodiscard]] QRect selected(bool relative = false) const
     {
         return relative ? box_.rect().translated(-box_.range().topLeft()) : box_.rect();
     }

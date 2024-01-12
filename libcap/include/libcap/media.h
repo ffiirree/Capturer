@@ -25,7 +25,7 @@ namespace av
         vfr,
     };
 
-    enum class timing_t
+    enum class clock_t
     {
         none   = 0x00,
         system = 0x01,

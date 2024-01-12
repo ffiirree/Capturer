@@ -1,11 +1,10 @@
 #include "recording-menu.h"
 
-#include "probe/graphics.h"
-
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <probe/graphics.h>
 #include <QHBoxLayout>
 #include <QMouseEvent>
-#include <QScreen>
-#include <QTime>
 
 #ifdef _WIN32
 #include "libcap/win-wgc/win-wgc.h"
@@ -82,10 +81,9 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
 #endif
 }
 
-// in ms
-void RecordingMenu::time(int64_t time)
+void RecordingMenu::time(const std::chrono::seconds& time)
 {
-    time_label_->setText(QTime(0, 0, 0).addMSecs(time).toString("hh:mm:ss"));
+    time_label_->setText(QString::fromStdString(fmt::format("{:%T}", time)));
 }
 
 void RecordingMenu::start()

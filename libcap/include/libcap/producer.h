@@ -78,8 +78,8 @@ public:
     [[nodiscard]] virtual std::vector<av::vformat_t> vformats() const { return {}; }
     [[nodiscard]] virtual std::vector<av::aformat_t> aformats() const { return {}; }
 
-    virtual void set_timing(const av::timing_t t) { timing_ = t; }
-    [[nodiscard]] virtual av::timing_t timing() const { return timing_; }
+    virtual void set_clock(const av::clock_t t) { clock_ = t; }
+    [[nodiscard]] virtual av::clock_t clock() const { return clock_; }
 
     virtual std::vector<std::map<std::string, std::string>> properties(AVMediaType) const { return {}; }
 
@@ -104,7 +104,7 @@ protected:
         std::atomic<std::chrono::nanoseconds> max{ av::clock::max };
     } seek_;
 
-    std::atomic<av::timing_t> timing_{ av::timing_t::system };
+    std::atomic<av::clock_t> clock_{ av::clock_t::system };
 };
 
 #endif //! CAPTURER_PRODUCER_H

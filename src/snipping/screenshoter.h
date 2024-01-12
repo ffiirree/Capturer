@@ -4,7 +4,6 @@
 #include "canvas/canvas.h"
 #include "canvas/command.h"
 #include "circlecursor.h"
-#include "config.h"
 #include "hunter.h"
 #include "magnifier.h"
 #include "menu/editing-menu.h"

@@ -11,13 +11,7 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QMouseEvent>
-#include <QPushButton>
 #include <QStandardPaths>
-
-extern "C" {
-#include <libavfilter/avfilter.h>
-#include <libavfilter/buffersink.h>
-}
 
 #if _WIN32
 #include "libcap/win-wasapi/wasapi-capturer.h"
@@ -61,20 +55,22 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
                               (type == GIF ? 0x00 : RecordingMenu::AUDIO) | RecordingMenu::CAMERA, this);
     connect(menu_, &RecordingMenu::stopped, this, &ScreenRecorder::stop);
     connect(menu_, &RecordingMenu::muted, this, &ScreenRecorder::mute);
-    connect(menu_, &RecordingMenu::paused, [this]() { dispatcher_->pause(); });
-    connect(menu_, &RecordingMenu::resumed, [this]() { dispatcher_->resume(); });
+    connect(menu_, &RecordingMenu::paused, [this] { dispatcher_->pause(); });
+    connect(menu_, &RecordingMenu::resumed, [this] { dispatcher_->resume(); });
 
     // preview camera
     player_ = new VideoPlayer(this);
 
     connect(menu_, &RecordingMenu::opened, [this](bool) { switchCamera(); });
     connect(menu_, &RecordingMenu::stopped, player_, &VideoPlayer::close);
-    connect(player_, &VideoPlayer::started, [this]() { menu_->camera_checked(true); });
-    connect(player_, &VideoPlayer::closed, [this]() { menu_->camera_checked(false); });
+    connect(player_, &VideoPlayer::started, [this] { menu_->camera_checked(true); });
+    connect(player_, &VideoPlayer::closed, [this] { menu_->camera_checked(false); });
 
     // update time of the menu
     timer_ = new QTimer(this);
-    connect(timer_, &QTimer::timeout, [this]() { menu_->time(dispatcher_->escaped_ms()); });
+    connect(timer_, &QTimer::timeout, [this] {
+        menu_->time(std::chrono::duration_cast<std::chrono::seconds>(dispatcher_->escaped()));
+    });
 }
 
 void ScreenRecorder::switchCamera()
@@ -106,14 +102,17 @@ void ScreenRecorder::mute(int type, bool v)
         m_mute_ = v;
         microphone_capturer_->mute(v);
         break;
-    case 2: s_mute_ = v; speaker_capturer_->mute(v);
+    case 2:
+        s_mute_ = v;
+        speaker_capturer_->mute(v);
+        break;
     default: break;
     }
 }
 
 void ScreenRecorder::record()
 {
-    !recording_ ? start() : [this]() { stop(); }();
+    !recording_ ? start() : [this] { stop(); }();
 }
 
 void ScreenRecorder::start()
@@ -231,9 +230,13 @@ void ScreenRecorder::setup()
     menu_->disable_speaker(av::audio_sinks().empty());
     menu_->disable_cam(av::cameras().empty());
 
+    microphone_capturer_->mute(m_mute_);
+    speaker_capturer_->mute(s_mute_);
+
     // desktop capturer
     framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
-    auto draw_mouse = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
+    const auto draw_mouse =
+        Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
 
     std::string name{};
     std::map<std::string, std::string> options{

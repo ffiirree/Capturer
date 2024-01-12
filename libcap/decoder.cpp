@@ -21,7 +21,7 @@ extern "C" {
 
 #define MIN_FRAMES 8
 
-AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts)
+AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts)
 {
     auto pix_fmt = pix_fmts;
     for (; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++) {
@@ -82,11 +82,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     avdevice_register_all();
 
     // input format
-#if LIBAVFORMAT_VERSION_MAJOR >= 59
-    const AVInputFormat *input_fmt = nullptr;
-#else
-    AVInputFormat *input_fmt = nullptr;
-#endif
+    ff_const59 AVInputFormat *input_fmt = nullptr;
     if (options.contains("format")) {
         if (input_fmt = av_find_input_format(options.at("format").c_str()); !input_fmt) {
             LOG(ERROR) << "[   DECODER] av_find_input_format";
@@ -125,10 +121,10 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     }
 
     // clock
-    switch (timing_.load()) {
-    case av::timing_t::none: SYNC_PTS = -fmt_ctx_->start_time; break;
-    case av::timing_t::system: SYNC_PTS += av::clock::us().count() - fmt_ctx_->start_time; break;
-    case av::timing_t::device:
+    switch (clock_) {
+    case av::clock_t::none: SYNC_PTS = -fmt_ctx_->start_time; break;
+    case av::clock_t::system: SYNC_PTS = av::clock::us().count() - fmt_ctx_->start_time; break;
+    case av::clock_t::device:
     default: SYNC_PTS = 0; break;
     }
 
@@ -160,7 +156,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
         }
 
         if (vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-            auto hwctx                        = av::hwaccel::get_context(vfmt.hwaccel);
+            const auto hwctx                  = av::hwaccel::get_context(vfmt.hwaccel);
             video_decoder_ctx_->opaque        = &vfmt;
             video_decoder_ctx_->hw_device_ctx = hwctx->device_ctx_ref();
             video_decoder_ctx_->get_format    = get_hw_format;
@@ -461,9 +457,9 @@ int Decoder::decode_fn()
                     std::this_thread::sleep_for(10ms);
                 }
 
-                // DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, ts = {:%T}",
-                //                           video_decoder_ctx_->frame_number, frame_->pts,
-                //                           av::clock::ns(frame_->pts, vfmt.time_base));
+                DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, ts = {:%T}",
+                                          video_decoder_ctx_->frame_number, frame_->pts,
+                                          av::clock::ns(frame_->pts, vfmt.time_base));
 
                 vbuffer_.push(frame_);
             }
@@ -544,10 +540,10 @@ int Decoder::decode_fn()
                     std::this_thread::sleep_for(10ms);
                 }
 
-                // DLOG(INFO) << fmt::format(
-                //     "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}, ts={:%T}",
-                //     audio_decoder_ctx_->frame_number, frame_->pts, frame_->nb_samples, muted_.load(),
-                //     av::clock::ns(frame_->pts, afmt.time_base));
+                DLOG(INFO) << fmt::format(
+                    "[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>5d}, muted = {}, ts = {:%T}",
+                    audio_decoder_ctx_->frame_number, frame_->pts, frame_->nb_samples, muted_.load(),
+                    av::clock::ns(frame_->pts, afmt.time_base));
 
                 if (muted_)
                     av_samples_set_silence(frame_->data, 0, frame_->nb_samples, frame_->channels,
