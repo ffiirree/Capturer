@@ -42,12 +42,12 @@ static const char *pulse_source_state_to_string(int state)
     case PA_SOURCE_INVALID_STATE:
     default:                        return "INVALID";
     }
-    // clang=format on
+    // clang-format on
 }
 
 static void pulse_server_info_callback(pa_context *, const pa_server_info *i, void *userdata)
 {
-    auto info = reinterpret_cast<PulseServerInfo *>(userdata);
+    const auto info = static_cast<PulseServerInfo *>(userdata);
 
     info->name                = i->server_name;
     info->version             = i->server_version;
@@ -60,10 +60,7 @@ static void pulse_server_info_callback(pa_context *, const pa_server_info *i, vo
     pulse::signal(0);
 }
 
-static void pulse_context_success_callback(pa_context *, int, void *)
-{
-    pulse::signal(0);
-}
+static void pulse_context_success_callback(pa_context *, int, void *) { pulse::signal(0); }
 
 namespace pulse
 {
@@ -143,7 +140,7 @@ namespace pulse
 
     void accept() { ::pa_threaded_mainloop_accept(pulse_loop); }
 
-    bool wait_operation(pa_operation * op)
+    bool wait_operation(pa_operation *op)
     {
         if (!op) return false;
 
@@ -155,6 +152,31 @@ namespace pulse
         ::pa_operation_unref(op);
 
         return state == PA_OPERATION_DONE;
+    }
+
+    AVSampleFormat to_av_sample_format(pa_sample_format_t pa_fmt)
+    {
+        switch (pa_fmt) {
+        case PA_SAMPLE_U8: return AV_SAMPLE_FMT_U8;
+        case PA_SAMPLE_S16LE: return AV_SAMPLE_FMT_S16;
+        case PA_SAMPLE_S32LE: return AV_SAMPLE_FMT_S32;
+        case PA_SAMPLE_FLOAT32LE: return AV_SAMPLE_FMT_FLT;
+        default: return AV_SAMPLE_FMT_NONE;
+        }
+    }
+
+    uint64_t to_av_channel_layout(uint8_t channels)
+    {
+        switch (channels) {
+        case 1: return AV_CH_LAYOUT_MONO;
+        case 2: return AV_CH_LAYOUT_STEREO;
+        case 3: return AV_CH_LAYOUT_2POINT1;
+        case 4: return AV_CH_LAYOUT_4POINT0;
+        case 5: return AV_CH_LAYOUT_4POINT1;
+        case 6: return AV_CH_LAYOUT_5POINT1;
+        case 8: return AV_CH_LAYOUT_7POINT1;
+        default: return 0;
+        }
     }
 
     std::vector<av::device_t> source_list()
@@ -174,7 +196,7 @@ namespace pulse
                                               i->sample_spec.channels,
                                               pulse_source_state_to_string(i->state));
 
-                    reinterpret_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
+                    static_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
                         .name        = i->description,
                         .id          = i->name,
                         .description = i->description,
@@ -211,7 +233,7 @@ namespace pulse
                                               i->sample_spec.channels,
                                               pulse_source_state_to_string(i->state));
 
-                    reinterpret_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
+                    static_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
                         .name        = i->description,
                         .id          = i->name,
                         .description = i->description,
@@ -244,11 +266,11 @@ namespace pulse
         defer(pulse::loop_unlock());
 
         av::device_t dev{};
-         auto op = ::pa_context_get_source_info_by_name(
+        auto op = ::pa_context_get_source_info_by_name(
             pulse_ctx, server.default_source_name.c_str(),
             [](auto, const pa_source_info *i, int eol, void *userdata) {
                 if (eol == 0) {
-                    auto dev         = reinterpret_cast<av::device_t *>(userdata);
+                    const auto dev   = static_cast<av::device_t *>(userdata);
                     dev->name        = i->description;
                     dev->id          = i->name;
                     dev->description = i->description;
@@ -270,6 +292,37 @@ namespace pulse
         return dev;
     }
 
+    pa_sample_spec source_format(const std::string& name)
+    {
+        PulseServerInfo server{};
+        if (server_info(server) < 0 || !pulse::context_is_ready()) {
+            return {};
+        }
+
+        pulse::loop_lock();
+        defer(pulse::loop_unlock());
+
+        pa_sample_spec format{};
+        auto op = ::pa_context_get_source_info_by_name(
+            pulse_ctx, name.c_str(),
+            [](auto, const pa_source_info *i, int eol, void *userdata) {
+                if (eol == 0) {
+                    const auto fmt = static_cast<pa_sample_spec *>(userdata);
+                    fmt->channels  = i->sample_spec.channels;
+                    fmt->channels  = i->sample_spec.channels;
+                    fmt->format    = i->sample_spec.format;
+                    fmt->rate      = i->sample_spec.rate;
+                }
+
+                pulse::signal(0);
+            },
+            &format);
+
+        if (!wait_operation(op)) return {};
+
+        return format;
+    }
+
     std::optional<av::device_t> default_sink()
     {
         PulseServerInfo server{};
@@ -285,7 +338,7 @@ namespace pulse
             pulse_ctx, server.default_sink_name.c_str(),
             [](auto, const pa_sink_info *i, int eol, void *userdata) {
                 if (eol == 0) {
-                    auto dev         = reinterpret_cast<av::device_t *>(userdata);
+                    auto dev         = static_cast<av::device_t *>(userdata);
                     dev->name        = i->description;
                     dev->id          = i->name;
                     dev->description = i->description;
@@ -306,8 +359,7 @@ namespace pulse
 
     int server_info(PulseServerInfo& info)
     {
-        if (!pulse::context_is_ready())
-            return -1;
+        if (!pulse::context_is_ready()) return -1;
 
         pulse::loop_lock();
         defer(pulse::loop_unlock());
@@ -318,119 +370,128 @@ namespace pulse
         return 0;
     }
 
-    pa_stream *stream_new(const std::string& name, const pa_sample_spec *ss, const pa_channel_map *map)
+    namespace stream
     {
-        if (!pulse::context_is_ready()) return nullptr;
+        pa_stream *create(const std::string& name, const pa_sample_spec *ss, const pa_channel_map *map)
+        {
+            if (!pulse::context_is_ready()) return nullptr;
 
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
 
-        return ::pa_stream_new(pulse_ctx, name.c_str(), ss, map);
-    }
+            return ::pa_stream_new(pulse_ctx, name.c_str(), ss, map);
+        }
 
-    pa_usec_t stream_latency(pa_stream *stream)
-    {
-        pa_usec_t latency = 0;
-        int negative      = 0;
-        if (::pa_stream_get_latency(stream, &latency, &negative) < 0 || negative) {
+        pa_usec_t latency(pa_stream *stream)
+        {
+            pa_usec_t latency = 0;
+            int negative      = 0;
+            if (::pa_stream_get_latency(stream, &latency, &negative) < 0 || negative) {
+                return 0;
+            }
+            return latency;
+        }
+
+        int cork(pa_stream *stream, bool cork, pa_stream_success_cb_t cb, void *userdata)
+        {
+            if (!pulse::context_is_ready()) return -1;
+
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
+
+            if (!wait_operation(::pa_stream_cork(stream, cork, cb, userdata))) return -1;
+
             return 0;
         }
-        return latency;
-    }
 
-    int stream_cork(pa_stream * stream, bool cork, pa_stream_success_cb_t cb, void * userdata)
-    {
-        if (!pulse::context_is_ready()) return -1;
+        int set_sink_volume(pa_stream *stream, const pa_cvolume *volume)
+        {
+            if (!pulse::context_is_ready()) return -1;
 
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
 
-        if (!wait_operation(::pa_stream_cork(stream, cork, cb, userdata))) return -1;
+            if (!wait_operation(::pa_context_set_sink_input_volume(pulse_ctx, ::pa_stream_get_index(stream),
+                                                                   volume, pulse_context_success_callback,
+                                                                   nullptr)))
+                return -1;
 
-        return 0;
-    }
+            return 0;
+        }
 
-    int stream_set_sink_volume(pa_stream * stream, const pa_cvolume *volume)
-    {
-        if (!pulse::context_is_ready()) return -1;
+        float get_sink_volume(pa_stream *stream)
+        {
+            float volume = 0.0;
+            if (!wait_operation(::pa_context_get_sink_input_info(
+                    pulse_ctx, ::pa_stream_get_index(stream),
+                    [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata) {
+                        auto volume = static_cast<float *>(userdata);
 
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
+                        if (eol == 0)
+                            *volume = static_cast<float>(::pa_sw_volume_to_linear(info->volume.values[0]));
 
-        if (!wait_operation(::pa_context_set_sink_input_volume(pulse_ctx, ::pa_stream_get_index(stream), volume, pulse_context_success_callback, nullptr))) return -1;
+                        pulse::signal(0);
+                    },
+                    &volume)))
+                return 0.0;
+            return volume;
+        }
 
-        return 0;
-    }
+        int set_sink_mute(pa_stream *stream, bool muted)
+        {
+            if (!pulse::context_is_ready()) return -1;
 
-    float stream_get_sink_volume(pa_stream * stream)
-    {
-        float volume = 0.0;
-        if(!wait_operation(::pa_context_get_sink_input_info(
-            pulse_ctx,
-            ::pa_stream_get_index(stream),
-            [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata){
-                auto volume = reinterpret_cast<float *>(userdata);
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
 
-                if (eol == 0)
-                    *volume = static_cast<float>(::pa_sw_volume_to_linear(info->volume.values[0]));
+            if (!wait_operation(::pa_context_set_sink_input_mute(pulse_ctx, ::pa_stream_get_index(stream),
+                                                                 muted, pulse_context_success_callback,
+                                                                 nullptr)))
+                return -1;
 
-                pulse::signal(0);
-            }, &volume)))
-            return 0.0;
-        return volume;
-    }
+            return 0;
+        }
 
-    int stream_set_sink_mute(pa_stream * stream, bool muted)
-    {
-        if (!pulse::context_is_ready()) return -1;
+        bool get_sink_muted(pa_stream *stream)
+        {
+            bool muted = false;
+            if (!wait_operation(::pa_context_get_sink_input_info(
+                    pulse_ctx, ::pa_stream_get_index(stream),
+                    [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata) {
+                        auto muted = static_cast<bool *>(userdata);
+                        if (eol == 0) *muted = info->mute;
 
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
+                        pulse::signal(0);
+                    },
+                    &muted)))
+                return false;
+            return muted;
+        }
 
-        if (!wait_operation(::pa_context_set_sink_input_mute(pulse_ctx, ::pa_stream_get_index(stream), muted, pulse_context_success_callback, nullptr))) return -1;
+        int flush(pa_stream *stream, pa_stream_success_cb_t cb, void *userdata)
+        {
+            if (!pulse::context_is_ready()) return -1;
 
-        return 0;
-    }
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
 
-    bool stream_get_sink_muted(pa_stream *stream)
-    {
-        bool muted = false;
-        if(!wait_operation(::pa_context_get_sink_input_info(
-            pulse_ctx,
-            ::pa_stream_get_index(stream),
-            [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata){
-                auto muted = reinterpret_cast<bool *>(userdata);
-                if (eol == 0) *muted = info->mute;
+            if (!wait_operation(::pa_stream_flush(stream, cb, userdata))) return -1;
 
-                pulse::signal(0);
-            }, &muted)))
-            return false;
-        return muted;
-    }
+            return 0;
+        }
 
-    int stream_flush(pa_stream * stream, pa_stream_success_cb_t cb, void * userdata)
-    {
-        if (!pulse::context_is_ready()) return -1;
+        int update_timing_info(pa_stream *stream, pa_stream_success_cb_t cb, void *userdata)
+        {
+            if (!pulse::context_is_ready()) return -1;
 
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
+            pulse::loop_lock();
+            defer(pulse::loop_unlock());
 
-        if (!wait_operation(::pa_stream_flush(stream, cb, userdata))) return -1;
+            if (!wait_operation(::pa_stream_update_timing_info(stream, cb, userdata))) return -1;
 
-        return 0;
-    }
-
-    int stream_update_timing_info(pa_stream *stream, pa_stream_success_cb_t cb, void *userdata)
-    {
-        if (!pulse::context_is_ready()) return -1;
-
-        pulse::loop_lock();
-        defer(pulse::loop_unlock());
-
-        if (!wait_operation(::pa_stream_update_timing_info(stream, cb, userdata))) return -1;
-
-        return 0;
-    }
+            return 0;
+        }
+    } // namespace stream
 } // namespace pulse
 
 #endif // !__linux__

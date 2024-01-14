@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build type: Release." FORCE)
-endif()
+endif ()
 
 # #######################################################################################################################
 # dependencies
@@ -31,26 +31,28 @@ add_subdirectory(libcap             EXCLUDE_FROM_ALL)
 # Qt 5 / 6
 if (NOT QT_DEFAULT_MAJOR_VERSION)
     set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
-endif()
-
-set(QT Qt${QT_DEFAULT_MAJOR_VERSION})
+endif ()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(${QT} COMPONENTS Widgets Gui LinguistTools REQUIRED)
+if (${QT_DEFAULT_MAJOR_VERSION} EQUAL 5)
+    find_package(Qt5 5.15 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+else ()
+    find_package(Qt6 6.5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+endif ()
 
-if(WIN32)
+if (WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
-    
+
     find_package(FFmpeg 6 REQUIRED)
-elseif(UNIX AND NOT APPLE)
+elseif (UNIX AND NOT APPLE)
     find_package(FFmpeg 4.2 REQUIRED)
 
-    find_package(${QT} COMPONENTS X11Extras REQUIRED)
-endif()
+    find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS X11Extras REQUIRED)
+endif ()
 
 # #######################################################################################################################
 # Create the executable
@@ -61,11 +63,11 @@ file(GLOB_RECURSE SOURCES src/*.cpp)
 
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
 
-if(QT_DEFAULT_MAJOR_VERSION EQUAL 5)
+if (QT_DEFAULT_MAJOR_VERSION EQUAL 5)
     qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
-elseif(QT_DEFAULT_MAJOR_VERSION EQUAL 6)
+elseif (QT_DEFAULT_MAJOR_VERSION EQUAL 6)
     qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
-endif()
+endif ()
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}
@@ -86,24 +88,25 @@ if (WIN32)
     set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl PROPERTIES ShaderType "ps")
     set_source_files_properties(${HLSL_SHADER_FILES} PROPERTIES ShaderModel "5_0")
 
-    foreach(FILE ${HLSL_SHADER_FILES})
+    foreach (FILE ${HLSL_SHADER_FILES})
         get_filename_component(FILE_WE ${FILE} NAME_WE)
         list(APPEND CSO_SHADER_FILES ${PROJECT_BINARY_DIR}/${FILE_WE}.cso)
         get_source_file_property(shadertype ${FILE} ShaderType)
         get_source_file_property(shadermodel ${FILE} ShaderModel)
         add_custom_command(TARGET shaders
-                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
-                MAIN_DEPENDENCY ${FILE}
-                COMMENT "HLSL ${FILE}"
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                VERBATIM)
-    endforeach(FILE)
+            COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
+            MAIN_DEPENDENCY ${FILE}
+            COMMENT "HLSL ${FILE}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            VERBATIM
+        )
+    endforeach ()
 
     add_dependencies(${PROJECT_NAME} shaders)
 endif ()
 
-target_compile_options(${PROJECT_NAME} 
-    PRIVATE 
+target_compile_options(${PROJECT_NAME}
+    PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion>
 )
@@ -111,14 +114,14 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
-        ${QT}::Widgets ${QT}::Gui
+        Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::Gui
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg
         probe::probe
         nlohmann_json::nlohmann_json
         libcap::libcap
-        $<$<PLATFORM_ID:Linux>:${QT}::X11Extras>
+        $<$<PLATFORM_ID:Linux>:Qt${QT_DEFAULT_MAJOR_VERSION}::X11Extras>
         $<$<PLATFORM_ID:Windows>:Winmm>
 )
 
@@ -139,10 +142,10 @@ target_include_directories(${PROJECT_NAME}
 message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 
 # Binaries
-if(WIN32)
+if (WIN32)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
-elseif(UNIX AND NOT APPLE)
+elseif (UNIX AND NOT APPLE)
     # installed: /usr/local/bin/capturer
     # installed: /usr/local/etc/capturer/translations/capturer_en_US.ts
     # installed: /usr/local/etc/capturer/translations/capturer_zh_CN.ts
@@ -157,14 +160,14 @@ elseif(UNIX AND NOT APPLE)
     install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/pixmaps")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
-endif()
+endif ()
 
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake")
 
 # #######################################################################################################################
 # Create DEB
 # #######################################################################################################################
-if(UNIX)
+if (UNIX)
     set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 
     # Set a Package Version
@@ -184,7 +187,7 @@ if(UNIX)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
 
-    if(EXISTS "/etc/lsb-release")
+    if (EXISTS "/etc/lsb-release")
         file(STRINGS "/etc/lsb-release" SYSTEM_NAME)
         execute_process(
             COMMAND echo "${SYSTEM_NAME}"
@@ -201,20 +204,20 @@ if(UNIX)
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
 
-        if(${HOST_SYSTEM_NAME} MATCHES "Ubuntu")
+        if (${HOST_SYSTEM_NAME} MATCHES "Ubuntu")
             string(CONCAT HOST_SYSTEM_VER "ubuntu_" ${HOST_SYSTEM_VER})
 
             # the ubuntu need to modify the architecture name
-            if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+            if (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
                 set(CMAKE_HOST_SYSTEM_PROCESSOR "amd64")
-            endif()
-        endif()
+            endif ()
+        endif ()
 
         set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${HOST_SYSTEM_VER}-${CMAKE_HOST_SYSTEM_PROCESSOR})
         set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${CMAKE_HOST_SYSTEM_PROCESSOR})
-    else()
+    else ()
         set(HOST_SYSTEM_VER "Unknown")
-    endif()
+    endif ()
 
     include(CPack)
-endif()
+endif ()

@@ -1,16 +1,10 @@
 /*///////////////////////////////// Record Menu //////////////////////////////*/
-
-RecordingMenu QWidget#recording-menu {
-    border-radius: 5px;
-}
-
 RecordingMenu QCheckBox::indicator {
     font-size: 9pt;
 
     height: 1.35em;
     width: 1.35em;
     padding: 0.6em;
-    border-radius: 5px;
 }
 
 RecordingMenu QLabel#time {

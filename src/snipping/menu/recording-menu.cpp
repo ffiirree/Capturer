@@ -5,43 +5,35 @@
 #include <probe/graphics.h>
 #include <QHBoxLayout>
 #include <QMouseEvent>
+#include <QWindow>
 
 #ifdef _WIN32
 #include "libcap/win-wgc/win-wgc.h"
 #endif
 
 RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
+    : FramelessWindow(parent, Qt::Window | Qt::WindowStaysOnTopHint)
 {
-    setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
-    // frameless: background & border
-    auto backgroud_layout = new QHBoxLayout(this);
-    backgroud_layout->setSpacing(0);
-    backgroud_layout->setContentsMargins({});
-
-    auto background = new QWidget(this);
-    background->setObjectName("recording-menu");
-    backgroud_layout->addWidget(background);
-
-    auto layout = new QHBoxLayout(background);
+    const auto layout = new QHBoxLayout(this);
     layout->setSpacing(0);
     layout->setContentsMargins({});
+    setLayout(layout);
 
     if (buttons & RecordingMenu::AUDIO) {
         // microphone button
         mic_btn_ = new QCheckBox();
         mic_btn_->setChecked(mm);
         mic_btn_->setObjectName("mic-btn");
-        connect(mic_btn_, &QCheckBox::clicked, [this](bool checked) { emit muted(1, checked); });
+        connect(mic_btn_, &QCheckBox::clicked, [this](auto checked) { emit muted(1, checked); });
         layout->addWidget(mic_btn_);
 
         // speaker button
         speaker_btn_ = new QCheckBox();
         speaker_btn_->setChecked(sm);
         speaker_btn_->setObjectName("speaker-btn");
-        connect(speaker_btn_, &QCheckBox::clicked, [this](bool checked) { emit muted(2, checked); });
+        connect(speaker_btn_, &QCheckBox::clicked, [this](auto checked) { emit muted(2, checked); });
         layout->addWidget(speaker_btn_);
     }
 
@@ -49,7 +41,7 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
         camera_btn_ = new QCheckBox();
         camera_btn_->setChecked(false);
         camera_btn_->setObjectName("camera-btn");
-        connect(camera_btn_, &QCheckBox::clicked, [this](bool checked) { emit opened(checked); });
+        connect(camera_btn_, &QCheckBox::clicked, [this](auto checked) { emit opened(checked); });
         layout->addWidget(camera_btn_);
     }
 
@@ -69,7 +61,7 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
     // close / stop button
     close_btn_ = new QCheckBox();
     close_btn_->setObjectName("stop-btn");
-    connect(close_btn_, &QCheckBox::clicked, [this]() {
+    connect(close_btn_, &QCheckBox::clicked, [this] {
         emit stopped();
         close();
     });
@@ -97,22 +89,6 @@ void RecordingMenu::start()
     // global position, primary display monitor
     move(probe::graphics::displays()[0].geometry.right() - width() - 12, 100);
 }
-
-void RecordingMenu::mousePressEvent(QMouseEvent *event)
-{
-    begin_pos_ = event->globalPos();
-    moving_    = true;
-}
-
-void RecordingMenu::mouseMoveEvent(QMouseEvent *event)
-{
-    if (moving_) {
-        move(event->globalPos() - begin_pos_ + pos());
-        begin_pos_ = event->globalPos();
-    }
-}
-
-void RecordingMenu::mouseReleaseEvent(QMouseEvent *) { moving_ = false; }
 
 void RecordingMenu::mute(int type, bool muted)
 {

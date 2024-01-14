@@ -14,11 +14,7 @@ NavigationBar::NavigationBar(QWidget *parent)
 
     group_ = new QButtonGroup(this);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
     connect(group_, &QButtonGroup::idToggled, [this](int id, bool tged) {
-#else
-    connect(group_, QOverload<int, bool>::of(&QButtonGroup::buttonToggled), [this](int id, bool tged) {
-#endif
         if (tged) emit toggled(id);
     });
 }

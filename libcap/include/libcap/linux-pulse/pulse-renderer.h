@@ -8,7 +8,7 @@ extern "C" {
 #include <pulse/pulseaudio.h>
 }
 
-class PulseAudioRenderer : public AudioRenderer
+class PulseAudioRenderer final : public AudioRenderer
 {
 public:
     int open(const std::string& name, RenderFlags flags) override;

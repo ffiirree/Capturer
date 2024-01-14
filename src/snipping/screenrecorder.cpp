@@ -14,16 +14,20 @@
 #include <QStandardPaths>
 
 #if _WIN32
+
 #include "libcap/win-wasapi/wasapi-capturer.h"
 #include "libcap/win-wgc/wgc-capturer.h"
-#endif
 
-#ifdef _WIN32
 using DesktopCapturer = WindowsGraphicsCapturer;
 using AudioCapturer   = WasapiCapturer;
+
 #elif __linux__
+
+#include "libcap/linux-pulse/pulse-capturer.h"
+
 using DesktopCapturer = Decoder;
-using AudioCapturer   = Decoder;
+using AudioCapturer   = PulseCapturer;
+
 #endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
@@ -151,40 +155,6 @@ void ScreenRecorder::start()
     activateWindow();
 }
 
-void ScreenRecorder::open_audio_sources()
-{
-    std::map<std::string, std::string> mic_options{};
-    std::map<std::string, std::string> spk_options{};
-
-#ifdef __linux__
-    mic_options["format"]        = "pulse";
-    mic_options["fragment_size"] = "19200";
-
-    spk_options["format"]        = "pulse";
-    spk_options["fragment_size"] = "19200";
-#endif
-
-    if (!av::audio_sources().empty()) {
-        if (microphone_capturer_ &&
-            microphone_capturer_->open(Config::instance()["devices"]["microphones"].get<std::string>(),
-                                       mic_options) < 0) {
-            LOG(WARNING) << "open microphone failed";
-            microphone_capturer_->reset();
-            menu_->disable_mic(true);
-        }
-    }
-
-    if (!av::audio_sinks().empty()) {
-        if (speaker_capturer_ &&
-            speaker_capturer_->open(Config::instance()["devices"]["speakers"].get<std::string>(),
-                                    spk_options) < 0) {
-            LOG(WARNING) << "open speaker failed";
-            speaker_capturer_->reset();
-            menu_->disable_speaker(true);
-        }
-    }
-}
-
 static std::pair<AVPixelFormat, AVHWDeviceType>
 set_pix_fmt(const std::unique_ptr<Producer<AVFrame>>& producer,
             const std::unique_ptr<Consumer<AVFrame>>& consumer, const AVCodec *vcodec)
@@ -226,12 +196,9 @@ void ScreenRecorder::setup()
         ? selector_->showRegion()
         : hide();
 
-    menu_->disable_mic(av::audio_sources().empty());
-    menu_->disable_speaker(av::audio_sinks().empty());
+    menu_->disable_mic(true);
+    menu_->disable_speaker(true);
     menu_->disable_cam(av::cameras().empty());
-
-    microphone_capturer_->mute(m_mute_);
-    speaker_capturer_->mute(s_mute_);
 
     // desktop capturer
     framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
@@ -275,24 +242,43 @@ void ScreenRecorder::setup()
     }
 #endif
 
+    // video source
     if (desktop_capturer_->open(name, options) < 0) {
+        LOG(ERROR) << fmt::format("[RECORDER] failed to open the desktop capturer: {}", name);
         desktop_capturer_->reset();
         stop();
         return;
     }
 
-    if (recording_type_ == VIDEO) {
-        open_audio_sources();
-    }
-
-    // sources
     dispatcher_->append(desktop_capturer_.get());
-    if (microphone_capturer_ && microphone_capturer_->ready()) {
-        dispatcher_->append(microphone_capturer_.get());
-    }
 
-    if (speaker_capturer_ && speaker_capturer_->ready()) {
-        dispatcher_->append(speaker_capturer_.get());
+    // audio source
+    if (recording_type_ == VIDEO) {
+        if (!av::audio_sources().empty() && microphone_capturer_) {
+            if (microphone_capturer_->open(Config::instance()["devices"]["microphones"].get<std::string>(),
+                                           {}) < 0) {
+                LOG(WARNING) << "open microphone failed";
+                microphone_capturer_->reset();
+            }
+            else if (microphone_capturer_->ready()) {
+                menu_->disable_mic(false);
+                microphone_capturer_->mute(m_mute_);
+                dispatcher_->append(microphone_capturer_.get());
+            }
+        }
+
+        if (!av::audio_sinks().empty() && speaker_capturer_) {
+            if (speaker_capturer_->open(Config::instance()["devices"]["speakers"].get<std::string>(), {}) <
+                0) {
+                LOG(WARNING) << "open speaker failed";
+                speaker_capturer_->reset();
+            }
+            else if (speaker_capturer_->ready()) {
+                menu_->disable_speaker(false);
+                speaker_capturer_->mute(s_mute_);
+                dispatcher_->append(speaker_capturer_.get());
+            }
+        }
     }
 
     // outputs

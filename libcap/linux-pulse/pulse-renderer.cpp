@@ -30,7 +30,7 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
         return -1;
     }
 
-    stream_ = pulse::stream_new("PLAYER-AUDIO-RENDER", &spec, nullptr);
+    stream_ = pulse::stream::create("PLAYER-AUDIO-RENDER", &spec, nullptr);
     if (!stream_) {
         LOG(ERROR) << "[PULSE-AUDIO] can not create playback stream.";
         return -1;
@@ -43,7 +43,7 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     ::pa_stream_set_state_callback(stream_, pulse_stream_state_callback, this);
     ::pa_stream_set_latency_update_callback(stream_, pulse_stream_latency_callback, this);
 
-    pa_buffer_attr buffer_attr{
+    const pa_buffer_attr buffer_attr{
         .maxlength = static_cast<uint32_t>(1'024 * bytes_per_frame_) * 2,
         .tlength   = static_cast<uint32_t>(1'024 * bytes_per_frame_),
         .prebuf    = 0,
@@ -73,14 +73,14 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
 
 void PulseAudioRenderer::pulse_stream_success_callback(pa_stream *, int success, void *userdata)
 {
-    auto self            = reinterpret_cast<PulseAudioRenderer *>(userdata);
+    const auto self      = static_cast<PulseAudioRenderer *>(userdata);
     self->stream_retval_ = success;
     pulse::signal(0);
 }
 
 void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t bytes, void *userdata)
 {
-    auto self = reinterpret_cast<PulseAudioRenderer *>(userdata);
+    const auto self = static_cast<PulseAudioRenderer *>(userdata);
 
     void *buffer = nullptr;
     ::pa_stream_begin_write(stream, &buffer, &bytes);
@@ -126,11 +126,12 @@ void PulseAudioRenderer::pulse_stream_underflow_callback(pa_stream *, void *) { 
 
 void PulseAudioRenderer::pulse_stream_drain_callback(pa_stream *, int, void *) { pulse::signal(0); }
 
-int PulseAudioRenderer::start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>& cb)
+int PulseAudioRenderer::start(
+    const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>& cb)
 {
     callback_ = cb;
 
-    pulse::stream_cork(stream_, false, pulse_stream_success_callback, this);
+    pulse::stream::cork(stream_, false, pulse_stream_success_callback, this);
 
     pulse::loop_lock();
     ::pa_stream_set_write_callback(stream_, pulse_stream_write_callback, this);
@@ -175,13 +176,13 @@ int PulseAudioRenderer::mute(bool muted)
 {
     assert(stream_);
 
-    return pulse::stream_set_sink_mute(stream_, muted);
+    return pulse::stream::set_sink_mute(stream_, muted);
 }
 
 bool PulseAudioRenderer::muted() const
 {
     assert(stream_);
-    return pulse::stream_get_sink_muted(stream_);
+    return pulse::stream::get_sink_muted(stream_);
 }
 
 // 0.0 ~ 1.0
@@ -191,27 +192,27 @@ int PulseAudioRenderer::setVolume(float value)
 
     pa_cvolume volume{};
     ::pa_cvolume_set(&volume, format_.channels, pa_sw_volume_from_linear(value));
-    return pulse::stream_set_sink_volume(stream_, &volume);
+    return pulse::stream::set_sink_volume(stream_, &volume);
 }
 
 float PulseAudioRenderer::volume() const
 {
     assert(stream_);
-    return pulse::stream_get_sink_volume(stream_);
+    return pulse::stream::get_sink_volume(stream_);
 }
 
 int PulseAudioRenderer::pause()
 {
     assert(stream_);
 
-    return !paused() ? pulse::stream_cork(stream_, true, pulse_stream_success_callback, this) : 0;
+    return !paused() ? pulse::stream::cork(stream_, true, pulse_stream_success_callback, this) : 0;
 }
 
 int PulseAudioRenderer::resume()
 {
     assert(stream_);
 
-    return paused() ? pulse::stream_cork(stream_, false, pulse_stream_success_callback, this) : 0;
+    return paused() ? pulse::stream::cork(stream_, false, pulse_stream_success_callback, this) : 0;
 }
 
 bool PulseAudioRenderer::paused() const { return stream_ && ::pa_stream_is_corked(stream_); }

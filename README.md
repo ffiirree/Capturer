@@ -21,6 +21,8 @@
 - `>= Windows 10 1803`
 - `>= Ubuntu 20.04`
 
+> Not support Wayland on Linux
+
 从 [Releases](https://github.com/ffiirree/Capturer/releases) 下载系统对应的版本。
 
 ### Windows
@@ -129,8 +131,8 @@ git submodule update --init --recursive
 
 ### Development Environment
 
-- `C++` :  `C++20`
-- `Qt` : `5.12.x` / `5.15.x`
+- `C++` : `C++20`
+- `Qt` : `>= 5.15`
 - `CMake` : `>= 3.21`
 - Windows
   - `Windows` : `>= Windows 10 1803`

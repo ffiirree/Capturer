@@ -42,7 +42,7 @@ int Dispatcher::create_video_src(const Producer<AVFrame> *decoder, AVFilterConte
         return -1;
     }
 
-    auto buffer_args = decoder->format_str(AVMEDIA_TYPE_VIDEO);
+    const auto buffer_args = decoder->format_str(AVMEDIA_TYPE_VIDEO);
     if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffer"), "video-source",
                                      buffer_args.c_str(), nullptr, vgraph_) < 0) {
         LOG(ERROR) << "[DISPATCHER] [V] failed to create 'buffer'.";
@@ -85,7 +85,7 @@ int Dispatcher::create_audio_src(const Producer<AVFrame> *decoder, AVFilterConte
         return -1;
     }
 
-    auto buffer_args = decoder->format_str(AVMEDIA_TYPE_AUDIO);
+    const auto buffer_args = decoder->format_str(AVMEDIA_TYPE_AUDIO);
     if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("abuffer"), "audio-source",
                                      buffer_args.c_str(), nullptr, agraph_) < 0) {
         LOG(ERROR) << "[DISPATCHER] [A] failed to create 'abuffer'.";
@@ -116,8 +116,8 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
         // channel_layouts(int64_t) / >= 5.1  ch_layouts(string)
         // channel_counts(int list)
         // all_channel_counts(bool)
-        const AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
-        if (av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, static_cast<uint64_t>(AV_SAMPLE_FMT_NONE),
+        if (const AVSampleFormat sink_fmts[] = { afmt.sample_fmt, AV_SAMPLE_FMT_NONE };
+            av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, static_cast<uint64_t>(AV_SAMPLE_FMT_NONE),
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] faile to set 'sample_fmts' option.";
             return -1;
@@ -133,14 +133,14 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
                        av::channel_layout_name(afmt.channels, afmt.channel_layout).c_str(),
                        AV_OPT_SEARCH_CHILDREN) < 0) {
 #else
-        int64_t channel_counts[] = { afmt.channel_layout ? -1 : afmt.channels, -1 };
-        if (av_opt_set_int_list(*ctx, "channel_counts", channel_counts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
+        if (const int64_t channel_counts[] = { afmt.channel_layout ? -1 : afmt.channels, -1 };
+            av_opt_set_int_list(*ctx, "channel_counts", channel_counts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
             LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_counts' option.";
             return -1;
         }
 
-        int64_t channel_layouts[] = { static_cast<int64_t>(afmt.channel_layout), -1 };
-        if (av_opt_set_int_list(*ctx, "channel_layouts", channel_layouts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
+        if (const int64_t channel_layouts[] = { static_cast<int64_t>(afmt.channel_layout), -1 };
+            av_opt_set_int_list(*ctx, "channel_layouts", channel_layouts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
 #endif
             LOG(ERROR) << "[DISPATCHER] [A] failed to set 'channel_layouts' option.";
             return -1;
@@ -463,8 +463,8 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
             // process next frame
             if (producer->produce(frame.put(), mt) != 0) continue;
 
-            sleepy        = false;
-            auto frame_tb = producer->time_base(mt);
+            sleepy              = false;
+            const auto frame_tb = producer->time_base(mt);
 
             // pts
             if (clock() == av::clock_t::system) {
@@ -500,7 +500,7 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
 
         // output streams
         while (!consumer_eof && !seeking) {
-            int ret = av_buffersink_get_frame_flags(sink, frame.put(), AV_BUFFERSINK_FLAG_NO_REQUEST);
+            const int ret = av_buffersink_get_frame_flags(sink, frame.put(), AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret == AVERROR_EOF || (ret == AVERROR(EAGAIN) && all_eof)) {
                 LOG(INFO) << fmt::format("[{}] EOF", av::to_char(mt));
                 consumer_eof = true;
@@ -566,7 +566,7 @@ void Dispatcher::resume()
     std::lock_guard lock(pause_mtx_);
 
     if (paused_pts_ != av::clock::nopts) {
-        auto now = av::clock::ns();
+        const auto now = av::clock::ns();
         paused_time_ += (now - paused_pts_);
         paused_pts_  = av::clock::nopts;
         resumed_pts_ = now;

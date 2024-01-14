@@ -2,13 +2,12 @@
 
 #include "logging.h"
 
-#include <optional>
 #include <QMouseEvent>
-#include <QVBoxLayout>
 #include <QWindow>
 
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
+#include <optional>
 #include <windowsx.h>
 #endif
 
@@ -48,37 +47,9 @@ void FramelessWindow::toggleFullScreen() { isFullScreen() ? showNormal() : showF
 void FramelessWindow::mousePressEvent(QMouseEvent *event)
 {
     if (!isFullScreen()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
         windowHandle()->startSystemMove();
-#elif defined(Q_OS_WIN)
-        if (ReleaseCapture())
-            SendMessage(reinterpret_cast<HWND>(winId()), WM_SYSCOMMAND, SC_MOVE + HTCAPTION, 0);
-#elif defined(Q_OS_LINUX)
-        if (event->button() == Qt::LeftButton) {
-            moving_begin_ = event->globalPos() - pos();
-        }
-#endif
     }
     return QWidget::mousePressEvent(event);
-}
-
-void FramelessWindow::mouseMoveEvent(QMouseEvent *event)
-{
-    if (!isFullScreen()) {
-#ifdef Q_OS_LINUX
-        if (event->buttons() & Qt::LeftButton) {
-            move(event->globalPos() - moving_begin_);
-        }
-#endif
-    }
-    return QWidget::mouseMoveEvent(event);
-}
-
-void FramelessWindow::mouseReleaseEvent(QMouseEvent *event) { return QWidget::mouseReleaseEvent(event); }
-
-void FramelessWindow::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    return QWidget::mouseDoubleClickEvent(event);
 }
 
 void FramelessWindow::closeEvent(QCloseEvent *event)

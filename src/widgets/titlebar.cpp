@@ -34,13 +34,13 @@ TitleBar::TitleBar(FramelessWindow *parent)
     setAttribute(Qt::WA_StyledBackground);
     setAutoFillBackground(true);
 
-    auto layout = new QHBoxLayout();
+    const auto layout = new QHBoxLayout();
     layout->setSpacing(0);
     layout->setContentsMargins({});
     setLayout(layout);
 
     // icon & title
-    auto icon = new QCheckBox(window_->windowTitle());
+    const auto icon = new QCheckBox(window_->windowTitle());
     icon->setAttribute(Qt::WA_TransparentForMouseEvents);
     icon->setObjectName("icon-title");
     layout->addWidget(icon);
@@ -50,7 +50,7 @@ TitleBar::TitleBar(FramelessWindow *parent)
 
     // pin button
     if (window_->windowFlags() & Qt::WindowStaysOnTopHint) {
-        auto pin_btn = new QCheckBox(this);
+        const auto pin_btn = new QCheckBox(this);
         pin_btn->setObjectName("pin-btn");
         pin_btn->setCheckable(true);
         pin_btn->setChecked(window_->windowFlags() & Qt::WindowStaysOnTopHint);
@@ -60,7 +60,7 @@ TitleBar::TitleBar(FramelessWindow *parent)
 
     // minimize button
     if (window_->windowFlags() & Qt::WindowMinimizeButtonHint) {
-        auto min_btn = new QCheckBox(this);
+        const auto min_btn = new QCheckBox(this);
         min_btn->setObjectName("min-btn");
         min_btn->setCheckable(false);
         connect(min_btn, &QCheckBox::clicked, window_, &QWidget::showMinimized);
@@ -69,7 +69,7 @@ TitleBar::TitleBar(FramelessWindow *parent)
 
     // maximize button
     if (window_->windowFlags() & Qt::WindowMaximizeButtonHint) {
-        auto max_btn = new QCheckBox(this);
+        const auto max_btn = new QCheckBox(this);
         max_btn->setObjectName("max-btn");
         max_btn->setCheckable(true);
         connect(max_btn, &QCheckBox::toggled, window_, &FramelessWindow::maximize);
@@ -80,7 +80,7 @@ TitleBar::TitleBar(FramelessWindow *parent)
 
     // fullscreen button
     if (window_->windowFlags() & Qt::WindowFullscreenButtonHint) {
-        auto full_btn = new QCheckBox(this);
+        const auto full_btn = new QCheckBox(this);
         full_btn->setObjectName("full-btn");
         full_btn->setCheckable(true);
         connect(full_btn, &QCheckBox::toggled, window_, &FramelessWindow::fullscreen);
@@ -95,7 +95,7 @@ TitleBar::TitleBar(FramelessWindow *parent)
 
     // close button
     if (window_->windowFlags() & Qt::WindowCloseButtonHint) {
-        auto close_btn = new QCheckBox(this);
+        const auto close_btn = new QCheckBox(this);
         close_btn->setObjectName("close-btn");
         close_btn->setCheckable(false);
         connect(close_btn, &QCheckBox::clicked, window_, &QWidget::close);
@@ -106,44 +106,11 @@ TitleBar::TitleBar(FramelessWindow *parent)
     connect(window_, &QWidget::windowTitleChanged, icon, &QCheckBox::setText);
 }
 
-void TitleBar::mousePressEvent(QMouseEvent *event)
+void TitleBar::mousePressEvent(QMouseEvent *)
 {
     if (!window()->isFullScreen()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-        Q_UNUSED(event);
         window()->windowHandle()->startSystemMove();
-#elif defined(Q_OS_WIN)
-        if (window() && ReleaseCapture())
-            SendMessage(reinterpret_cast<HWND>(window()->winId()), WM_SYSCOMMAND, SC_MOVE + HTCAPTION, 0);
-#else
-        if (event->button() == Qt::LeftButton) {
-            begin_  = event->globalPos() - window()->pos();
-            moving_ = true;
-            setCursor(Qt::SizeAllCursor);
-        }
-#endif
     }
-}
-
-void TitleBar::mouseMoveEvent(QMouseEvent *event)
-{
-#ifndef Q_OS_WIN
-    if ((event->buttons() & Qt::LeftButton) && moving_) {
-        window()->move(event->globalPos() - begin_);
-    }
-#else
-    Q_UNUSED(event);
-#endif
-}
-
-void TitleBar::mouseReleaseEvent(QMouseEvent *)
-{
-#ifndef Q_OS_WIN
-    if (moving_) {
-        moving_ = false;
-        setCursor(Qt::ArrowCursor);
-    }
-#endif
 }
 
 void TitleBar::mouseDoubleClickEvent(QMouseEvent *) { window()->toggleMaximized(); }

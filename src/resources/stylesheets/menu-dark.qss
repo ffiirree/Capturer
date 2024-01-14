@@ -1,8 +1,7 @@
 /*///////////////////////////////// Recording Menu //////////////////////////////*/
 
-RecordingMenu QWidget#recording-menu {
+RecordingMenu {
     background-color: #232323;
-    border: 1px solid #323232;
 }
 
 RecordingMenu QCheckBox::indicator::hover {

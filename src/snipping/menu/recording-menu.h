@@ -1,10 +1,11 @@
 #ifndef CAPTURER_RECORD_MENU_H
 #define CAPTURER_RECORD_MENU_H
 
+#include <framelesswindow.h>
 #include <QCheckBox>
 #include <QLabel>
 
-class RecordingMenu : public QWidget
+class RecordingMenu final : public FramelessWindow
 {
     Q_OBJECT
 
@@ -36,11 +37,6 @@ public slots:
     void disable_mic(bool);
     void disable_cam(bool);
     void disable_speaker(bool);
-
-private:
-    void mousePressEvent(QMouseEvent *) override;
-    void mouseMoveEvent(QMouseEvent *) override;
-    void mouseReleaseEvent(QMouseEvent *) override;
 
 private:
     QCheckBox *mic_btn_{ nullptr };

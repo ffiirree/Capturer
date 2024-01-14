@@ -43,7 +43,6 @@ public slots:
 private:
     void keyPressEvent(QKeyEvent *) override;
 
-    void open_audio_sources();
     void setup();
 
     int recording_type_{ VIDEO };
