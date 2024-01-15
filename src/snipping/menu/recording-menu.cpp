@@ -12,8 +12,7 @@
 #endif
 
 RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
-    : FramelessWindow(parent,
-                      Qt::WindowStaysOnTopHint & ~Qt::WindowSystemMenuHint & ~Qt::WindowSystemMenuHint)
+    : FramelessWindow(parent, Qt::WindowStaysOnTopHint & ~Qt::WindowSystemMenuHint)
 {
     setAttribute(Qt::WA_ShowWithoutActivating);
 

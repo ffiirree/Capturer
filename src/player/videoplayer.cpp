@@ -8,6 +8,7 @@
 #include <libcap/devices.h>
 #include <probe/graphics.h>
 #include <probe/thread.h>
+#include <QActionGroup>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMouseEvent>
@@ -573,7 +574,7 @@ void VideoPlayer::showPreferences()
 
     win->setMinimumSize(400, 300);
     win->setAttribute(Qt::WA_DeleteOnClose);
-    win->setWindowTitle("Preferences");
+    win->setWindowTitle(tr("Preferences"));
 
     auto vlayout = new QVBoxLayout();
     vlayout->setSpacing(0);
@@ -598,7 +599,7 @@ void VideoPlayer::showProperties()
     const auto win = new QWidget(this, Qt::Dialog);
     win->setMinimumSize(600, 800);
     win->setAttribute(Qt::WA_DeleteOnClose);
-    win->setWindowTitle("Properties");
+    win->setWindowTitle(tr("Properties"));
     win->setStyleSheet("QWidget { background: white; color: black; } QLabel { padding-left: 2em; }");
 
     const auto layout = new QVBoxLayout();

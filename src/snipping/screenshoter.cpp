@@ -181,10 +181,10 @@ QBrush ScreenShoter::mosaicBrush()
 void ScreenShoter::updateCursor(ResizerLocation location)
 {
     if (menu_->graph() & canvas::eraser) {
-        setCursor(cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }, Qt::NoBrush));
+        setCursor(QCursor{ cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }, Qt::NoBrush) });
     }
     else if (menu_->graph() & canvas::mosaic) {
-        setCursor(cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }));
+        setCursor(QCursor{ cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }) });
     }
     else {
         setCursor(getCursorByLocation(location, Qt::CrossCursor));

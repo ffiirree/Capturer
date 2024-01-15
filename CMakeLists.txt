@@ -21,6 +21,11 @@ set(WITH_GFLAGS         OFF CACHE BOOL "Use gflags for google/glog")
 set(PROBE_BUILD_WITH_QT ON  CACHE BOOL "Build probe with Qt")
 set(JSON_BuildTests     OFF CACHE BOOL "Build nlohmann/json tests")
 
+# Qt 5 / 6
+if (NOT QT_DEFAULT_MAJOR_VERSION)
+    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
+endif ()
+
 add_subdirectory(3rdparty/QHotkey   EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/fmt       EXCLUDE_FROM_ALL)
@@ -28,19 +33,14 @@ add_subdirectory(3rdparty/probe     EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/json      EXCLUDE_FROM_ALL)
 add_subdirectory(libcap             EXCLUDE_FROM_ALL)
 
-# Qt 5 / 6
-if (NOT QT_DEFAULT_MAJOR_VERSION)
-    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
-endif ()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 if (${QT_DEFAULT_MAJOR_VERSION} EQUAL 5)
-    find_package(Qt5 5.15 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+    find_package(Qt5 5.15 COMPONENTS Core Gui Widgets LinguistTools REQUIRED)
 else ()
-    find_package(Qt6 6.5 COMPONENTS Widgets Gui LinguistTools REQUIRED)
+    find_package(Qt6 6.5 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
 endif ()
 
 if (WIN32)
@@ -82,11 +82,12 @@ if (WIN32)
 
     set(HLSL_SHADER_FILES src/resources/d3d11/ConvertVertexShader.hlsl src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ConvertPixelShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
 
-    set_source_files_properties(src/resources/d3d11/ConvertVertexShader.hlsl PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/ConvertPixelShader.hlsl PROPERTIES ShaderType "ps")
-    set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl PROPERTIES ShaderType "ps")
-    set_source_files_properties(${HLSL_SHADER_FILES} PROPERTIES ShaderModel "5_0")
+    set_source_files_properties(src/resources/d3d11/ConvertVertexShader.hlsl    PROPERTIES ShaderType "vs")
+    set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
+    set_source_files_properties(src/resources/d3d11/ConvertPixelShader.hlsl     PROPERTIES ShaderType "ps")
+    set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
+
+    set_source_files_properties(${HLSL_SHADER_FILES}                            PROPERTIES ShaderModel "5_0")
 
     foreach (FILE ${HLSL_SHADER_FILES})
         get_filename_component(FILE_WE ${FILE} NAME_WE)
@@ -114,7 +115,8 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
-        Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets Qt${QT_DEFAULT_MAJOR_VERSION}::Gui
+        Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
+        $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGL Qt6::OpenGLWidgets>
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg

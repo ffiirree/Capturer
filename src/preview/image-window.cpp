@@ -4,6 +4,7 @@
 #include "config.h"
 #include "logging.h"
 
+#include <QActionGroup>
 #include <QApplication>
 #include <QClipboard>
 #include <QDateTime>
@@ -11,7 +12,6 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMimeData>
-#include <QPainter>
 #include <QShortcut>
 #include <QTextEdit>
 #include <QVBoxLayout>

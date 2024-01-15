@@ -28,15 +28,15 @@ public:
     //
     void setPen(const QPen& pen, bool silence = true);
 
-    QPen pen() const { return pen_; }
+    [[nodiscard]] QPen pen() const { return pen_; }
 
     //
     void setFont(const QFont& font);
 
-    QFont font() const { return font_; }
+    [[nodiscard]] QFont font() const { return font_; }
 
     //
-    bool filled() const;
+    [[nodiscard]] bool filled() const;
 
     void fill(bool);
 
@@ -60,4 +60,4 @@ private:
     bool fill_{};
 };
 
-#endif // !CAPTURER_STYLE_MENU_H
+#endif //! CAPTURER_EDITING_SUBMENU_H

@@ -12,23 +12,25 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setVisible(false);
+    QWidget::setVisible(false);
 
     // frameless: background & border
     auto backgroud_layout = new QHBoxLayout(this);
     backgroud_layout->setSpacing(0);
     backgroud_layout->setContentsMargins({});
+    backgroud_layout->setSizeConstraint(QLayout::SetFixedSize);
 
     auto background = new QWidget(this);
     background->setObjectName("editing-submenu");
     backgroud_layout->addWidget(background);
 
-    auto layout = new QHBoxLayout(background);
+    const auto layout = new QHBoxLayout(background);
     layout->setSpacing(0);
     layout->setContentsMargins({});
+    layout->setSizeConstraint(QLayout::SetFixedSize);
 
     //
-    auto group = new QButtonGroup(this);
+    const auto group = new QButtonGroup(this);
 
     if (buttons & WIDTH_BTN) {
         // pen: width
@@ -70,7 +72,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->addWidget(font_style_);
         layout->addWidget(font_size_);
 
-        QFontDatabase font_db;
+        const QFontDatabase font_db;
         font_.setFamily(font_.defaultFamily());
         font_.setPointSizeF(16);
 

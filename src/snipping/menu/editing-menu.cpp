@@ -15,20 +15,22 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setVisible(false);
+    QWidget::setVisible(false);
 
     // frameless: background & border
-    auto backgroud_layout = new QHBoxLayout(this);
+    const auto backgroud_layout = new QHBoxLayout(this);
     backgroud_layout->setSpacing(0);
     backgroud_layout->setContentsMargins({});
+    backgroud_layout->setSizeConstraint(QLayout::SetFixedSize);
 
-    auto background = new QWidget(this);
+    const auto background = new QWidget(this);
     background->setObjectName("editing-menu");
     backgroud_layout->addWidget(background);
 
-    auto layout = new QHBoxLayout(background);
+    const auto layout = new QHBoxLayout(background);
     layout->setSpacing(0);
     layout->setContentsMargins({});
+    layout->setSizeConstraint(QLayout::SetFixedSize);
 
     //
     pictures_path_ = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
@@ -91,7 +93,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             hide();
             parent->hide();
 #endif
-            auto filename = QFileDialog::getOpenFileName(parent, tr("Open Image"), pictures_path_,
+            const auto filename = QFileDialog::getOpenFileName(parent, tr("Open Image"), pictures_path_,
                                                          "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
 #ifdef __linux__
             parent->show();
@@ -163,7 +165,7 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
                 emit graphChanged(graph_);
             }
 
-            canvas::graphics_t button_graph = static_cast<canvas::graphics_t>(group_->id(button));
+            const auto button_graph = static_cast<canvas::graphics_t>(group_->id(button));
             if (submenus_.contains(button_graph)) {
                 submenus_[button_graph]->setVisible(checked);
                 if (checked) {

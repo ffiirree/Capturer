@@ -29,20 +29,20 @@ public:
 
     void reset();
 
-    canvas::graphics_t graph() const { return graph_; }
+    [[nodiscard]] canvas::graphics_t graph() const { return graph_; }
 
     // pen
-    QPen pen() const;
+    [[nodiscard]] QPen pen() const;
 
     void setPen(const QPen&, bool silence = true);
 
     // fill: pen | brush
-    bool filled() const;
+    [[nodiscard]] bool filled() const;
 
     void fill(bool);
 
     // font
-    QFont font() const;
+    [[nodiscard]] QFont font() const;
 
     void setFont(const QFont& font);
 
