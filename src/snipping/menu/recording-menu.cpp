@@ -12,13 +12,15 @@
 #endif
 
 RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
-    : FramelessWindow(parent, Qt::Window | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent,
+                      Qt::WindowStaysOnTopHint & ~Qt::WindowSystemMenuHint & ~Qt::WindowSystemMenuHint)
 {
     setAttribute(Qt::WA_ShowWithoutActivating);
 
     const auto layout = new QHBoxLayout(this);
     layout->setSpacing(0);
     layout->setContentsMargins({});
+    layout->setSizeConstraint(QLayout::SetFixedSize);
     setLayout(layout);
 
     if (buttons & RecordingMenu::AUDIO) {
@@ -78,6 +80,14 @@ void RecordingMenu::time(const std::chrono::seconds& time)
     time_label_->setText(QString::fromStdString(fmt::format("{:%T}", time)));
 }
 
+void RecordingMenu::showEvent(QShowEvent *event)
+{
+    // global position, primary display monitor
+    move(probe::graphics::displays()[0].geometry.right() - width() - 12, 100);
+
+    FramelessWindow::showEvent(event);
+}
+
 void RecordingMenu::start()
 {
     time_label_->setText("00:00:00");
@@ -86,8 +96,6 @@ void RecordingMenu::start()
     emit started();
 
     show();
-    // global position, primary display monitor
-    move(probe::graphics::displays()[0].geometry.right() - width() - 12, 100);
 }
 
 void RecordingMenu::mute(int type, bool muted)

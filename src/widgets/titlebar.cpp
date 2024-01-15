@@ -32,7 +32,8 @@ TitleBar::TitleBar(FramelessWindow *parent)
       window_(parent)
 {
     setAttribute(Qt::WA_StyledBackground);
-    setAutoFillBackground(true);
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     const auto layout = new QHBoxLayout();
     layout->setSpacing(0);

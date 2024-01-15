@@ -9,7 +9,7 @@ class TitleBar : public QWidget
 public:
     explicit TitleBar(FramelessWindow *parent);
 
-    FramelessWindow *window() const { return window_; }
+    [[nodiscard]] FramelessWindow *window() const { return window_; }
 
     void setHideOnFullScreen(bool value = true) { hide_on_fullscreen_ = value; }
 

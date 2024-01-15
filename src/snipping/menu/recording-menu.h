@@ -38,6 +38,9 @@ public slots:
     void disable_cam(bool);
     void disable_speaker(bool);
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private:
     QCheckBox *mic_btn_{ nullptr };
     QCheckBox *speaker_btn_{ nullptr };

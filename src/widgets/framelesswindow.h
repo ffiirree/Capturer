@@ -3,11 +3,19 @@
 
 #include <QWidget>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#define Q_NATIVE_EVENT_RESULT qintptr
+#else
+#define Q_NATIVE_EVENT_RESULT long
+#endif
+
 class FramelessWindow : public QWidget
 {
     Q_OBJECT
 public:
     explicit FramelessWindow(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+
+    [[nodiscard]] bool isSizeFixed() const;
 
 public slots:
     void maximize(bool = true);
@@ -32,15 +40,7 @@ protected:
     void hideEvent(QHideEvent *event) override;
     void changeEvent(QEvent *) override;
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    bool nativeEvent(const QByteArray& eventType, void *message, qintptr *result) override;
-#else
-    bool nativeEvent(const QByteArray& eventType, void *message, long *result) override;
-#endif
-
-#ifdef Q_OS_LINUX
-    QPoint moving_begin_{ -1, -1 };
-#endif
+    bool nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result) override;
 };
 
 #endif //! CAPTURER_FRAMELESS_WINDOW_H

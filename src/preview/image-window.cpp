@@ -46,7 +46,7 @@ void ImageWindow::preview(const std::shared_ptr<QMimeData>& mimedata)
     opacity_   = 1.0;
     thumbnail_ = false;
 
-    if (auto pixmap = render(data_); pixmap) {
+    if (const auto pixmap = render(data_); pixmap) {
         pixmap_ = pixmap.value();
         preview_->present(pixmap_);
 
@@ -69,7 +69,7 @@ void ImageWindow::present(const QPixmap& pixmap)
     setGeometry(_geometry);
 }
 
-void ImageWindow::mouseDoubleClickEvent(QMouseEvent * event)
+void ImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     thumbnail_ = !thumbnail_;
 
@@ -91,7 +91,7 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent * event)
 
 void ImageWindow::wheelEvent(QWheelEvent *event)
 {
-    auto delta = event->angleDelta().y();
+    const auto delta = event->angleDelta().y();
     if (ctrl_) {
         opacity_ += (delta / 12000.0);
         opacity_ = std::clamp(opacity_, 0.01, 1.0);
@@ -114,11 +114,11 @@ static QPixmap grayscale(const QPixmap& pixmap)
     if (pixmap.hasAlpha()) {
         auto img = pixmap.toImage();
         for (int y = 0; y < img.height(); ++y) {
-            QRgb *scanLine = (QRgb *)img.scanLine(y);
+            auto scanLine = reinterpret_cast<QRgb *>(img.scanLine(y));
             for (int x = 0; x < img.width(); ++x) {
-                QRgb pixel = *scanLine;
-                auto ci    = qGray(pixel);
-                *scanLine  = qRgba(ci, ci, ci, qAlpha(pixel));
+                const QRgb pixel = *scanLine;
+                const auto ci    = qGray(pixel);
+                *scanLine        = qRgba(ci, ci, ci, qAlpha(pixel));
                 ++scanLine;
             }
         }
@@ -135,7 +135,7 @@ void ImageWindow::paste()
 
 void ImageWindow::open()
 {
-    auto filename = QFileDialog::getOpenFileName(
+    const auto filename = QFileDialog::getOpenFileName(
         this, tr("Open Image"), QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
         "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
     if (!filename.isEmpty()) {
@@ -145,15 +145,15 @@ void ImageWindow::open()
 
 void ImageWindow::saveAs()
 {
-    QString default_filename =
+    const QString default_filename =
         "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
 
-    QString filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
-                                                    save_path_ + QDir::separator() + default_filename,
-                                                    "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+    const QString filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
+                                                          save_path_ + QDir::separator() + default_filename,
+                                                          "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
     if (!filename.isEmpty()) {
-        QFileInfo fileinfo(filename);
+        const QFileInfo fileinfo(filename);
         save_path_ = fileinfo.absoluteDir().path();
 
         pixmap_.save(filename);

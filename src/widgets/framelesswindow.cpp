@@ -8,30 +8,43 @@
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
 #include <optional>
+#include <probe/graphics.h>
 #include <windowsx.h>
 #endif
 
-FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags f)
-    : QWidget(parent, f | Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint)
+FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags flags)
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint | flags)
 {
 #ifdef Q_OS_WIN
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     setAttribute(Qt::WA_NativeWindow);
 
-    auto hwnd = reinterpret_cast<HWND>(winId());
+    const auto hwnd = reinterpret_cast<HWND>(winId());
 
     // shadow
-    DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
+    constexpr DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
     ::DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, &ncrp, sizeof(DWMNCRENDERINGPOLICY));
 
-    MARGINS margins = { -1, -1, -1, -1 };
+    constexpr MARGINS margins = { -1, -1, -1, -1 };
     ::DwmExtendFrameIntoClientArea(hwnd, &margins);
 
-    // window animation
+    // Window Styles: https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles
     auto style = ::GetWindowLong(hwnd, GWL_STYLE);
-    ::SetWindowLong(hwnd, GWL_STYLE,
-                    style | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME | CS_DBLCLKS);
+    if (windowFlags() & Qt::WindowTitleHint) style |= WS_CAPTION | WS_THICKFRAME;
+    ::SetWindowLong(hwnd, GWL_STYLE, style & (~WS_SYSMENU));
 #endif
+}
+
+bool FramelessWindow::isSizeFixed() const
+{
+    if (windowFlags() & Qt::MSWindowsFixedSizeDialogHint) {
+        return true;
+    }
+
+    const QSize minsize = minimumSize();
+    const QSize maxsize = maximumSize();
+
+    return !minsize.isEmpty() && !maxsize.isEmpty() && (minsize == maxsize);
 }
 
 void FramelessWindow::maximize(bool state) { state ? showMaximized() : showNormal(); }
@@ -99,58 +112,91 @@ static bool IsFullscreen(HWND hwnd)
     RECT winrect = {};
     if (::GetWindowRect(hwnd, &winrect) == FALSE) return false;
 
-    auto monitor = MonitorInfoFromWindow(hwnd);
+    const auto monitor = MonitorInfoFromWindow(hwnd);
     return monitor && (monitor->rcMonitor == winrect);
 }
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, qintptr *result)
-#else
-bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, long *result)
-#endif
+bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result)
 {
 #ifdef Q_OS_WIN
-    if (!message || !result || !reinterpret_cast<MSG *>(message)->hwnd) return false;
+    if (!message || !result || !static_cast<MSG *>(message)->hwnd) return false;
 
-    auto wmsg = reinterpret_cast<MSG *>(message);
-    auto hwnd = wmsg->hwnd;
+    const auto wmsg = static_cast<MSG *>(message);
+    const auto hwnd = wmsg->hwnd;
 
     if (!hwnd) return false;
 
     switch (wmsg->message) {
     case WM_NCCALCSIZE: {
-        const auto rect = ((static_cast<BOOL>(wmsg->wParam) == FALSE)
-                               ? reinterpret_cast<LPRECT>(wmsg->lParam)
-                               : &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(wmsg->lParam))->rgrc[0]);
+        // https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-nccalcsize
+        // Parameters
+        // wParam
+        //
+        // If wParam is TRUE, it specifies that the application should indicate which part of the client
+        // area contains valid information. The system copies the valid information to the specified area
+        // within the new client area.
+        //
+        // If wParam is FALSE, the application does not need to indicate the valid part of the client area.
+        //
+        // lParam
+        //
+        // If wParam is TRUE, lParam points to an NCCALCSIZE_PARAMS structure that contains information an
+        // application can use to calculate the new size and position of the client rectangle.
+        //
+        // If wParam is FALSE, lParam points to a RECT structure. On entry, the structure contains the
+        // proposed window rectangle for the window. On exit, the structure should contain the screen
+        // coordinates of the corresponding window client area.
+        //
+        // Return value
+        //
+        // If the wParam parameter is FALSE, the application should return zero.
+        //
+        // If wParam is TRUE, the application should return zero or a combination of the following values.
+        //
+        // If wParam is TRUE and an application returns zero, the old client area is preserved and is
+        // aligned with the upper-left corner of the new client area.
+        const auto rect = wmsg->wParam ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(wmsg->lParam))->rgrc[0]
+                                       : reinterpret_cast<LPRECT>(wmsg->lParam);
 
-        auto max  = IsMaximized(hwnd);
-        auto full = IsFullscreen(hwnd);
+        const LONG original_top = rect->top;
+        // apply the default frame for standard window frame (the resizable frame border and the frame
+        // shadow) including the left, bottom and right edges.
+        if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCCALCSIZE, wmsg->wParam, wmsg->lParam);
+            (res != HTERROR) && (res != HTNOWHERE)) {
+            *result = static_cast<long>(res);
+            return true;
+        }
+        // re-apply the original top for removing the top frame entirely
+        rect->top = original_top;
 
-        const auto xthickness = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-        const auto ythickness = GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+        //
+        const auto monitor    = MonitorInfoFromWindow(hwnd);
+        const auto fullscreen = monitor && (monitor->rcMonitor == *rect);
+        const auto maximized  = IsMaximized(hwnd);
 
-        if (max && !full) {
-            rect->top += ythickness;
-            rect->bottom -= ythickness;
-            rect->left += xthickness;
-            rect->right -= xthickness;
+        // top frame
+        if (maximized && !fullscreen) {
+            const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
+
+            rect->top += ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
+                         ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
         }
 
-        if (max || full) {
+        // autohide taskbar
+        if (maximized || fullscreen) {
             APPBARDATA abd{ .cbSize = sizeof(APPBARDATA) };
-            const UINT taskbar_state = SHAppBarMessage(ABM_GETSTATE, &abd);
 
-            if (taskbar_state & ABS_AUTOHIDE) {
+            if (const UINT taskbar_state = ::SHAppBarMessage(ABM_GETSTATE, &abd);
+                taskbar_state & ABS_AUTOHIDE) {
 
                 UINT taskbar_postion = ABE_BOTTOM;
 
-                auto monitor = MonitorInfoFromWindow(hwnd);
                 if (!monitor) break;
 
                 for (const auto& abe : std::vector<UINT>{ ABE_BOTTOM, ABE_TOP, ABE_LEFT, ABE_RIGHT }) {
                     APPBARDATA pos{ .cbSize = sizeof(APPBARDATA), .uEdge = abe, .rc = monitor->rcMonitor };
-                    if (SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &pos)) {
+                    if (::SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &pos)) {
                         taskbar_postion = abe;
                         break;
                     }
@@ -165,67 +211,32 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, lo
             }
         }
 
-        *result = (static_cast<BOOL>(wmsg->wParam) == FALSE) ? 0 : WVR_REDRAW;
+        *result = wmsg->wParam ? WVR_REDRAW : FALSE;
         return true;
     }
 
-        // resize
     case WM_NCHITTEST: {
-        if (IsFullscreen(hwnd)) {
+        if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam); res != HTCLIENT) {
+            *result = static_cast<long>(res);
+            return true;
+        }
+
+        // CLIENT
+        if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
             *result = HTCLIENT;
             return true;
         }
 
+        // TOP
         RECT rect{};
         if (!::GetWindowRect(hwnd, &rect)) return false;
 
-        auto x = GET_X_LPARAM(wmsg->lParam);
-        auto y = GET_Y_LPARAM(wmsg->lParam);
-
-        const auto xthickness = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-        const auto ythickness = GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-
-        auto hl = x >= rect.left && x < rect.left + xthickness;
-        auto ht = y >= rect.top && y < rect.top + ythickness;
-        auto hr = x >= rect.right - xthickness && x < rect.right;
-        auto hb = y >= rect.bottom - ythickness && y < rect.bottom;
-
-        if (hl && ht) {
-            *result = HTTOPLEFT;
-            return true;
-        }
-
-        if (hr && ht) {
-            *result = HTTOPRIGHT;
-            return true;
-        }
-
-        if (hl && hb) {
-            *result = HTBOTTOMLEFT;
-            return true;
-        }
-
-        if (hr && hb) {
-            *result = HTBOTTOMRIGHT;
-            return true;
-        }
-
-        if (hl) {
-            *result = HTLEFT;
-            return true;
-        }
-
-        if (hr) {
-            *result = HTRIGHT;
-            return true;
-        }
-
-        if (ht) {
+        const POINT pos{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) };
+        const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
+        if (const auto frame = ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
+                               ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+            pos.y < rect.top + frame) {
             *result = HTTOP;
-            return true;
-        }
-        if (hb) {
-            *result = HTBOTTOM;
             return true;
         }
 

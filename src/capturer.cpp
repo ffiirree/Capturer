@@ -169,8 +169,8 @@ void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 
 void Capturer::showImages()
 {
-    bool visible = !windows_.empty() && windows_.front()->isVisible();
-    for (auto& win : windows_) {
+    const bool visible = !windows_.empty() && windows_.front()->isVisible();
+    for (const auto& win : windows_) {
         win->setVisible(!visible);
     }
 }

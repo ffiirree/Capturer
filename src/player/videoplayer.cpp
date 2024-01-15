@@ -26,8 +26,8 @@
 using namespace std::chrono;
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint |
-                                  Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
+                                  Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
 {
     setMouseTracking(true);
     installEventFilter(this);
@@ -75,8 +75,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 10s, + 10s); });
     connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { seek(timeline_.time() - 10s, - 10s); });
     connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this] { control_->paused() ? control_->resume() : control_->pause(); });
-    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 + 5); }); // +10s
-    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 - 5); }); // -10s
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 + 5); });
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 - 5); });
     // clang-format on
 
     initContextMenu();
@@ -346,7 +346,7 @@ int VideoPlayer::run()
     timeline_.set(0ns);
 
     // video thread
-    video_thread_ = std::thread([this]() { video_thread_f(); });
+    video_thread_ = std::thread([this] { video_thread_f(); });
 
     // audio thread
     if (audio_enabled_ &&

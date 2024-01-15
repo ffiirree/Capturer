@@ -18,7 +18,7 @@ class ImageWindow : public FramelessWindow
 public:
     explicit ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent = nullptr);
 
-    void preview(const std::shared_ptr<QMimeData>& data);
+    void preview(const std::shared_ptr<QMimeData>& mimedata);
 
     std::optional<QPixmap> render(const std::shared_ptr<QMimeData>& mimedata);
 
