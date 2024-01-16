@@ -13,16 +13,16 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
 
     pa_sample_spec spec{
         .format   = PA_SAMPLE_S16LE,
-        .rate     = 44'100,
+        .rate     = 48'000,
         .channels = 2,
     };
 
     format_ = {
-        .sample_rate    = 44'100,
+        .sample_rate    = 48'000,
         .sample_fmt     = AV_SAMPLE_FMT_S16,
         .channels       = 2,
         .channel_layout = AV_CH_LAYOUT_STEREO,
-        .time_base      = { 1, 44'100 },
+        .time_base      = { 1, 48'000 },
     };
 
     if (!::pa_sample_spec_valid(&spec)) {
@@ -88,7 +88,7 @@ void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t b
     self->buffer_frames_ = bytes / self->bytes_per_frame_;
 
     // fixme: assume that we always have enough frames
-    self->callback_(reinterpret_cast<uint8_t **>(&buffer), self->buffer_frames_, av::clock::ns());
+    self->callback(reinterpret_cast<uint8_t **>(&buffer), self->buffer_frames_, av::clock::ns());
     ::pa_stream_write(stream, buffer, bytes, nullptr, 0, PA_SEEK_RELATIVE);
 }
 
@@ -100,7 +100,7 @@ void PulseAudioRenderer::pulse_stream_latency_callback(pa_stream *, void *)
 
 void PulseAudioRenderer::pulse_stream_state_callback(pa_stream *stream, void *userdata)
 {
-    auto self = reinterpret_cast<PulseAudioRenderer *>(userdata);
+    const auto self = static_cast<PulseAudioRenderer *>(userdata);
 
     switch (::pa_stream_get_state(stream)) {
     case PA_STREAM_UNCONNECTED:
@@ -126,11 +126,8 @@ void PulseAudioRenderer::pulse_stream_underflow_callback(pa_stream *, void *) { 
 
 void PulseAudioRenderer::pulse_stream_drain_callback(pa_stream *, int, void *) { pulse::signal(0); }
 
-int PulseAudioRenderer::start(
-    const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>& cb)
+int PulseAudioRenderer::start()
 {
-    callback_ = cb;
-
     pulse::stream::cork(stream_, false, pulse_stream_success_callback, this);
 
     pulse::loop_lock();

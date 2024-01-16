@@ -3,6 +3,7 @@
 
 #include "media.h"
 
+#include <chrono>
 #include <functional>
 #include <string>
 
@@ -19,12 +20,10 @@ struct AudioRenderer
     [[nodiscard]] virtual int open(const std::string& name, RenderFlags flags) = 0;
     [[nodiscard]] virtual bool ready() const                                   = 0;
 
-    // callback: buffer address, samples (per channels), timestamp -> written samples
-    [[nodiscard]] virtual int
-    start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>&) = 0;
+    [[nodiscard]] virtual int start() = 0;
     // resetting the stream flushes all pending data and resets the audio clock stream position to 0.
-    virtual int reset()                                                                   = 0;
-    virtual int stop()                                                                    = 0;
+    virtual int reset()               = 0;
+    virtual int stop()                = 0;
 
     virtual int mute(bool)                   = 0;
     [[nodiscard]] virtual bool muted() const = 0;
@@ -40,7 +39,10 @@ struct AudioRenderer
     [[nodiscard]] virtual av::aformat_t format() const = 0;
 
     // sample number
-    [[nodiscard]] virtual uint32_t bufferSize() const = 0;
+    [[nodiscard]] virtual uint32_t buffer_size() const = 0;
+
+    std::function<uint32_t(uint8_t **data, uint32_t samples, std::chrono::nanoseconds)> callback =
+        [](auto, auto, auto) -> int32_t { return 0; };
 };
 
 #endif //! CAPTURER_AUDIO_RENDER_H

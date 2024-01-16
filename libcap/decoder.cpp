@@ -226,15 +226,15 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // audio stream
     if (audio_stream_idx_ >= 0) {
-        auto audio_decoder = choose_decoder(fmt_ctx_->streams[audio_stream_idx_], AV_HWDEVICE_TYPE_NONE);
+        const auto audio_stream = fmt_ctx_->streams[audio_stream_idx_];
+        auto audio_decoder      = choose_decoder(audio_stream, AV_HWDEVICE_TYPE_NONE);
 
         if (audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder); !audio_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [A] failed to alloc decoder context";
             return -1;
         }
 
-        if (avcodec_parameters_to_context(audio_decoder_ctx_,
-                                          fmt_ctx_->streams[audio_stream_idx_]->codecpar) < 0) {
+        if (avcodec_parameters_to_context(audio_decoder_ctx_, audio_stream->codecpar) < 0) {
             LOG(ERROR) << "[   DECODER] [A] avcodec_parameters_to_context";
             return -1;
         }
@@ -252,11 +252,10 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
             .time_base      = { 1, audio_decoder_ctx_->sample_rate },
         };
 
-        audio_next_pts_ = av_rescale_q(fmt_ctx_->streams[audio_stream_idx_]->start_time,
-                                       fmt_ctx_->streams[audio_stream_idx_]->time_base, afmt.time_base);
+        audio_next_pts_ = av_rescale_q(audio_stream->start_time, audio_stream->time_base, afmt.time_base);
 
         LOG(INFO) << fmt::format("[   DECODER] [A] [{:>6}] {}, start_time = {}", audio_decoder->name,
-                                 av::to_string(afmt), fmt_ctx_->streams[audio_stream_idx_]->start_time);
+                                 av::to_string(afmt), audio_stream->start_time);
     }
 
     ready_ = true;
@@ -524,11 +523,7 @@ int Decoder::decode_fn()
                     frame_->pts = av_rescale_q(frame_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base,
                                                afmt.time_base);
                 }
-                else {
-                    if (audio_next_pts_ == AV_NOPTS_VALUE && packet_->pts != AV_NOPTS_VALUE) {
-                        audio_next_pts_ = av_rescale_q(
-                            packet_->pts, fmt_ctx_->streams[audio_stream_idx_]->time_base, afmt.time_base);
-                    }
+                else if (audio_next_pts_ != AV_NOPTS_VALUE) {
                     frame_->pts = audio_next_pts_;
                 }
 

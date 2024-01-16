@@ -111,16 +111,14 @@ HRESULT WasapiRenderer::InitializeStreamSwitch()
     return S_OK;
 }
 
-int WasapiRenderer::start(
-    const std::function<uint32_t(uint8_t **ptr, uint32_t samples, std::chrono::nanoseconds ts)>& cb)
+int WasapiRenderer::start()
 {
     if (!ready_ || running_) {
         LOG(ERROR) << "[  WASAPI-R] not ready or running.";
         return -1;
     }
 
-    running_  = true;
-    callback_ = cb;
+    running_ = true;
 
     // zero fill
     {
@@ -244,7 +242,7 @@ HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
 
     // Grab all the available space in the shared buffer.
     RETURN_IF_FAILED(render_->GetBuffer(request_frames, &buffer));
-    const UINT32 wframes = callback_(&buffer, request_frames, ts);
+    const UINT32 wframes = callback(&buffer, request_frames, ts);
     RETURN_IF_FAILED(render_->ReleaseBuffer(wframes, wframes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT));
 
     return S_OK;

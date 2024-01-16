@@ -24,8 +24,6 @@
 #include <libcap/linux-pulse/pulse-renderer.h>
 #endif
 
-using namespace std::chrono;
-
 VideoPlayer::VideoPlayer(QWidget *parent)
     : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
                                   Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
@@ -297,7 +295,7 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
 
     std::lock_guard lock(mtx_);
 
-    ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, microseconds{ decoder_->duration() });
+    ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, std::chrono::microseconds{ decoder_->duration() });
 
     LOG(INFO) << fmt::format("seek: {:%T}", ts);
 
@@ -350,21 +348,23 @@ int VideoPlayer::run()
     video_thread_ = std::thread([this] { video_thread_f(); });
 
     // audio thread
-    if (audio_enabled_ &&
-        audio_renderer_->start([this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
-            std::lock_guard lock(mtx_);
+    audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
+        std::lock_guard lock(mtx_);
 
-            const uint32_t buffer_frames = av_audio_fifo_size(abuffer_); // per channel
-            if (!buffer_frames || seeking_ || paused()) return 0;
+        const uint32_t buffered_frames = av_audio_fifo_size(abuffer_); // per channel
+        if (!buffered_frames || seeking_ || paused()) return 0;
 
-            const uint32_t remaining = buffer_frames + (audio_renderer_->bufferSize() - request_frames);
-            timeline_.set(audio_pts_.load() -
-                              av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(),
-                          ts);
+        const uint32_t remaining = buffered_frames + (audio_renderer_->buffer_size() - request_frames);
+        timeline_.set(
+            audio_pts_.load() - av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(), ts);
 
-            return av_audio_fifo_read(abuffer_, reinterpret_cast<void **>(ptr), request_frames);
-        }) < 0) {
-        LOG(ERROR) << "failed to start audio render";
+        LOG(INFO) << fmt::format("time = {:%T}", timeline_.time());
+
+        return av_audio_fifo_read(abuffer_, reinterpret_cast<void **>(ptr), request_frames);
+    };
+
+    if (audio_enabled_ && audio_renderer_->start() < 0) {
+        LOG(ERROR) << "[    PLAYER] failed to start audio render";
         return -1;
     }
 
@@ -383,7 +383,7 @@ int VideoPlayer::run()
 
 void VideoPlayer::video_thread_f()
 {
-    probe::thread::set_name("player-video");
+    probe::thread::set_name("PLAYER-VIDEO");
 
 #ifdef _WIN32
     ::timeBeginPeriod(1);

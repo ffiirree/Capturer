@@ -14,7 +14,7 @@ public:
     int open(const std::string& name, RenderFlags flags) override;
     [[nodiscard]] bool ready() const override { return ready_; }
 
-    int start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>&) override;
+    int start() override;
     int reset() override;
     int stop() override;
 
@@ -32,7 +32,7 @@ public:
     [[nodiscard]] av::aformat_t format() const override { return format_; }
 
     // sample number
-    [[nodiscard]] uint32_t bufferSize() const override { return buffer_frames_; }
+    [[nodiscard]] uint32_t buffer_size() const override { return buffer_frames_; }
 
 private:
     static void pulse_stream_success_callback(pa_stream *, int success, void *);
@@ -45,8 +45,6 @@ private:
 
     av::aformat_t format_{};
     av::device_t devinfo_{};
-
-    std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)> callback_;
 
     uint32_t buffer_frames_{ 0 };
     uint32_t bytes_per_frame_{ 1 };

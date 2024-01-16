@@ -35,7 +35,7 @@ public:
     int open(const std::string& name, RenderFlags flags) override;
     bool ready() const override { return ready_; }
 
-    int start(const std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)>& cb) override;
+    int start() override;
     int reset() override;
     int stop() override;
 
@@ -51,7 +51,7 @@ public:
 
     av::aformat_t format() const override { return format_; }
 
-    uint32_t bufferSize() const override { return buffer_frames_; }
+    uint32_t buffer_size() const override { return buffer_frames_; }
 
 protected:
     long refs = 0;
@@ -96,8 +96,6 @@ private:
     av::device_t devinfo_{};
 
     std::thread thread_{};
-
-    std::function<uint32_t(uint8_t **, uint32_t, std::chrono::nanoseconds)> callback_;
 
     // WASAPI Render@{
     winrt::com_ptr<IMMDeviceEnumerator> enumerator_{};

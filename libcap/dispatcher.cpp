@@ -320,7 +320,7 @@ int Dispatcher::set_encoder_format_by_sinks()
         consumer->vfmt.height              = av_buffersink_get_h(consumer_ctx_.vsink_ctx);
         consumer->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(consumer_ctx_.vsink_ctx);
         consumer->vfmt.time_base           = av_buffersink_get_time_base(consumer_ctx_.vsink_ctx);
-        consumer->vfmt.framerate           = vfmt.framerate;
+        consumer->vfmt.framerate           = av_buffersink_get_frame_rate(consumer_ctx_.vsink_ctx);
         consumer->sink_framerate           = av_buffersink_get_frame_rate(consumer_ctx_.vsink_ctx);
     }
 

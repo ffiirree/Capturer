@@ -2,10 +2,10 @@
 #define CAPTURER_MEDIA_H
 
 #include "clock.h"
-#include "probe/util.h"
 
 #include <fmt/format.h>
 #include <map>
+#include <probe/util.h>
 #include <vector>
 
 extern "C" {
@@ -153,10 +153,13 @@ namespace av
     // for creating vbuffer src
     inline std::string to_string(const vformat_t& fmt)
     {
-        return fmt::format(
-            "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:frame_rate={}/{}", fmt.width,
-            fmt.height, to_string(fmt.pix_fmt), fmt.time_base.num, fmt.time_base.den,
-            fmt.sample_aspect_ratio.num, fmt.sample_aspect_ratio.den, fmt.framerate.num, fmt.framerate.den);
+        auto args = fmt::format("video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}", fmt.width,
+                                fmt.height, to_string(fmt.pix_fmt), fmt.time_base.num, fmt.time_base.den,
+                                fmt.sample_aspect_ratio.num, std::max(fmt.sample_aspect_ratio.den, 1));
+        if (fmt.framerate.den && fmt.framerate.num) {
+            args += fmt::format(":frame_rate={}/{}", fmt.framerate.num, fmt.framerate.den);
+        }
+        return args;
     }
 
     // for creating abuffer src
