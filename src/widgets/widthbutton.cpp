@@ -22,7 +22,5 @@ void WidthButton::wheelEvent(QWheelEvent *event)
 {
     if (!isChecked()) return;
 
-    width_ += event->angleDelta().y() / 120;
-
-    setValue(width_, false);
+    setValue(width_ + event->angleDelta().y() / 120, false);
 }

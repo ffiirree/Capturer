@@ -13,7 +13,7 @@ public:
     explicit ColorButton(QWidget * = nullptr);
     explicit ColorButton(const QColor&, QWidget * = nullptr);
 
-    inline void color(const QColor& c, bool silence = true)
+    void color(const QColor& c, bool silence = true)
     {
         if (color_ == c) return;
 
@@ -23,7 +23,7 @@ public:
         if (!silence) emit changed(color_);
     }
 
-    inline QColor color() const { return color_; }
+    [[nodiscard]] QColor color() const { return color_; }
 
 signals:
     void clicked(const QColor&);
@@ -61,7 +61,7 @@ protected:
     void wheelEvent(QWheelEvent *) override;
 
 private:
-    QColorDialog *color_dialog_{ nullptr };
+    QColorDialog *color_dialog_{};
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ class ColorPanel : public QWidget
 public:
     explicit ColorPanel(QWidget * = nullptr);
 
-    QColor color() const { return color_dialog_btn_->color(); }
+    [[nodiscard]] QColor color() const { return color_dialog_btn_->color(); }
 
 signals:
     void changed(const QColor&);
@@ -82,7 +82,7 @@ public slots:
     void setColor(const QColor& color, bool silence = true) { color_dialog_btn_->color(color, silence); }
 
 private:
-    ColorDialogButton *color_dialog_btn_{ nullptr };
+    ColorDialogButton *color_dialog_btn_{};
 };
 
 #endif //! CAPTURER_COLOR_PANEL_H

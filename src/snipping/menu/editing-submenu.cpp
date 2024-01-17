@@ -15,12 +15,12 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
     QWidget::setVisible(false);
 
     // frameless: background & border
-    auto backgroud_layout = new QHBoxLayout(this);
+    const auto backgroud_layout = new QHBoxLayout(this);
     backgroud_layout->setSpacing(0);
     backgroud_layout->setContentsMargins({});
     backgroud_layout->setSizeConstraint(QLayout::SetFixedSize);
 
-    auto background = new QWidget(this);
+    const auto background = new QWidget(this);
     background->setObjectName("editing-submenu");
     backgroud_layout->addWidget(background);
 

@@ -40,7 +40,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         if (item != nullptr && reason == Qt::MouseFocusReason) {
             scene()->clearSelection(); // clear selection of text items
 
-            auto wrapper = dynamic_cast<GraphicsItemWrapper *>(item);
+            const auto wrapper = dynamic_cast<GraphicsItemWrapper *>(item);
             menu_->paintGraph((wrapper->graph() == canvas::pixmap) ? canvas::none : wrapper->graph());
 
             menu_->fill(wrapper->filled());
@@ -109,7 +109,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     // move menu
     connect(selector_, &Selector::moved, this, &ScreenShoter::moveMenu);
     connect(selector_, &Selector::resized, this, &ScreenShoter::moveMenu);
-    connect(selector_, &Selector::statusChanged, [this](SelectorStatus status) {
+    connect(selector_, &Selector::statusChanged, [this](auto status) {
         if ((status > SelectorStatus::READY && status < SelectorStatus::CAPTURED) ||
             status == SelectorStatus::RESIZING)
             magnifier_->show();
@@ -202,7 +202,7 @@ bool ScreenShoter::eventFilter(QObject *obj, QEvent *event)
 
 void ScreenShoter::mousePressEvent(QMouseEvent *event)
 {
-    auto ffs_item = scene_->focusOrFirstSelectedItem();
+    const auto ffs_item = scene_->focusOrFirstSelectedItem();
 
     // focus or blur
     QGraphicsView::mousePressEvent(event);
@@ -264,7 +264,7 @@ void ScreenShoter::createItem(const QPointF& pos)
     creating_item_->setFont(menu_->font());
     creating_item_->fill(menu_->filled());
 
-    creating_item_->onhovered([this](ResizerLocation location) { updateCursor(location); });
+    creating_item_->onhovered([this](auto location) { updateCursor(location); });
     creating_item_->onmoved([item = creating_item_, this](auto opos) {
         undo_stack_->push(new MoveCommand(dynamic_cast<QGraphicsItem *>(item), opos));
     });
@@ -299,10 +299,17 @@ void ScreenShoter::finishItem()
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
     if (menu_->graph() != canvas::none && !menu_->filled()) {
-        auto delta = event->angleDelta().y() / 120;
+        const auto delta = event->angleDelta().y() / 120;
 
         auto pen = menu_->pen();
-        pen.setWidth(std::clamp(menu_->pen().width() + delta, 1, 71));
+        if (event->modifiers() & Qt::CTRL) {
+            auto color = pen.color();
+            color.setAlpha(color.alpha() + delta * 5);
+            pen.setColor(color);
+        }
+        else {
+            pen.setWidth(std::clamp(menu_->pen().width() + delta, 1, 71));
+        }
 
         menu_->setPen(pen, false);
 
@@ -349,8 +356,8 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ScreenShoter::moveMenu()
 {
-    auto area  = selector_->selected();
-    auto right = area.right() - menu_->width() - 2;
+    const auto area = selector_->selected();
+    auto right      = area.right() - menu_->width() - 2;
     if (right < geometry().left()) right = geometry().left();
 
     if (area.bottom() + (menu_->height() * 2 + 6 /*margin*/) < geometry().bottom()) {
@@ -372,12 +379,12 @@ std::pair<QPixmap, QPoint> ScreenShoter::snip()
     history_.push_back(selector_->prey());
     history_idx_ = history_.size() - 1;
 
-    auto rect = selector_->selected(); // absolute coordinate
+    const auto rect = selector_->selected(); // absolute coordinate
     selector_->close();
     scene()->clearFocus();
     scene()->clearSelection();
 
-    return { QGraphicsView::grab(rect.translated(-geometry().topLeft())), rect.topLeft() };
+    return { grab(rect.translated(-geometry().topLeft())), rect.topLeft() };
 }
 
 void ScreenShoter::save()
@@ -457,27 +464,27 @@ void ScreenShoter::updateTheme()
 
 void ScreenShoter::registerShortcuts()
 {
-    connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this] {
         if (any(selector_->status() & SelectorStatus::CAPTURED) ||
             any(selector_->status() & SelectorStatus::LOCKED)) {
             save();
         }
     });
 
-    connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::Key_P, this), &QShortcut::activated, [this] {
         if (selector_->status() == SelectorStatus::CAPTURED ||
             selector_->status() == SelectorStatus::LOCKED) {
             pin();
         }
     });
 
-    connect(new QShortcut(Qt::Key_Tab, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::Key_Tab, this), &QShortcut::activated, [this] {
         if (magnifier_->isVisible()) {
             magnifier_->toggleFormat();
         }
     });
 
-    connect(new QShortcut(Qt::Key_F5, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::Key_F5, this), &QShortcut::activated, [this] {
         hide();
         magnifier_->hide();
 
@@ -489,21 +496,21 @@ void ScreenShoter::registerShortcuts()
     });
 
     // clang-format off
-    connect(new QShortcut(Qt::Key_Return, this), &QShortcut::activated, [this]() { copy(); exit(); });
-    connect(new QShortcut(Qt::Key_Enter,  this), &QShortcut::activated, [this]() { copy(); exit(); });
-    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() { exit(); });
+    connect(new QShortcut(Qt::Key_Return, this), &QShortcut::activated, [this] { copy(); exit(); });
+    connect(new QShortcut(Qt::Key_Enter,  this), &QShortcut::activated, [this] { copy(); exit(); });
+    connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this] { exit(); });
 
     connect(new QShortcut(QKeySequence::Undo, this), &QShortcut::activated, undo_stack_, &QUndoStack::undo);
     connect(new QShortcut(QKeySequence::Redo, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
     // clang-format on
 
-    connect(new QShortcut(QKeySequence::Delete, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(QKeySequence::Delete, this), &QShortcut::activated, [this] {
         if (!scene()->selectedItems().isEmpty() || scene()->focusItem()) {
             undo_stack_->push(new DeleteCommand(scene()));
         }
     });
 
-    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this]() {
+    connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this] {
         if (history_idx_ < history_.size()) {
             selector_->select(history_[history_idx_]);
             selector_->status(SelectorStatus::CAPTURED);
@@ -512,7 +519,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this]() {
+    connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this] {
         if (history_idx_ < history_.size()) {
             selector_->select(history_[history_idx_]);
             selector_->status(SelectorStatus::CAPTURED);
@@ -521,7 +528,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this]() {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this] {
         if (selector_->status() < SelectorStatus::CAPTURED && magnifier_->isVisible()) {
             clipboard::push(magnifier_->color(), magnifier_->colorname());
             exit();

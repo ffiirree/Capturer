@@ -8,7 +8,7 @@
 #include <QCheckBox>
 #include <QWidget>
 
-class EditingMenu : public QWidget
+class EditingMenu final : public QWidget
 {
     Q_OBJECT
 

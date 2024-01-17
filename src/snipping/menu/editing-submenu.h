@@ -10,7 +10,7 @@
 #include <QPen>
 #include <QWidget>
 
-class EditingSubmenu : public QWidget
+class EditingSubmenu final : public QWidget
 {
     Q_OBJECT
 public:
@@ -48,12 +48,12 @@ signals:
     void moved();
 
 private:
-    WidthButton *width_btn_{ nullptr };
-    QCheckBox *fill_btn_{ nullptr };
-    ComboBox *font_family_{ nullptr };
-    ComboBox *font_size_{ nullptr };
-    ComboBox *font_style_{ nullptr };
-    ColorPanel *color_panel_{ nullptr };
+    WidthButton *width_btn_{};
+    QCheckBox *fill_btn_{};
+    ComboBox *font_family_{};
+    ComboBox *font_size_{};
+    ComboBox *font_style_{};
+    ColorPanel *color_panel_{};
 
     QPen pen_{ Qt::red, 3 };
     QFont font_{};
