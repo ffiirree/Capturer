@@ -27,6 +27,33 @@ namespace canvas
         editing  = 0x08, // text
         creating = 0x10,
     };
+
+    inline bool has_color(const graphics_t graph)
+    {
+        switch (graph) {
+        case rectangle:
+        case ellipse:
+        case arrow:
+        case line:
+        case curve:
+        case counter:
+        case text: return true;
+        default: return false;
+        }
+    }
+
+    inline bool has_width(const graphics_t graph)
+    {
+        switch (graph) {
+        case rectangle:
+        case ellipse:
+        case line:
+        case curve:
+        case mosaic:
+        case eraser: return true;
+        default: return false;
+        }
+    }
 } // namespace canvas
 
 #endif //! CAPTURER_CANVAS_TYPES_H

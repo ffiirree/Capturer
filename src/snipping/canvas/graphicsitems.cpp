@@ -19,9 +19,7 @@ ResizerLocation GraphicsItemWrapper::location(const QPointF& p) const
 
 void GraphicsItemWrapper::hover(QGraphicsSceneHoverEvent *event)
 {
-    auto hpos = location(event->pos());
-
-    if (hpos != hover_location_) {
+    if (const auto hpos = location(event->pos()); hpos != hover_location_) {
         onhover(hpos);
         hover_location_ = hpos;
     }
@@ -59,7 +57,7 @@ void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPoin
     switch (adjusting_) {
     case canvas::adjusting_t::moving: break;
     case canvas::adjusting_t::resizing: {
-        auto cpos = event->pos();
+        const auto cpos = event->pos();
 
         ResizerF resizer = geometry();
         // clang-format off
@@ -81,15 +79,15 @@ void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPoin
         break;
     }
     case canvas::adjusting_t::rotating: {
-        auto a = mpos_;
-        auto b = center;
-        auto c = event->scenePos();
+        const auto a = mpos_;
+        const auto b = center;
+        const auto c = event->scenePos();
 
-        QPointF ab = { b.x() - a.x(), b.y() - a.y() };
-        QPointF cb = { b.x() - c.x(), b.y() - c.y() };
+        const QPointF ab{ b.x() - a.x(), b.y() - a.y() };
+        const QPointF cb{ b.x() - c.x(), b.y() - c.y() };
 
-        float dot   = (ab.x() * cb.x() + ab.y() * cb.y()); // dot product
-        float cross = (ab.x() * cb.y() - ab.y() * cb.x()); // cross product
+        const double dot   = (ab.x() * cb.x() + ab.y() * cb.y()); // dot product
+        const double cross = (ab.x() * cb.y() - ab.y() * cb.x()); // cross product
 
         rotate(angle_ + std::atan2(cross, dot) * 180. / std::numbers::pi);
 
@@ -123,7 +121,8 @@ void GraphicsItemWrapper::rotate(qreal angle)
 {
     angle_ = angle;
 
-    auto cx = geometry().center().x(), cy = geometry().center().y();
+    const auto cx = geometry().center().x();
+    const auto cy = geometry().center().y();
     dynamic_cast<QGraphicsItem *>(this)->setTransform(
         QTransform{}.translate(cx, cy).rotate(angle).translate(-cx, -cy));
 }
@@ -335,13 +334,13 @@ static QVector<QPointF> compute_arrow_vertexes(QPointF begin, QPointF end)
 {
     QVector<QPointF> points(6, QPointF{});
 
-    double slopy = std::atan2(end.y() - begin.y(), end.x() - begin.x());
+    const double slopy = std::atan2(end.y() - begin.y(), end.x() - begin.x());
 
-    double par1 = 20.0;
-    double par2 = 25.0;
+    constexpr double par1 = 20.0;
+    constexpr double par2 = 25.0;
 
-    double alpha1 = 13.0 * std::numbers::pi / 180.0;
-    double alpha2 = 26.0 * std::numbers::pi / 180.0;
+    constexpr double alpha1 = 13.0 * std::numbers::pi / 180.0;
+    constexpr double alpha2 = 26.0 * std::numbers::pi / 180.0;
 
     points[0] = begin;
 
@@ -401,10 +400,12 @@ ResizerLocation GraphicsArrowItem::location(const QPointF& p) const
     if (geometry_.isX1Y1Anchor(p)) {
         return ResizerLocation::X1Y1_ANCHOR;
     }
-    else if (geometry_.isX2Y2Anchor(p)) {
+
+    if (geometry_.isX2Y2Anchor(p)) {
         return ResizerLocation::X2Y2_ANCHOR;
     }
-    else if (shape().contains(p)) {
+
+    if (shape().contains(p)) {
         return ResizerLocation::BORDER;
     }
 
@@ -473,6 +474,12 @@ void GraphicsRectItem::push(const QPointF& point)
     update();
 }
 
+QRectF GraphicsRectItem::boundingRect() const
+{
+    const auto w = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
+    return geometry_.rect().adjusted(-w, -w, w, w);
+}
+
 QPainterPath GraphicsRectItem::shape() const
 {
     QPainterPath path;
@@ -480,7 +487,7 @@ QPainterPath GraphicsRectItem::shape() const
         path.addRect(geometry_.boundingRect());
     }
     else {
-        auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
+        const auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
         path.addRect(geometry_.rect().adjusted(-m, -m, m, m));
         path.addRect(geometry_.rect().adjusted(m, m, -m, -m));
     }
@@ -546,6 +553,12 @@ void GraphicsEllipseleItem::push(const QPointF& point)
     update();
 }
 
+QRectF GraphicsEllipseleItem::boundingRect() const
+{
+    const auto w = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
+    return geometry_.rect().adjusted(-w, -w, w, w);
+}
+
 QPainterPath GraphicsEllipseleItem::shape() const
 {
     QPainterPath path;
@@ -553,7 +566,7 @@ QPainterPath GraphicsEllipseleItem::shape() const
         path.addRect(geometry_.boundingRect());
     }
     else {
-        auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
+        const auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
 
         path.addRect(geometry_.boundingRect().adjusted(-m, -m, m, m));
         path.addEllipse(geometry_.rect().adjusted(m, m, -m, -m));
@@ -570,17 +583,16 @@ ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
         return shape().contains(p) ? ResizerLocation::BORDER : ResizerLocation::OUTSIDE;
     }
     else {
-        auto half = std::max(pen_.widthF(), geometry_.borderWidth());
+        const auto half = std::max(pen_.widthF(), geometry_.borderWidth());
 
-        QRegion r1(geometry_.boundingRect().toRect(), QRegion::Ellipse);
-        QRegion r2(geometry_.rect().toRect().adjusted(half, half, -half, -half), QRegion::Ellipse);
+        const QRegion r1(geometry_.boundingRect().toRect(), QRegion::Ellipse);
+        const QRegion r2(geometry_.rect().adjusted(half, half, -half, -half).toRect(), QRegion::Ellipse);
 
-        if (r2.contains(p.toPoint()))
-            return ResizerLocation::EMPTY_INSIDE;
-        else if (r1.contains(p.toPoint()) && !r2.contains(p.toPoint()))
-            return ResizerLocation::BORDER;
-        else
-            return ResizerLocation::OUTSIDE;
+        if (r2.contains(p.toPoint())) return ResizerLocation::EMPTY_INSIDE;
+
+        if (r1.contains(p.toPoint()) && !r2.contains(p.toPoint())) return ResizerLocation::BORDER;
+
+        return ResizerLocation::OUTSIDE;
     }
 }
 
@@ -944,9 +956,8 @@ QRectF GraphicsTextItem::paddingRect() const
 
 QRectF GraphicsTextItem::boundingRect() const
 {
-    const auto hw = 12.0 / 2.0;
-    ResizerF resizer{ paddingRect() };
-    return paddingRect().adjusted(-hw, -hw, hw, hw).united(resizer.rotateAnchor());
+    constexpr auto hw = 12.0 / 2.0;
+    return paddingRect().adjusted(-hw, -hw, hw, hw).united(ResizerF{ paddingRect() }.rotateAnchor());
 }
 
 QPainterPath GraphicsTextItem::shape() const

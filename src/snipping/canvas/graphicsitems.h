@@ -196,6 +196,7 @@ public:
     explicit GraphicsRectItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
+    [[nodiscard]] QRectF boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     [[nodiscard]] bool filled() const override;
@@ -256,6 +257,7 @@ public:
     explicit GraphicsEllipseleItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
+    [[nodiscard]] QRectF boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;

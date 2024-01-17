@@ -298,22 +298,24 @@ void ScreenShoter::finishItem()
 
 void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
-    if (menu_->graph() != canvas::none && !menu_->filled()) {
+    if (menu_->graph() != canvas::none) {
         const auto delta = event->angleDelta().y() / 120;
+        auto pen         = menu_->pen();
 
-        auto pen = menu_->pen();
-        if (event->modifiers() & Qt::CTRL) {
+        if ((event->modifiers() & Qt::CTRL) && canvas::has_color(menu_->graph())) {
             auto color = pen.color();
             color.setAlpha(color.alpha() + delta * 5);
             pen.setColor(color);
+
+            menu_->setPen(pen, false);
+            updateCursor(ResizerLocation::DEFAULT);
         }
-        else {
+        else if (canvas::has_width(menu_->graph())) {
             pen.setWidth(std::clamp(menu_->pen().width() + delta, 1, 71));
+
+            menu_->setPen(pen, false);
+            updateCursor(ResizerLocation::DEFAULT);
         }
-
-        menu_->setPen(pen, false);
-
-        updateCursor(ResizerLocation::DEFAULT);
     }
 }
 
