@@ -13,14 +13,14 @@ class GraphicsItemWrapper
 public:
     virtual ~GraphicsItemWrapper() = default;
 
-    virtual canvas::graphics_t graph() const = 0;
+    [[nodiscard]] virtual canvas::graphics_t graph() const = 0;
 
     // getter
-    virtual QPen pen() const { return Qt::NoPen; }
+    [[nodiscard]] virtual QPen pen() const { return Qt::NoPen; }
 
-    virtual bool filled() const { return false; }
+    [[nodiscard]] virtual bool filled() const { return false; }
 
-    virtual QFont font() const { return {}; }
+    [[nodiscard]] virtual QFont font() const { return {}; }
 
     // setter
     virtual void setPen(const QPen&) {}
@@ -33,20 +33,20 @@ public:
     virtual void push(const QPointF&) = 0;
 
     //
-    virtual bool invalid() const = 0;
+    [[nodiscard]] virtual bool invalid() const = 0;
 
-    virtual bool creating() const { return false; }
+    [[nodiscard]] virtual bool creating() const { return false; }
 
     //
-    virtual ResizerLocation location(const QPointF&) const;
+    [[nodiscard]] virtual ResizerLocation location(const QPointF&) const;
 
     // rotate
-    virtual qreal angle() const { return angle_; }
+    [[nodiscard]] virtual qreal angle() const { return angle_; }
 
     virtual void rotate(qreal);
 
     // resize
-    virtual ResizerF geometry() const { return geometry_; }
+    [[nodiscard]] virtual ResizerF geometry() const { return geometry_; }
 
     virtual void resize(const ResizerF&, ResizerLocation) {}
 

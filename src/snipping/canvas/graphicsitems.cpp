@@ -198,25 +198,30 @@ static QPainterPath shape_from_path(const QPainterPath& path, const QPen& pen)
 {
     // We unfortunately need this hack as QPainterPathStroker will set a width of 1.0
     // if we pass a value of 0.0 to QPainterPathStroker::setWidth()
-    const qreal penWidthZero = qreal(0.00000001);
+    constexpr auto ZERO = static_cast<qreal>(0.00000001);
 
     if (path == QPainterPath() || pen == Qt::NoPen) return path;
+
     QPainterPathStroker ps;
     ps.setCapStyle(pen.capStyle());
+
     if (pen.widthF() <= 0.0)
-        ps.setWidth(penWidthZero);
+        ps.setWidth(ZERO);
     else
         ps.setWidth(pen.widthF());
+
     ps.setJoinStyle(pen.joinStyle());
     ps.setMiterLimit(pen.miterLimit());
+
     QPainterPath p = ps.createStroke(path);
     p.addPath(path);
+
     return p;
 }
 
 static void highlight_selected(QPainter *painter, const ResizerF& geometry, bool border_anchor = false)
 {
-    auto color = QColor("#969696");
+    const auto color = QColor("#969696");
 
     painter->setPen(QPen(color, 1, Qt::DashLine));
     painter->setBrush(Qt::NoBrush);

@@ -168,9 +168,9 @@ public:
     }
 
     // TODO: constrain the box coordinates by range
-    inline void range(const qrect_t& r) { range_ = r; }
+    void range(const qrect_t& r) { range_ = r; }
 
-    inline void range(const probe::geometry_t& r)
+    void range(const probe::geometry_t& r)
     {
         range_ = qrect_t{
             static_cast<T>(r.x),
@@ -180,11 +180,11 @@ public:
         };
     }
 
-    inline qrect_t range() const { return range_; }
+    qrect_t range() const { return range_; }
 
-    inline void enableRotate(bool val) { rotate_f_ = val; }
+    void enableRotate(bool val) { rotate_f_ = val; }
 
-    inline bool rotationEnabled() const { return rotate_f_; }
+    [[nodiscard]] bool rotationEnabled() const { return rotate_f_; }
 
     void coords(T x1, T y1, T x2, T y2)
     {
@@ -204,34 +204,34 @@ public:
     }
 
     // clang-format off
-    inline T clamp_x(T v)           { return std::clamp(v, range_.left(), range_.right()); }
-    inline T clamp_y(T v)           { return std::clamp(v, range_.top(), range_.bottom()); }
+    T clamp_x(T v)           { return std::clamp(v, range_.left(), range_.right()); }
+    T clamp_y(T v)           { return std::clamp(v, range_.top(), range_.bottom()); }
     
-    inline T x1()     const         { return x1_; }
-    inline T x2()     const         { return x2_; }
-    inline T y1()     const         { return y1_; }
-    inline T y2()     const         { return y2_; }
+    T x1()     const         { return x1_; }
+    T x2()     const         { return x2_; }
+    T y1()     const         { return y1_; }
+    T y2()     const         { return y2_; }
 
-    inline void x1(T v)             { x1_ = clamp_x(v); }
-    inline void x2(T v)             { x2_ = clamp_x(v); }
-    inline void y1(T v)             { y1_ = clamp_y(v); }
-    inline void y2(T v)             { y2_ = clamp_y(v); }
+    void x1(T v)             { x1_ = clamp_x(v); }
+    void x2(T v)             { x2_ = clamp_x(v); }
+    void y1(T v)             { y1_ = clamp_y(v); }
+    void y2(T v)             { y2_ = clamp_y(v); }
 
-    inline void point1(T x1, T y1)  { x1_ = clamp_x(x1), y1_ = clamp_y(y1); }
-    inline void point2(T x2, T y2)  { x2_ = clamp_x(x2), y2_ = clamp_y(y2); }
+    void point1(T x1, T y1)  { x1_ = clamp_x(x1), y1_ = clamp_y(y1); }
+    void point2(T x2, T y2)  { x2_ = clamp_x(x2), y2_ = clamp_y(y2); }
 
-    inline void point1(const qpoint_t& p)  { x1_ = clamp_x(p.x()), y1_ = clamp_y(p.y()); }
-    inline void point2(const qpoint_t& p)  { x2_ = clamp_x(p.x()), y2_ = clamp_y(p.y()); }
+    void point1(const qpoint_t& p)  { x1_ = clamp_x(p.x()), y1_ = clamp_y(p.y()); }
+    void point2(const qpoint_t& p)  { x2_ = clamp_x(p.x()), y2_ = clamp_y(p.y()); }
 
-    inline T left()   const         { return x1_ < x2_ ? x1_ : x2_; }
-    inline T right()  const         { return x1_ > x2_ ? x1_ : x2_; }
-    inline T top()    const         { return y1_ < y2_ ? y1_ : y2_; }
-    inline T bottom() const         { return y1_ > y2_ ? y1_ : y2_; }
+    T left()   const         { return x1_ < x2_ ? x1_ : x2_; }
+    T right()  const         { return x1_ > x2_ ? x1_ : x2_; }
+    T top()    const         { return y1_ < y2_ ? y1_ : y2_; }
+    T bottom() const         { return y1_ > y2_ ? y1_ : y2_; }
 
-    inline void left(int v)         { x1_ < x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
-    inline void right(int v)        { x1_ > x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
-    inline void top(int v)          { y1_ < y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
-    inline void bottom(int v)       { y1_ > y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    void left(int v)         { x1_ < x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    void right(int v)        { x1_ > x2_ ? (x1_ = clamp_x(v)) : (x2_ = clamp_x(v)); }
+    void top(int v)          { y1_ < y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
+    void bottom(int v)       { y1_ > y2_ ? (y1_ = clamp_y(v)) : (y2_ = clamp_y(v)); }
     // clang-format on
 
     void adjust(T dx1, T dy1, T dx2, T dy2)
@@ -275,7 +275,7 @@ public:
 
     void translate(const qpoint_t& d) { translate(d.x(), d.y()); }
 
-    inline bool contains(const qpoint_t& p) const
+    bool contains(const qpoint_t& p) const
     {
         return qrect_t(left(), top(), width(), height()).contains(p);
     }
@@ -340,24 +340,24 @@ public:
     // anchors
     bool isRotateAnchor(const qpoint_t& p)              const { return rotate_f_ && rotateAnchor().contains(p); }
 
-    inline bool isY1Anchor(const qpoint_t& p)           const { return Y1Anchor().contains(p); }
-    inline bool isY2Anchor(const qpoint_t& p)           const { return Y2Anchor().contains(p); }
-    inline bool isX1Anchor(const qpoint_t& p)           const { return X1Anchor().contains(p); }
-    inline bool isX2Anchor(const qpoint_t& p)           const { return X2Anchor().contains(p); }
+    bool isY1Anchor(const qpoint_t& p)           const { return Y1Anchor().contains(p); }
+    bool isY2Anchor(const qpoint_t& p)           const { return Y2Anchor().contains(p); }
+    bool isX1Anchor(const qpoint_t& p)           const { return X1Anchor().contains(p); }
+    bool isX2Anchor(const qpoint_t& p)           const { return X2Anchor().contains(p); }
 
-    inline bool isX1Y1Anchor(const qpoint_t& p)         const { return X1Y1Anchor().contains(p); }
-    inline bool isX2Y1Anchor(const qpoint_t& p)         const { return X2Y1Anchor().contains(p); }
-    inline bool isX1Y2Anchor(const qpoint_t& p)         const { return X1Y2Anchor().contains(p); }
-    inline bool isX2Y2Anchor(const qpoint_t& p)         const { return X2Y2Anchor().contains(p); }
+    bool isX1Y1Anchor(const qpoint_t& p)         const { return X1Y1Anchor().contains(p); }
+    bool isX2Y1Anchor(const qpoint_t& p)         const { return X2Y1Anchor().contains(p); }
+    bool isX1Y2Anchor(const qpoint_t& p)         const { return X1Y2Anchor().contains(p); }
+    bool isX2Y2Anchor(const qpoint_t& p)         const { return X2Y2Anchor().contains(p); }
 
-    inline bool isTopAnchor(const qpoint_t& p)          const { return topAnchor().contains(p); }
-    inline bool isBottomAnchor(const qpoint_t& p)       const { return bottomAnchor().contains(p); }
-    inline bool isLeftAnchor(const qpoint_t& p)         const { return leftAnchor().contains(p); }
-    inline bool isRightAnchor(const qpoint_t& p)        const { return rightAnchor().contains(p); }
-    inline bool isTopLeftAnchor(const qpoint_t& p)      const { return topLeftAnchor().contains(p); }
-    inline bool isTopRightAnchor(const qpoint_t& p)     const { return topRightAnchor().contains(p); }
-    inline bool isBottomLeftAnchor(const qpoint_t& p)   const { return bottomLeftAnchor().contains(p); }
-    inline bool isBottomRightAnchor(const qpoint_t& p)  const { return bottomRightAnchor().contains(p); }
+    bool isTopAnchor(const qpoint_t& p)          const { return topAnchor().contains(p); }
+    bool isBottomAnchor(const qpoint_t& p)       const { return bottomAnchor().contains(p); }
+    bool isLeftAnchor(const qpoint_t& p)         const { return leftAnchor().contains(p); }
+    bool isRightAnchor(const qpoint_t& p)        const { return rightAnchor().contains(p); }
+    bool isTopLeftAnchor(const qpoint_t& p)      const { return topLeftAnchor().contains(p); }
+    bool isTopRightAnchor(const qpoint_t& p)     const { return topRightAnchor().contains(p); }
+    bool isBottomLeftAnchor(const qpoint_t& p)   const { return bottomLeftAnchor().contains(p); }
+    bool isBottomRightAnchor(const qpoint_t& p)  const { return bottomRightAnchor().contains(p); }
 
     bool isAnchor(const qpoint_t& p) const
     {
@@ -370,24 +370,24 @@ public:
         return isX1Y1Anchor(p) || isX2Y1Anchor(p) || isX1Y2Anchor(p) || isX2Y2Anchor(p);
     }
 
-    inline T width()                const { return std::abs(x1_ - x2_) + 1; } // like QRect class
-    inline T height()               const { return std::abs(y1_ - y2_) + 1; }
+    T width()                const { return std::abs(x1_ - x2_) + 1; } // like QRect class
+    T height()               const { return std::abs(y1_ - y2_) + 1; }
 
-    inline qsize_t size()           const { return { width(), height() }; }
+    qsize_t size()           const { return { width(), height() }; }
 
-    inline qpoint_t topLeft()       const { return { left(), top() }; }
-    inline qpoint_t bottomRight()   const { return { right(), bottom() }; }
-    inline qpoint_t topRight()      const { return { right(), top() }; }
-    inline qpoint_t bottomLeft()    const { return { left(), bottom() }; }
+    qpoint_t topLeft()       const { return { left(), top() }; }
+    qpoint_t bottomRight()   const { return { right(), bottom() }; }
+    qpoint_t topRight()      const { return { right(), top() }; }
+    qpoint_t bottomLeft()    const { return { left(), bottom() }; }
 
-    inline qpoint_t point1()        const { return { x1_, y1_ }; }
-    inline qpoint_t point2()        const { return { x2_, y2_ }; }
+    qpoint_t point1()        const { return { x1_, y1_ }; }
+    qpoint_t point2()        const { return { x2_, y2_ }; }
 
-    inline qrect_t rect()           const { return { qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }; }
+    qrect_t rect()           const { return { qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }; }
     
-    inline qpoint_t center()        const { return rect().center(); }
+    qpoint_t center()        const { return rect().center(); }
 
-    inline qrect_t boundingRect()   const 
+    qrect_t boundingRect()   const
     {
         auto half = std::max(anchor_w_ / 2, border_w_ / 2);
         auto rect = qrect_t{ qpoint_t{ left(), top() }, qpoint_t{ right(), bottom() } }.adjusted(-half, -half, half, half);
@@ -445,13 +445,13 @@ public:
     }
     // clang-format on
 
-    inline T borderWidth() const { return border_w_; }
-    inline T anchorWidth() const { return anchor_w_; }
+    T borderWidth() const { return border_w_; }
+    T anchorWidth() const { return anchor_w_; }
 
-    inline bool hflipped() const { return x1_ > x2_; }
-    inline bool vflipped() const { return y1_ > y2_; }
+    [[nodiscard]] bool hflipped() const { return x1_ > x2_; }
+    [[nodiscard]] bool vflipped() const { return y1_ > y2_; }
 
-    inline void flip(bool h, bool v)
+    void flip(bool h, bool v)
     {
         if (h) std::swap(x1_, x2_);
         if (v) std::swap(y1_, y2_);
@@ -480,7 +480,7 @@ using ResizerF = _Resizer<qreal>;
 inline QCursor getCursorByLocation(ResizerLocation pos, const QCursor& default_cursor = Qt::CrossCursor)
 {
     switch (pos) {
-    // clang-format off
+        // clang-format off
     case ResizerLocation::EDITING_INSIDE:   return Qt::IBeamCursor;
 
     case ResizerLocation::X1_ANCHOR:
