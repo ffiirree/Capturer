@@ -275,10 +275,7 @@ public:
 
     void translate(const qpoint_t& d) { translate(d.x(), d.y()); }
 
-    bool contains(const qpoint_t& p) const
-    {
-        return qrect_t(left(), top(), width(), height()).contains(p);
-    }
+    bool contains(const qpoint_t& p) const { return qrect_t(left(), top(), width(), height()).contains(p); }
 
     // clang-format off
     qrect_t Y1Anchor()          const { return { (x1_ + x2_) / 2 - anchor_w_ / 2, y1_ - anchor_w_ / 2, anchor_w_, anchor_w_ }; }
@@ -338,7 +335,7 @@ public:
     bool isBottomBorder(const qpoint_t& p)  const { return qrect_t(left(), bottom() - border_w_ / 2, width(), border_w_).contains(p); }
 
     // anchors
-    bool isRotateAnchor(const qpoint_t& p)              const { return rotate_f_ && rotateAnchor().contains(p); }
+    bool isRotateAnchor(const qpoint_t& p)       const { return rotate_f_ && rotateAnchor().contains(p); }
 
     bool isY1Anchor(const qpoint_t& p)           const { return Y1Anchor().contains(p); }
     bool isY2Anchor(const qpoint_t& p)           const { return Y2Anchor().contains(p); }
@@ -397,17 +394,18 @@ public:
     ResizerLocation absolutePos(const qpoint_t& p, bool filled = false, bool border_anchors = true) const
     {
         using enum ResizerLocation;
+
+        if (isX1Y1Anchor(p))        return X1Y1_ANCHOR;
+        if (isX2Y1Anchor(p))        return X2Y1_ANCHOR;
+        if (isX1Y2Anchor(p))        return X1Y2_ANCHOR;
+        if (isX2Y2Anchor(p))        return X2Y2_ANCHOR;
+
         if (border_anchors) {
             if (isX1Anchor(p))      return X1_ANCHOR;
             if (isX2Anchor(p))      return X2_ANCHOR;
             if (isY2Anchor(p))      return Y2_ANCHOR;
             if (isY1Anchor(p))      return Y1_ANCHOR;
         }
-
-        if (isX1Y1Anchor(p))        return X1Y1_ANCHOR;
-        if (isX2Y1Anchor(p))        return X2Y1_ANCHOR;
-        if (isX1Y2Anchor(p))        return X1Y2_ANCHOR;
-        if (isX2Y2Anchor(p))        return X2Y2_ANCHOR;
 
         if (isY1Border(p))          return Y1_BORDER;
         if (isY2Border(p))          return Y2_BORDER;
@@ -447,6 +445,9 @@ public:
 
     T borderWidth() const { return border_w_; }
     T anchorWidth() const { return anchor_w_; }
+
+    void setBorderWidth(const T& value) { border_w_ = value; }
+    void setAnchorWidth(const T& value) { anchor_w_ = value; }
 
     [[nodiscard]] bool hflipped() const { return x1_ > x2_; }
     [[nodiscard]] bool vflipped() const { return y1_ > y2_; }

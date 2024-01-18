@@ -287,7 +287,7 @@ QPainterPath GraphicsLineItem::shape() const
     path.lineTo(geometry_.point2());
 
     QPen _pen(pen_);
-    _pen.setWidth(std::max(pen_.widthF(), geometry_.borderWidth()));
+    _pen.setWidthF(std::max(pen_.widthF(), geometry_.borderWidth()));
     return shape_from_path(path, _pen);
 }
 
@@ -296,10 +296,12 @@ ResizerLocation GraphicsLineItem::location(const QPointF& p) const
     if (geometry_.isX1Y1Anchor(p)) {
         return ResizerLocation::X1Y1_ANCHOR;
     }
-    else if (geometry_.isX2Y2Anchor(p)) {
+
+    if (geometry_.isX2Y2Anchor(p)) {
         return ResizerLocation::X2Y2_ANCHOR;
     }
-    else if (shape().contains(p)) {
+
+    if (shape().contains(p)) {
         return ResizerLocation::BORDER;
     }
 
@@ -317,7 +319,7 @@ void GraphicsLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
     painter->drawLine(geometry_.point1(), geometry_.point2());
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
+        const auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->drawLine(geometry_.point1(), geometry_.point2());
@@ -421,14 +423,14 @@ void GraphicsArrowItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->drawPolygon(polygon_);
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
+        const auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->drawLine(polygon_[0], polygon_[3]);
 
         painter->setPen(QPen(color, 1.5, Qt::SolidLine));
         painter->setBrush(Qt::white);
-        ResizerF resizer{ polygon_[0], polygon_[3] };
+        const ResizerF resizer{ polygon_[0], polygon_[3] };
         painter->drawEllipse(resizer.X1Y1Anchor());
         painter->drawEllipse(resizer.X2Y2Anchor());
     }
@@ -477,7 +479,7 @@ void GraphicsRectItem::push(const QPointF& point)
 QRectF GraphicsRectItem::boundingRect() const
 {
     const auto w = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
-    return geometry_.rect().adjusted(-w, -w, w, w);
+    return geometry_.rect() + QMarginsF{ w, w, w, w };
 }
 
 QPainterPath GraphicsRectItem::shape() const
@@ -488,8 +490,11 @@ QPainterPath GraphicsRectItem::shape() const
     }
     else {
         const auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
-        path.addRect(geometry_.rect().adjusted(-m, -m, m, m));
-        path.addRect(geometry_.rect().adjusted(m, m, -m, -m));
+
+        path.addRect(geometry_.rect() + QMarginsF(m, m, m, m));
+        if (const auto inner = geometry_.rect() - QMarginsF(m, m, m, m);
+            inner.width() > 0 && inner.height() > 0)
+            path.addRect(inner);
     }
     return path;
 }
@@ -556,7 +561,7 @@ void GraphicsEllipseleItem::push(const QPointF& point)
 QRectF GraphicsEllipseleItem::boundingRect() const
 {
     const auto w = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
-    return geometry_.rect().adjusted(-w, -w, w, w);
+    return geometry_.rect() + QMarginsF{ w, w, w, w };
 }
 
 QPainterPath GraphicsEllipseleItem::shape() const
@@ -568,8 +573,10 @@ QPainterPath GraphicsEllipseleItem::shape() const
     else {
         const auto m = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
 
-        path.addRect(geometry_.boundingRect().adjusted(-m, -m, m, m));
-        path.addEllipse(geometry_.rect().adjusted(m, m, -m, -m));
+        path.addRect(geometry_.rect() + QMarginsF{ m, m, m, m });
+        if (const auto inner = geometry_.rect() - QMarginsF{ m, m, m, m };
+            inner.width() > 0 && inner.height() > 0)
+            path.addEllipse(inner);
     }
     return path;
 }
@@ -579,21 +586,22 @@ ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
     if (geometry_.isAnchor(p) || geometry_.isRotateAnchor(p)) {
         return geometry_.absolutePos(p);
     }
-    else if (filled()) {
+
+    if (filled()) {
         return shape().contains(p) ? ResizerLocation::BORDER : ResizerLocation::OUTSIDE;
     }
-    else {
-        const auto half = std::max(pen_.widthF(), geometry_.borderWidth());
 
-        const QRegion r1(geometry_.boundingRect().toRect(), QRegion::Ellipse);
-        const QRegion r2(geometry_.rect().adjusted(half, half, -half, -half).toRect(), QRegion::Ellipse);
+    //
+    const auto half = std::max(pen_.widthF(), geometry_.borderWidth());
 
-        if (r2.contains(p.toPoint())) return ResizerLocation::EMPTY_INSIDE;
+    const QRegion r1(geometry_.boundingRect().toRect(), QRegion::Ellipse);
+    const QRegion r2(geometry_.rect().adjusted(half, half, -half, -half).toRect(), QRegion::Ellipse);
 
-        if (r1.contains(p.toPoint()) && !r2.contains(p.toPoint())) return ResizerLocation::BORDER;
+    if (r2.contains(p.toPoint())) return ResizerLocation::EMPTY_INSIDE;
 
-        return ResizerLocation::OUTSIDE;
-    }
+    if (r1.contains(p.toPoint()) && !r2.contains(p.toPoint())) return ResizerLocation::BORDER;
+
+    return ResizerLocation::OUTSIDE;
 }
 
 bool GraphicsEllipseleItem::filled() const { return filled_; }
@@ -668,18 +676,18 @@ void GraphicsPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
 
 void GraphicsPixmapItem::resize(const ResizerF& resizer, ResizerLocation location)
 {
-    auto oldrect = geometry_.rect().translated(-geometry_.topLeft());
-    auto newrect = resizer.rect().translated(-resizer.topLeft());
+    const auto oldrect = geometry_.rect().translated(-geometry_.topLeft());
+    const auto newrect = resizer.rect().translated(-resizer.topLeft());
 
     QSizeF newsize =
         newrect.contains(newrect.united(oldrect))
             ? QSizeF{ pixmap_.size() }.scaled(newrect.united(oldrect).size(), Qt::KeepAspectRatio)
             : QSizeF{ pixmap_.size() }.scaled(newrect.intersected(oldrect).size(), Qt::KeepAspectRatio);
 
-    auto x1y1 = mapToScene(geometry_.x1(), geometry_.y1());
-    auto x1y2 = mapToScene(geometry_.x1(), geometry_.y2());
-    auto x2y1 = mapToScene(geometry_.x2(), geometry_.y1());
-    auto x2y2 = mapToScene(geometry_.x2(), geometry_.y2());
+    const auto x1y1 = mapToScene(geometry_.x1(), geometry_.y1());
+    const auto x1y2 = mapToScene(geometry_.x1(), geometry_.y2());
+    const auto x2y1 = mapToScene(geometry_.x2(), geometry_.y1());
+    const auto x2y2 = mapToScene(geometry_.x2(), geometry_.y2());
 
     prepareGeometryChange();
 

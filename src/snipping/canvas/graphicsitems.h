@@ -106,6 +106,7 @@ class GraphicsItem : public GraphicsItemWrapper, public QGraphicsItem
 public:
     explicit GraphicsItem(QGraphicsItem * = nullptr);
 
+    // returns an estimate of the area painted by the item
     [[nodiscard]] QRectF boundingRect() const override;
 
     //
