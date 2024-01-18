@@ -4,6 +4,7 @@
 #include "logging.h"
 
 #include <QGraphicsScene>
+#include <utility>
 
 ////
 
@@ -94,8 +95,7 @@ DeleteCommand::DeleteCommand(QGraphicsScene *scene)
 {
     item_ = scene_->focusItem();
     if (!item_) {
-        auto selected = scene_->selectedItems();
-        if (!selected.isEmpty()) {
+        if (auto selected = scene_->selectedItems(); !selected.isEmpty()) {
             item_ = selected.first();
             item_->setSelected(false);
         }
@@ -114,10 +114,10 @@ void DeleteCommand::undo()
 
 ////
 
-PenChangedCommand::PenChangedCommand(GraphicsItemWrapper *item, const QPen& open, const QPen& npen)
+PenChangedCommand::PenChangedCommand(GraphicsItemWrapper *item, QPen open, QPen npen)
     : item_(item),
-      open_(open),
-      npen_(npen)
+      open_(std::move(open)),
+      npen_(std::move(npen))
 {}
 
 void PenChangedCommand::redo()
@@ -132,7 +132,7 @@ void PenChangedCommand::undo()
 
 bool PenChangedCommand::mergeWith(const QUndoCommand *other)
 {
-    const PenChangedCommand *cmd = static_cast<const PenChangedCommand *>(other);
+    const auto *cmd = dynamic_cast<const PenChangedCommand *>(other);
     if (cmd->item_ == nullptr) return false;
 
     npen_ = cmd->npen_;
@@ -156,7 +156,6 @@ void FillChangedCommand::undo()
 {
     if (item_) item_->fill(!filled_);
 }
-
 
 ////
 

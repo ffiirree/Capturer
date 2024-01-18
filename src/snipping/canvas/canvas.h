@@ -10,11 +10,11 @@ namespace canvas
     class Canvas : public QGraphicsScene
     {
     public:
-        Canvas(QObject * = nullptr);
+        explicit Canvas(QObject * = nullptr);
 
-        GraphicsItemWrapper *focusItem() const;
+        [[nodiscard]] GraphicsItemWrapper *focusItem() const;
 
-        GraphicsItemWrapper *focusOrFirstSelectedItem() const;
+        [[nodiscard]] GraphicsItemWrapper *focusOrFirstSelectedItem() const;
 
         void add(GraphicsItemWrapper *item);
 

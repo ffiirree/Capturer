@@ -8,14 +8,16 @@ namespace canvas
 
     GraphicsItemWrapper *Canvas::focusItem() const
     {
-        if (auto item = QGraphicsScene::focusItem(); item) return dynamic_cast<GraphicsItemWrapper *>(item);
+        if (const auto item = QGraphicsScene::focusItem(); item)
+            return dynamic_cast<GraphicsItemWrapper *>(item);
 
         return nullptr;
     }
 
     GraphicsItemWrapper *Canvas::focusOrFirstSelectedItem() const
     {
-        if (auto item = QGraphicsScene::focusItem(); item) return dynamic_cast<GraphicsItemWrapper *>(item);
+        if (const auto item = QGraphicsScene::focusItem(); item)
+            return dynamic_cast<GraphicsItemWrapper *>(item);
 
         if (auto selected = selectedItems(); !selected.isEmpty()) {
             return dynamic_cast<GraphicsItemWrapper *>(selected.first());

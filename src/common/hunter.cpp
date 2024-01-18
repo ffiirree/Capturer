@@ -12,7 +12,7 @@ namespace hunter
     prey_t prey_t::from(const QRect& rect)
     {
         return prey_t{
-            .type = hunter::prey_type_t::rectangle,
+            .type = prey_type_t::rectangle,
             .geometry =
                 probe::geometry_t{
                     .x      = rect.left(),
@@ -26,7 +26,7 @@ namespace hunter
     prey_t prey_t::from(const probe::geometry_t& geometry)
     {
         return prey_t{
-            .type     = hunter::prey_type_t::rectangle,
+            .type     = prey_type_t::rectangle,
             .geometry = geometry,
         };
     }
@@ -114,11 +114,11 @@ namespace hunter
     std::string to_string(prey_type_t type)
     {
         switch (type) {
-        case hunter::prey_type_t::rectangle: return "rectangle";
-        case hunter::prey_type_t::widget: return "widget";
-        case hunter::prey_type_t::window: return "window";
-        case hunter::prey_type_t::display: return "display";
-        case hunter::prey_type_t::desktop: return "desktop";
+        case prey_type_t::rectangle: return "rectangle";
+        case prey_type_t::widget: return "widget";
+        case prey_type_t::window: return "window";
+        case prey_type_t::display: return "display";
+        case prey_type_t::desktop: return "desktop";
         default: return "unknown";
         }
     }

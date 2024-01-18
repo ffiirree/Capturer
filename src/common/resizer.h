@@ -420,17 +420,18 @@ public:
     ResizerLocation relativePos(const qpoint_t& p, bool filled = false, bool border_anchors = true) const
     {
         using enum ResizerLocation;
+
+        if (isTopLeftAnchor(p))     return TL_ANCHOR;
+        if (isTopRightAnchor(p))    return TR_ANCHOR;
+        if (isBottomRightAnchor(p)) return BR_ANCHOR;
+        if (isBottomLeftAnchor(p))  return BL_ANCHOR;
+
         if (border_anchors) {
             if (isLeftAnchor(p))    return L_ANCHOR;
             if (isRightAnchor(p))   return R_ANCHOR;
             if (isTopAnchor(p))     return T_ANCHOR;
             if (isBottomAnchor(p))  return B_ANCHOR;
         }
-
-        if (isTopLeftAnchor(p))     return TL_ANCHOR;
-        if (isTopRightAnchor(p))    return TR_ANCHOR;
-        if (isBottomRightAnchor(p)) return BR_ANCHOR;
-        if (isBottomLeftAnchor(p))  return BL_ANCHOR;
 
         if (isLeftBorder(p))        return L_BORDER;
         if (isRightBorder(p))       return R_BORDER;

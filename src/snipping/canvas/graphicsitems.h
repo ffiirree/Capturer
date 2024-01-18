@@ -243,7 +243,7 @@ public:
 
     [[nodiscard]] bool invalid() const override { return pixmap_.size() == QSize{ 0, 0 }; }
 
-    void resize(const ResizerF& g, ResizerLocation) override;
+    void resize(const ResizerF&, ResizerLocation) override;
 
 private:
     QPixmap pixmap_{};

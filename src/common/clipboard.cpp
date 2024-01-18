@@ -8,7 +8,7 @@
 
 static std::vector<std::shared_ptr<QMimeData>> history_;
 
-class Clipboard : public QObject
+class Clipboard final : public QObject
 {
 public:
     static Clipboard& instance()
@@ -27,7 +27,7 @@ private:
         : QObject(parent)
     {
         connect(QApplication::clipboard(), &QClipboard::dataChanged, [=]() {
-            if (auto clipboard_data = QApplication::clipboard()->mimeData();
+            if (const auto clipboard_data = QApplication::clipboard()->mimeData();
                 !clipboard_data->hasFormat(clipboard::MIME_TYPE_STATUS)) {
                 auto cloned = std::shared_ptr<QMimeData>(clipboard::clone(clipboard_data));
                 cloned->setData(clipboard::MIME_TYPE_STATUS, "N");
@@ -49,7 +49,7 @@ namespace clipboard
 
     QMimeData *clone(const QMimeData *other)
     {
-        auto mimedata = new QMimeData();
+        const auto mimedata = new QMimeData();
 
         foreach(const auto& format, other->formats()) {
             if (blacklist.contains(format)) continue;
@@ -67,9 +67,9 @@ namespace clipboard
 
     std::shared_ptr<QMimeData> push(const QPixmap& pixmap)
     {
-        auto mimedata = new QMimeData();
+        const auto mimedata = new QMimeData();
         mimedata->setImageData(QVariant(pixmap));
-        mimedata->setData(clipboard::MIME_TYPE_STATUS, "N");
+        mimedata->setData(MIME_TYPE_STATUS, "N");
 
         QApplication::clipboard()->setMimeData(mimedata);
         return history_.emplace_back(std::shared_ptr<QMimeData>(clone(mimedata)));
@@ -77,7 +77,7 @@ namespace clipboard
 
     std::shared_ptr<QMimeData> push(const QPixmap& pixmap, const QPoint& pos)
     {
-        auto mimedata = new QMimeData();
+        const auto mimedata = new QMimeData();
         mimedata->setImageData(QVariant(pixmap));
 
         mimedata->setData(MIME_TYPE_POINT, serialize(pos));
@@ -89,7 +89,7 @@ namespace clipboard
 
     std::shared_ptr<QMimeData> push(const QColor& color, const QString& text)
     {
-        auto mimedata = new QMimeData();
+        const auto mimedata = new QMimeData();
         mimedata->setColorData(QVariant(color));
         mimedata->setText(text);
         mimedata->setData(MIME_TYPE_STATUS, "N");

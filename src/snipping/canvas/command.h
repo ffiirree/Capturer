@@ -3,7 +3,6 @@
 
 #include "resizer.h"
 
-#include <memory>
 #include <QFont>
 #include <QPen>
 #include <QPoint>
@@ -15,7 +14,7 @@ class GraphicsItemWrapper;
 
 ////
 
-class CreatedCommand : public QUndoCommand
+class CreatedCommand final : public QUndoCommand
 {
 public:
     CreatedCommand(QGraphicsScene *scene, QGraphicsItem *item);
@@ -32,7 +31,7 @@ private:
 
 ////
 
-class MoveCommand : public QUndoCommand
+class MoveCommand final : public QUndoCommand
 {
 public:
     MoveCommand(QGraphicsItem *item, const QPointF& opos);
@@ -48,7 +47,7 @@ private:
 
 ////
 
-class ResizeCommand : public QUndoCommand
+class ResizeCommand final : public QUndoCommand
 {
 public:
     ResizeCommand(GraphicsItemWrapper *item, const ResizerF& osize, ResizerLocation location);
@@ -65,7 +64,7 @@ private:
 
 ////
 
-class RotateCommand : public QUndoCommand
+class RotateCommand final : public QUndoCommand
 {
 public:
     RotateCommand(GraphicsItemWrapper *item, qreal oangle);
@@ -81,10 +80,10 @@ private:
 
 ////
 
-class DeleteCommand : public QUndoCommand
+class DeleteCommand final : public QUndoCommand
 {
 public:
-    DeleteCommand(QGraphicsScene *scene);
+    explicit DeleteCommand(QGraphicsScene *scene);
 
     void redo() override;
     void undo() override;
@@ -96,16 +95,16 @@ private:
 
 ////
 
-class PenChangedCommand : public QUndoCommand
+class PenChangedCommand final : public QUndoCommand
 {
 public:
-    PenChangedCommand(GraphicsItemWrapper *item, const QPen& open, const QPen& npen);
+    PenChangedCommand(GraphicsItemWrapper *item, QPen open, QPen npen);
 
     void redo() override;
     void undo() override;
 
     bool mergeWith(const QUndoCommand *) override;
-    int id() const override { return 1'234; }
+    [[nodiscard]] int id() const override { return 1'234; }
 
 private:
     GraphicsItemWrapper *item_{};
@@ -115,7 +114,7 @@ private:
 
 ////
 
-class FillChangedCommand : public QUndoCommand
+class FillChangedCommand final : public QUndoCommand
 {
 public:
     FillChangedCommand(GraphicsItemWrapper *item, bool filled);
@@ -129,7 +128,7 @@ private:
 };
 
 ////
-class FontChangedCommand : public QUndoCommand
+class FontChangedCommand final : public QUndoCommand
 {
 public:
     FontChangedCommand(GraphicsItemWrapper *item, const QFont& open, const QFont& npen);

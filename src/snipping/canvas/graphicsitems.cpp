@@ -763,7 +763,7 @@ void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsI
     painter->drawText(geometry_.rect(), Qt::AlignCenter, QString::number(counter_));
 
     if (option->state & (QStyle::State_Selected | QStyle::State_HasFocus)) {
-        auto color = QColor("#969696");
+        const auto color = QColor("#969696");
 
         painter->setPen(QPen(color, 1, Qt::DashLine));
         painter->setBrush(Qt::NoBrush);
@@ -881,10 +881,10 @@ void GraphicsPathItem::focusOutEvent(QFocusEvent *event)
     setFlag(QGraphicsItem::ItemIsFocusable, false);
 
     if (!fixed_) {
-        fixed_    = true;
-        auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
-        pixmap_   = pixmap_.copy(rect);
-        vertexes_ = mapFromScene(vertexes_);
+        fixed_          = true;
+        const auto rect = shape().boundingRect().toRect().intersected(pixmap_.rect());
+        pixmap_         = pixmap_.copy(rect);
+        vertexes_       = mapFromScene(vertexes_);
 
         setPos(rect.topLeft());
     }
@@ -1047,7 +1047,7 @@ void GraphicsTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     switch (adjusting_) {
     case canvas::adjusting_t::moving: {
-        auto offset = event->scenePos() - mpos_;
+        const auto offset = event->scenePos() - mpos_;
         moveBy(offset.x(), offset.y());
         mpos_ = event->scenePos();
         break;
@@ -1069,21 +1069,22 @@ void GraphicsTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
 {
-    auto oldrect = QGraphicsTextItem::boundingRect();
-    auto newrect = resizer.rect();
+    const auto oldrect = QGraphicsTextItem::boundingRect();
+    const auto newrect = resizer.rect();
 
-    QSizeF newsize = newrect.contains(newrect.united(oldrect))
-                         ? oldrect.size().scaled(newrect.united(oldrect).size(), Qt::KeepAspectRatio)
-                         : oldrect.size().scaled(newrect.intersected(oldrect).size(), Qt::KeepAspectRatio);
+    const QSizeF newsize =
+        newrect.contains(newrect.united(oldrect))
+            ? oldrect.size().scaled(newrect.united(oldrect).size(), Qt::KeepAspectRatio)
+            : oldrect.size().scaled(newrect.intersected(oldrect).size(), Qt::KeepAspectRatio);
 
-    auto scaled_fontsize = std::max(font().pointSizeF() * (newsize.width() / oldrect.width()), 5.0);
+    const auto scaled_fontsize = std::max(font().pointSizeF() * (newsize.width() / oldrect.width()), 5.0);
 
     if (scaled_fontsize == font().pointSizeF()) return;
 
-    auto lt = mapToScene(oldrect.topLeft());
-    auto lb = mapToScene(oldrect.bottomLeft());
-    auto rt = mapToScene(oldrect.topRight());
-    auto rb = mapToScene(oldrect.bottomRight());
+    const auto lt = mapToScene(oldrect.topLeft());
+    const auto lb = mapToScene(oldrect.bottomLeft());
+    const auto rt = mapToScene(oldrect.topRight());
+    const auto rb = mapToScene(oldrect.bottomRight());
 
     // resized font size
     auto scaledfont = font();
