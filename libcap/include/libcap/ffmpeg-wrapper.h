@@ -71,14 +71,18 @@ namespace av
 
         ptr& operator=(const ptr& other)
         {
-            unref();
-            ffmpeg::ref(ptr_, other.ptr_);
+            if (this != &other) {
+                unref();
+                ffmpeg::ref(ptr_, other.ptr_);
+            }
+
             return *this;
         }
 
         ptr& operator=(ptr&& other) noexcept
         {
             if (this != &other) {
+                unref();
                 ptr_       = other.ptr_;
                 other.ptr_ = nullptr;
             }
