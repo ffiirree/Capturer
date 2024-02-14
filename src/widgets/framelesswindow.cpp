@@ -203,10 +203,10 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
                 }
 
                 switch (taskbar_postion) {
-                case ABE_TOP: rect->top += 2; break;
-                case ABE_LEFT: rect->left += 2; break;
+                case ABE_TOP:   rect->top += 2; break;
+                case ABE_LEFT:  rect->left += 2; break;
                 case ABE_RIGHT: rect->right -= 2; break;
-                default: rect->bottom -= 2; break;
+                default:        rect->bottom -= 2; break;
                 }
             }
         }
@@ -232,7 +232,7 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         if (!::GetWindowRect(hwnd, &rect)) return false;
 
         const POINT pos{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) };
-        const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
+        const auto  dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
         if (const auto frame = ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
                                ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
             pos.y < rect.top + frame) {

@@ -39,14 +39,14 @@ namespace av
 
     struct device_t
     {
-        std::string name{};        // utf-8, linux: like 'UVC Camera (046d:081b)'
-        std::string id{};          // utf-8, linux: like '/dev/video0'
-        std::string description{}; // utf-8
-        std::string bus{};         // utf-8, bus info
-        std::string driver{};      // utf-8, driver name
-        device_type_t type{};
+        std::string     name{};        // utf-8, linux: like 'UVC Camera (046d:081b)'
+        std::string     id{};          // utf-8, linux: like '/dev/video0'
+        std::string     description{}; // utf-8
+        std::string     bus{};         // utf-8, bus info
+        std::string     driver{};      // utf-8, driver name
+        device_type_t   type{};
         device_format_t format{};
-        uint64_t state{};
+        uint64_t        state{};
     };
 
     [[nodiscard]] inline bool is_sink(const device_t& dev) { return any(dev.type & device_type_t::sink); }
@@ -63,18 +63,18 @@ namespace av
         switch (t & static_cast<device_type_t>(0x00f0)) {
         case device_type_t::audio: str += "audio"; break;
         case device_type_t::video: str += "video"; break;
-        default: break;
+        default:                   break;
         }
 
         switch (t & static_cast<device_type_t>(0x000f)) {
-        case device_type_t::sink: str += "sink"; break;
+        case device_type_t::sink:   str += "sink"; break;
         case device_type_t::source: str += "source"; break;
-        default: break;
+        default:                    break;
         }
 
         switch (t & static_cast<device_type_t>(0x0f00)) {
         case device_type_t::monitor: str += "(monitor)"; break;
-        default: break;
+        default:                     break;
         }
 
         if (str.empty()) str = "unknown";
@@ -84,19 +84,17 @@ namespace av
 
     inline std::string to_string(device_format_t fmt)
     {
-        // clang-format off
         switch (fmt) {
-        case device_format_t::v4l2:     return "v4l2";
-        case device_format_t::pulse:    return "pulse";
-        case device_format_t::dshow:    return "dshow";
-        case device_format_t::wasapi:   return "wasapi";
-        case device_format_t::x11grab:  return "x11grab";
-        case device_format_t::gdigrab:  return "gdigrab";
-        case device_format_t::wgcgrab:  return "wgcgrab";
-        case device_format_t::ddagrab:  return "ddagrab";
-        default:                        return "unsupported";
+        case device_format_t::v4l2:    return "v4l2";
+        case device_format_t::pulse:   return "pulse";
+        case device_format_t::dshow:   return "dshow";
+        case device_format_t::wasapi:  return "wasapi";
+        case device_format_t::x11grab: return "x11grab";
+        case device_format_t::gdigrab: return "gdigrab";
+        case device_format_t::wgcgrab: return "wgcgrab";
+        case device_format_t::ddagrab: return "ddagrab";
+        default:                       return "unsupported";
         }
-        // clang-format on
     }
 
     std::vector<device_t> cameras();

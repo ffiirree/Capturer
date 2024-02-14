@@ -58,11 +58,11 @@ signals:
 private:
     void ontoggled(QAbstractButton *, bool);
 
-    QList<QAbstractButton *> buttons_{};
+    QList<QAbstractButton *>      buttons_{};
     QHash<QAbstractButton *, int> mapping_{};
 
     QAbstractButton *checked_{};
-    exclusive_t exclusive_{ exclusive_t::simiexclusive };
+    exclusive_t      exclusive_{ exclusive_t::simiexclusive };
 };
 
 #endif //! CAPTURER_BUTTONGROUP_H

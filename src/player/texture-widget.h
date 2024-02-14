@@ -25,7 +25,7 @@ protected:
 
 private:
     std::mutex mtx_;
-    QPixmap frame_{};
+    QPixmap    frame_{};
 };
 
 #endif // !CAPTURER_TEXTURE_WIDGET_H

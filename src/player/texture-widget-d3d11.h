@@ -62,27 +62,27 @@ private:
     std::atomic<bool> config_dirty_{ true };
 
     // D3D11 @{
-    winrt::com_ptr<ID3D11Device> device_{};
+    winrt::com_ptr<ID3D11Device>        device_{};
     winrt::com_ptr<ID3D11DeviceContext> context_{ nullptr };
-    winrt::com_ptr<IDXGISwapChain> swap_chain_{ nullptr };
+    winrt::com_ptr<IDXGISwapChain>      swap_chain_{ nullptr };
 
-    winrt::com_ptr<ID3D11Texture2D> texture_{};
+    winrt::com_ptr<ID3D11Texture2D>        texture_{};
     winrt::com_ptr<ID3D11RenderTargetView> rtv_{};
 
-    winrt::com_ptr<ID3D11Buffer> vertex_buffer_{};
-    winrt::com_ptr<ID3D11InputLayout> vertex_layout_{};
+    winrt::com_ptr<ID3D11Buffer>       vertex_buffer_{};
+    winrt::com_ptr<ID3D11InputLayout>  vertex_layout_{};
     winrt::com_ptr<ID3D11VertexShader> vertex_shader_{};
 
     winrt::com_ptr<ID3D11SamplerState> sampler_{};
-    winrt::com_ptr<ID3D11PixelShader> pixel_shader_{};
+    winrt::com_ptr<ID3D11PixelShader>  pixel_shader_{};
 
     winrt::com_ptr<ID3D11ShaderResourceView> srv0_{};
     winrt::com_ptr<ID3D11ShaderResourceView> srv1_{};
     winrt::com_ptr<ID3D11ShaderResourceView> srv2_{};
 
-    DirectX::XMMATRIX proj_{};
+    DirectX::XMMATRIX            proj_{};
     winrt::com_ptr<ID3D11Buffer> proj_buffer_{};
-    D3D11_VIEWPORT viewport_{};
+    D3D11_VIEWPORT               viewport_{};
     // @}
 };
 

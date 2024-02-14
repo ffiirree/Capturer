@@ -377,10 +377,10 @@ AVRational TextureGLWidget::DAR() const
 {
     if (!format_.width || !format_.height) return { 0, 0 };
 
-    auto sar = SAR();
+    auto       sar = SAR();
     AVRational dar{};
     av_reduce(&dar.num, &dar.den, static_cast<int64_t>(format_.width) * sar.num,
-              static_cast<int64_t>(format_.height) * sar.den, 1'024 * 1'024);
+              static_cast<int64_t>(format_.height) * sar.den, 1024 * 1024);
 
     return dar;
 }
@@ -391,7 +391,7 @@ bool TextureGLWidget::UpdateTextureParams()
     case AV_PIX_FMT_YUYV422: tex_params_ = { { 2, 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 } }; return true;
 
     case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_BGR24: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE, 3 } }; return true;
+    case AV_PIX_FMT_BGR24:   tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE, 3 } }; return true;
 
     case AV_PIX_FMT_YUV420P:
         tex_params_ = {

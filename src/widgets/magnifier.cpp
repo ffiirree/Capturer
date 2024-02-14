@@ -38,8 +38,8 @@ QRect Magnifier::grabRect()
     auto mouse_pos = QCursor::pos();
 
     if (!pixmap_.isNull()) {
-        auto offset = probe::graphics::virtual_screen_geometry();
-        mouse_pos -= QPoint{ offset.x, offset.y };
+        auto offset  = probe::graphics::virtual_screen_geometry();
+        mouse_pos   -= QPoint{ offset.x, offset.y };
     }
 
     return {

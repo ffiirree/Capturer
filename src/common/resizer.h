@@ -110,12 +110,7 @@ public:
     {}
 
     _Resizer(T x1, T y1, T x2, T y2, T border_w = 5, T anchor_w = 7)
-        : x1_(x1),
-          y1_(y1),
-          x2_(x2),
-          y2_(y2),
-          border_w_(border_w),
-          anchor_w_(anchor_w)
+        : x1_(x1), y1_(y1), x2_(x2), y2_(y2), border_w_(border_w), anchor_w_(anchor_w)
     {}
 
     _Resizer(const qpoint_t& p1, const qpoint_t& p2, T border_width = 5, T anchor_w = 7)

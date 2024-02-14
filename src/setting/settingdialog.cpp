@@ -499,13 +499,13 @@ QWidget *SettingWindow::setupAboutWidget()
 void SettingWindow::setAutoRun(int state)
 {
 #ifdef _WIN32
-    QString exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+    QString   exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
     QSettings settings(R"(HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run)",
                        QSettings::NativeFormat);
     settings.setValue("capturer_run", state == Qt::Checked ? exec_path : "");
 #elif __linux__
     std::string desktop_file = "/usr/share/applications/capturer.desktop";
-    std::string autorun_dir  = std::string{ ::getenv("HOME") } + "/.config/autostart";
+    std::string autorun_dir = std::string{ ::getenv("HOME") } + "/.config/autostart";
     std::string autorun_file = autorun_dir + "/capturer.desktop";
 
     if (!std::filesystem::exists(desktop_file)) {

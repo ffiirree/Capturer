@@ -8,31 +8,36 @@ AlignConsecutiveAssignments:
   Enabled:         true
   AcrossEmptyLines: false
   AcrossComments:  true
-  AlignCompound:   false
+  AlignCompound:   true
   PadOperators:    true
 AlignConsecutiveBitFields:
   Enabled:         true
   AcrossEmptyLines: false
   AcrossComments:  true
-  AlignCompound:   false
+  AlignCompound:   true
   PadOperators:    true
 AlignConsecutiveDeclarations:
-  Enabled:         false
+  Enabled:         true
   AcrossEmptyLines: false
-  AcrossComments:  false
-  AlignCompound:   false
-  PadOperators:    false
+  AcrossComments:  true
+  AlignCompound:   true
+  PadOperators:    true
 AlignConsecutiveMacros:
   Enabled:         true
   AcrossEmptyLines: false
   AcrossComments:  true
   AlignCompound:   false
   PadOperators:    true
+AlignConsecutiveShortCaseStatements:
+  Enabled:         true
+  AcrossEmptyLines: true
+  AcrossComments:  true
+  AlignCaseColons: false
 AlignEscapedNewlines: Right
 AlignOperands:   Align
 AlignTrailingComments:
   Kind:            Always
-  OverEmptyLines:  2
+  OverEmptyLines:  1
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Empty
@@ -128,12 +133,16 @@ InsertBraces:    false
 InsertNewlineAtEOF: false
 InsertTrailingCommas: None
 IntegerLiteralSeparator:
-  Binary:          4
-  Decimal:         3
-  Hex:             4
+  Binary:          -1
+  BinaryMinDigits: 0
+  Decimal:         -1
+  DecimalMinDigits: 0
+  Hex:             -1
+  HexMinDigits:    0
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
+KeepEmptyLinesAtEOF: true
 LambdaBodyIndentation: Signature
 LineEnding:      DeriveLF
 MacroBlockBegin: ''
@@ -145,7 +154,7 @@ ObjCBlockIndentWidth: 2
 ObjCBreakBeforeNestedBlockParam: true
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
-PackConstructorInitializers: Never
+PackConstructorInitializers: NextLineOnly
 PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300
@@ -163,6 +172,7 @@ QualifierOrder: ['inline', 'static', 'const', 'type', 'volatile' ]
 ReferenceAlignment: Left
 ReflowComments:  true
 RemoveBracesLLVM: false
+RemoveParentheses: Leave
 RemoveSemicolon: false
 RequiresClausePosition: OwnLine
 RequiresExpressionIndentation: OuterScope
@@ -180,6 +190,7 @@ SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: false
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
+SpaceBeforeJsonColon: true
 SpaceBeforeParens: ControlStatementsExceptControlMacros
 SpaceBeforeParensOptions:
   AfterControlStatements: true
@@ -194,16 +205,18 @@ SpaceBeforeParensOptions:
 SpaceBeforeRangeBasedForLoopColon: true
 SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
-SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
 SpacesInAngles:  Never
-SpacesInConditionalStatement: false
 SpacesInContainerLiterals: true
-SpacesInCStyleCastParentheses: false
 SpacesInLineCommentPrefix:
   Minimum:         1
   Maximum:         -1
-SpacesInParentheses: false
+SpacesInParens:  Never
+SpacesInParensOptions:
+  InCStyleCasts:   false
+  InConditionalStatements: false
+  InEmptyParentheses: false
+  Other:           false
 SpacesInSquareBrackets: false
 Standard:        Latest
 StatementAttributeLikeMacros:
@@ -213,6 +226,7 @@ StatementMacros:
   - QT_REQUIRE_VERSION
 TabWidth:        4
 UseTab:          Never
+VerilogBreakBetweenInstancePorts: true
 WhitespaceSensitiveMacros:
   - BOOST_PP_STRINGIZE
   - CF_SWIFT_NAME

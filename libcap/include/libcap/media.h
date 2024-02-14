@@ -39,29 +39,29 @@ namespace av
         int height{ 0 };
 
         AVPixelFormat pix_fmt{ AV_PIX_FMT_NONE };
-        AVRational framerate{ 24, 1 };
-        AVRational sample_aspect_ratio{ 1, 1 };
-        AVRational time_base{ 1, OS_TIME_BASE };
+        AVRational    framerate{ 24, 1 };
+        AVRational    sample_aspect_ratio{ 1, 1 };
+        AVRational    time_base{ 1, OS_TIME_BASE };
 
         struct color_t
         {
-            AVColorSpace space{ AVCOL_SPC_UNSPECIFIED };
-            AVColorRange range{ AVCOL_RANGE_UNSPECIFIED };
-            AVColorPrimaries primaries{ AVCOL_PRI_UNSPECIFIED };
+            AVColorSpace                  space{ AVCOL_SPC_UNSPECIFIED };
+            AVColorRange                  range{ AVCOL_RANGE_UNSPECIFIED };
+            AVColorPrimaries              primaries{ AVCOL_PRI_UNSPECIFIED };
             AVColorTransferCharacteristic transfer{ AVCOL_TRC_UNSPECIFIED };
         } color{};
 
         AVHWDeviceType hwaccel{ AV_HWDEVICE_TYPE_NONE };
-        AVPixelFormat sw_pix_fmt{ AV_PIX_FMT_NONE };
+        AVPixelFormat  sw_pix_fmt{ AV_PIX_FMT_NONE };
     };
 
     // audio format options
     struct aformat_t
     {
-        int sample_rate{ 0 };
+        int            sample_rate{ 0 };
         AVSampleFormat sample_fmt{ AV_SAMPLE_FMT_NONE };
 
-        int channels{ 0 };
+        int      channels{ 0 };
         uint64_t channel_layout{ 0 };
 
         AVRational time_base{ 1, OS_TIME_BASE };
@@ -181,7 +181,7 @@ namespace av
         switch (m) {
         case vsync_t::cfr: return "CFR";
         case vsync_t::vfr: return "VFR";
-        default: return "unknown";
+        default:           return "unknown";
         }
     }
 

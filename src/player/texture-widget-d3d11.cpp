@@ -80,10 +80,10 @@ AVRational TextureD3D11Widget::DAR() const
 {
     if (!format_.width || !format_.height) return { 0, 0 };
 
-    auto sar = SAR();
+    auto       sar = SAR();
     AVRational dar{};
     av_reduce(&dar.num, &dar.den, static_cast<int64_t>(format_.width) * sar.num,
-              static_cast<int64_t>(format_.height) * sar.den, 1'024 * 1'024);
+              static_cast<int64_t>(format_.height) * sar.den, 1024 * 1024);
 
     return dar;
 }
@@ -147,8 +147,8 @@ void TextureD3D11Widget::initializeD3D11()
     winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
 
     ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
-    UINT strides[1]                = { sizeof(float) * 5 };
-    UINT offsets[1]                = { 0 };
+    UINT          strides[1]       = { sizeof(float) * 5 };
+    UINT          offsets[1]       = { 0 };
     context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
 
     // 1.2 index buffer : optional

@@ -25,7 +25,7 @@ public:
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return buffer_.empty();
-        default: return true;
+        default:                 return true;
         }
     }
 
@@ -33,12 +33,12 @@ public:
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return ready_;
-        default: return false;
+        default:                 return false;
         }
     }
 
     std::string format_str(AVMediaType) const override;
-    AVRational time_base(AVMediaType) const override;
+    AVRational  time_base(AVMediaType) const override;
 
     std::vector<av::vformat_t> vformats() const override { return {}; }
 
@@ -55,8 +55,8 @@ private:
     };
 
     av::frame frame_{};
-    size_t bytes_per_frame_{ 1 };
-    size_t frame_number_{ 0 };
+    size_t    bytes_per_frame_{ 1 };
+    size_t    frame_number_{ 0 };
 
     // pulse audio @{
     pa_stream *stream_{};

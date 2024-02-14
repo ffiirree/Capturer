@@ -8,7 +8,7 @@ class Menu : public QMenu
     Q_OBJECT
 public:
     explicit Menu(QWidget *parent = nullptr);
-    explicit Menu(const QString &title, QWidget *parent = nullptr);
+    explicit Menu(const QString& title, QWidget *parent = nullptr);
 };
 
 #endif

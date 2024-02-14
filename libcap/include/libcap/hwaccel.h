@@ -25,8 +25,7 @@ namespace av
             AVHWDeviceType type{ AV_HWDEVICE_TYPE_NONE };
 
             context_t(AVHWDeviceType dt, AVBufferRef *ctx)
-                : type(dt),
-                  device_ctx_(ctx)
+                : type(dt), device_ctx_(ctx)
             {}
 
             context_t(const context_t&)            = delete;
@@ -148,7 +147,7 @@ namespace av
                     return false;
 #endif
                     // Windows, no need to check
-                case AV_HWDEVICE_TYPE_D3D11VA: return true;
+                case AV_HWDEVICE_TYPE_D3D11VA:      return true;
 
                 case AV_HWDEVICE_TYPE_VDPAU:
                 case AV_HWDEVICE_TYPE_VAAPI:
@@ -159,7 +158,7 @@ namespace av
                 // case AV_HWDEVICE_TYPE_VULKAN:
                 case AV_HWDEVICE_TYPE_DXVA2:
                 case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
-                default: return false;
+                default:                            return false;
                 }
             }
             return false;

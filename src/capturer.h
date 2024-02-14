@@ -25,12 +25,12 @@ private slots:
     void updateConfig();
 
     void showMessage(const QString& title, const QString& msg,
-                     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
+                     QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
 private:
     void setupSystemTray();
 
-    ScreenShoter *sniper_{ nullptr };
+    ScreenShoter   *sniper_{ nullptr };
     ScreenRecorder *recorder_{ nullptr };
     ScreenRecorder *gifcptr_{ nullptr };
 

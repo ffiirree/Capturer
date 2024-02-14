@@ -19,6 +19,6 @@ protected:
 
 private:
     FramelessWindow *window_{};
-    bool hide_on_fullscreen_{ true };
+    bool             hide_on_fullscreen_{ true };
 };
 #endif //! CAPTURER_TITLE_BAR_H

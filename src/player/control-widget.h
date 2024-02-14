@@ -1,8 +1,8 @@
 #ifndef CAPTURER_CONTROL_WIDGET_H
 #define CAPTURER_CONTROL_WIDGET_H
 
-#include "slider.h"
 #include "framelesswindow.h"
+#include "slider.h"
 
 #include <QCheckBox>
 #include <QLabel>
@@ -14,8 +14,8 @@ public:
     explicit ControlWidget(FramelessWindow *parent);
 
 public slots:
-    void setDuration(int64_t); // AV_TIME_BASE
-    void setTime(std::chrono::nanoseconds);     // AV_TIME_BASE
+    void setDuration(int64_t);              // AV_TIME_BASE
+    void setTime(std::chrono::nanoseconds); // AV_TIME_BASE
     void setVolume(int);
     void setMute(bool);
 
@@ -32,9 +32,9 @@ signals:
     void validDruation(bool);
 
 private:
-    Slider *time_slider_{};
+    Slider    *time_slider_{};
     QCheckBox *volume_btn_{};
-    Slider *volume_slider_{};
+    Slider    *volume_slider_{};
 
     QLabel *time_label_{};
     QLabel *duration_label_{};

@@ -7,7 +7,7 @@ using namespace probe::graphics;
 namespace hunter
 {
     static std::deque<prey_t> __preys{};
-    static window_filter_t __scope{ window_filter_t::visible };
+    static window_filter_t    __scope{ window_filter_t::visible };
 
     prey_t prey_t::from(const QRect& rect)
     {
@@ -115,11 +115,11 @@ namespace hunter
     {
         switch (type) {
         case prey_type_t::rectangle: return "rectangle";
-        case prey_type_t::widget: return "widget";
-        case prey_type_t::window: return "window";
-        case prey_type_t::display: return "display";
-        case prey_type_t::desktop: return "desktop";
-        default: return "unknown";
+        case prey_type_t::widget:    return "widget";
+        case prey_type_t::window:    return "window";
+        case prey_type_t::display:   return "display";
+        case prey_type_t::desktop:   return "desktop";
+        default:                     return "unknown";
         }
     }
 } // namespace hunter

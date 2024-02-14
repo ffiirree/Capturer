@@ -40,7 +40,7 @@ void Selector::status(SelectorStatus status)
         emit captured();
         break;
     case SelectorStatus::LOCKED: emit locked(); break;
-    default: break;
+    default:                     break;
     }
 
     emit statusChanged(status_);
@@ -176,7 +176,7 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
         break;
 
     case SelectorStatus::LOCKED:
-    default: break;
+    default:                     break;
     }
 }
 

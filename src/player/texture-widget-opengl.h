@@ -59,7 +59,7 @@ private:
     GLuint texture_[4]{};
 
     // ModelViewProjectionMatrix
-    GLuint proj_id_{};
+    GLuint     proj_id_{};
     QMatrix4x4 proj_{};
 
     av::vformat_t format_{ .pix_fmt = AV_PIX_FMT_YUV420P };

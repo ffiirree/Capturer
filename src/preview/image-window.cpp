@@ -94,7 +94,7 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
     const auto delta = event->angleDelta().y();
     if (ctrl_) {
         opacity_ += (delta / 12000.0);
-        opacity_ = std::clamp(opacity_, 0.01, 1.0);
+        opacity_  = std::clamp(opacity_, 0.01, 1.0);
 
         setWindowOpacity(opacity_);
     }

@@ -43,7 +43,7 @@ protected:
 protected:
     QColor color_{ Qt::blue };
     QColor default_color_{ "#bfbfbf" };
-    QPen border_pen_{ default_color_, 2 };
+    QPen   border_pen_{ default_color_, 2 };
     QColor hover_color_{ "#2080f0" };
 };
 

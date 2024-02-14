@@ -6,7 +6,7 @@
 class Magnifier : public QWidget
 {
 public:
-    enum class ColorFormat: int
+    enum class ColorFormat : int
     {
         HEX,
         INT,
@@ -31,7 +31,7 @@ public:
         update();
     }
 
-    // 
+    //
     void setGrabPixmap(const QPixmap&);
 
 protected:
@@ -43,17 +43,17 @@ protected:
     void closeEvent(QCloseEvent *) override;
 
 private:
-    QRect grabRect();
+    QRect   grabRect();
     QPixmap grab();
-    QPoint position();
+    QPoint  position();
 
     QPixmap pixmap_{};
 
     QLabel *label_{};
 
-    int alpha_{ 5 };
-    QSize msize_{ 29, 29 };
-    QSize psize_{ 0, 0 };
+    int    alpha_{ 5 };
+    QSize  msize_{ 29, 29 };
+    QSize  psize_{ 0, 0 };
     QColor color_;
 
     ColorFormat cfmt_{ ColorFormat::HEX };

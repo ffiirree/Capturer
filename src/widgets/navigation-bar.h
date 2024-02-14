@@ -13,7 +13,7 @@ public:
 
     void add(QAbstractButton *button, int id = -1);
 
-    int id() const;
+    int  id() const;
     void setId(int id);
 
 signals:

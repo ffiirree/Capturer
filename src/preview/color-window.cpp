@@ -86,7 +86,7 @@ ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
     hl->addStretch();
 
     connect(nbar, &NavigationBar::toggled, [this](int id) { refresh(static_cast<number_t>(id)); });
-    
+
     //
     layout->addStretch();
 

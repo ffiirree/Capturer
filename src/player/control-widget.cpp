@@ -137,14 +137,14 @@ void ControlWidget::setDuration(int64_t time)
 {
     emit validDruation(time != AV_NOPTS_VALUE);
 
-    time_slider_->setMaximum(static_cast<int>(time / 1'000));
-    duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ time / 1'000'000 }).c_str());
+    time_slider_->setMaximum(static_cast<int>(time / 1000));
+    duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ time / 1000000 }).c_str());
 }
 
 void ControlWidget::setTime(std::chrono::nanoseconds time)
 {
     if (time_slider_ && !time_slider_->isSliderDown() && time_slider_->isVisible()) {
-        time_slider_->setValue(static_cast<int>(time.count() / 1'000'000));
+        time_slider_->setValue(static_cast<int>(time.count() / 1000000));
     }
     time_label_->setText(
         fmt::format("{:%T}", std::chrono::duration_cast<std::chrono::seconds>(time)).c_str());
