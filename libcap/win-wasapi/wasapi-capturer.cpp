@@ -13,7 +13,7 @@
 #include <winrt/base.h>
 
 // REFERENCE_TIME time units per second and per millisecond
-#define REFTIMES_PER_SEC 10'000'000
+#define REFTIMES_PER_SEC 10000000
 
 void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
 {
@@ -121,7 +121,7 @@ int WasapiCapturer::init_silent_render(IMMDevice *device)
 
     RETURN_NEGV_IF_FAILED(render_->ReleaseBuffer(buffer_size, 0));
 
-    render_audio_client_->Start();
+    RETURN_NEGV_IF_FAILED(render_audio_client_->Start());
 
     return 0;
 }
@@ -144,7 +144,7 @@ int WasapiCapturer::run()
     eof_     = 0x00;
 
     start_time_ = av::clock::ns().count();
-    thread_     = std::thread([this]() {
+    thread_     = std::jthread([this]() {
         probe::thread::set_name("WASAPI-C-" + device_.id);
         run_f();
     });
@@ -157,9 +157,9 @@ int WasapiCapturer::run_f()
     LOG(INFO) << "[A] STARTED";
 
     UINT32 nb_samples  = 0;
-    BYTE *data_ptr     = nullptr;
+    BYTE  *data_ptr    = nullptr;
     UINT32 packet_size = 0;
-    DWORD flags        = 0;
+    DWORD  flags       = 0;
     UINT64 ts          = 0;
 
     const HANDLE events[] = { STOP_EVENT, ARRIVED_EVENT };
@@ -251,7 +251,7 @@ std::string WasapiCapturer::format_str(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO: return av::to_string(afmt);
-    default: LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return {};
+    default:                 LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return {};
     }
 }
 

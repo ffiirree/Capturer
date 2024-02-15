@@ -21,7 +21,7 @@ int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterCont
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return create_video_src(decoder, ctx);
     case AVMEDIA_TYPE_AUDIO: return create_audio_src(decoder, ctx);
-    default: return -1;
+    default:                 return -1;
     }
 }
 
@@ -31,7 +31,7 @@ int Dispatcher::create_sink_filter(const Consumer<AVFrame> *encoder, AVFilterCon
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return create_video_sink(encoder, ctx);
     case AVMEDIA_TYPE_AUDIO: return create_audio_sink(encoder, ctx);
-    default: return -1;
+    default:                 return -1;
     }
 }
 
@@ -384,7 +384,7 @@ int Dispatcher::start()
 
     vrunning_ = true;
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO)) {
-        video_thread_ = std::thread([this]() {
+        video_thread_ = std::jthread([this]() {
             probe::thread::set_name("dispatch-video");
             dispatch_fn(AVMEDIA_TYPE_VIDEO);
         });
@@ -392,7 +392,7 @@ int Dispatcher::start()
 
     arunning_ = true;
     if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
-        audio_thread_ = std::thread([this]() {
+        audio_thread_ = std::jthread([this]() {
             probe::thread::set_name("dispatch-audio");
             dispatch_fn(AVMEDIA_TYPE_AUDIO);
         });
@@ -566,10 +566,10 @@ void Dispatcher::resume()
     std::lock_guard lock(pause_mtx_);
 
     if (paused_pts_ != av::clock::nopts) {
-        const auto now = av::clock::ns();
-        paused_time_ += (now - paused_pts_);
-        paused_pts_  = av::clock::nopts;
-        resumed_pts_ = now;
+        const auto now  = av::clock::ns();
+        paused_time_   += (now - paused_pts_);
+        paused_pts_     = av::clock::nopts;
+        resumed_pts_    = now;
     }
 }
 

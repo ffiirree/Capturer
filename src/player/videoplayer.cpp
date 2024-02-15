@@ -345,7 +345,7 @@ int VideoPlayer::run()
     timeline_.set(0ns);
 
     // video thread
-    video_thread_ = std::thread([this] { video_thread_f(); });
+    video_thread_ = std::jthread([this] { video_thread_f(); });
 
     // audio thread
     audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {

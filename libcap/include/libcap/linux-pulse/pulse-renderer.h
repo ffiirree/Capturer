@@ -11,22 +11,22 @@ extern "C" {
 class PulseAudioRenderer final : public AudioRenderer
 {
 public:
-    int open(const std::string& name, RenderFlags flags) override;
+    int                open(const std::string& name, RenderFlags flags) override;
     [[nodiscard]] bool ready() const override { return ready_; }
 
     int start() override;
     int reset() override;
     int stop() override;
 
-    int mute(bool) override;
+    int                mute(bool) override;
     [[nodiscard]] bool muted() const override;
 
     // 0.0 ~ 1.0
-    int setVolume(float) override;
+    int                 setVolume(float) override;
     [[nodiscard]] float volume() const override;
 
-    int pause() override;
-    int resume() override;
+    int                pause() override;
+    int                resume() override;
     [[nodiscard]] bool paused() const override;
 
     [[nodiscard]] av::aformat_t format() const override { return format_; }
@@ -44,16 +44,16 @@ private:
     static void pulse_stream_drain_callback(pa_stream *, int, void *);
 
     av::aformat_t format_{};
-    av::device_t devinfo_{};
+    av::device_t  devinfo_{};
 
     uint32_t buffer_frames_{ 0 };
     uint32_t bytes_per_frame_{ 1 };
 
     // pulse audio @{
-    pa_stream *stream_{};
+    pa_stream        *stream_{};
     std::atomic<bool> ready_{ false };
     std::atomic<bool> stream_ready_{ false };
-    std::atomic<int> stream_retval_{};
+    std::atomic<int>  stream_retval_{};
     // @}
 };
 

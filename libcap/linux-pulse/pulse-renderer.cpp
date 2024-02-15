@@ -13,16 +13,16 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
 
     pa_sample_spec spec{
         .format   = PA_SAMPLE_S16LE,
-        .rate     = 48'000,
+        .rate     = 48000,
         .channels = 2,
     };
 
     format_ = {
-        .sample_rate    = 48'000,
+        .sample_rate    = 48000,
         .sample_fmt     = AV_SAMPLE_FMT_S16,
         .channels       = 2,
         .channel_layout = AV_CH_LAYOUT_STEREO,
-        .time_base      = { 1, 48'000 },
+        .time_base      = { 1, 48000 },
     };
 
     if (!::pa_sample_spec_valid(&spec)) {
@@ -44,8 +44,8 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     ::pa_stream_set_latency_update_callback(stream_, pulse_stream_latency_callback, this);
 
     const pa_buffer_attr buffer_attr{
-        .maxlength = static_cast<uint32_t>(1'024 * bytes_per_frame_) * 2,
-        .tlength   = static_cast<uint32_t>(1'024 * bytes_per_frame_),
+        .maxlength = static_cast<uint32_t>(1024 * bytes_per_frame_) * 2,
+        .tlength   = static_cast<uint32_t>(1024 * bytes_per_frame_),
         .prebuf    = 0,
         .minreq    = static_cast<uint32_t>(-1),
         .fragsize  = 0,
@@ -105,7 +105,7 @@ void PulseAudioRenderer::pulse_stream_state_callback(pa_stream *stream, void *us
     switch (::pa_stream_get_state(stream)) {
     case PA_STREAM_UNCONNECTED:
     case PA_STREAM_TERMINATED:
-    case PA_STREAM_CREATING: break;
+    case PA_STREAM_CREATING:    break;
 
     case PA_STREAM_READY:
         self->stream_ready_ = true;
@@ -116,7 +116,7 @@ void PulseAudioRenderer::pulse_stream_state_callback(pa_stream *stream, void *us
 
     case PA_STREAM_FAILED: LOG(ERROR) << "[PULSE-AUDIO] playback stream error"; break;
 
-    default: break;
+    default:               break;
     }
 }
 

@@ -156,7 +156,7 @@ namespace v4l2
         v4l2_querymenu qmenu{};
         qmenu.id = qctrl->id;
 
-        for (qmenu.index = qctrl->minimum; qmenu.index <= (uint32_t)qctrl->maximum;
+        for (qmenu.index  = qctrl->minimum; qmenu.index <= (uint32_t)qctrl->maximum;
              qmenu.index += qctrl->step) {
             if (v4l2_ioctl(device, VIDIOC_QUERYMENU, &qmenu) == 0) {
                 LOG(INFO) << fmt::format("\t\t name = {}, index = {}",

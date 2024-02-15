@@ -32,21 +32,21 @@ public:
         InterlockedDecrement(&refs);
     }
 
-    int open(const std::string& name, RenderFlags flags) override;
+    int  open(const std::string& name, RenderFlags flags) override;
     bool ready() const override { return ready_; }
 
     int start() override;
     int reset() override;
     int stop() override;
 
-    int mute(bool) override;
+    int  mute(bool) override;
     bool muted() const override;
 
-    int setVolume(float) override;
+    int   setVolume(float) override;
     float volume() const override;
 
-    int pause() override;
-    int resume() override;
+    int  pause() override;
+    int  resume() override;
     bool paused() const override;
 
     av::aformat_t format() const override { return format_; }
@@ -58,8 +58,8 @@ protected:
 
     // IUnknown
     HRESULT QueryInterface(REFIID riid, void **ppvObject) override;
-    ULONG AddRef() override;
-    ULONG Release() override;
+    ULONG   AddRef() override;
+    ULONG   Release() override;
 
     // IMMNotificationClient
     HRESULT OnDeviceStateChanged(LPCWSTR, DWORD) override { return S_OK; }
@@ -78,7 +78,7 @@ protected:
     HRESULT OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason) override;
 
     //
-    void InitializeWaveFormat(WAVEFORMATEX *);
+    void    InitializeWaveFormat(WAVEFORMATEX *);
     HRESULT InitializeAudioEngine();
     HRESULT InitializeStreamSwitch();
 
@@ -93,19 +93,19 @@ private:
     RenderFlags flags_{};
 
     av::aformat_t format_{};
-    av::device_t devinfo_{};
+    av::device_t  devinfo_{};
 
-    std::thread thread_{};
+    std::jthread thread_{};
 
     // WASAPI Render@{
     winrt::com_ptr<IMMDeviceEnumerator> enumerator_{};
-    winrt::com_ptr<IMMDevice> endpoint_{};
+    winrt::com_ptr<IMMDevice>           endpoint_{};
 
     mutable std::mutex mtx_; // for stream switch
 
-    winrt::com_ptr<IAudioClient> audio_client_{};
-    winrt::com_ptr<IAudioRenderClient> render_{};
-    winrt::com_ptr<ISimpleAudioVolume> volume_{};
+    winrt::com_ptr<IAudioClient>         audio_client_{};
+    winrt::com_ptr<IAudioRenderClient>   render_{};
+    winrt::com_ptr<ISimpleAudioVolume>   volume_{};
     winrt::com_ptr<IAudioSessionControl> session_{};
 
     WAVEFORMATEX *wfex_{ nullptr };

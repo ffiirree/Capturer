@@ -45,7 +45,7 @@ namespace wgc
     template<typename T>
     winrt::com_ptr<T> get_interface_from(const winrt::Windows::Foundation::IInspectable& object)
     {
-        auto access = object.as<::IDirect3DDxgiInterfaceAccess>();
+        auto              access = object.as<::IDirect3DDxgiInterfaceAccess>();
         winrt::com_ptr<T> result;
         winrt::check_hresult(access->GetInterface(winrt::guid_of<T>(), result.put_void()));
         return result;

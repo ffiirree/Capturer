@@ -99,7 +99,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     // This represents an IDXGIDevice, and can be used to interop between Windows Runtime components that
     // need to exchange IDXGIDevice references.
     winrt::com_ptr<::IInspectable> inspectable{};
-    const auto dxgi_device = device_.as<IDXGIDevice>();
+    const auto                     dxgi_device = device_.as<IDXGIDevice>();
     if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()))) {
         LOG(ERROR) << "[       WGC] CreateDirect3D11DeviceFromDXGIDevice failed.";
         return -1;
@@ -235,9 +235,9 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
     constexpr D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
     winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
 
-    ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
-    constexpr UINT strides[1]      = { sizeof(float) * 5 };
-    constexpr UINT offsets[1]      = { 0 };
+    ID3D11Buffer  *vertex_buffers[] = { vertex_buffer_.get() };
+    constexpr UINT strides[1]       = { sizeof(float) * 5 };
+    constexpr UINT offsets[1]       = { 0 };
     context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
 
     // 1.2 index buffer : optional
@@ -416,8 +416,8 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
             proj_    = DirectX::XMMatrixScaling(1, 1, 1);
             float r1 = tex_desc.Width / static_cast<float>(tex_desc.Height);
             float r2 = vfmt.width / static_cast<float>(vfmt.height);
-            auto w   = r1 > r2 ? vfmt.width : vfmt.height * r1;
-            auto h   = r1 > r2 ? vfmt.width / r1 : vfmt.height;
+            auto  w  = r1 > r2 ? vfmt.width : vfmt.height * r1;
+            auto  h  = r1 > r2 ? vfmt.width / r1 : vfmt.height;
             proj_    = DirectX::XMMatrixScaling(w / vfmt.width, h / vfmt.height, 1);
 
             D3D11_MAPPED_SUBRESOURCE mapped{};

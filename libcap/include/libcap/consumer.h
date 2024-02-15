@@ -53,9 +53,9 @@ public:
         return 0;
     }
 
-    [[nodiscard]] virtual bool full(AVMediaType) const    = 0;
-    [[nodiscard]] virtual bool accepts(AVMediaType) const = 0;
-    virtual void enable(AVMediaType, bool = true)         = 0;
+    [[nodiscard]] virtual bool full(AVMediaType) const          = 0;
+    [[nodiscard]] virtual bool accepts(AVMediaType) const       = 0;
+    virtual void               enable(AVMediaType, bool = true) = 0;
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
 
@@ -65,15 +65,15 @@ public:
 
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
-    AVRational sink_framerate{ 24, 1 };
+    AVRational    sink_framerate{ 24, 1 };
 
 protected:
-    std::atomic<bool> running_{ false };
+    std::atomic<bool>    running_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };
-    std::atomic<bool> ready_{ false };
-    std::thread thread_;
-    std::mutex mtx_;
-    std::atomic<bool> paused_{ false };
+    std::atomic<bool>    ready_{ false };
+    std::jthread          thread_;
+    std::mutex           mtx_;
+    std::atomic<bool>    paused_{ false };
 
     av::vsync_t vsync_{ av::vsync_t::cfr };
 };

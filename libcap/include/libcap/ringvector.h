@@ -10,7 +10,7 @@ template<class T, int N> class RingVector
 {
 public:
     explicit RingVector(
-        std::function<T()> allocate         = []() { return T{}; },
+        std::function<T()>       allocate   = []() { return T{}; },
         std::function<void(T *)> deallocate = [](T *) {})
     {
         allocate_   = allocate;
@@ -99,13 +99,13 @@ public:
     }
 
 private:
-    std::function<T()> allocate_{ []() { return T{}; } };
+    std::function<T()>       allocate_{ []() { return T{}; } };
     std::function<void(T *)> deallocate_{ [](T *) {} };
-    size_t pushed_idx_{ 0 };
-    size_t popped_idx_{ 0 };
-    bool full_{ false };
+    size_t                   pushed_idx_{ 0 };
+    size_t                   popped_idx_{ 0 };
+    bool                     full_{ false };
 
-    T buffer_[N]{};
+    T                  buffer_[N]{};
     mutable std::mutex mtx_;
 };
 #undef EMPTY

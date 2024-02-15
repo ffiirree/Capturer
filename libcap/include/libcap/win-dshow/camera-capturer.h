@@ -19,7 +19,7 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, AVMediaType) override;
+    int  produce(AVFrame *, AVMediaType) override;
     bool empty(AVMediaType) override;
 
     bool has(AVMediaType) const override;
@@ -38,10 +38,10 @@ public:
 private:
     void capture_fn();
 
-    winrt::com_ptr<IGraphBuilder> graph_{};
+    winrt::com_ptr<IGraphBuilder>         graph_{};
     winrt::com_ptr<ICaptureGraphBuilder2> builder_{};
-    winrt::com_ptr<IMediaControl> control_{};
-    winrt::com_ptr<IBaseFilter> filter_;
+    winrt::com_ptr<IMediaControl>         control_{};
+    winrt::com_ptr<IBaseFilter>           filter_;
 
     lock_queue<av::frame> buffer_{};
 };

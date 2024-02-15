@@ -37,7 +37,7 @@ public:
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return buffer_.empty();
-        default: return true;
+        default:                 return true;
         }
     }
 
@@ -45,12 +45,12 @@ public:
     {
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: return ready_;
-        default: return false;
+        default:                 return false;
         }
     }
 
     std::string format_str(AVMediaType) const override;
-    AVRational time_base(AVMediaType) const override;
+    AVRational  time_base(AVMediaType) const override;
 
     std::vector<av::vformat_t> vformats() const override { return {}; }
 
@@ -76,15 +76,15 @@ private:
     int64_t start_time_{ AV_NOPTS_VALUE };
 
     av::frame frame_{};
-    uint32_t frame_number_{ 0 };
+    uint32_t  frame_number_{ 0 };
 
     // WASAPI Capturer@{
-    winrt::com_ptr<IAudioClient> capturer_audio_client_{};
+    winrt::com_ptr<IAudioClient>        capturer_audio_client_{};
     winrt::com_ptr<IAudioCaptureClient> capturer_{};
     // @}
 
     // WASAPI Render@{
-    winrt::com_ptr<IAudioClient> render_audio_client_{};
+    winrt::com_ptr<IAudioClient>       render_audio_client_{};
     winrt::com_ptr<IAudioRenderClient> render_{};
     // @}
 

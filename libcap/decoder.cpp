@@ -128,10 +128,10 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // clock
     switch (clock_) {
-    case av::clock_t::none: SYNC_PTS = -fmt_ctx_->start_time; break;
+    case av::clock_t::none:   SYNC_PTS = -fmt_ctx_->start_time; break;
     case av::clock_t::system: SYNC_PTS = av::clock::us().count() - fmt_ctx_->start_time; break;
     case av::clock_t::device:
-    default: SYNC_PTS = 0; break;
+    default:                  SYNC_PTS = 0; break;
     }
 
     // av_dump_format(fmt_ctx_, 0, name.c_str(), 0);
@@ -226,8 +226,8 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 
     // audio stream
     if (audio_stream_idx_ >= 0) {
-        const auto audio_stream = fmt_ctx_->streams[audio_stream_idx_];
-        auto audio_decoder      = choose_decoder(audio_stream, AV_HWDEVICE_TYPE_NONE);
+        const auto audio_stream  = fmt_ctx_->streams[audio_stream_idx_];
+        auto       audio_decoder = choose_decoder(audio_stream, AV_HWDEVICE_TYPE_NONE);
 
         if (audio_decoder_ctx_ = avcodec_alloc_context3(audio_decoder); !audio_decoder_ctx_) {
             LOG(ERROR) << "[   DECODER] [A] failed to alloc decoder context";
@@ -267,10 +267,10 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
 bool Decoder::has(AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ >= 0;
-    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ >= 0;
+    case AVMEDIA_TYPE_VIDEO:    return video_stream_idx_ >= 0;
+    case AVMEDIA_TYPE_AUDIO:    return audio_stream_idx_ >= 0;
     case AVMEDIA_TYPE_SUBTITLE: return subtitle_idx_ >= 0;
-    default: return false;
+    default:                    return false;
     }
 }
 
@@ -279,7 +279,7 @@ std::string Decoder::format_str(AVMediaType type) const
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return (video_stream_idx_ >= 0) ? av::to_string(vfmt) : std::string{};
     case AVMEDIA_TYPE_AUDIO: return (audio_stream_idx_ >= 0) ? av::to_string(afmt) : std::string{};
-    default: return {};
+    default:                 return {};
     }
 }
 
@@ -344,10 +344,10 @@ int Decoder::produce(AVFrame *frame, AVMediaType type)
 bool Decoder::has_enough(AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return video_stream_idx_ < 0 || vbuffer_.size() > MIN_FRAMES;
-    case AVMEDIA_TYPE_AUDIO: return audio_stream_idx_ < 0 || abuffer_.size() > MIN_FRAMES;
+    case AVMEDIA_TYPE_VIDEO:    return video_stream_idx_ < 0 || vbuffer_.size() > MIN_FRAMES;
+    case AVMEDIA_TYPE_AUDIO:    return audio_stream_idx_ < 0 || abuffer_.size() > MIN_FRAMES;
     case AVMEDIA_TYPE_SUBTITLE: return audio_stream_idx_ < 0 || sbuffer_.size() > 2;
-    default: return true;
+    default:                    return true;
     }
 }
 
@@ -362,7 +362,7 @@ int Decoder::run()
 
     eof_     = 0x00;
     running_ = true;
-    thread_  = std::thread([this]() {
+    thread_  = std::jthread([this]() {
         probe::thread::set_name("DEC-" + name_);
         decode_fn();
     });
@@ -388,8 +388,8 @@ int Decoder::decode_fn()
             LOG(INFO) << fmt::format("seek: {:%T}({:.3%S}, {:.3%S})", seek_.ts.load(), seek_.min.load(),
                                      seek_.max.load());
 
-            if (avformat_seek_file(fmt_ctx_, -1, seek_.min.load().count() / 1'000,
-                                   seek_.ts.load().count() / 1'000, seek_.max.load().count() / 1'000,
+            if (avformat_seek_file(fmt_ctx_, -1, seek_.min.load().count() / 1000,
+                                   seek_.ts.load().count() / 1000, seek_.max.load().count() / 1000,
                                    0) < 0) {
                 LOG(ERROR) << fmt::format("failed to seek, VIDEO: [{:%T}, {:%T}]",
                                           std::chrono::microseconds{ fmt_ctx_->start_time },
@@ -451,7 +451,7 @@ int Decoder::decode_fn()
                     return ret;
                 }
 
-                frame_->pts = frame_->best_effort_timestamp;
+                frame_->pts  = frame_->best_effort_timestamp;
                 frame_->pts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, vfmt.time_base);
                 if (frame_->pkt_dts != AV_NOPTS_VALUE)
                     frame_->pkt_dts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, vfmt.time_base);
@@ -473,7 +473,7 @@ int Decoder::decode_fn()
         // subtitle decoding
         if (packet_->stream_index == subtitle_idx_ || ((eof_ & DEMUXING_EOF) && !(eof_ & SDECODING_EOF))) {
             AVSubtitle subtitle;
-            int got_frame = 0;
+            int        got_frame = 0;
             if (avcodec_decode_subtitle2(subtitle_decoder_ctx_, &subtitle, &got_frame, packet_.get()) >=
                 0) {
                 if (got_frame) {
@@ -528,8 +528,8 @@ int Decoder::decode_fn()
                 }
 
                 if (frame_->pts != AV_NOPTS_VALUE) {
-                    audio_next_pts_ = frame_->pts + frame_->nb_samples;
-                    frame_->pts += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, afmt.time_base);
+                    audio_next_pts_  = frame_->pts + frame_->nb_samples;
+                    frame_->pts     += av_rescale_q(SYNC_PTS, { 1, AV_TIME_BASE }, afmt.time_base);
                 }
 
                 if (frame_->pkt_dts != AV_NOPTS_VALUE)
@@ -626,7 +626,7 @@ std::vector<std::map<std::string, std::string>> Decoder::properties(AVMediaType 
         auto map = av::to_map(fmt_ctx_->metadata);
 
         map["Format"]   = fmt_ctx_->iformat->long_name;
-        map["Bitrate"]  = fmt_ctx_->bit_rate ? fmt::format("{} kb/s", fmt_ctx_->bit_rate / 1'024) : "N/A";
+        map["Bitrate"]  = fmt_ctx_->bit_rate ? fmt::format("{} kb/s", fmt_ctx_->bit_rate / 1024) : "N/A";
         map["Duration"] = fmt::format("{:%T}", std::chrono::microseconds{ fmt_ctx_->duration });
 
         return { map };
@@ -657,7 +657,7 @@ std::vector<std::map<std::string, std::string>> Decoder::properties(AVMediaType 
             map["Height"]    = std::to_string(params->height);
             auto framerate   = av_guess_frame_rate(fmt_ctx_, stream, nullptr);
             map["Framerate"] = fmt::format("{:.3f} ({})", av_q2d(framerate), framerate);
-            map["Bitrate"]   = params->bit_rate ? fmt::format("{} kb/s", params->bit_rate / 1'024) : "N/A";
+            map["Bitrate"]   = params->bit_rate ? fmt::format("{} kb/s", params->bit_rate / 1024) : "N/A";
             map["SAR"] =
                 params->sample_aspect_ratio.num ? av::to_string(params->sample_aspect_ratio) : "N/A";
             map["Pixel Format"] =
@@ -672,13 +672,13 @@ std::vector<std::map<std::string, std::string>> Decoder::properties(AVMediaType 
         case AVMEDIA_TYPE_AUDIO:
             map["Sample Format"] =
                 probe::util::toupper(av::to_string(static_cast<AVSampleFormat>(params->format)));
-            map["Bitrate"]  = params->bit_rate ? fmt::format("{} kb/s", params->bit_rate / 1'024) : "N/A";
+            map["Bitrate"]  = params->bit_rate ? fmt::format("{} kb/s", params->bit_rate / 1024) : "N/A";
             map["Channels"] = std::to_string(params->channels);
             map["Channel Layout"] = av::channel_layout_name(params->channels, params->channel_layout);
             map["Sample Rate"]    = fmt::format("{} Hz", params->sample_rate);
             break;
         case AVMEDIA_TYPE_SUBTITLE:
-        default: break;
+        default:                    break;
         }
 
         properties.push_back(map);

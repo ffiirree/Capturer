@@ -46,7 +46,7 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
             .tlength   = static_cast<uint32_t>(-1),
             .prebuf    = static_cast<uint32_t>(-1),
             .minreq    = static_cast<uint32_t>(-1),
-            .fragsize  = static_cast<uint32_t>(::pa_usec_to_bytes(25'000, &spec)),
+            .fragsize  = static_cast<uint32_t>(::pa_usec_to_bytes(25000, &spec)),
         };
         if (::pa_stream_connect_record(stream_, name.c_str(), &buffer_attr, PA_STREAM_ADJUST_LATENCY) !=
             0) {
@@ -70,7 +70,7 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     defer(pulse::signal(0));
 
     const void *frames = nullptr;
-    size_t bytes       = 0;
+    size_t      bytes  = 0;
 
     if (::pa_stream_peek(stream, &frames, &bytes) < 0) {
         LOG(ERROR) << "[PULSE-AUDIO] failed to read frames";
@@ -141,7 +141,7 @@ std::string PulseCapturer::format_str(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO: return av::to_string(afmt);
-    default: LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type); return {};
+    default:                 LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type); return {};
     }
 }
 

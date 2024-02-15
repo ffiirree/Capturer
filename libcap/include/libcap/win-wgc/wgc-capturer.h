@@ -40,18 +40,18 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, AVMediaType) override;
+    int  produce(AVFrame *, AVMediaType) override;
     bool empty(AVMediaType) override;
 
-    bool has(AVMediaType mt) const override;
+    bool        has(AVMediaType mt) const override;
     std::string format_str(AVMediaType) const override;
-    AVRational time_base(AVMediaType) const override;
+    AVRational  time_base(AVMediaType) const override;
 
     std::vector<av::vformat_t> vformats() const override;
 
 private:
     void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
-                        const winrt::Windows::Foundation::IInspectable& args);
+                        const winrt::Windows::Foundation::IInspectable&                      args);
 
     void OnClosed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem&,
                   const winrt::Windows::Foundation::IInspectable&);
@@ -68,45 +68,45 @@ private:
 
     winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice winrt_device_{ nullptr };
 
-    winrt::Windows::Graphics::Capture::GraphicsCaptureSession session_{ nullptr };
+    winrt::Windows::Graphics::Capture::GraphicsCaptureSession     session_{ nullptr };
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool frame_pool_{ nullptr };
 
-    winrt::Windows::Graphics::Capture::GraphicsCaptureItem::Closed_revoker onclosed_;
+    winrt::Windows::Graphics::Capture::GraphicsCaptureItem::Closed_revoker              onclosed_;
     winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::FrameArrived_revoker onarrived_;
 
     // ffmpeg hardware device context
     std::shared_ptr<av::hwaccel::context_t> hwctx_{};
 
     // D3D11
-    winrt::com_ptr<ID3D11Device> device_{}; // same as hwctx_->native_device()
+    winrt::com_ptr<ID3D11Device>        device_{}; // same as hwctx_->native_device()
     winrt::com_ptr<ID3D11DeviceContext> context_{};
 
     // @{ Resize
-    winrt::com_ptr<ID3D11Buffer> vertex_buffer_{};
-    winrt::com_ptr<ID3D11InputLayout> vertex_layout_{};
+    winrt::com_ptr<ID3D11Buffer>       vertex_buffer_{};
+    winrt::com_ptr<ID3D11InputLayout>  vertex_layout_{};
     winrt::com_ptr<ID3D11VertexShader> vertex_shader_{};
 
     winrt::com_ptr<ID3D11SamplerState> sampler_{};
-    winrt::com_ptr<ID3D11PixelShader> pixel_shader_{};
+    winrt::com_ptr<ID3D11PixelShader>  pixel_shader_{};
 
-    winrt::com_ptr<ID3D11Texture2D> source_{};
+    winrt::com_ptr<ID3D11Texture2D>          source_{};
     winrt::com_ptr<ID3D11ShaderResourceView> srv_{};
 
-    winrt::com_ptr<ID3D11Texture2D> target_{};
+    winrt::com_ptr<ID3D11Texture2D>        target_{};
     winrt::com_ptr<ID3D11RenderTargetView> rtv_{};
 
-    DirectX::XMMATRIX proj_{};
+    DirectX::XMMATRIX            proj_{};
     winrt::com_ptr<ID3D11Buffer> proj_buffer_{};
     // @}
 
     mode_t mode_{};
 
     av::frame frame_{};
-    uint32_t frame_number_{};
+    uint32_t  frame_number_{};
 
     // options @{
-    bool draw_mouse_{ true };
-    bool show_region_{ true };
+    bool      draw_mouse_{ true };
+    bool      show_region_{ true };
     D3D11_BOX box_{ .front = 0, .back = 1 };
     // @}
 

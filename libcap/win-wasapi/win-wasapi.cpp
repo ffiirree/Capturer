@@ -19,16 +19,14 @@ extern "C" {
 
 uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
 {
-    // clang-format off
     switch (layout) {
-    case KSAUDIO_SPEAKER_MONO:          return AV_CH_LAYOUT_MONO;
-    case KSAUDIO_SPEAKER_STEREO:        return AV_CH_LAYOUT_STEREO;
-    case KSAUDIO_SPEAKER_QUAD:          return AV_CH_LAYOUT_QUAD;
-    case KSAUDIO_SPEAKER_2POINT1:       return AV_CH_LAYOUT_SURROUND;
-    case KSAUDIO_SPEAKER_SURROUND:      return AV_CH_LAYOUT_4POINT0;
-    default:                            return av_get_default_channel_layout(channels);
+    case KSAUDIO_SPEAKER_MONO:     return AV_CH_LAYOUT_MONO;
+    case KSAUDIO_SPEAKER_STEREO:   return AV_CH_LAYOUT_STEREO;
+    case KSAUDIO_SPEAKER_QUAD:     return AV_CH_LAYOUT_QUAD;
+    case KSAUDIO_SPEAKER_2POINT1:  return AV_CH_LAYOUT_SURROUND;
+    case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
+    default:                       return av_get_default_channel_layout(channels);
     }
-    // clang-format on
 }
 
 std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
@@ -36,9 +34,9 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
     if (!dev) return {};
 
     winrt::com_ptr<IPropertyStore> props{};
-    LPWSTR id        = nullptr;
-    PROPVARIANT name = {};
-    PROPVARIANT desc = {};
+    LPWSTR                         id   = nullptr;
+    PROPVARIANT                    name = {};
+    PROPVARIANT                    desc = {};
 
     // Initialize container for property value.
     PropVariantInit(&name);
@@ -67,14 +65,12 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
     RETURN_NONE_IF_FAILED(endpoint->GetDataFlow(&data_flow));
 
     auto type = av::device_type_t::audio;
-    // clang-format off
     switch (data_flow) {
-    case eRender:   type |= av::device_type_t::sink;                                break;
-    case eCapture:  type |= av::device_type_t::source;                              break;
-    case eAll:      type |= av::device_type_t::source | av::device_type_t::sink;    break;
-    default:                                                                        break;
+    case eRender:  type |= av::device_type_t::sink; break;
+    case eCapture: type |= av::device_type_t::source; break;
+    case eAll:     type |= av::device_type_t::source | av::device_type_t::sink; break;
+    default:       break;
     }
-    // clang-format on
 
     // state
     DWORD state{};
@@ -95,7 +91,7 @@ std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
 {
     winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
     winrt::com_ptr<IMMDeviceCollection> collection{};
-    std::vector<av::device_t> devices{};
+    std::vector<av::device_t>           devices{};
 
     RETURN_NONE_IF_FAILED(CoCreateInstance(winrt::guid_of<MMDeviceEnumerator>(), nullptr, CLSCTX_ALL,
                                            winrt::guid_of<IMMDeviceEnumerator>(), enumerator.put_void()));
@@ -121,7 +117,7 @@ std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
 std::optional<av::device_t> wasapi::default_endpoint(av::device_type_t type)
 {
     winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
-    winrt::com_ptr<IMMDevice> endpoint{};
+    winrt::com_ptr<IMMDevice>           endpoint{};
 
     RETURN_NONE_IF_FAILED(CoCreateInstance(winrt::guid_of<MMDeviceEnumerator>(), nullptr, CLSCTX_ALL,
                                            winrt::guid_of<IMMDeviceEnumerator>(), enumerator.put_void()));

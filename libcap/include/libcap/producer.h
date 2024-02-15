@@ -42,11 +42,11 @@ public:
     virtual int run() = 0;
 
     [[nodiscard]] virtual int produce(T *, AVMediaType) = 0;
-    virtual bool empty(AVMediaType)                     = 0;
+    virtual bool              empty(AVMediaType)        = 0;
 
-    [[nodiscard]] virtual bool has(AVMediaType) const               = 0;
+    [[nodiscard]] virtual bool        has(AVMediaType) const        = 0;
     [[nodiscard]] virtual std::string format_str(AVMediaType) const = 0;
-    [[nodiscard]] virtual AVRational time_base(AVMediaType) const   = 0;
+    [[nodiscard]] virtual AVRational  time_base(AVMediaType) const  = 0;
 
     [[nodiscard]] virtual bool enabled(AVMediaType t) { return enabled_.contains(t) && enabled_[t]; }
 
@@ -78,7 +78,7 @@ public:
     [[nodiscard]] virtual std::vector<av::vformat_t> vformats() const { return {}; }
     [[nodiscard]] virtual std::vector<av::aformat_t> aformats() const { return {}; }
 
-    virtual void set_clock(const av::clock_t t) { clock_ = t; }
+    virtual void                      set_clock(const av::clock_t t) { clock_ = t; }
     [[nodiscard]] virtual av::clock_t clock() const { return clock_; }
 
     virtual std::vector<std::map<std::string, std::string>> properties(AVMediaType) const { return {}; }
@@ -88,12 +88,12 @@ public:
     av::vformat_t vfmt{};
 
 protected:
-    std::atomic<bool> running_{ false };
+    std::atomic<bool>    running_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };
-    std::atomic<bool> ready_{ false };
-    std::thread thread_;
-    std::mutex mtx_;
-    std::map<int, bool> enabled_{};
+    std::atomic<bool>    ready_{ false };
+    std::jthread         thread_;
+    std::mutex           mtx_;
+    std::map<int, bool>  enabled_{};
 
     std::atomic<bool> muted_{ false };
 

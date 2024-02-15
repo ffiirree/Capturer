@@ -259,7 +259,7 @@ int Encoder::run()
     }
 
     running_ = true;
-    thread_  = std::thread([this]() {
+    thread_  = std::jthread([this]() {
         probe::thread::set_name("encoder");
         run_f();
     });
@@ -311,9 +311,9 @@ std::pair<int, int> Encoder::video_sync_process()
 
     // 1. pass
     if (delta_l < 0 && delta_r > 0) {
-        floating_pts = static_cast<double>(expected_pts_);
-        duration += delta_l;
-        delta_l = 0;
+        floating_pts  = static_cast<double>(expected_pts_);
+        duration     += delta_l;
+        delta_l       = 0;
     }
 
     switch (vsync_) {

@@ -87,9 +87,9 @@ namespace av
 
         auto dev = pulse::default_sink();
         if (dev.has_value()) {
-            dev->id += ".monitor";
-            dev->name = "Monitor of " + dev->name;
-            dev->type = device_type_t::audio | device_type_t::source | device_type_t::monitor;
+            dev->id   += ".monitor";
+            dev->name  = "Monitor of " + dev->name;
+            dev->type  = device_type_t::audio | device_type_t::source | device_type_t::monitor;
         }
 
         return dev;

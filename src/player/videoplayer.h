@@ -100,7 +100,7 @@ private:
     QActionGroup *ssgroup_{};
 
     // video & audio
-    std::thread video_thread_;
+    std::jthread video_thread_;
 
     std::unique_ptr<Decoder>       decoder_{};
     std::unique_ptr<AudioRenderer> audio_renderer_{};

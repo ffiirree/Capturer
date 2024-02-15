@@ -12,7 +12,7 @@
 namespace wasapi
 {
     // all std::string is utf8
-    std::vector<av::device_t> endpoints(av::device_type_t type);
+    std::vector<av::device_t>   endpoints(av::device_type_t type);
     std::optional<av::device_t> default_endpoint(av::device_type_t type);
 
     std::optional<av::device_t> device_info(IMMDevice *);

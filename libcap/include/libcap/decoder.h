@@ -43,7 +43,7 @@ public:
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: return vbuffer_.empty();
         case AVMEDIA_TYPE_AUDIO: return abuffer_.empty();
-        default: return true;
+        default:                 return true;
         }
     }
 
@@ -70,15 +70,15 @@ public:
     std::vector<std::map<std::string, std::string>> properties(AVMediaType) const override;
 
 private:
-    int decode_fn();
+    int  decode_fn();
     void destroy();
 
     std::string name_{ "unknown" };
 
     AVFormatContext *fmt_ctx_{};
-    AVCodecContext *video_decoder_ctx_{};
-    AVCodecContext *audio_decoder_ctx_{};
-    AVCodecContext *subtitle_decoder_ctx_{};
+    AVCodecContext  *video_decoder_ctx_{};
+    AVCodecContext  *audio_decoder_ctx_{};
+    AVCodecContext  *subtitle_decoder_ctx_{};
 
     int video_stream_idx_{ -1 };
     int audio_stream_idx_{ -1 };
@@ -87,13 +87,13 @@ private:
     int64_t SYNC_PTS{ 0 };
 
     av::packet packet_{};
-    av::frame frame_{};
+    av::frame  frame_{};
 
-    int64_t audio_next_pts_{ AV_NOPTS_VALUE }; // samples
+    int64_t    audio_next_pts_{ AV_NOPTS_VALUE }; // samples
     AVRational audio_next_pts_tb_{};
 
-    lock_queue<av::frame> vbuffer_{};
-    lock_queue<av::frame> abuffer_{};
+    lock_queue<av::frame>  vbuffer_{};
+    lock_queue<av::frame>  abuffer_{};
     lock_queue<AVSubtitle> sbuffer_{};
 };
 

@@ -48,11 +48,11 @@ public:
     int send_command(AVMediaType mt, const std::string& target, const std::string& cmd,
                      const std::string& arg);
 
-    int start();
-    void pause();
-    void resume();
+    int                      start();
+    void                     pause();
+    void                     resume();
     std::chrono::nanoseconds paused_time();
-    int reset();
+    int                      reset();
 
     // AV_TIME_BESE
     void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds = 0ns,
@@ -64,7 +64,7 @@ public:
 
     [[nodiscard]] std::chrono::nanoseconds escaped();
 
-    void set_clock(const av::clock_t t) { clock_ = t; }
+    void                      set_clock(const av::clock_t t) { clock_ = t; }
     [[nodiscard]] av::clock_t clock() const { return clock_; }
 
     av::vformat_t vfmt{};
@@ -76,18 +76,18 @@ public:
 private:
     struct ProducerContext
     {
-        AVFilterContext *src_ctx;
+        AVFilterContext   *src_ctx;
         Producer<AVFrame> *producer;
-        bool eof;
+        bool               eof;
     };
 
     struct ConsumerContext
     {
-        AVFilterContext *asink_ctx;
-        AVFilterContext *vsink_ctx;
+        AVFilterContext   *asink_ctx;
+        AVFilterContext   *vsink_ctx;
         Consumer<AVFrame> *consumer;
-        bool aeof;
-        bool veof;
+        bool               aeof;
+        bool               veof;
     };
 
     int create_src_filter(const Producer<AVFrame> *, AVFilterContext **, AVMediaType);
@@ -137,11 +137,11 @@ private:
     std::atomic<bool> draining_{ false };
     std::atomic<bool> ready_{ false };
 
-    std::thread video_thread_;
-    std::thread audio_thread_;
+    std::jthread video_thread_;
+    std::jthread audio_thread_;
 
-    std::atomic<bool> vseeking_{ false };
-    std::atomic<bool> aseeking_{ false };
+    std::atomic<bool>        vseeking_{ false };
+    std::atomic<bool>        aseeking_{ false };
     std::atomic<av::clock_t> clock_{ av::clock_t::system };
 };
 

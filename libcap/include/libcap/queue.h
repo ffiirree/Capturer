@@ -59,7 +59,7 @@ public:
     }
 
 private:
-    std::queue<T> buffer_;
+    std::queue<T>      buffer_;
     mutable std::mutex mtx_;
 };
 

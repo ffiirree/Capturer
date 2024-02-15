@@ -73,7 +73,7 @@ void WasapiRenderer::InitializeWaveFormat(WAVEFORMATEX *wfex)
 HRESULT WasapiRenderer::InitializeAudioEngine()
 {
     RETURN_IF_FAILED(audio_client_->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-                                               300'000 /*100-nanosecond*/, 0, wfex_, nullptr));
+                                               300000 /*100-nanosecond*/, 0, wfex_, nullptr));
 
     RETURN_IF_FAILED(audio_client_->GetBufferSize(&buffer_frames_));
 
@@ -129,7 +129,7 @@ int WasapiRenderer::start()
 
     // start
     RETURN_NEGV_IF_FAILED(audio_client_->Start());
-    thread_ = std::thread([this]() {
+    thread_ = std::jthread([this]() {
         probe::thread::set_name("WASAPI-R-" + devinfo_.id);
 
         LOG(INFO) << "[A] STARTED";
@@ -234,7 +234,7 @@ float WasapiRenderer::volume() const
 
 HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
 {
-    BYTE *buffer          = nullptr;
+    BYTE  *buffer         = nullptr;
     UINT32 padding_frames = 0;
 
     RETURN_IF_FAILED(audio_client_->GetCurrentPadding(&padding_frames));

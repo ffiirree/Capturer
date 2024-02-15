@@ -19,7 +19,7 @@ int DShowCameraCapturer::open(const std::string&, std::map<std::string, std::str
 
     RETURN_NEGV_IF_FAILED(graph_->AddFilter(filter_.get(), nullptr));
 
-    //builder_->FindInterface(&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, filter_.get(), IID_IAMStreamConfig);
+    // builder_->FindInterface(&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, filter_.get(), IID_IAMStreamConfig);
     return 0;
 }
 

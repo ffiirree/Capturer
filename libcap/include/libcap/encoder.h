@@ -37,7 +37,7 @@ public:
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: return video_buffer_.full();
         case AVMEDIA_TYPE_AUDIO: return audio_buffer_.full();
-        default: return true;
+        default:                 return true;
         }
     }
 
@@ -46,7 +46,7 @@ public:
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: return video_enabled_;
         case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
-        default: return false;
+        default:                 return false;
         }
     }
 
@@ -55,7 +55,7 @@ public:
         switch (type) {
         case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
         case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
-        default: break;
+        default:                 break;
         }
     }
 
@@ -65,34 +65,34 @@ private:
     int new_video_stream();
     int new_auido_stream();
 
-    int run_f();
+    int                 run_f();
     std::pair<int, int> video_sync_process();
-    int process_video_frames();
-    int process_audio_frames();
-    void destroy();
+    int                 process_video_frames();
+    int                 process_audio_frames();
+    void                destroy();
 
-    int video_stream_idx_{ -1 };
-    int audio_stream_idx_{ -1 };
+    int               video_stream_idx_{ -1 };
+    int               audio_stream_idx_{ -1 };
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
     // ffmpeg encoders @ {
-    AVFormatContext *fmt_ctx_{ nullptr };
-    std::string video_codec_name_{};
-    std::string audio_codec_name_{};
+    AVFormatContext                   *fmt_ctx_{ nullptr };
+    std::string                        video_codec_name_{};
+    std::string                        audio_codec_name_{};
     std::map<std::string, std::string> video_options_;
     std::map<std::string, std::string> audio_options_;
-    AVCodecContext *video_encoder_ctx_{ nullptr };
-    AVCodecContext *audio_encoder_ctx_{ nullptr };
+    AVCodecContext                    *video_encoder_ctx_{ nullptr };
+    AVCodecContext                    *audio_encoder_ctx_{ nullptr };
     // @}
 
     int64_t v_last_dts_{ AV_NOPTS_VALUE };
     int64_t a_last_dts_{ AV_NOPTS_VALUE };
     int64_t audio_pts_{ 0 };
 
-    av::packet packet_{ };
-    av::frame filtered_frame_{ };
-    av::frame last_frame_{ };
+    av::packet packet_{};
+    av::frame  filtered_frame_{};
+    av::frame  last_frame_{};
 
     // the expected pts of next video frame computed by last pts and duration
     int64_t expected_pts_{ AV_NOPTS_VALUE };

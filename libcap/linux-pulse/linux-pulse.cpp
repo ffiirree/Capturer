@@ -8,10 +8,10 @@
 #include <logging.h>
 #include <mutex>
 
-static std::mutex pulse_mtx;
-static uint32_t pulse_refs              = 0;
+static std::mutex            pulse_mtx;
+static uint32_t              pulse_refs = 0;
 static pa_threaded_mainloop *pulse_loop = nullptr;
-static pa_context *pulse_ctx            = nullptr;
+static pa_context           *pulse_ctx  = nullptr;
 
 static void pulse_context_state_callback(pa_context *ctx, void *)
 {
@@ -21,10 +21,10 @@ static void pulse_context_state_callback(pa_context *ctx, void *)
     case PA_CONTEXT_CONNECTING:
     case PA_CONTEXT_AUTHORIZING:
     case PA_CONTEXT_SETTING_NAME:
-    default: break;
+    default:                      break;
     case PA_CONTEXT_FAILED:
-    case PA_CONTEXT_TERMINATED: DLOG(INFO) << "PA_CONTEXT_TERMINATED"; break;
-    case PA_CONTEXT_READY: DLOG(INFO) << "PA_CONTEXT_READY"; break;
+    case PA_CONTEXT_TERMINATED:   DLOG(INFO) << "PA_CONTEXT_TERMINATED"; break;
+    case PA_CONTEXT_READY:        DLOG(INFO) << "PA_CONTEXT_READY"; break;
     }
 
     pulse::signal(0);
@@ -32,17 +32,15 @@ static void pulse_context_state_callback(pa_context *ctx, void *)
 
 static const char *pulse_source_state_to_string(int state)
 {
-    // clang-format off
     switch (state) {
-    case PA_SOURCE_RUNNING:         return "RUNNING";
-    case PA_SOURCE_IDLE:            return "IDLE";
-    case PA_SOURCE_SUSPENDED:       return "SUSPENDED";
-    case PA_SOURCE_INIT:            return "INIT";
-    case PA_SOURCE_UNLINKED:        return "UNLINKED";
+    case PA_SOURCE_RUNNING:       return "RUNNING";
+    case PA_SOURCE_IDLE:          return "IDLE";
+    case PA_SOURCE_SUSPENDED:     return "SUSPENDED";
+    case PA_SOURCE_INIT:          return "INIT";
+    case PA_SOURCE_UNLINKED:      return "UNLINKED";
     case PA_SOURCE_INVALID_STATE:
-    default:                        return "INVALID";
+    default:                      return "INVALID";
     }
-    // clang-format on
 }
 
 static void pulse_server_info_callback(pa_context *, const pa_server_info *i, void *userdata)
@@ -157,24 +155,24 @@ namespace pulse
     AVSampleFormat to_av_sample_format(pa_sample_format_t pa_fmt)
     {
         switch (pa_fmt) {
-        case PA_SAMPLE_U8: return AV_SAMPLE_FMT_U8;
-        case PA_SAMPLE_S16LE: return AV_SAMPLE_FMT_S16;
-        case PA_SAMPLE_S32LE: return AV_SAMPLE_FMT_S32;
+        case PA_SAMPLE_U8:        return AV_SAMPLE_FMT_U8;
+        case PA_SAMPLE_S16LE:     return AV_SAMPLE_FMT_S16;
+        case PA_SAMPLE_S32LE:     return AV_SAMPLE_FMT_S32;
         case PA_SAMPLE_FLOAT32LE: return AV_SAMPLE_FMT_FLT;
-        default: return AV_SAMPLE_FMT_NONE;
+        default:                  return AV_SAMPLE_FMT_NONE;
         }
     }
 
     uint64_t to_av_channel_layout(uint8_t channels)
     {
         switch (channels) {
-        case 1: return AV_CH_LAYOUT_MONO;
-        case 2: return AV_CH_LAYOUT_STEREO;
-        case 3: return AV_CH_LAYOUT_2POINT1;
-        case 4: return AV_CH_LAYOUT_4POINT0;
-        case 5: return AV_CH_LAYOUT_4POINT1;
-        case 6: return AV_CH_LAYOUT_5POINT1;
-        case 8: return AV_CH_LAYOUT_7POINT1;
+        case 1:  return AV_CH_LAYOUT_MONO;
+        case 2:  return AV_CH_LAYOUT_STEREO;
+        case 3:  return AV_CH_LAYOUT_2POINT1;
+        case 4:  return AV_CH_LAYOUT_4POINT0;
+        case 5:  return AV_CH_LAYOUT_4POINT1;
+        case 6:  return AV_CH_LAYOUT_5POINT1;
+        case 8:  return AV_CH_LAYOUT_7POINT1;
         default: return 0;
         }
     }
@@ -187,25 +185,25 @@ namespace pulse
         defer(pulse::loop_unlock());
 
         std::vector<av::device_t> list;
-        auto op = ::pa_context_get_source_info_list(
+        auto                      op = ::pa_context_get_source_info_list(
             pulse_ctx,
             [](auto, const pa_source_info *i, int eol, void *userdata) {
                 if (eol == 0) {
                     DLOG(INFO) << fmt::format("Audio source: {} ({}), rate = {}, channels = {}, state = {}",
-                                              i->name, i->description, i->sample_spec.rate,
-                                              i->sample_spec.channels,
-                                              pulse_source_state_to_string(i->state));
+                                                                   i->name, i->description, i->sample_spec.rate,
+                                                                   i->sample_spec.channels,
+                                                                   pulse_source_state_to_string(i->state));
 
                     static_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
-                        .name        = i->description,
-                        .id          = i->name,
-                        .description = i->description,
-                        .driver      = i->driver,
-                        .type        = av::device_type_t::audio | av::device_type_t::source |
+                                             .name        = i->description,
+                                             .id          = i->name,
+                                             .description = i->description,
+                                             .driver      = i->driver,
+                                             .type = av::device_type_t::audio | av::device_type_t::source |
                                 (i->monitor_of_sink != PA_INVALID_INDEX ? av::device_type_t::monitor
-                                                                        : av::device_type_t::none),
-                        .format = av::device_format_t::pulse,
-                        .state  = static_cast<uint64_t>(i->state),
+                                                                                             : av::device_type_t::none),
+                                             .format = av::device_format_t::pulse,
+                                             .state  = static_cast<uint64_t>(i->state),
                     });
                 }
                 pulse::signal(0);
@@ -266,7 +264,7 @@ namespace pulse
         defer(pulse::loop_unlock());
 
         av::device_t dev{};
-        auto op = ::pa_context_get_source_info_by_name(
+        auto         op = ::pa_context_get_source_info_by_name(
             pulse_ctx, server.default_source_name.c_str(),
             [](auto, const pa_source_info *i, int eol, void *userdata) {
                 if (eol == 0) {
@@ -277,7 +275,7 @@ namespace pulse
                     dev->driver      = i->driver;
                     dev->type        = av::device_type_t::audio | av::device_type_t::source |
                                 (i->monitor_of_sink != PA_INVALID_INDEX ? av::device_type_t::monitor
-                                                                        : av::device_type_t::none);
+                                                                                : av::device_type_t::none);
 
                     dev->format = av::device_format_t::pulse;
                     dev->state  = static_cast<uint64_t>(i->state);
@@ -303,7 +301,7 @@ namespace pulse
         defer(pulse::loop_unlock());
 
         pa_sample_spec format{};
-        auto op = ::pa_context_get_source_info_by_name(
+        auto           op = ::pa_context_get_source_info_by_name(
             pulse_ctx, name.c_str(),
             [](auto, const pa_source_info *i, int eol, void *userdata) {
                 if (eol == 0) {
@@ -334,7 +332,7 @@ namespace pulse
         defer(pulse::loop_unlock());
 
         av::device_t dev{};
-        auto op = ::pa_context_get_sink_info_by_name(
+        auto         op = ::pa_context_get_sink_info_by_name(
             pulse_ctx, server.default_sink_name.c_str(),
             [](auto, const pa_sink_info *i, int eol, void *userdata) {
                 if (eol == 0) {
@@ -384,8 +382,8 @@ namespace pulse
 
         pa_usec_t latency(pa_stream *stream)
         {
-            pa_usec_t latency = 0;
-            int negative      = 0;
+            pa_usec_t latency  = 0;
+            int       negative = 0;
             if (::pa_stream_get_latency(stream, &latency, &negative) < 0 || negative) {
                 return 0;
             }
