@@ -54,7 +54,7 @@ private:
     void monitor_system_theme(bool);
 
     QString filepath_;
-    json settings_ = json::parse("{}");
+    json    settings_ = json::parse("{}");
 
     std::shared_ptr<probe::Listener> theme_monitor_{ nullptr };
 };

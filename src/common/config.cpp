@@ -24,7 +24,7 @@ Config::Config()
     filepath_ = config_dir_path_ + "/config.json";
 
     QString text;
-    QFile config_file(filepath_);
+    QFile   config_file(filepath_);
     if (config_file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         QTextStream in(&config_file);
         text = in.readAll();

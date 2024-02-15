@@ -51,7 +51,7 @@ private:
     QLabel *time_label_{ nullptr };
 
     QPoint begin_pos_{ 0, 0 };
-    bool moving_{ false };
+    bool   moving_{ false };
 };
 
 #endif //! CAPTURER_RECORD_MENU_H

@@ -46,7 +46,7 @@ private:
     void registerShortcuts();
     void initContextMenu();
 
-    bool thumbnail_{ false };
+    bool  thumbnail_{ false };
     qreal scale_{ 1.0 };
     qreal opacity_{ 1.0 };
 
@@ -54,7 +54,7 @@ private:
 
     QSize THUMBNAIL_SIZE_{ 125, 125 };
 
-    QMenu *context_menu_{ nullptr };
+    QMenu   *context_menu_{ nullptr };
     QAction *zoom_action_{ nullptr };
     QAction *opacity_action_{ nullptr };
 
@@ -62,8 +62,8 @@ private:
 
     // data
     std::shared_ptr<QMimeData> data_{};
-    QPixmap pixmap_{};
-    TextureWidget *preview_{};
+    QPixmap                    pixmap_{};
+    TextureWidget             *preview_{};
 };
 
 #endif //! CAPTURER_IMAGE_WINDOW_H

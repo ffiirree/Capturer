@@ -55,7 +55,7 @@ void GraphicsItemWrapper::mousePress(QGraphicsSceneMouseEvent *event, const QPoi
 void GraphicsItemWrapper::mouseMove(QGraphicsSceneMouseEvent *event, const QPointF& center)
 {
     switch (adjusting_) {
-    case canvas::adjusting_t::moving: break;
+    case canvas::adjusting_t::moving:   break;
     case canvas::adjusting_t::resizing: {
         const auto cpos = event->pos();
 
@@ -107,7 +107,7 @@ void GraphicsItemWrapper::mouseRelease(QGraphicsSceneMouseEvent *, const QPointF
     case canvas::adjusting_t::resizing: onresize(before_resizing_, hover_location_); break;
     case canvas::adjusting_t::rotating: onrotate(before_rotating_); break;
 
-    default: break;
+    default:                            break;
     }
 
     adjusting_       = canvas::adjusting_t::none;
@@ -723,8 +723,8 @@ GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphic
     font.setPointSizeF(16);
     font.setBold(true);
     QFontMetrics metrics(font);
-    QRectF four = metrics.boundingRect("44");
-    qreal width = std::max(four.width(), four.height());
+    QRectF       four  = metrics.boundingRect("44");
+    qreal        width = std::max(four.width(), four.height());
 
     //
     font_.setBold(true);
@@ -945,8 +945,7 @@ GraphicsTextItem::GraphicsTextItem(const QPointF& pos, QGraphicsItem *parent)
 {}
 
 GraphicsTextItem::GraphicsTextItem(const QString& text, const QPointF& pos, QGraphicsItem *parent)
-    : GraphicsItemWrapper(),
-      QGraphicsTextItem(text, parent)
+    : GraphicsItemWrapper(), QGraphicsTextItem(text, parent)
 {
     setPos(pos);
 
@@ -1103,7 +1102,7 @@ void GraphicsTextItem::resize(const ResizerF& resizer, ResizerLocation location)
     case ResizerLocation::X2Y1_ANCHOR: setPos(pos() + lb - mapToScene(geometry_.bottomLeft())); break;
     case ResizerLocation::X1Y2_ANCHOR: setPos(pos() + rt - mapToScene(geometry_.topRight())); break;
     case ResizerLocation::X2Y2_ANCHOR: setPos(pos() + lt - mapToScene(geometry_.topLeft())); break;
-    default: break;
+    default:                           break;
     }
 }
 

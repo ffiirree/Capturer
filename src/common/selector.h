@@ -111,14 +111,14 @@ protected:
 
     QRect coordinate_{};
 
-    Resizer box_;                       // TODO: do not use this variable directly
+    Resizer box_;                              // TODO: do not use this variable directly
 
-    scope_t scope_{ scope_t::desktop }; // selection scope
-    hunter::prey_t prey_{};             // capture object
+    scope_t        scope_{ scope_t::desktop }; // selection scope
+    hunter::prey_t prey_{};                    // capture object
     // @}
 
-    QPainter painter_{};
-    SelectorStatus status_      = SelectorStatus::INVALID;
+    QPainter        painter_{};
+    SelectorStatus  status_     = SelectorStatus::INVALID;
     ResizerLocation cursor_pos_ = ResizerLocation::OUTSIDE;
 
     // move
@@ -135,9 +135,9 @@ private:
 
     QLabel *info_{ nullptr };
 
-    QPen pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
+    QPen   pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
     QColor mask_color_{ 0, 0, 0, 100 };
-    bool mask_hidden_{ false };
+    bool   mask_hidden_{ false };
 
     // minimum valid size for selection
     QSize min_size_{ 2, 2 };

@@ -60,32 +60,32 @@ struct qmargins_trait<T>
 
 // clang-format off
 enum class ResizerLocation {
-    DEFAULT         = 0x0000'0000,
+    DEFAULT         = 0x00000000,
 
-    BORDER          = 0x0000'0001 | 0x0000'0002 | 0x0000'0004 | 0x0000'0008,
+    BORDER          = 0x00000001 | 0x00000002 | 0x00000004 | 0x00000008,
 
-    X1_BORDER       = 0x0000'0001,  L_BORDER    = 0x1000'0001,
-    X2_BORDER       = 0x0000'0002,  R_BORDER    = 0x1000'0002,
-    Y1_BORDER       = 0x0000'0004,  T_BORDER    = 0x1000'0003,
-    Y2_BORDER       = 0x0000'0008,  B_BORDER    = 0x1000'0004,
+    X1_BORDER       = 0x00000001,  L_BORDER    = 0x10000001,
+    X2_BORDER       = 0x00000002,  R_BORDER    = 0x10000002,
+    Y1_BORDER       = 0x00000004,  T_BORDER    = 0x10000003,
+    Y2_BORDER       = 0x00000008,  B_BORDER    = 0x10000004,
 
-    ANCHOR          = 0x0000'0010 | 0x0000'0020 | 0x0000'0040 | 0x0000'0080 | 0x0000'0100 | 0x0000'0200 | 0x0000'0400 | 0x0000'0800,
+    ANCHOR          = 0x00000010 | 0x00000020 | 0x00000040 | 0x00000080 | 0x00000100 | 0x00000200 | 0x00000400 | 0x00000800,
 
-    X1_ANCHOR       = 0x0000'0010,  L_ANCHOR    = 0x1000'0010,
-    X2_ANCHOR       = 0x0000'0020,  R_ANCHOR    = 0x1000'0020,
-    Y1_ANCHOR       = 0x0000'0040,  T_ANCHOR    = 0x1000'0030,
-    Y2_ANCHOR       = 0x0000'0080,  B_ANCHOR    = 0x1000'0040,
+    X1_ANCHOR       = 0x00000010,  L_ANCHOR    = 0x10000010,
+    X2_ANCHOR       = 0x00000020,  R_ANCHOR    = 0x10000020,
+    Y1_ANCHOR       = 0x00000040,  T_ANCHOR    = 0x10000030,
+    Y2_ANCHOR       = 0x00000080,  B_ANCHOR    = 0x10000040,
     
-    X1Y1_ANCHOR     = 0x0000'0100,  TL_ANCHOR   = 0x1000'0100,
-    X1Y2_ANCHOR     = 0x0000'0200,  BL_ANCHOR   = 0x1000'0200,
-    X2Y1_ANCHOR     = 0x0000'0400,  TR_ANCHOR   = 0x1000'0300,
-    X2Y2_ANCHOR     = 0x0000'0800,  BR_ANCHOR   = 0x1000'0400,
+    X1Y1_ANCHOR     = 0x00000100,  TL_ANCHOR   = 0x10000100,
+    X1Y2_ANCHOR     = 0x00000200,  BL_ANCHOR   = 0x10000200,
+    X2Y1_ANCHOR     = 0x00000400,  TR_ANCHOR   = 0x10000300,
+    X2Y2_ANCHOR     = 0x00000800,  BR_ANCHOR   = 0x10000400,
 
-    ROTATE_ANCHOR   = 0x0000'1000,
-    EMPTY_INSIDE    = 0x0010'0000, // inside: such as a QGraphicsRectItem without brush
-    OUTSIDE         = 0x0020'0000, // outside
-    EDITING_INSIDE  = 0x0040'0000, // inside: QGraphicsTextItem with focus
-    FILLED_INSIDE   = 0x0080'0000, // inside: QGraphicsTextItem with focus, QGraphicsRectItem with brush
+    ROTATE_ANCHOR   = 0x00001000,
+    EMPTY_INSIDE    = 0x00100000, // inside: such as a QGraphicsRectItem without brush
+    OUTSIDE         = 0x00200000, // outside
+    EDITING_INSIDE  = 0x00400000, // inside: QGraphicsTextItem with focus
+    FILLED_INSIDE   = 0x00800000, // inside: QGraphicsTextItem with focus, QGraphicsRectItem with brush
 
     ADJUST_AREA = BORDER | ANCHOR | ROTATE_ANCHOR | FILLED_INSIDE, // move, resize ...
 
@@ -477,30 +477,30 @@ using ResizerF = _Resizer<qreal>;
 inline QCursor getCursorByLocation(ResizerLocation pos, const QCursor& default_cursor = Qt::CrossCursor)
 {
     switch (pos) {
-        // clang-format off
-    case ResizerLocation::EDITING_INSIDE:   return Qt::IBeamCursor;
+    case ResizerLocation::EDITING_INSIDE: return Qt::IBeamCursor;
 
     case ResizerLocation::X1_ANCHOR:
-    case ResizerLocation::X2_ANCHOR:        return Qt::SizeHorCursor;
+    case ResizerLocation::X2_ANCHOR:      return Qt::SizeHorCursor;
     case ResizerLocation::Y1_ANCHOR:
-    case ResizerLocation::Y2_ANCHOR:        return Qt::SizeVerCursor;
+    case ResizerLocation::Y2_ANCHOR:      return Qt::SizeVerCursor;
     case ResizerLocation::X1Y1_ANCHOR:
-    case ResizerLocation::X2Y2_ANCHOR:      return Qt::SizeFDiagCursor;
+    case ResizerLocation::X2Y2_ANCHOR:    return Qt::SizeFDiagCursor;
     case ResizerLocation::X1Y2_ANCHOR:
-    case ResizerLocation::X2Y1_ANCHOR:      return Qt::SizeBDiagCursor;
+    case ResizerLocation::X2Y1_ANCHOR:    return Qt::SizeBDiagCursor;
 
     case ResizerLocation::BORDER:
     case ResizerLocation::FILLED_INSIDE:
     case ResizerLocation::X1_BORDER:
     case ResizerLocation::X2_BORDER:
     case ResizerLocation::Y1_BORDER:
-    case ResizerLocation::Y2_BORDER:        return Qt::SizeAllCursor;
+    case ResizerLocation::Y2_BORDER:      return Qt::SizeAllCursor;
 
-    case ResizerLocation::ROTATE_ANCHOR:    
-        return QCursor{ QPixmap(":/icons/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation) };
+    case ResizerLocation::ROTATE_ANCHOR:
+        return QCursor{
+            QPixmap(":/icons/rotate").scaled(21, 21, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+        };
 
-    default:                                return default_cursor;
-        // clang-format on
+    default: return default_cursor;
     }
 }
 

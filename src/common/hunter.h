@@ -17,9 +17,9 @@ namespace hunter
     // widget / window / display / desktop
     struct prey_t
     {
-        prey_type_t type{};
+        prey_type_t       type{};
         probe::geometry_t geometry{};
-        uint64_t handle{};
+        uint64_t          handle{};
 
         std::string name{};
         std::string codename{}; // id / class name

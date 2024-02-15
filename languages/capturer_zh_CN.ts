@@ -302,10 +302,6 @@
 <context>
     <name>VideoPlayer</name>
     <message>
-        <source>Open File</source>
-        <translation>打开文件</translation>
-    </message>
-    <message>
         <source>Video</source>
         <translation>视频</translation>
     </message>

@@ -26,7 +26,7 @@ public:
 
 private:
     QGraphicsScene *scene_{};
-    QGraphicsItem *item_{};
+    QGraphicsItem  *item_{};
 };
 
 ////
@@ -41,8 +41,8 @@ public:
 
 private:
     QGraphicsItem *item_{};
-    QPointF opos_{};
-    QPointF npos_{};
+    QPointF        opos_{};
+    QPointF        npos_{};
 };
 
 ////
@@ -57,9 +57,9 @@ public:
 
 private:
     GraphicsItemWrapper *item_{};
-    ResizerLocation location_{};
-    ResizerF osize_{};
-    ResizerF nsize_{};
+    ResizerLocation      location_{};
+    ResizerF             osize_{};
+    ResizerF             nsize_{};
 };
 
 ////
@@ -74,8 +74,8 @@ public:
 
 private:
     GraphicsItemWrapper *item_{};
-    qreal oangle_{};
-    qreal nangle_{};
+    qreal                oangle_{};
+    qreal                nangle_{};
 };
 
 ////
@@ -90,7 +90,7 @@ public:
 
 private:
     QGraphicsScene *scene_{};
-    QGraphicsItem *item_{};
+    QGraphicsItem  *item_{};
 };
 
 ////
@@ -103,13 +103,13 @@ public:
     void redo() override;
     void undo() override;
 
-    bool mergeWith(const QUndoCommand *) override;
-    [[nodiscard]] int id() const override { return 1'234; }
+    bool              mergeWith(const QUndoCommand *) override;
+    [[nodiscard]] int id() const override { return 1234; }
 
 private:
     GraphicsItemWrapper *item_{};
-    QPen open_{ Qt::NoPen };
-    QPen npen_{ Qt::NoPen };
+    QPen                 open_{ Qt::NoPen };
+    QPen                 npen_{ Qt::NoPen };
 };
 
 ////
@@ -124,7 +124,7 @@ public:
 
 private:
     GraphicsItemWrapper *item_{};
-    bool filled_{};
+    bool                 filled_{};
 };
 
 ////
@@ -138,8 +138,8 @@ public:
 
 private:
     GraphicsItemWrapper *item_{};
-    QFont ofont_{};
-    QFont nfont_{};
+    QFont                ofont_{};
+    QFont                nfont_{};
 };
 
 #endif //! CAPTURER_COMMAND_H

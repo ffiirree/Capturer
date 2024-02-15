@@ -75,10 +75,10 @@ protected:
     void mouseRelease(QGraphicsSceneMouseEvent *, const QPointF& pos);
 
     // callbacks
-    std::function<void(ResizerLocation)> onhover                   = [](auto) {};
+    std::function<void(ResizerLocation)>                  onhover  = [](auto) {};
     std::function<void(const ResizerF&, ResizerLocation)> onresize = [](auto, auto) {};
-    std::function<void(const QPointF&)> onmove                     = [](auto) {};
-    std::function<void(qreal)> onrotate                            = [](auto) {};
+    std::function<void(const QPointF&)>                   onmove   = [](auto) {};
+    std::function<void(qreal)>                            onrotate = [](auto) {};
 
     // hovering
     ResizerLocation hover_location_ = ResizerLocation::DEFAULT;
@@ -97,8 +97,8 @@ protected:
 
     // for recording adjusted command
     ResizerF before_resizing_{}; // geometry
-    qreal before_rotating_{};    // angle
-    QPointF before_moving_{};    // position
+    qreal    before_rotating_{}; // angle
+    QPointF  before_moving_{};   // position
 };
 
 class GraphicsItem : public GraphicsItemWrapper, public QGraphicsItem
@@ -197,11 +197,11 @@ public:
     explicit GraphicsRectItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    [[nodiscard]] QRectF boundingRect() const override;
+    [[nodiscard]] QRectF       boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     [[nodiscard]] bool filled() const override;
-    void fill(bool) override;
+    void               fill(bool) override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 
@@ -258,7 +258,7 @@ public:
     explicit GraphicsEllipseleItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
-    [[nodiscard]] QRectF boundingRect() const override;
+    [[nodiscard]] QRectF       boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -270,7 +270,7 @@ public:
     [[nodiscard]] canvas::graphics_t graph() const override { return canvas::graphics_t::ellipse; }
 
     [[nodiscard]] bool filled() const override;
-    void fill(bool) override;
+    void               fill(bool) override;
 
     void push(const QPointF&) override;
 
@@ -312,7 +312,7 @@ private:
     int counter_{};
 
     static int counter;
-    QFont font_{};
+    QFont      font_{};
 };
 
 /// Path Item
@@ -325,7 +325,7 @@ public:
     ~GraphicsPathItem() override;
 
     // QGraphicsItem
-    [[nodiscard]] QRectF boundingRect() const override;
+    [[nodiscard]] QRectF       boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
@@ -355,9 +355,9 @@ protected:
     QVector<QPointF> vertexes_{};
 
     QVector<QPointF> tmpvtxes_{};
-    bool fixed_{};
+    bool             fixed_{};
 
-    QPixmap pixmap_{};
+    QPixmap   pixmap_{};
     QPainter *painter_{};
 };
 
@@ -400,7 +400,7 @@ public:
     explicit GraphicsTextItem(const QString&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsTextItem
-    [[nodiscard]] QRectF boundingRect() const override;
+    [[nodiscard]] QRectF       boundingRect() const override;
     [[nodiscard]] QPainterPath shape() const override;
 
     void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;

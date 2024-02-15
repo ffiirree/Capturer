@@ -68,7 +68,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
         control_->hide();
         timer_->stop();
     });
-    timer_->start(2'000ms);
+    timer_->start(2000ms);
 
     // clang-format off
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 10s, + 10s); });
@@ -166,8 +166,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         return false;
     }
 
-    if (vfmt.width > 1'920 && vfmt.height > 1'080) {
-        resize(QSize(vfmt.width, vfmt.height).scaled(1'920, 1'080, Qt::KeepAspectRatio));
+    if (vfmt.width > 1920 && vfmt.height > 1080) {
+        resize(QSize(vfmt.width, vfmt.height).scaled(1920, 1080, Qt::KeepAspectRatio));
     }
     else {
         resize(vfmt.width, vfmt.height);
@@ -192,8 +192,8 @@ bool VideoPlayer::full(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() > 2;
-    case AVMEDIA_TYPE_AUDIO: return av_audio_fifo_size(abuffer_) > 1'024;
-    default: return true;
+    case AVMEDIA_TYPE_AUDIO: return av_audio_fifo_size(abuffer_) > 1024;
+    default:                 return true;
     }
 }
 
@@ -202,7 +202,7 @@ void VideoPlayer::enable(AVMediaType type, bool v)
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
     case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
-    default: break;
+    default:                 break;
     }
 }
 
@@ -211,7 +211,7 @@ bool VideoPlayer::accepts(AVMediaType type) const
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return video_enabled_;
     case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
-    default: return false;
+    default:                 return false;
     }
 }
 
@@ -322,7 +322,7 @@ void VideoPlayer::setSpeed(float speed)
 {
     dispatcher_->afilters = fmt::format("atempo={:4.2f}", speed);
     dispatcher_->send_command(AVMEDIA_TYPE_AUDIO, "atempo", "tempo", fmt::format("{:4.2f}", speed));
-    timeline_.set_speed({ static_cast<intmax_t>(speed * 1'000'000), 1'000'000 });
+    timeline_.set_speed({ static_cast<intmax_t>(speed * 1000000), 1000000 });
 }
 
 void VideoPlayer::mute(bool muted) { control_->setMute(muted); }
@@ -403,7 +403,7 @@ void VideoPlayer::video_thread_f()
         if (!step_) {
             auto pts      = av::clock::ns(frame->pts, vfmt.time_base);
             auto sleep_ns = std::clamp<std::chrono::nanoseconds>(
-                (pts - timeline_.time()) / timeline_.speed(), 1ms, 2'500ms);
+                (pts - timeline_.time()) / timeline_.speed(), 1ms, 2500ms);
 
             DLOG(INFO) << fmt::format("[V] pts = {:%T}, time = {:%T}, sleep = {:.3%S}, speed = {:4.2f}x",
                                       pts, timeline_.time(), sleep_ns, timeline_.speed().get<float>());
@@ -425,7 +425,7 @@ bool VideoPlayer::eventFilter(QObject *, QEvent *event)
     if (event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonPress) {
         setCursor(Qt::ArrowCursor);
         dynamic_cast<QStackedLayout *>(layout())->widget(0)->show();
-        timer_->start(2'000ms);
+        timer_->start(2000ms);
     }
 
     return false;

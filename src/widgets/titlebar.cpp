@@ -28,8 +28,7 @@ static void pinWindow(QWidget *win, bool top = true)
 }
 
 TitleBar::TitleBar(FramelessWindow *parent)
-    : QWidget(parent),
-      window_(parent)
+    : QWidget(parent), window_(parent)
 {
     setAttribute(Qt::WA_StyledBackground);
 

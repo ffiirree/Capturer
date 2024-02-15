@@ -37,8 +37,8 @@ namespace canvas
         case line:
         case curve:
         case counter:
-        case text: return true;
-        default: return false;
+        case text:      return true;
+        default:        return false;
         }
     }
 
@@ -50,8 +50,8 @@ namespace canvas
         case line:
         case curve:
         case mosaic:
-        case eraser: return true;
-        default: return false;
+        case eraser:    return true;
+        default:        return false;
         }
     }
 } // namespace canvas

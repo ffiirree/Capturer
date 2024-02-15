@@ -39,7 +39,7 @@ namespace clipboard
 
     template<typename T> QByteArray serialize(const T& obj)
     {
-        QByteArray buffer;
+        QByteArray  buffer;
         QDataStream stream(&buffer, QIODevice::WriteOnly);
         stream << obj;
         return buffer;

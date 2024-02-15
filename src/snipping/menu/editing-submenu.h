@@ -49,15 +49,15 @@ signals:
 
 private:
     WidthButton *width_btn_{};
-    QCheckBox *fill_btn_{};
-    ComboBox *font_family_{};
-    ComboBox *font_size_{};
-    ComboBox *font_style_{};
-    ColorPanel *color_panel_{};
+    QCheckBox   *fill_btn_{};
+    ComboBox    *font_family_{};
+    ComboBox    *font_size_{};
+    ComboBox    *font_style_{};
+    ColorPanel  *color_panel_{};
 
-    QPen pen_{ Qt::red, 3 };
+    QPen  pen_{ Qt::red, 3 };
     QFont font_{};
-    bool fill_{};
+    bool  fill_{};
 };
 
 #endif //! CAPTURER_EDITING_SUBMENU_H

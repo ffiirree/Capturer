@@ -26,15 +26,15 @@ signals:
     void pinData(const std::shared_ptr<QMimeData>&);
 
     void SHOW_MESSAGE(const QString& title, const QString& msg,
-                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10'000);
+                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
 public slots:
     void start();
     void exit();
 
-    void save();
-    void copy();
-    void pin();
+    void                       save();
+    void                       copy();
+    void                       pin();
     std::pair<QPixmap, QPoint> snip();
 
     void updateTheme();
@@ -61,21 +61,21 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
-    void registerShortcuts();
+    void   registerShortcuts();
     QBrush mosaicBrush();
 
-    Selector *selector_{}; // Layer 1
+    Selector       *selector_{}; // Layer 1
     canvas::Canvas *scene_{};
 
     GraphicsItemWrapper *creating_item_{};
-    int counter_{ 0 };
+    int                  counter_{ 0 };
 
-    EditingMenu *menu_{};    // editing menu
-    Magnifier *magnifier_{}; // magnifier
+    EditingMenu *menu_{};      // editing menu
+    Magnifier   *magnifier_{}; // magnifier
 
     // history
     std::vector<hunter::prey_t> history_{};
-    size_t history_idx_{ 0 };
+    size_t                      history_idx_{ 0 };
 
     QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
 

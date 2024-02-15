@@ -64,7 +64,7 @@ signals:
     void penChanged(canvas::graphics_t, const QPen&);
     void fontChanged(canvas::graphics_t, const QFont&);
     void fillChanged(canvas::graphics_t, bool);
-    
+
     void imageArrived(const QPixmap&);
 
     void moved();
@@ -83,7 +83,7 @@ private:
     QCheckBox *undo_btn_{};
     QCheckBox *redo_btn_{};
 
-    ButtonGroup *group_{};
+    ButtonGroup                                   *group_{};
     std::map<canvas::graphics_t, EditingSubmenu *> submenus_; // bind graph with buttons
 
     QString pictures_path_{};

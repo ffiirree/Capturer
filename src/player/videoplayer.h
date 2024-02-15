@@ -3,15 +3,16 @@
 
 #include "control-widget.h"
 #include "framelesswindow.h"
+#include "libcap/audio-renderer.h"
+#include "libcap/consumer.h"
+#include "libcap/decoder.h"
+#include "libcap/dispatcher.h"
+#include "libcap/timeline.h"
 #include "menu.h"
 #include "texture-widget-d3d11.h"
 #include "texture-widget-opengl.h"
 #include "texture-widget.h"
 
-#include <libcap/audio-renderer.h>
-#include <libcap/consumer.h>
-#include <libcap/decoder.h>
-#include <libcap/dispatcher.h>
 #include <QTimer>
 
 extern "C" {
@@ -45,9 +46,9 @@ public:
     void reset() override;
 
     [[nodiscard]] bool full(AVMediaType type) const override;
-    int consume(AVFrame *frame, AVMediaType type) override;
+    int                consume(AVFrame *frame, AVMediaType type) override;
 
-    void enable(AVMediaType type, bool v = true) override;
+    void               enable(AVMediaType type, bool v = true) override;
     [[nodiscard]] bool accepts(AVMediaType type) const override;
 
     [[nodiscard]] bool eof() const override
@@ -90,29 +91,29 @@ private:
     TextureGLWidget *texture_{};
 
     ControlWidget *control_{};
-    QTimer *timer_{};
+    QTimer        *timer_{};
 
-    Menu *menu_{};
-    QMenu *asmenu_{};
+    Menu         *menu_{};
+    QMenu        *asmenu_{};
     QActionGroup *asgroup_{};
-    QMenu *ssmenu_{};
+    QMenu        *ssmenu_{};
     QActionGroup *ssgroup_{};
 
     // video & audio
     std::thread video_thread_;
 
-    std::unique_ptr<Decoder> decoder_{};
+    std::unique_ptr<Decoder>       decoder_{};
     std::unique_ptr<AudioRenderer> audio_renderer_{};
-    std::unique_ptr<Dispatcher> dispatcher_{}; // TODO: ctor & dtor order
+    std::unique_ptr<Dispatcher>    dispatcher_{}; // TODO: ctor & dtor order
 
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
     lock_queue<av::frame> vbuffer_{};
-    AVAudioFifo *abuffer_{};
+    AVAudioFifo          *abuffer_{};
 
     std::atomic<bool> seeking_{ false };
-    std::atomic<int> step_{ 0 };
+    std::atomic<int>  step_{ 0 };
 
     std::atomic<bool> paused_{ false };
 

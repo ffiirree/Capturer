@@ -93,8 +93,8 @@ EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
             hide();
             parent->hide();
 #endif
-            const auto filename = QFileDialog::getOpenFileName(parent, tr("Open Image"), pictures_path_,
-                                                         "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
+            const auto filename = QFileDialog::getOpenFileName(
+                parent, tr("Open Image"), pictures_path_, "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
 #ifdef __linux__
             parent->show();
             parent->activateWindow();

@@ -27,7 +27,7 @@ public:
 
 signals:
     void SHOW_MESSAGE(const QString&, const QString&,
-                      QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10'000);
+                      QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10000);
 
 public slots:
     void start();
@@ -52,11 +52,11 @@ private:
     bool recording_{ false };
 
     // parameters
-    AVPixelFormat pix_fmt_{ AV_PIX_FMT_YUV420P };
-    std::string codec_name_{ "libx264" };
-    std::string quality_{ "medium" };
-    int framerate_{ 30 };
-    std::string filters_{};
+    AVPixelFormat                      pix_fmt_{ AV_PIX_FMT_YUV420P };
+    std::string                        codec_name_{ "libx264" };
+    std::string                        quality_{ "medium" };
+    int                                framerate_{ 30 };
+    std::string                        filters_{};
     std::map<std::string, std::string> encoder_options_{};
 
     // filename
@@ -67,8 +67,8 @@ private:
 
     // recording menu
     RecordingMenu *menu_{};
-    bool m_mute_{};
-    bool s_mute_{};
+    bool           m_mute_{};
+    bool           s_mute_{};
 
     // sources
     std::unique_ptr<Producer<AVFrame>> desktop_capturer_{};
@@ -77,7 +77,7 @@ private:
 
     // encoder
     std::unique_ptr<Consumer<AVFrame>> encoder_{};
-    std::unique_ptr<Dispatcher> dispatcher_{};
+    std::unique_ptr<Dispatcher>        dispatcher_{};
 
     // timer for displaying time on recording menu
     QTimer *timer_{ nullptr };

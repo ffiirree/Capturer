@@ -18,8 +18,8 @@ void Slider::mousePressEvent(QMouseEvent *event)
 
         const auto to = std::chrono::milliseconds{ QStyle::sliderValueFromPosition(
             minimum(), maximum(), event->pos().x(), width()) };
-        emit seek(to,
-                  std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
+        emit       seek(to,
+                        std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
         setValue(static_cast<int>(to.count()));
     }
     else {
@@ -32,8 +32,8 @@ void Slider::mouseMoveEvent(QMouseEvent *event)
     if (event->buttons() & Qt::LeftButton) {
         const auto to = std::chrono::milliseconds{ QStyle::sliderValueFromPosition(
             minimum(), maximum(), event->pos().x(), width()) };
-        emit seek(to,
-                  std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
+        emit       seek(to,
+                        std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
         setValue(static_cast<int>(to.count()));
     }
     else {

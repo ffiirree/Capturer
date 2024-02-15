@@ -31,8 +31,7 @@ using AudioCapturer   = PulseCapturer;
 #endif
 
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : QWidget(parent),
-      recording_type_(type)
+    : QWidget(parent), recording_type_(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
@@ -205,7 +204,7 @@ void ScreenRecorder::setup()
     const auto draw_mouse =
         Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
 
-    std::string name{};
+    std::string                        name{};
     std::map<std::string, std::string> options{
         { "framerate", std::to_string(framerate_) },
         { "video_size", fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2) },
@@ -229,16 +228,16 @@ void ScreenRecorder::setup()
     options["show_region"] = "false";
     switch (selector_->prey().type) {
     case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
-    case hunter::prey_type_t::widget: {
+    case hunter::prey_type_t::widget:    {
         options["offset_x"] = std::to_string(region.x());
         options["offset_y"] = std::to_string(region.y());
         auto display        = probe::graphics::display_contains(selector_->selected().center()).value();
         name                = "display=" + std::to_string(display.handle);
         break;
     }
-    case hunter::prey_type_t::window: name = "window=" + std::to_string(selector_->prey().handle); break;
+    case hunter::prey_type_t::window:  name = "window=" + std::to_string(selector_->prey().handle); break;
     case hunter::prey_type_t::display: name = "display=" + std::to_string(selector_->prey().handle); break;
-    default: LOG(ERROR) << "unsuppored mode"; return;
+    default:                           LOG(ERROR) << "unsuppored mode"; return;
     }
 #endif
 
@@ -304,7 +303,7 @@ void ScreenRecorder::setup()
     dispatcher_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     dispatcher_->afmt.channels       = 2;
     dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
-    dispatcher_->afmt.sample_rate    = 48'000;
+    dispatcher_->afmt.sample_rate    = 48000;
     if (dispatcher_->initialize(filters_, {}) < 0) {
         LOG(INFO) << "create filters failed";
         stop();

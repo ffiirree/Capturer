@@ -169,7 +169,7 @@ void ScreenShoter::refresh(const probe::geometry_t& geometry)
 
 QBrush ScreenShoter::mosaicBrush()
 {
-    auto pixmap = QPixmap::fromImage(backgroundBrush().textureImage());
+    auto     pixmap = QPixmap::fromImage(backgroundBrush().textureImage());
     QPainter painter(&pixmap);
 
     scene()->render(&painter, pixmap.rect());
@@ -245,7 +245,6 @@ void ScreenShoter::createItem(const QPointF& pos)
     if (menu_->graph() == canvas::none) return;
     if (creating_item_) finishItem();
 
-    // clang-format off
     switch (menu_->graph()) {
     case canvas::rectangle: creating_item_ = new GraphicsRectItem(pos, pos); break;
     case canvas::ellipse:   creating_item_ = new GraphicsEllipseleItem(pos, pos); break;
@@ -254,11 +253,14 @@ void ScreenShoter::createItem(const QPointF& pos)
     case canvas::curve:     creating_item_ = new GraphicsCurveItem(pos, sceneRect().size()); break;
     case canvas::counter:   creating_item_ = new GraphicsCounterleItem(pos, ++counter_); break;
     case canvas::text:      creating_item_ = new GraphicsTextItem(pos); break;
-    case canvas::eraser:    creating_item_ = new GraphicsEraserItem(pos, sceneRect().size(), backgroundBrush()); break;
-    case canvas::mosaic:    creating_item_ = new GraphicsMosaicItem(pos, sceneRect().size(), mosaicBrush()); break;
+    case canvas::eraser:
+        creating_item_ = new GraphicsEraserItem(pos, sceneRect().size(), backgroundBrush());
+        break;
+    case canvas::mosaic:
+        creating_item_ = new GraphicsMosaicItem(pos, sceneRect().size(), mosaicBrush());
+        break;
     default: return;
     }
-    // clang-format on
 
     creating_item_->setPen(menu_->pen());
     creating_item_->setFont(menu_->font());
@@ -300,7 +302,7 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
 {
     if (menu_->graph() != canvas::none) {
         const auto delta = event->angleDelta().y() / 120;
-        auto pen         = menu_->pen();
+        auto       pen   = menu_->pen();
 
         if ((event->modifiers() & Qt::CTRL) && canvas::has_color(menu_->graph())) {
             auto color = pen.color();
@@ -358,8 +360,8 @@ void ScreenShoter::mouseDoubleClickEvent(QMouseEvent *event)
 
 void ScreenShoter::moveMenu()
 {
-    const auto area = selector_->selected();
-    auto right      = area.right() - menu_->width() - 2;
+    const auto area  = selector_->selected();
+    auto       right = area.right() - menu_->width() - 2;
     if (right < geometry().left()) right = geometry().left();
 
     if (area.bottom() + (menu_->height() * 2 + 6 /*margin*/) < geometry().bottom()) {

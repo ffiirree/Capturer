@@ -9,8 +9,7 @@
 ////
 
 CreatedCommand::CreatedCommand(QGraphicsScene *scene, QGraphicsItem *item)
-    : scene_(scene),
-      item_(item)
+    : scene_(scene), item_(item)
 {}
 
 CreatedCommand::~CreatedCommand()
@@ -34,8 +33,7 @@ void CreatedCommand::undo()
 ////
 
 MoveCommand::MoveCommand(QGraphicsItem *item, const QPointF& opos)
-    : item_(item),
-      opos_(opos)
+    : item_(item), opos_(opos)
 {
     npos_ = item_->pos();
 }
@@ -53,9 +51,7 @@ void MoveCommand::undo()
 ////
 
 ResizeCommand::ResizeCommand(GraphicsItemWrapper *item, const ResizerF& osize, ResizerLocation location)
-    : item_(item),
-      location_(location),
-      osize_(osize)
+    : item_(item), location_(location), osize_(osize)
 {
     nsize_ = item_->geometry();
 }
@@ -115,9 +111,7 @@ void DeleteCommand::undo()
 ////
 
 PenChangedCommand::PenChangedCommand(GraphicsItemWrapper *item, QPen open, QPen npen)
-    : item_(item),
-      open_(std::move(open)),
-      npen_(std::move(npen))
+    : item_(item), open_(std::move(open)), npen_(std::move(npen))
 {}
 
 void PenChangedCommand::redo()
@@ -143,8 +137,7 @@ bool PenChangedCommand::mergeWith(const QUndoCommand *other)
 ////
 
 FillChangedCommand::FillChangedCommand(GraphicsItemWrapper *item, bool filled)
-    : item_(item),
-      filled_(filled)
+    : item_(item), filled_(filled)
 {}
 
 void FillChangedCommand::redo()
@@ -160,9 +153,7 @@ void FillChangedCommand::undo()
 ////
 
 FontChangedCommand::FontChangedCommand(GraphicsItemWrapper *item, const QFont& o, const QFont& n)
-    : item_(item),
-      ofont_(o),
-      nfont_(n)
+    : item_(item), ofont_(o), nfont_(n)
 {}
 
 void FontChangedCommand::redo()

@@ -122,27 +122,25 @@ void Selector::mouseMoveEvent(QMouseEvent *event)
         break;
 
     case SelectorStatus::CAPTURED:
-        // clang-format off
         switch (box_.relativePos(mouse_pos)) {
-        case ResizerLocation::EMPTY_INSIDE: setCursor(Qt::SizeAllCursor);   break;
+        case ResizerLocation::EMPTY_INSIDE: setCursor(Qt::SizeAllCursor); break;
         case ResizerLocation::OUTSIDE:      setCursor(Qt::ForbiddenCursor); break;
 
         case ResizerLocation::T_ANCHOR:
         case ResizerLocation::B_ANCHOR:
         case ResizerLocation::T_BORDER:
-        case ResizerLocation::B_BORDER:     setCursor(Qt::SizeVerCursor);   break;
+        case ResizerLocation::B_BORDER:     setCursor(Qt::SizeVerCursor); break;
 
         case ResizerLocation::L_ANCHOR:
         case ResizerLocation::R_ANCHOR:
         case ResizerLocation::L_BORDER:
-        case ResizerLocation::R_BORDER:     setCursor(Qt::SizeHorCursor);   break;
+        case ResizerLocation::R_BORDER:     setCursor(Qt::SizeHorCursor); break;
 
         case ResizerLocation::TL_ANCHOR:
         case ResizerLocation::BR_ANCHOR:    setCursor(Qt::SizeFDiagCursor); break;
         case ResizerLocation::BL_ANCHOR:
         case ResizerLocation::TR_ANCHOR:    setCursor(Qt::SizeBDiagCursor); break;
-        default: break;
-            // clang-format on
+        default:                            break;
         }
         break;
 
