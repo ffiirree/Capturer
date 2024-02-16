@@ -6,7 +6,7 @@
 #include <probe/util.h>
 #include <QObject>
 
-class Config : public QObject
+class Config final : public QObject
 {
     Q_OBJECT
 

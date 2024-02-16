@@ -14,17 +14,18 @@ public:
     explicit ControlWidget(FramelessWindow *parent);
 
 public slots:
-    void setDuration(int64_t);              // AV_TIME_BASE
-    void setTime(std::chrono::nanoseconds); // AV_TIME_BASE
+    void setDuration(int64_t duration); // milliseconds
+    void setTime(int64_t ts);           // milliseconds
+
     void setVolume(int);
     void setMute(bool);
 
-    bool paused() const;
+    [[nodiscard]] bool paused() const;
 
 signals:
     void pause();
     void resume();
-    void seek(std::chrono::nanoseconds, std::chrono::nanoseconds); // us
+    void seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel);
     void speed(float);
     void volume(int);
     void mute(bool);

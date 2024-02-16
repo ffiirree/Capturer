@@ -1,15 +1,15 @@
-#ifdef _WIN32
-
 #ifndef CAPTURER_WGC_CAPTURER_H
 #define CAPTURER_WGC_CAPTURER_H
+
+#ifdef _WIN32
 
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/hwaccel.h"
 #include "libcap/producer.h"
-#include "libcap/ringvector.h"
+#include "libcap/queue.h"
 #include "win-wgc.h"
 
-class WindowsGraphicsCapturer final : public Producer<AVFrame>
+class WindowsGraphicsCapturer final : public Producer<av::frame>
 {
     enum mode_t
     {
@@ -40,7 +40,7 @@ public:
 
     int run() override;
 
-    int  produce(AVFrame *, AVMediaType) override;
+    int  produce(av::frame&, AVMediaType) override;
     bool empty(AVMediaType) override;
 
     bool        has(AVMediaType mt) const override;
@@ -101,8 +101,9 @@ private:
 
     mode_t mode_{};
 
-    av::frame frame_{};
-    uint32_t  frame_number_{};
+    std::mutex mtx_{};
+
+    uint32_t frame_number_{};
 
     // options @{
     bool      draw_mouse_{ true };
@@ -110,10 +111,7 @@ private:
     D3D11_BOX box_{ .front = 0, .back = 1 };
     // @}
 
-    RingVector<AVFrame *, 4> buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
+    safe_queue<av::frame> buffer_{ 4 };
 };
 
 #endif //! CAPTURER_WGC_CAPTURER_H

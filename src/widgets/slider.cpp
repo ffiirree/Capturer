@@ -3,6 +3,8 @@
 #include <QMouseEvent>
 #include <QStyle>
 
+using namespace std::chrono;
+
 Slider::Slider(QWidget *parent)
     : QSlider(parent)
 {}
@@ -16,11 +18,11 @@ void Slider::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         setSliderDown(true);
 
-        const auto to = std::chrono::milliseconds{ QStyle::sliderValueFromPosition(
-            minimum(), maximum(), event->pos().x(), width()) };
-        emit       seek(to,
-                        std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
-        setValue(static_cast<int>(to.count()));
+        const int ts = QStyle::sliderValueFromPosition(minimum(), maximum(), event->pos().x(), width());
+
+        emit seek(milliseconds{ ts }, std::clamp<milliseconds>(milliseconds{ ts - value() }, -10s, 10s));
+
+        setValue(ts);
     }
     else {
         QSlider::mousePressEvent(event);
@@ -30,11 +32,11 @@ void Slider::mousePressEvent(QMouseEvent *event)
 void Slider::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton) {
-        const auto to = std::chrono::milliseconds{ QStyle::sliderValueFromPosition(
-            minimum(), maximum(), event->pos().x(), width()) };
-        emit       seek(to,
-                        std::clamp<std::chrono::nanoseconds>(to - std::chrono::milliseconds(value()), -10s, 10s));
-        setValue(static_cast<int>(to.count()));
+        const int ts = QStyle::sliderValueFromPosition(minimum(), maximum(), event->pos().x(), width());
+
+        emit seek(milliseconds{ ts }, std::clamp<milliseconds>(milliseconds{ ts - value() }, -10s, 10s));
+
+        setValue(ts);
     }
     else {
         QSlider::mouseMoveEvent(event);

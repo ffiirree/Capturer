@@ -139,15 +139,7 @@
         <translation></translation>
     </message>
     <message>
-        <source>Shortcuts</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Screenshot</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Screen Recording</source>
         <translation></translation>
     </message>
     <message>
@@ -296,6 +288,10 @@
     </message>
     <message>
         <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Hotkeys</source>
         <translation></translation>
     </message>
 </context>

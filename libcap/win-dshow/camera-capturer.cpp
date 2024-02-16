@@ -27,19 +27,16 @@ void DShowCameraCapturer::reset() {}
 
 int DShowCameraCapturer::run() { return 0; }
 
-int DShowCameraCapturer::produce(AVFrame *frame, AVMediaType mt)
+int DShowCameraCapturer::produce(av::frame& frame, AVMediaType mt)
 {
     if (mt != AVMEDIA_TYPE_VIDEO) {
         LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(mt);
         return -1;
     }
 
-    std::lock_guard lock(mtx_);
-
     if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-    av_frame_unref(frame);
-    av_frame_move_ref(frame, buffer_.pop().value().get());
+    frame = buffer_.pop().value();
     return 0;
 }
 

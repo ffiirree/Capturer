@@ -17,9 +17,10 @@
 Config::Config()
 {
     auto config_dir_path_ = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-    QDir config_dir(config_dir_path_);
-    if (!config_dir.exists()) {
-        config_dir.mkpath(config_dir_path_);
+    if (QDir config_dir(config_dir_path_); !config_dir.exists()) {
+        if (!config_dir.mkpath(config_dir_path_)) {
+            LOG(ERROR) << "can not make path: " + config_dir_path_.toStdString();
+        }
     }
     filepath_ = config_dir_path_ + "/config.json";
 
@@ -63,7 +64,7 @@ Config::Config()
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["style"],    Qt::SolidLine);
     IF_NULL_SET(settings_["gif"]["selector"]["mask"]["color"],      "#88000000");
     IF_NULL_SET(settings_["gif"]["quality"],                        "medium");
-    IF_NULL_SET(settings_["gif"]["box"],                            false);
+    IF_NULL_SET(settings_["gif"]["box"],                            true);
     IF_NULL_SET(settings_["gif"]["mouse"],                          true);
 
     IF_NULL_SET(settings_["snip"]["hotkey"],                        "F1");
@@ -120,7 +121,7 @@ void Config::save()
 
 std::string Config::theme()
 {
-    auto theme = Config::instance()["theme"].get<std::string>();
+    const auto theme = Config::instance()["theme"].get<std::string>();
     if (theme == "auto") {
         return probe::to_string(probe::system::theme());
     }

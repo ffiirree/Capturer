@@ -6,10 +6,6 @@
 #include <atomic>
 #include <chrono>
 #include <map>
-#include <mutex>
-#include <thread>
-
-struct AVRational;
 
 template<class T> class Producer
 {
@@ -21,17 +17,7 @@ public:
     Producer& operator=(const Producer&) = delete;
     Producer& operator=(Producer&&)      = delete;
 
-    virtual ~Producer()
-    {
-        std::lock_guard lock(mtx_);
-
-        running_ = false;
-        eof_     = 0x00;
-        ready_   = false;
-        enabled_.clear();
-
-        if (thread_.joinable()) thread_.join();
-    }
+    virtual ~Producer() = default;
 
     // name
     // options
@@ -41,8 +27,8 @@ public:
 
     virtual int run() = 0;
 
-    [[nodiscard]] virtual int produce(T *, AVMediaType) = 0;
-    virtual bool              empty(AVMediaType)        = 0;
+    [[nodiscard]] virtual int produce(T&, AVMediaType) = 0;
+    virtual bool              empty(AVMediaType)       = 0;
 
     [[nodiscard]] virtual bool        has(AVMediaType) const        = 0;
     [[nodiscard]] virtual std::string format_str(AVMediaType) const = 0;
@@ -88,14 +74,11 @@ public:
     av::vformat_t vfmt{};
 
 protected:
+    std::atomic<bool>    ready_{ false };
     std::atomic<bool>    running_{ false };
     std::atomic<uint8_t> eof_{ 0x00 };
-    std::atomic<bool>    ready_{ false };
-    std::jthread         thread_;
-    std::mutex           mtx_;
     std::map<int, bool>  enabled_{};
-
-    std::atomic<bool> muted_{ false };
+    std::atomic<bool>    muted_{ false };
 
     struct seek_t
     {

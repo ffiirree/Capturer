@@ -2,13 +2,13 @@
 #define CAPTURER_PULSE_CAPTURER_H
 
 #include "libcap/decoder.h"
-#include "libcap/ringvector.h"
+#include "libcap/queue.h"
 
 extern "C" {
 #include <pulse/pulseaudio.h>
 }
 
-class PulseCapturer final : public Producer<AVFrame>
+class PulseCapturer final : public Producer<av::frame>
 {
 public:
     ~PulseCapturer() override { reset(); }
@@ -19,7 +19,7 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, AVMediaType) override;
+    int produce(av::frame&, AVMediaType) override;
 
     bool empty(AVMediaType type) override
     {
@@ -49,10 +49,7 @@ private:
 
     int destroy();
 
-    RingVector<AVFrame *, 32> buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
+    safe_queue<av::frame> buffer_{ 32 };
 
     av::frame frame_{};
     size_t    bytes_per_frame_{ 1 };

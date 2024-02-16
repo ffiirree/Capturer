@@ -35,6 +35,9 @@ public:
     AVRational SAR() const;
     AVRational DAR() const;
 
+signals:
+    void arrived();
+
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;

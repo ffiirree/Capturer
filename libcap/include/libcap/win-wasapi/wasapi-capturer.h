@@ -6,9 +6,8 @@
 #include "libcap/devices.h"
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
-#include "libcap/ringvector.h"
+#include "libcap/queue.h"
 
-#include <atomic>
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
 #include <Windows.h>
@@ -17,10 +16,9 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
-#include <libavutil/time.h>
 }
 
-class WasapiCapturer : public Producer<AVFrame>
+class WasapiCapturer : public Producer<av::frame>
 {
 public:
     ~WasapiCapturer() override { reset(); }
@@ -31,7 +29,7 @@ public:
 
     int run() override;
 
-    int produce(AVFrame *, AVMediaType) override;
+    int produce(av::frame&, AVMediaType) override;
 
     bool empty(AVMediaType type) override
     {
@@ -41,13 +39,7 @@ public:
         }
     }
 
-    bool has(AVMediaType type) const override
-    {
-        switch (type) {
-        case AVMEDIA_TYPE_AUDIO: return ready_;
-        default:                 return false;
-        }
-    }
+    bool has(AVMediaType type) const override { return type == AVMEDIA_TYPE_AUDIO; }
 
     std::string format_str(AVMediaType) const override;
     AVRational  time_base(AVMediaType) const override;
@@ -57,7 +49,6 @@ public:
     std::vector<av::aformat_t> aformats() const override { return { afmt }; }
 
 private:
-    int run_f();
     int destroy();
 
     void init_format(WAVEFORMATEX *);
@@ -68,15 +59,13 @@ private:
 
     int process_received_data(BYTE *, UINT32, UINT64);
 
-    RingVector<AVFrame *, 32> buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
+    std::jthread thread_{};
+
+    safe_queue<av::frame> buffer_{ 32 };
 
     int64_t start_time_{ AV_NOPTS_VALUE };
 
-    av::frame frame_{};
-    uint32_t  frame_number_{ 0 };
+    uint32_t frame_number_{ 0 };
 
     // WASAPI Capturer@{
     winrt::com_ptr<IAudioClient>        capturer_audio_client_{};

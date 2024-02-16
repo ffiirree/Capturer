@@ -1,6 +1,9 @@
 #ifndef CAPTURER_QUEUE_H
 #define CAPTURER_QUEUE_H
 
+#include <chrono>
+#include <condition_variable>
+#include <limits>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -12,6 +15,14 @@ public:
     using value_type      = T;
     using reference       = T&;
     using const_reference = const T&;
+
+    safe_queue() = default;
+
+    explicit safe_queue(const size_t capacity)
+        : capacity_(capacity)
+    {}
+
+    // capacity
 
     [[nodiscard]] bool empty() const noexcept(noexcept(buffer_.empty()))
     {
@@ -25,6 +36,35 @@ public:
         return buffer_.size();
     }
 
+    [[nodiscard]] size_t capacity() const noexcept
+    {
+        std::lock_guard lock(mtx_);
+        return capacity_;
+    }
+
+    [[nodiscard]] bool stopped() const noexcept
+    {
+        std::lock_guard lock(mtx_);
+        return stopped_;
+    }
+
+    // modifiers
+
+    [[nodiscard]] std::optional<value_type> wait_and_pop()
+    {
+        std::lock_guard lock(mtx_);
+        nonempty_.wait(lock, [this] { return stopped_ || !buffer_.empty(); });
+
+        if (buffer_.empty()) return std::nullopt;
+
+        value_type front = std::move(buffer_.front());
+        buffer_.pop();
+
+        nonfull_.notify_one();
+
+        return front;
+    }
+
     [[nodiscard]] std::optional<value_type> pop()
     {
         std::lock_guard lock(mtx_);
@@ -33,36 +73,173 @@ public:
 
         value_type front = std::move(buffer_.front());
         buffer_.pop();
+
+        nonfull_.notify_one();
+
         return front;
     }
 
-    void push(const value_type& value)
+    bool wait_and_push(const value_type& value)
     {
         std::lock_guard lock(mtx_);
+        nonfull_.wait(lock, [this] { return stopped_ || buffer_.size() < capacity_; });
+
+        if (stopped_) return false;
+
         buffer_.push(value);
+
+        nonempty_.notify_one();
+
+        return true;
     }
 
-    void push(value_type&& value)
+    template<class Rep, class Period>
+    bool wait_and_push(const value_type& value, const std::chrono::duration<Rep, Period>& duration)
     {
         std::lock_guard lock(mtx_);
+        if (!nonfull_.wait_for(lock, duration, [this] { return stopped_ || buffer_.size() < capacity_; })) {
+            return false;
+        }
+
+        if (stopped_) return false;
+
+        buffer_.push(value);
+
+        nonempty_.notify_one();
+
+        return true;
+    }
+
+    bool push(const value_type& value, const bool discard = false)
+    {
+        std::lock_guard lock(mtx_);
+
+        if (stopped_) return false;
+
+        if (buffer_.size() >= capacity_) {
+            if (!discard) {
+                return false;
+            }
+            buffer_.pop();
+        }
+
+        buffer_.push(value);
+
+        nonempty_.notify_one();
+
+        return true;
+    }
+
+    bool wait_and_push(value_type&& value)
+    {
+        std::lock_guard lock(mtx_);
+        nonfull_.wait(lock, [this] { return stopped_ || buffer_.size() < capacity_; });
+
+        if (stopped_) return false;
+
         buffer_.push(std::move(value));
+
+        nonempty_.notify_one();
+
+        return true;
     }
 
-    template<class... Valty> decltype(auto) emplace(Valty&&...args)
+    template<class Rep, class Period>
+    bool wait_and_push(value_type&& value, const std::chrono::duration<Rep, Period>& duration)
+    {
+        std::lock_guard lock(mtx_);
+        if (!nonfull_.wait_for(lock, duration, [this] { return stopped_ || buffer_.size() < capacity_; })) {
+            return false;
+        }
+
+        if (stopped_) return false;
+
+        buffer_.push(std::move(value));
+
+        nonempty_.notify_one();
+
+        return true;
+    }
+
+    bool push(value_type&& value, const bool discard = false)
     {
         std::lock_guard lock(mtx_);
 
-        return buffer_.emplace(std::forward<Valty>(args)...);
+        if (stopped_) return false;
+
+        if (buffer_.size() >= capacity_) {
+            if (!discard) {
+                return false;
+            }
+            buffer_.pop();
+        }
+
+        buffer_.push(std::move(value));
+
+        nonempty_.notify_one();
+
+        return true;
+    }
+
+    template<class... Valty> decltype(auto) wait_and_emplace(Valty&&...args)
+    {
+        std::lock_guard lock(mtx_);
+        nonfull_.wait(lock, [this] { return stopped_ || buffer_.size() < capacity_; });
+
+        if (stopped_) return;
+
+        const auto value = buffer_.emplace(std::forward<Valty>(args)...);
+
+        nonempty_.notify_one();
+
+        return value;
     }
 
     void clear()
     {
         std::lock_guard lock(mtx_);
+
         buffer_ = {};
+
+        nonfull_.notify_all();
+    }
+
+    void stop()
+    {
+        std::lock_guard lock(mtx_);
+
+        stopped_ = true;
+
+        nonempty_.notify_all();
+        nonfull_.notify_all();
+    }
+
+    void restart()
+    {
+        std::lock_guard lock(mtx_);
+
+        stopped_ = false;
+
+        nonempty_.notify_all();
+        nonfull_.notify_all();
+    }
+
+    void notify()
+    {
+        std::lock_guard lock(mtx_);
+
+        nonempty_.notify_all();
+        nonfull_.notify_all();
     }
 
 private:
-    mutable std::mutex mtx_;
+    mutable std::mutex      mtx_;
+    std::condition_variable nonempty_{};
+    std::condition_variable nonfull_{};
+
+    size_t capacity_{ std::numeric_limits<size_t>::max() };
+
+    bool stopped_{};
 
     std::queue<T> buffer_{};
 };

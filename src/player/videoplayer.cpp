@@ -52,9 +52,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_, &ControlWidget::volume,
             [this](auto val) { audio_renderer_->setVolume(val / 100.0f); });
     connect(control_, &ControlWidget::mute, [this](auto muted) { audio_renderer_->mute(muted); });
-    connect(this, &VideoPlayer::timeChanged, [this](auto t) {
-        if (!seeking_) control_->setTime(t);
-    });
+    connect(this, &VideoPlayer::timeChanged, control_, &ControlWidget::setTime, Qt::QueuedConnection);
     stacked_layout->addWidget(control_);
 
     // texture
@@ -214,15 +212,17 @@ bool VideoPlayer::accepts(AVMediaType type) const
     }
 }
 
-int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
+int VideoPlayer::consume(av::frame& frame, AVMediaType type)
 {
-    if (seeking_ && ((type == AVMEDIA_TYPE_AUDIO && audio_enabled_) || type == AVMEDIA_TYPE_VIDEO)) {
-        const auto time_base = (type == AVMEDIA_TYPE_VIDEO) ? vfmt.time_base : afmt.time_base;
+    if (seeking_ && (type == AVMEDIA_TYPE_AUDIO || type == AVMEDIA_TYPE_VIDEO)) {
+        if (frame->pts >= 0) {
+            const auto time_base = (type == AVMEDIA_TYPE_VIDEO) ? vfmt.time_base : afmt.time_base;
 
-        timeline_ = av::clock::ns(frame->pts, time_base);
+            timeline_ = av::clock::ns(frame->pts, time_base);
 
-        LOG(INFO) << fmt::format("[{}] clock: {:%T}", av::to_char(type), timeline_.time());
-        seeking_ = false;
+            LOG(INFO) << fmt::format("[{}] clock: {:%T}", av::to_char(type), timeline_.time());
+            seeking_ = false;
+        }
     }
 
     switch (type) {
@@ -235,7 +235,7 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 
         if (full(AVMEDIA_TYPE_VIDEO)) return AVERROR(EAGAIN);
 
-        vbuffer_.emplace(frame);
+        vbuffer_.push(frame);
         return 0;
 
     case AVMEDIA_TYPE_AUDIO: {
@@ -247,16 +247,16 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 
         if (full(AVMEDIA_TYPE_AUDIO)) return AVERROR(EAGAIN);
 
-        // buffer
         abuffer_->write(reinterpret_cast<void **>(frame->data), frame->nb_samples);
 
-        // TODO: speed
-        if (audio_pts_.load() == av::clock::nopts) audio_pts_ = av::clock::ns(frame->pts, afmt.time_base);
+        // FIXME: speed
+        if (frame->pts >= 0) audio_pts_ = av::clock::ns(frame->pts, afmt.time_base);
 
-        const auto duration = av::clock::ns(frame->nb_samples, { 1, afmt.sample_rate });
+        if (audio_pts_.load() != av::clock::nopts) {
+            const auto duration = av::clock::ns(frame->nb_samples, { 1, afmt.sample_rate });
 
-        audio_pts_ = audio_pts_.load() + duration * timeline_.speed();
-
+            audio_pts_ = audio_pts_.load() + duration * timeline_.speed();
+        }
         return 0;
     }
 
@@ -287,8 +287,6 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
 {
     if (seeking_) return;
 
-    std::lock_guard lock(mtx_);
-
     ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, std::chrono::microseconds{ decoder_->duration() });
 
     LOG(INFO) << fmt::format("seek: {:%T}", ts);
@@ -315,6 +313,8 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
 
 void VideoPlayer::setSpeed(float speed)
 {
+    speed = std::max<float>(0.5, speed);
+
     dispatcher_->afilters = fmt::format("atempo={:4.2f}", speed);
     dispatcher_->send_command(AVMEDIA_TYPE_AUDIO, "atempo", "tempo", fmt::format("{:4.2f}", speed));
     timeline_.set_speed({ static_cast<intmax_t>(speed * 1000000), 1000000 });
@@ -347,11 +347,12 @@ int VideoPlayer::run()
         const uint32_t buffered_frames = abuffer_->size(); // per channel
         if (!buffered_frames || seeking_ || paused()) return 0;
 
-        const uint32_t remaining = buffered_frames + (audio_renderer_->buffer_size() - request_frames);
-        timeline_.set(
-            audio_pts_.load() - av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(), ts);
-
-        LOG(INFO) << fmt::format("time = {:%T}", timeline_.time());
+        if (audio_pts_.load() != av::clock::nopts) {
+            const uint32_t remaining = buffered_frames + (audio_renderer_->buffer_size() - request_frames);
+            timeline_.set(audio_pts_.load() -
+                              av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(),
+                          ts);
+        }
 
         return abuffer_->read(reinterpret_cast<void **>(ptr), request_frames);
     };
@@ -406,7 +407,7 @@ void VideoPlayer::video_thread_f()
             std::this_thread::sleep_for(sleep_ns);
         }
 
-        emit timeChanged(timeline_.time());
+        emit timeChanged(timeline_.time().count() / 1000);
 
         step_ = std::max<int>(0, step_ - 1);
     }

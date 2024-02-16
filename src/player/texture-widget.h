@@ -1,12 +1,10 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_H
 #define CAPTURER_TEXTURE_WIDGET_H
 
+#include "libcap/ffmpeg-wrapper.h"
+
 #include <mutex>
 #include <QWidget>
-
-extern "C" {
-#include <libavutil/frame.h>
-}
 
 class TextureWidget final : public QWidget
 {
@@ -14,11 +12,14 @@ class TextureWidget final : public QWidget
 public:
     explicit TextureWidget(QWidget *parent = nullptr);
 
-    void present(AVFrame *frame);
+    void present(const av::frame& frame);
 
     void present(const QPixmap& pixmap);
 
     void present(const QImage& image);
+
+signals:
+    void arrived();
 
 protected:
     void paintEvent(QPaintEvent *event) override;

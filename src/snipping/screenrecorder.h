@@ -71,13 +71,13 @@ private:
     bool           s_mute_{};
 
     // sources
-    std::unique_ptr<Producer<AVFrame>> desktop_capturer_{};
-    std::unique_ptr<Producer<AVFrame>> microphone_capturer_{};
-    std::unique_ptr<Producer<AVFrame>> speaker_capturer_{};
+    std::unique_ptr<Producer<av::frame>> desktop_capturer_{};
+    std::unique_ptr<Producer<av::frame>> microphone_capturer_{};
+    std::unique_ptr<Producer<av::frame>> speaker_capturer_{};
 
     // encoder
-    std::unique_ptr<Consumer<AVFrame>> encoder_{};
-    std::unique_ptr<Dispatcher>        dispatcher_{};
+    std::unique_ptr<Consumer<av::frame>> encoder_{};
+    std::unique_ptr<Dispatcher>          dispatcher_{};
 
     // timer for displaying time on recording menu
     QTimer *timer_{ nullptr };

@@ -11,7 +11,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-class Decoder : public Producer<AVFrame>
+class Decoder : public Producer<av::frame>
 {
     enum
     {
@@ -36,7 +36,7 @@ public:
     // start thread
     int run() override;
 
-    int produce(AVFrame *frame, AVMediaType type) override;
+    int produce(av::frame& frame, AVMediaType type) override;
 
     bool empty(AVMediaType type) override
     {
@@ -75,14 +75,17 @@ private:
 
     std::string name_{ "unknown" };
 
-    AVFormatContext *fmt_ctx_{};
-    AVCodecContext  *video_decoder_ctx_{};
-    AVCodecContext  *audio_decoder_ctx_{};
-    AVCodecContext  *subtitle_decoder_ctx_{};
+    std::mutex   mtx_{};
+    std::jthread thread_{};
 
-    int video_stream_idx_{ -1 };
-    int audio_stream_idx_{ -1 };
-    int subtitle_idx_{ -1 };
+    AVFormatContext *fmt_ctx_{};
+    AVCodecContext  *vcodec_ctx_{};
+    AVCodecContext  *acodec_ctx_{};
+    AVCodecContext  *scodec_ctx_{};
+
+    int vstream_idx_{ -1 };
+    int astream_idx_{ -1 };
+    int sstream_idx_{ -1 };
 
     int64_t SYNC_PTS{ 0 };
 

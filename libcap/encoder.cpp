@@ -176,25 +176,22 @@ int Encoder::new_auido_stream(const std::string& codec_name)
     return 0;
 }
 
-int Encoder::consume(AVFrame *frame, AVMediaType type)
+int Encoder::consume(av::frame& frame, AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
-        if (vbuffer_.full()) return -1;
+        if (full(AVMEDIA_TYPE_VIDEO)) return -1;
 
-        vbuffer_.push([frame](AVFrame *p_frame) {
-            av_frame_unref(p_frame);
-            av_frame_move_ref(p_frame, frame);
-        });
+        vbuffer_.push(frame);
         return 0;
 
     case AVMEDIA_TYPE_AUDIO:
-        if (abuffer_->size() > 4096) return -1;
+        if (full(AVMEDIA_TYPE_AUDIO)) return -1;
 
         if (!frame || frame->nb_samples == 0) {
             LOG(INFO) << "[A] DRAINING";
             eof_ |= A_ENCODING_FIFO_EOF;
-            break;
+            return 0;
         }
 
         abuffer_->write(reinterpret_cast<void **>(frame->data), frame->nb_samples);
@@ -312,7 +309,7 @@ int Encoder::process_video_frames()
 {
     if (vbuffer_.empty()) return AVERROR(EAGAIN);
 
-    vbuffer_.pop([this](AVFrame *popped) { av_frame_move_ref(filtered_frame_.put(), popped); });
+    filtered_frame_ = vbuffer_.pop().value();
 
     auto [num_frames, num_pre_frames] = video_sync_process();
     if (!filtered_frame_->buf[0]) {
@@ -387,7 +384,7 @@ int Encoder::process_audio_frames()
            (abuffer_->size() >= acodec_ctx_->frame_size || (eof_ & A_ENCODING_FIFO_EOF))) {
 
         if (abuffer_->size() >= acodec_ctx_->frame_size ||
-            (abuffer_->size() > 0 && (eof_ & A_ENCODING_FIFO_EOF))) {
+            (!abuffer_->empty() && (eof_ & A_ENCODING_FIFO_EOF))) {
             filtered_frame_.unref();
 
             filtered_frame_->nb_samples = std::min(acodec_ctx_->frame_size, abuffer_->size());

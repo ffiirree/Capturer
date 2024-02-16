@@ -4,14 +4,14 @@
 #include "audio-fifo.h"
 #include "consumer.h"
 #include "logging.h"
-#include "ringvector.h"
+#include "queue.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 }
 
-class Encoder : public Consumer<AVFrame>
+class Encoder : public Consumer<av::frame>
 {
 public:
     enum
@@ -30,12 +30,12 @@ public:
     int open(const std::string&, std::map<std::string, std::string>) override;
 
     int run() override;
-    int consume(AVFrame *frame, AVMediaType type) override;
+    int consume(av::frame& frame, AVMediaType type) override;
 
     bool full(AVMediaType type) const override
     {
         switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return vbuffer_.full();
+        case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() > vbuffer_.capacity();
         case AVMEDIA_TYPE_AUDIO: return abuffer_->size() > 4096;
         default:                 return true;
         }
@@ -81,6 +81,9 @@ private:
     AVCodecContext  *acodec_ctx_{};
     // @}
 
+    std::mutex   mtx_{};
+    std::jthread thread_{};
+
     int64_t v_last_dts_{ AV_NOPTS_VALUE };
     int64_t a_last_dts_{ AV_NOPTS_VALUE };
     int64_t audio_pts_{ 0 };
@@ -93,10 +96,9 @@ private:
     int64_t expected_pts_{ AV_NOPTS_VALUE };
 
     std::unique_ptr<safe_audio_fifo> abuffer_{};
-    RingVector<AVFrame *, 8>         vbuffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) {         av_frame_free(frame); },
-    };
+    safe_queue<av::frame>            vbuffer_{ 8 };
+
+    av::vsync_t vsync_{ av::vsync_t::cfr };
 };
 
 #endif //! CAPTURER_ENCODER_H

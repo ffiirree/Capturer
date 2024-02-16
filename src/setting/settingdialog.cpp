@@ -50,9 +50,9 @@ SettingWindow::SettingWindow(QWidget *parent)
     auto menu = new QListWidget();
     menu->setFocusPolicy(Qt::NoFocus);
     menu->addItem(new QListWidgetItem(tr("General")));
-    menu->addItem(new QListWidgetItem(tr("Shortcuts")));
+    menu->addItem(new QListWidgetItem(tr("Hotkeys")));
     menu->addItem(new QListWidgetItem(tr("Screenshot")));
-    menu->addItem(new QListWidgetItem(tr("Screen Recording")));
+    menu->addItem(new QListWidgetItem(tr("Video Recording")));
     menu->addItem(new QListWidgetItem(tr("GIF Recording")));
     menu->addItem(new QListWidgetItem(tr("Devices")));
     menu->addItem(new QListWidgetItem(tr("About")));

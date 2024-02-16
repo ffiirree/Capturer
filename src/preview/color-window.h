@@ -15,7 +15,7 @@ enum class number_t : int
     hybrid   = 3,
 };
 
-class ColorWindow : public FramelessWindow
+class ColorWindow final : public FramelessWindow
 {
     Q_OBJECT
 

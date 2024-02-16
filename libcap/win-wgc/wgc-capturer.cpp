@@ -60,8 +60,6 @@ void WindowsGraphicsCapturer::parse_options(std::map<std::string, std::string>& 
 
 int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string, std::string> options)
 {
-    std::lock_guard lock(mtx_);
-
     LOG(INFO) << fmt::format("[     WGC] [{}] options = {}", name, options);
 
     parse_options(options);
@@ -175,7 +173,7 @@ int WindowsGraphicsCapturer::run()
     return 0;
 }
 
-int WindowsGraphicsCapturer::produce(AVFrame *frame, AVMediaType type)
+int WindowsGraphicsCapturer::produce(av::frame& frame, AVMediaType type)
 {
     if (type != AVMEDIA_TYPE_VIDEO) {
         LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(type);
@@ -184,10 +182,7 @@ int WindowsGraphicsCapturer::produce(AVFrame *frame, AVMediaType type)
 
     if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-    buffer_.pop([frame](AVFrame *popped) {
-        av_frame_unref(frame);
-        av_frame_move_ref(frame, popped);
-    });
+    frame = buffer_.pop().value();
     return 0;
 }
 
@@ -372,34 +367,35 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
 
     if (!running_) return;
 
-    const auto frame         = sender.TryGetNextFrame();
-    const auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(frame.Surface());
+    const auto d3d11frame    = sender.TryGetNextFrame();
+    const auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(d3d11frame.Surface());
 
     // surface size
     D3D11_TEXTURE2D_DESC tex_desc{};
     frame_texture->GetDesc(&tex_desc);
 
     // Window Capture Mode: resize the frame pool to frame size
-    if (mode_ == mode_t::window && frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
-                                                              static_cast<int32_t>(tex_desc.Height),
-                                                              static_cast<int32_t>(tex_desc.Width) }) {
+    if (mode_ == mode_t::window && d3d11frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
+                                                                   static_cast<int32_t>(tex_desc.Height),
+                                                                   static_cast<int32_t>(tex_desc.Width) }) {
         frame_pool_.Recreate(winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
-                             frame.ContentSize());
+                             d3d11frame.ContentSize());
     }
 
+    av::frame frame{};
     // allocate texture for hardware frame
-    if (av_hwframe_get_buffer(hwctx_->frames_ctx_buf(), frame_.put(), 0) < 0) {
+    if (av_hwframe_get_buffer(hwctx_->frames_ctx_buf(), frame.put(), 0) < 0) {
         LOG(ERROR) << "[       WGC] failed to alloc a hardware frame.";
         return;
     }
 
-    frame_->sample_aspect_ratio = { 1, 1 };
-    frame_->pts                 = av::clock::ns().count();
+    frame->sample_aspect_ratio = { 1, 1 };
+    frame->pts                 = av::clock::ns().count();
     // According to MSDN, all integer formats contain sRGB image data
-    frame_->color_range         = AVCOL_RANGE_JPEG;
-    frame_->color_primaries     = AVCOL_PRI_BT709;
-    frame_->color_trc           = AVCOL_TRC_IEC61966_2_1;
-    frame_->colorspace          = AVCOL_SPC_RGB;
+    frame->color_range         = AVCOL_RANGE_JPEG;
+    frame->color_primaries     = AVCOL_PRI_BT709;
+    frame->color_trc           = AVCOL_TRC_IEC61966_2_1;
+    frame->colorspace          = AVCOL_SPC_RGB;
 
     // copy the texture to the FFmpeg frame
     // 1. Display   Mode: CopyResource
@@ -413,15 +409,15 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
 
             proj_ = DirectX::XMMatrixScaling(1, 1, 1);
 
-            const float r1 = tex_desc.Width / static_cast<float>(tex_desc.Height);
-            const float r2 = vfmt.width / static_cast<float>(vfmt.height);
-            const float w  = r1 > r2 ? vfmt.width : (vfmt.height * r1);
-            const float h  = r1 > r2 ? vfmt.width / r1 : vfmt.height;
+            const double r1      = tex_desc.Width / static_cast<double>(tex_desc.Height);
+            const double r2      = vfmt.width / static_cast<double>(vfmt.height);
+            const float  scale_x = (r1 > r2) ? 1.0f : static_cast<float>(vfmt.height * r1 / vfmt.width);
+            const float  scale_y = (r1 > r2) ? static_cast<float>(vfmt.width / (r1 * vfmt.height)) : 1.0f;
 
-            proj_ = DirectX::XMMatrixScaling(w / vfmt.width, h / vfmt.height, 1);
+            proj_ = DirectX::XMMatrixScaling(scale_x, scale_y, 1);
 
             D3D11_MAPPED_SUBRESOURCE mapped{};
-            context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+            winrt::check_hresult(context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
             memcpy(mapped.pData, &proj_, sizeof(proj_));
             context_->Unmap(proj_buffer_.get(), 0);
 
@@ -440,7 +436,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
                 .CPUAccessFlags = 0,
                 .MiscFlags      = D3D11_RESOURCE_MISC_SHARED,
             };
-            device_->CreateTexture2D(&source_desc, nullptr, source_.put());
+            winrt::check_hresult(device_->CreateTexture2D(&source_desc, nullptr, source_.put()));
 
             const CD3D11_SHADER_RESOURCE_VIEW_DESC srv_desc{
                 source_.get(),
@@ -449,7 +445,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
                 tex_desc.MipLevels - 1,
                 tex_desc.MipLevels,
             };
-            device_->CreateShaderResourceView(source_.get(), &srv_desc, srv_.put());
+            winrt::check_hresult(device_->CreateShaderResourceView(source_.get(), &srv_desc, srv_.put()));
 
             ID3D11ShaderResourceView *srvs[] = { srv_.get() };
             context_->PSSetShaderResources(0, static_cast<UINT>(std::size(srvs)), srvs);
@@ -459,10 +455,10 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
 
             context_->CopyResource(source_.get(), frame_texture.get());
             context_->Draw(4, 0);
-            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]), target_.get());
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame->data[0]), target_.get());
         }
         else {
-            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame->data[0]),
                                    frame_texture.get());
         }
         break;
@@ -470,29 +466,28 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
         // Rectangle
         if (vfmt.height != static_cast<int>(tex_desc.Height) ||
             vfmt.width != static_cast<int>(tex_desc.Width)) {
-            context_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
-                                            static_cast<UINT>(reinterpret_cast<intptr_t>(frame_->data[1])),
+            context_->CopySubresourceRegion(reinterpret_cast<::ID3D11Texture2D *>(frame->data[0]),
+                                            static_cast<UINT>(reinterpret_cast<intptr_t>(frame->data[1])),
                                             0, 0, 0, frame_texture.get(), 0, &box_);
         }
         // Monitor
         else {
-            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
+            context_->CopyResource(reinterpret_cast<::ID3D11Texture2D *>(frame->data[0]),
                                    frame_texture.get());
         }
         break;
     }
 
     // transfer frame to CPU if needed
-    av::hwaccel::transfer_frame(frame_.get(), vfmt.pix_fmt);
+    av::hwaccel::transfer_frame(frame.get(), vfmt.pix_fmt);
 
     DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
-                              frame_->pts, frame_->width, frame_->height);
+                              frame->pts, frame->width, frame->height);
 
     // push FFmpeg frame to our frame pool
-    buffer_.push([this](AVFrame *frame) {
-        av_frame_unref(frame);
-        av_frame_move_ref(frame, frame_.get());
-    });
+    LOG_IF(WARNING, buffer_.size() >= buffer_.capacity()) << "[V] buffer is full, drop a frame";
+
+    buffer_.push(frame, true);
 }
 
 void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,

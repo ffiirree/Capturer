@@ -1,16 +1,17 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_D3D11_H
 #define CAPTURER_TEXTURE_WIDGET_D3D11_H
 
-#include <mutex>
 #include <QWidget>
 
 #ifdef Q_OS_WIN
 
+#include "libcap/ffmpeg-wrapper.h"
+#include "libcap/media.h"
+
 #include <d3d11.h>
 #include <DirectXMath.h>
-#include <libcap/ffmpeg-wrapper.h>
-#include <libcap/media.h>
 #include <memory>
+#include <mutex>
 #include <winrt/base.h>
 
 class TextureD3D11Widget final : public QWidget
@@ -37,6 +38,9 @@ public:
     AVRational DAR() const;
 
     QPaintEngine *paintEngine() const override { return nullptr; }
+
+signals:
+    void arrived();
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -86,5 +90,5 @@ private:
     // @}
 };
 
-#endif // Q_OS_WIN
+#endif
 #endif // !CAPTURER_TEXTURE_WIDGET_D3D11_H

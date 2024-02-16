@@ -139,16 +139,8 @@
         <translation>通用</translation>
     </message>
     <message>
-        <source>Shortcuts</source>
-        <translation>快捷键</translation>
-    </message>
-    <message>
         <source>Screenshot</source>
         <translation>屏幕截图</translation>
-    </message>
-    <message>
-        <source>Screen Recording</source>
-        <translation>屏幕录制</translation>
     </message>
     <message>
         <source>GIF Recording</source>
@@ -297,6 +289,10 @@
     <message>
         <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
         <translation></translation>
+    </message>
+    <message>
+        <source>Hotkeys</source>
+        <translation>快捷键</translation>
     </message>
 </context>
 <context>

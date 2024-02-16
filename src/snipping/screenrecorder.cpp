@@ -155,8 +155,8 @@ void ScreenRecorder::start()
 }
 
 static std::pair<AVPixelFormat, AVHWDeviceType>
-set_pix_fmt(const std::unique_ptr<Producer<AVFrame>>& producer,
-            const std::unique_ptr<Consumer<AVFrame>>& consumer, const AVCodec *vcodec)
+set_pix_fmt(const std::unique_ptr<Producer<av::frame>>& producer,
+            const std::unique_ptr<Consumer<av::frame>>& consumer, const AVCodec *vcodec)
 {
     if (!vcodec) return {};
 
@@ -191,9 +191,16 @@ void ScreenRecorder::setup()
 
     QRect region = selector_->selected(selector_->scope() != Selector::scope_t::desktop);
 
-    Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>()
+    const auto show_region =
+        Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>();
+#ifdef _WIN32
+    show_region && (selector_->prey().type != hunter::prey_type_t::window &&
+                    selector_->prey().type != hunter::prey_type_t::display)
         ? selector_->showRegion()
         : hide();
+#else
+    show_region ? selector_->showRegion() : hide();
+#endif
 
     menu_->disable_mic(true);
     menu_->disable_speaker(true);
@@ -225,14 +232,15 @@ void ScreenRecorder::setup()
     //   3. window   mode: OK
     //   4. display  mode: OK
     //   5. desktop  mode: NO, not supported
-    options["show_region"] = "false";
+    options["show_region"] = show_region ? "true" : "false";
     switch (selector_->prey().type) {
-    case hunter::prey_type_t::rectangle: // name = "window=" + std::to_string(window_.handle); break;
+    case hunter::prey_type_t::rectangle:
     case hunter::prey_type_t::widget:    {
-        options["offset_x"] = std::to_string(region.x());
-        options["offset_y"] = std::to_string(region.y());
-        auto display        = probe::graphics::display_contains(selector_->selected().center()).value();
-        name                = "display=" + std::to_string(display.handle);
+        options["show_region"] = "false";
+        options["offset_x"]    = std::to_string(region.x());
+        options["offset_y"]    = std::to_string(region.y());
+        auto display           = probe::graphics::display_contains(selector_->selected().center()).value();
+        name                   = "display=" + std::to_string(display.handle);
         break;
     }
     case hunter::prey_type_t::window:  name = "window=" + std::to_string(selector_->prey().handle); break;

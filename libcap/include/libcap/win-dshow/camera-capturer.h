@@ -10,7 +10,7 @@
 #include <dshow.h>
 #include <winrt/base.h>
 
-class DShowCameraCapturer : public Producer<AVFrame>
+class DShowCameraCapturer final : public Producer<av::frame>
 {
 public:
     int open(const std::string&, std::map<std::string, std::string>) override;
@@ -19,7 +19,8 @@ public:
 
     int run() override;
 
-    int  produce(AVFrame *, AVMediaType) override;
+    int produce(av::frame&, AVMediaType) override;
+
     bool empty(AVMediaType) override;
 
     bool has(AVMediaType) const override;

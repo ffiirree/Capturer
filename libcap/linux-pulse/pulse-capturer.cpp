@@ -84,53 +84,47 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
         return;
     }
 
-    self->frame_.unref();
-    self->frame_->nb_samples = static_cast<int>(bytes / self->bytes_per_frame_);
-    // FIXME: calculate the exact pts
-    self->frame_->pts        = av::clock::ns().count() -
-                        av_rescale(self->frame_->nb_samples, OS_TIME_BASE, self->afmt.sample_rate);
-    self->frame_->pkt_dts        = self->frame_->pts;
-    self->frame_->format         = self->afmt.sample_fmt;
-    self->frame_->sample_rate    = self->afmt.sample_rate;
-    self->frame_->channels       = self->afmt.channels;
-    self->frame_->channel_layout = self->afmt.channel_layout;
+    av::frame frame{};
 
-    av_frame_get_buffer(self->frame_.get(), 0);
-    if (av_samples_copy(self->frame_->data, (uint8_t *const *)&frames, 0, 0, self->frame_->nb_samples,
+    frame->nb_samples = static_cast<int>(bytes / self->bytes_per_frame_);
+    // FIXME: calculate the exact pts
+    frame->pts =
+        av::clock::ns().count() - av_rescale(frame->nb_samples, OS_TIME_BASE, self->afmt.sample_rate);
+    frame->pkt_dts        = frame->pts;
+    frame->format         = self->afmt.sample_fmt;
+    frame->sample_rate    = self->afmt.sample_rate;
+    frame->channels       = self->afmt.channels;
+    frame->channel_layout = self->afmt.channel_layout;
+
+    av_frame_get_buffer(frame.get(), 0);
+    if (av_samples_copy(frame->data, (uint8_t *const *)&frames, 0, 0, frame->nb_samples,
                         self->afmt.channels, self->afmt.sample_fmt) < 0) {
         LOG(ERROR) << "[PULSE-AUDIO] failed to copy frames";
         return;
     }
 
     if (self->muted_) {
-        av_samples_set_silence(self->frame_->data, 0, self->frame_->nb_samples, self->frame_->channels,
-                               static_cast<AVSampleFormat>(self->frame_->format));
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels,
+                               static_cast<AVSampleFormat>(frame->format));
     }
 
     DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-                              self->frame_number_++, self->frame_->pts, self->frame_->nb_samples,
-                              self->muted_.load());
+                              self->frame_number_++, frame->pts, frame->nb_samples, self->muted_.load());
 
-    self->buffer_.push([self](AVFrame *pushed) {
-        av_frame_unref(pushed);
-        av_frame_move_ref(pushed, self->frame_.get());
-    });
+    self->buffer_.push(frame, true);
 
     pa_stream_drop(stream);
 }
 
 int PulseCapturer::run() { return 0; }
 
-int PulseCapturer::produce(AVFrame *frame, AVMediaType type)
+int PulseCapturer::produce(av::frame& frame, AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        buffer_.pop([frame](AVFrame *popped) {
-            av_frame_unref(frame);
-            av_frame_move_ref(frame, popped);
-        });
+        frame = buffer_.pop().value();
         return 0;
 
     default: LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type); return -1;

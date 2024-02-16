@@ -16,7 +16,7 @@
 
 #include <QTimer>
 
-class VideoPlayer final : public FramelessWindow, public Consumer<AVFrame>
+class VideoPlayer final : public FramelessWindow, public Consumer<av::frame>
 {
     Q_OBJECT
 
@@ -43,7 +43,7 @@ public:
     void reset() override;
 
     [[nodiscard]] bool full(AVMediaType type) const override;
-    int                consume(AVFrame *frame, AVMediaType type) override;
+    int                consume(av::frame& frame, AVMediaType type) override;
 
     void               enable(AVMediaType type, bool v = true) override;
     [[nodiscard]] bool accepts(AVMediaType type) const override;
@@ -57,18 +57,23 @@ public:
     bool paused() const { return paused_; }
 
 public slots:
-    void pause();
-    void resume();
+    void pause() override;
+    void resume() override;
+
     void seek(std::chrono::nanoseconds, std::chrono::nanoseconds); // us
+
     void mute(bool);
+
     void setSpeed(float);
+
     void setVolume(int);
+
     void showPreferences();
     void showProperties();
 
 signals:
     void started();
-    void timeChanged(std::chrono::nanoseconds);
+    void timeChanged(int64_t);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -85,10 +90,10 @@ private:
     void initContextMenu();
 
     // UI
+    ControlWidget   *control_{};
     TextureGLWidget *texture_{};
 
-    ControlWidget *control_{};
-    QTimer        *timer_{};
+    QTimer *timer_{};
 
     Menu         *menu_{};
     QMenu        *asmenu_{};

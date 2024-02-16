@@ -12,49 +12,10 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
-#include <libavutil/pixdesc.h>
 #include <libavutil/time.h>
 }
 
-int Dispatcher::create_src_filter(const Producer<AVFrame> *decoder, AVFilterContext **ctx, AVMediaType type)
-{
-    switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return create_video_src(decoder, ctx);
-    case AVMEDIA_TYPE_AUDIO: return create_audio_src(decoder, ctx);
-    default:                 return -1;
-    }
-}
-
-int Dispatcher::create_sink_filter(const Consumer<AVFrame> *encoder, AVFilterContext **ctx,
-                                   AVMediaType type)
-{
-    switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return create_video_sink(encoder, ctx);
-    case AVMEDIA_TYPE_AUDIO: return create_audio_sink(encoder, ctx);
-    default:                 return -1;
-    }
-}
-
-int Dispatcher::create_video_src(const Producer<AVFrame> *decoder, AVFilterContext **ctx)
-{
-    if (!decoder->ready()) {
-        LOG(ERROR) << "[DISPATCHER] [V] decoder is not ready";
-        return -1;
-    }
-
-    const auto buffer_args = decoder->format_str(AVMEDIA_TYPE_VIDEO);
-    if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffer"), "video-source",
-                                     buffer_args.c_str(), nullptr, vgraph_) < 0) {
-        LOG(ERROR) << "[DISPATCHER] [V] failed to create 'buffer'.";
-        return -1;
-    }
-
-    LOG(INFO) << "[DISPATCHER] [V] created vbuffer: '" << buffer_args << "'";
-
-    return 0;
-}
-
-int Dispatcher::create_video_sink(const Consumer<AVFrame> *encoder, AVFilterContext **ctx)
+int Dispatcher::create_video_sink(const Consumer<av::frame> *encoder, AVFilterContext **ctx)
 {
     if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffersink"), "video-sink", nullptr,
                                      nullptr, vgraph_) < 0) {
@@ -78,26 +39,7 @@ int Dispatcher::create_video_sink(const Consumer<AVFrame> *encoder, AVFilterCont
     return 0;
 }
 
-int Dispatcher::create_audio_src(const Producer<AVFrame> *decoder, AVFilterContext **ctx)
-{
-    if (!decoder->ready()) {
-        LOG(ERROR) << "[DISPATCHER] [A] decoder is not ready.";
-        return -1;
-    }
-
-    const auto buffer_args = decoder->format_str(AVMEDIA_TYPE_AUDIO);
-    if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("abuffer"), "audio-source",
-                                     buffer_args.c_str(), nullptr, agraph_) < 0) {
-        LOG(ERROR) << "[DISPATCHER] [A] failed to create 'abuffer'.";
-        return -1;
-    }
-
-    LOG(INFO) << "[DISPATCHER] [A] created abuffer: '" << buffer_args << "'";
-
-    return 0;
-}
-
-int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterContext **ctx)
+int Dispatcher::create_audio_sink(const Consumer<av::frame> *encoder, AVFilterContext **ctx)
 {
     if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("abuffersink"), "audio-sink", nullptr,
                                      nullptr, agraph_) < 0) {
@@ -161,7 +103,7 @@ int Dispatcher::create_audio_sink(const Consumer<AVFrame> *encoder, AVFilterCont
 int Dispatcher::initialize(const std::string_view& video_graph_desc,
                            const std::string_view& audio_graph_desc)
 {
-    if (vproducer_ctxs_.empty() && aproducer_ctxs_.empty()) {
+    if (producers_.empty()) {
         LOG(INFO) << "[DISPATCHER] no input.";
         return -1;
     }
@@ -226,8 +168,10 @@ int Dispatcher::send_command(AVMediaType mt, const std::string& target, const st
     }
 }
 
-int Dispatcher::create_filter_graph(enum AVMediaType type)
+int Dispatcher::create_filter_graph(AVMediaType type)
 {
+    if (type != AVMEDIA_TYPE_AUDIO && type != AVMEDIA_TYPE_VIDEO) return -1;
+
     auto& graph         = (type == AVMEDIA_TYPE_AUDIO) ? agraph_ : vgraph_;
     auto& filters       = (type == AVMEDIA_TYPE_AUDIO) ? afilters : vfilters;
     auto& producer_ctxs = (type == AVMEDIA_TYPE_AUDIO) ? aproducer_ctxs_ : vproducer_ctxs_;
@@ -242,13 +186,39 @@ int Dispatcher::create_filter_graph(enum AVMediaType type)
 
     // 2. create buffersrc
     for (auto& [ctx, producer, _] : producer_ctxs) {
-        if (create_src_filter(producer, &ctx, type) < 0) return -1;
+        const auto args = producer->format_str(type);
+        switch (type) {
+        case AVMEDIA_TYPE_AUDIO:
+            if (avfilter_graph_create_filter(&ctx, avfilter_get_by_name("abuffer"), "audio-source",
+                                             args.c_str(), nullptr, agraph_) < 0) {
+                LOG(ERROR) << "[DISPATCHER] [A] failed to create 'abuffer'.";
+                return -1;
+            }
+            break;
+
+        default:
+            if (avfilter_graph_create_filter(&ctx, avfilter_get_by_name("buffer"), "video-source",
+                                             args.c_str(), nullptr, vgraph_) < 0) {
+                LOG(ERROR) << "[DISPATCHER] [V] failed to create 'buffer'.";
+                return -1;
+            }
+            break;
+        }
+
+        LOG(INFO) << fmt::format("[DISPATCHER] [{}] created buffer: {}", av::to_char(type), args);
 
         producer->enable(type);
     }
 
     // 3. create buffersink
-    if (create_sink_filter(consumer_ctx_.consumer, &sink, type) < 0) return -1;
+    switch (type) {
+    case AVMEDIA_TYPE_AUDIO:
+        if (create_audio_sink(consumer_ctx_.consumer, &sink) < 0) return -1;
+        break;
+    default:
+        if (create_video_sink(consumer_ctx_.consumer, &sink) < 0) return -1;
+        break;
+    }
 
     // 4.
     LOG(INFO) << fmt::format("[DISPATCHER] [{}] creating filter graph: '{}'", av::to_char(type), filters);
@@ -312,7 +282,7 @@ int Dispatcher::set_encoder_format_by_sinks()
         return -1;
     }
 
-    auto consumer = consumer_ctx_.consumer;
+    const auto consumer = consumer_ctx_.consumer;
     if (consumer && consumer->accepts(AVMEDIA_TYPE_VIDEO) && (consumer_ctx_.vsink_ctx != nullptr)) {
         consumer->vfmt.pix_fmt =
             static_cast<AVPixelFormat>(av_buffersink_get_format(consumer_ctx_.vsink_ctx));
@@ -338,62 +308,35 @@ int Dispatcher::set_encoder_format_by_sinks()
 
 int Dispatcher::start()
 {
-    if (locked_) {
-        LOG(INFO) << "[DISPATCHER] dispatcher is locked, please reset first!";
-        return -1;
-    }
-
-    locked_ = true;
-
-    for (auto& coder : vproducer_ctxs_) {
-        coder.eof = false;
-        if (!coder.producer->ready()) {
+    for (auto& producer : producers_) {
+        if (!producer->ready()) {
             LOG(ERROR) << "[DISPATCHER] [V] producer is not ready!";
             return -1;
         }
-    }
-
-    for (auto& coder : aproducer_ctxs_) {
-        coder.eof = false;
-        if (!coder.producer->ready()) {
-            LOG(ERROR) << "[DISPATCHER] [A] producer is not ready!";
-            return -1;
-        }
+        producer->run();
     }
 
     if (!consumer_ctx_.consumer->ready()) {
         LOG(ERROR) << "[DISPATCHER] consumer is not ready!";
         return -1;
     }
+    consumer_ctx_.consumer->run();
 
     //
     start_time_ = resumed_pts_ = av::clock::ns();
 
-    for (auto& coder : vproducer_ctxs_) {
-        coder.producer->run();
-    }
-
-    for (auto& coder : aproducer_ctxs_) {
-        coder.producer->run();
-    }
-
-    consumer_ctx_.aeof = false;
-    consumer_ctx_.veof = false;
-    consumer_ctx_.consumer->run();
-    //
-
     vrunning_ = true;
-    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_VIDEO)) {
-        video_thread_ = std::jthread([this]() {
-            probe::thread::set_name("dispatch-video");
+    if (video_enabled_) {
+        video_thread_ = std::jthread([this] {
+            probe::thread::set_name("DISPATCH-v");
             dispatch_fn(AVMEDIA_TYPE_VIDEO);
         });
     }
 
     arunning_ = true;
-    if (consumer_ctx_.consumer->accepts(AVMEDIA_TYPE_AUDIO)) {
-        audio_thread_ = std::jthread([this]() {
-            probe::thread::set_name("dispatch-audio");
+    if (audio_enabled_) {
+        audio_thread_ = std::jthread([this] {
+            probe::thread::set_name("DISPATCH-A");
             dispatch_fn(AVMEDIA_TYPE_AUDIO);
         });
     }
@@ -461,7 +404,7 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
             }
 
             // process next frame
-            if (producer->produce(frame.put(), mt) != 0) continue;
+            if (producer->produce(frame, mt) != 0) continue;
 
             sleepy              = false;
             const auto frame_tb = producer->time_base(mt);
@@ -520,7 +463,7 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
                 std::this_thread::sleep_for(10ms);
             }
 
-            if (!seeking) consumer_ctx_.consumer->consume(frame.get(), mt);
+            if (!seeking) consumer_ctx_.consumer->consume(frame, mt);
         }
     }
 
@@ -532,8 +475,8 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
 void Dispatcher::seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
                       std::chrono::nanoseconds rts)
 {
-    for (auto& [_0, coder, _2] : vproducer_ctxs_) {
-        coder->seek(ts, lts, rts);
+    for (auto& producer : producers_) {
+        producer->seek(ts, lts, rts);
     }
 
     vseeking_ = true;
@@ -547,7 +490,6 @@ void Dispatcher::seek(const std::chrono::nanoseconds& ts, std::chrono::nanosecon
 
         if (audio_thread_.joinable()) audio_thread_.join();
 
-        locked_ = false;
         start();
     }
 }
@@ -585,7 +527,6 @@ std::chrono::nanoseconds Dispatcher::paused_time()
 
 int Dispatcher::reset()
 {
-    pause();
     ready_ = false;
 
     // producers
@@ -653,8 +594,6 @@ int Dispatcher::reset()
     paused_time_ = 0ns;
     start_time_  = av::clock::nopts;
     resumed_pts_ = av::clock::nopts;
-
-    locked_ = false;
 
     LOG(INFO) << "[DISPATCHER] RESET";
     return 0;

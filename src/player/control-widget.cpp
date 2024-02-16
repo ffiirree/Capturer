@@ -12,14 +12,14 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 {
     setMouseTracking(true);
 
-    auto layout = new QVBoxLayout();
+    const auto layout = new QVBoxLayout();
     layout->setSpacing(0);
     layout->setContentsMargins({});
     setLayout(layout);
 
     // title bar
     {
-        auto title_bar = new TitleBar(parent);
+        const auto title_bar = new TitleBar(parent);
         title_bar->setObjectName("title-bar");
         title_bar->setHideOnFullScreen(false);
         layout->addWidget(title_bar);
@@ -29,7 +29,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
     // control
     {
-        auto control = new QWidget();
+        const auto control = new QWidget();
         control->setMouseTracking(true);
         control->setObjectName("control-bar");
         layout->addWidget(control);
@@ -126,28 +126,27 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         hl->addWidget(volume_slider_);
 
         // settings
-        auto setting_btn = new QCheckBox();
+        const auto setting_btn = new QCheckBox();
         setting_btn->setObjectName("setting-btn");
         setting_btn->setCheckable(false);
         hl->addWidget(setting_btn);
     }
 }
 
-void ControlWidget::setDuration(int64_t time)
+void ControlWidget::setDuration(int64_t duration)
 {
-    emit validDruation(time != AV_NOPTS_VALUE);
+    emit validDruation(duration != AV_NOPTS_VALUE);
 
-    time_slider_->setMaximum(static_cast<int>(time / 1000));
-    duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ time / 1000000 }).c_str());
+    time_slider_->setMaximum(static_cast<int>(duration / 1000)); // ms
+    duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ duration / 1000000 }).c_str());
 }
 
-void ControlWidget::setTime(std::chrono::nanoseconds time)
+void ControlWidget::setTime(int64_t ts)
 {
     if (time_slider_ && !time_slider_->isSliderDown() && time_slider_->isVisible()) {
-        time_slider_->setValue(static_cast<int>(time.count() / 1000000));
+        time_slider_->setValue(static_cast<int>(ts / 1000)); // ms
     }
-    time_label_->setText(
-        fmt::format("{:%T}", std::chrono::duration_cast<std::chrono::seconds>(time)).c_str());
+    time_label_->setText(fmt::format("{:%T}", std::chrono::seconds(ts / 1000000)).c_str());
 }
 
 void ControlWidget::setVolume(int v)

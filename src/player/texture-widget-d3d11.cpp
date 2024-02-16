@@ -10,6 +10,7 @@
 #include <dxgi1_3.h>
 #include <fmt/format.h>
 #include <probe/util.h>
+
 extern "C" {
 #include <libavutil/hwcontext_d3d11va.h>
 }
@@ -37,6 +38,9 @@ TextureD3D11Widget::TextureD3D11Widget(QWidget *parent)
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     setAttribute(Qt::WA_NativeWindow);
     setAttribute(Qt::WA_NoSystemBackground);
+
+    connect(
+        this, &TextureD3D11Widget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 TextureD3D11Widget::~TextureD3D11Widget() { device_.detach(); }
@@ -354,7 +358,7 @@ void TextureD3D11Widget::present(const av::frame& frame)
         }
     }
 
-    update();
+    emit arrived();
 }
 
-#endif // Q_OS_WIN
+#endif

@@ -142,105 +142,93 @@ int WasapiCapturer::run()
     eof_     = 0x00;
 
     start_time_ = av::clock::ns().count();
-    thread_     = std::jthread([this]() {
+    thread_     = std::jthread([this] {
         probe::thread::set_name("WASAPI-C-" + device_.id);
-        run_f();
+
+        UINT32 nb_samples  = 0;
+        BYTE  *data_ptr    = nullptr;
+        UINT32 packet_size = 0;
+        DWORD  flags       = 0;
+        UINT64 ts          = 0;
+
+        const HANDLE events[] = { STOP_EVENT, ARRIVED_EVENT };
+
+        while (running_) {
+            switch (
+                ::WaitForMultipleObjects(static_cast<DWORD>(std::size(events)), events, false, INFINITE)) {
+            case WAIT_OBJECT_0 + 0: // STOP_EVENT
+                running_ = false;
+                break;
+
+            case WAIT_OBJECT_0 + 1: // ARRIVED_EVENT
+                while (true) {
+                    if (FAILED(capturer_->GetNextPacketSize(&packet_size))) {
+                        running_ = false;
+                        LOG(ERROR) << "[A] failed to get the next packet size, exit";
+                        return;
+                    }
+
+                    if (!packet_size) break;
+
+                    // Get the available data in the shared buffer.
+                    if (FAILED(capturer_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
+                        running_ = false;
+                        LOG(ERROR) << "[A] failed to get the buffer, exit";
+                        return;
+                    }
+
+                    process_received_data(data_ptr, nb_samples, ts);
+
+                    if (FAILED(capturer_->ReleaseBuffer(nb_samples))) {
+                        running_ = false;
+                        LOG(ERROR) << "[A] failed to release buffer, exit";
+                        return;
+                    }
+                }
+                break;
+
+            default: LOG(ERROR) << "[A] unknown event."; break;
+            }
+        } // !while(running_)
+
+        eof_ = 0x01;
+
+        winrt::check_hresult(capturer_audio_client_->Stop());
+
+        LOG(INFO) << "[A] EXITED";
     });
 
-    return 0;
-}
-
-int WasapiCapturer::run_f()
-{
-    LOG(INFO) << "[A] STARTED";
-
-    UINT32 nb_samples  = 0;
-    BYTE  *data_ptr    = nullptr;
-    UINT32 packet_size = 0;
-    DWORD  flags       = 0;
-    UINT64 ts          = 0;
-
-    const HANDLE events[] = { STOP_EVENT, ARRIVED_EVENT };
-
-    buffer_.clear();
-    while (running_) {
-        switch (::WaitForMultipleObjects(static_cast<DWORD>(std::size(events)), events, false, INFINITE)) {
-        case WAIT_OBJECT_0 + 0: // STOP_EVENT
-            running_ = false;
-            break;
-
-        case WAIT_OBJECT_0 + 1: // ARRIVED_EVENT
-            LOG_IF(WARNING, buffer_.full()) << "[A] buffer is full, drop a packet";
-
-            while (true) {
-                if (FAILED(capturer_->GetNextPacketSize(&packet_size))) {
-                    running_ = false;
-                    LOG(ERROR) << "[A] failed to get the next packet size, exit";
-                    return -1;
-                }
-
-                if (!packet_size) break;
-
-                // Get the available data in the shared buffer.
-                if (FAILED(capturer_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
-                    running_ = false;
-                    LOG(ERROR) << "[A] failed to get the buffer, exit";
-                    return -1;
-                }
-
-                process_received_data(data_ptr, nb_samples, ts);
-
-                if (FAILED(capturer_->ReleaseBuffer(nb_samples))) {
-                    running_ = false;
-                    LOG(ERROR) << "[A] failed to release buffer, exit";
-                    return -1;
-                }
-            }
-            break;
-
-        default: LOG(ERROR) << "[A] unknown event."; break;
-        }
-    } // !while(running_)
-
-    eof_ = 0x01;
-
-    RETURN_NEGV_IF_FAILED(capturer_audio_client_->Stop());
-
-    LOG(INFO) << "[A] EXITED";
     return 0;
 }
 
 int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UINT64)
 {
-    frame_.unref();
+    av::frame frame{};
 
-    frame_->pts         = av::clock::ns().count() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
-    frame_->pkt_dts     = frame_->pts;
-    frame_->nb_samples  = nb_samples;
-    frame_->format      = afmt.sample_fmt;
-    frame_->sample_rate = afmt.sample_rate;
-    frame_->channels    = afmt.channels;
-    frame_->channel_layout = afmt.channel_layout;
+    frame->pts         = av::clock::ns().count() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
+    frame->pkt_dts     = frame->pts;
+    frame->nb_samples  = static_cast<int>(nb_samples);
+    frame->format      = afmt.sample_fmt;
+    frame->sample_rate = afmt.sample_rate;
+    frame->channels    = afmt.channels;
+    frame->channel_layout = afmt.channel_layout;
 
-    av_frame_get_buffer(frame_.get(), 0);
-    if (av_samples_copy((uint8_t **)frame_->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
+    av_frame_get_buffer(frame.get(), 0);
+    if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
                         afmt.channels, afmt.sample_fmt) < 0) {
         LOG(ERROR) << "av_samples_copy";
         return -1;
     }
 
-    if (muted_) {
-        av_samples_set_silence(frame_->data, 0, frame_->nb_samples, frame_->channels,
-                               static_cast<AVSampleFormat>(frame_->format));
-    }
+    if (muted_)
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels,
+                               static_cast<AVSampleFormat>(frame->format));
+
+    LOG_IF(WARNING, buffer_.size() >= buffer_.capacity()) << "[A] buffer is full, drop a packet";
+    buffer_.push(frame, true);
 
     DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-                              frame_number_++, frame_->pts, frame_->nb_samples, muted_.load());
-
-    buffer_.push([this](AVFrame *pushed) {
-        av_frame_unref(pushed);
-        av_frame_move_ref(pushed, frame_.get());
-    });
+                              frame_number_++, frame->pts, frame->nb_samples, muted_.load());
 
     return 0;
 }
@@ -265,16 +253,13 @@ AVRational WasapiCapturer::time_base(AVMediaType type) const
     }
 }
 
-int WasapiCapturer::produce(AVFrame *frame, AVMediaType type)
+int WasapiCapturer::produce(av::frame& frame, AVMediaType type)
 {
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
 
-        buffer_.pop([frame](AVFrame *popped) {
-            av_frame_unref(frame);
-            av_frame_move_ref(frame, popped);
-        });
+        frame = buffer_.pop().value();
         return 0;
 
     default: LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return -1;

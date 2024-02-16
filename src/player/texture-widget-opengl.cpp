@@ -296,8 +296,8 @@ TextureGLWidget::TextureGLWidget(QWidget *parent)
 {
     setAttribute(Qt::WA_TransparentForMouseEvents);
 
-    setAttribute(Qt::WA_OpaquePaintEvent);
-    setAttribute(Qt::WA_NoSystemBackground);
+    connect(
+        this, &TextureGLWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 TextureGLWidget ::~TextureGLWidget()
@@ -624,5 +624,5 @@ void TextureGLWidget::present(const av::frame& frame)
         config_dirty_ = true;
     }
 
-    update();
+    emit arrived();
 }

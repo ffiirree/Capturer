@@ -11,7 +11,7 @@
 #include <optional>
 #include <QStandardPaths>
 
-class ImageWindow : public FramelessWindow
+class ImageWindow final : public FramelessWindow
 {
     Q_OBJECT
 
