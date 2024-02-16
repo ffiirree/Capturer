@@ -3,7 +3,7 @@
 
 #include <QLabel>
 
-class Magnifier : public QWidget
+class Magnifier final : public QWidget
 {
 public:
     enum class ColorFormat : int
@@ -17,13 +17,13 @@ public:
 public:
     explicit Magnifier(QWidget *parent = nullptr);
 
-    QColor color() const { return color_; }
+    [[nodiscard]] QColor color() const { return color_; }
 
-    QString colorname(ColorFormat = ColorFormat::AUTO);
+    [[nodiscard]] QString colorname(ColorFormat = ColorFormat::AUTO) const;
 
     void format(ColorFormat format) { cfmt_ = format; }
 
-    ColorFormat format() const { return cfmt_; }
+    [[nodiscard]] ColorFormat format() const { return cfmt_; }
 
     void toggleFormat()
     {
@@ -43,9 +43,9 @@ protected:
     void closeEvent(QCloseEvent *) override;
 
 private:
-    QRect   grabRect();
-    QPixmap grab();
-    QPoint  position();
+    [[nodiscard]] QRect   grabRect() const;
+    [[nodiscard]] QPixmap grab() const;
+    [[nodiscard]] QPoint  position() const;
 
     QPixmap pixmap_{};
 

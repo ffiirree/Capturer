@@ -15,7 +15,8 @@ Magnifier::Magnifier(QWidget *parent)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setVisible(false);
+
+    QWidget::setVisible(false);
 
     // pixmap size
     psize_ = msize_ * alpha_;
@@ -33,13 +34,13 @@ Magnifier::Magnifier(QWidget *parent)
     qApp->installEventFilter(this);
 }
 
-QRect Magnifier::grabRect()
+QRect Magnifier::grabRect() const
 {
     auto mouse_pos = QCursor::pos();
 
     if (!pixmap_.isNull()) {
-        auto offset  = probe::graphics::virtual_screen_geometry();
-        mouse_pos   -= QPoint{ offset.x, offset.y };
+        const auto offset  = probe::graphics::virtual_screen_geometry();
+        mouse_pos         -= QPoint{ offset.x, offset.y };
     }
 
     return {
@@ -50,28 +51,22 @@ QRect Magnifier::grabRect()
     };
 }
 
-QString Magnifier::colorname(ColorFormat format)
+QString Magnifier::colorname(ColorFormat format) const
 {
-    auto fmt = (format == ColorFormat::AUTO) ? cfmt_ : format;
-    switch (fmt) {
-    case Magnifier::ColorFormat::INT:
-        return QString::fromStdString(
-            fmt::format("{:3d}, {:3d}, {:3d}", color_.red(), color_.green(), color_.blue()));
-
-    case Magnifier::ColorFormat::FLT:
-        return QString::fromStdString(
-            fmt::format("{:4.2f}, {:4.2f}, {:4.2f}", color_.redF(), color_.greenF(), color_.blueF()));
-
-    default:
-        return QString::fromStdString(
-            fmt::format("#{:2X}{:2X}{:2X}", color_.red(), color_.green(), color_.blue()));
+    // clang-format off
+    switch ((format == ColorFormat::AUTO) ? cfmt_ : format) {
+    case ColorFormat::INT:  return QString::fromStdString(fmt::format("{:3d}, {:3d}, {:3d}",        color_.red(),  color_.green(),  color_.blue()));
+    case ColorFormat::FLT:  return QString::fromStdString(fmt::format("{:4.2f}, {:4.2f}, {:4.2f}",  color_.redF(), color_.greenF(), color_.blueF()));
+    default:                return QString::fromStdString(fmt::format("#{:02X}{:02X}{:02X}",        color_.red(),  color_.green(),  color_.blue()));
     }
+    // clang-format on
 }
 
-QPoint Magnifier::position()
+QPoint Magnifier::position() const
 {
-    auto cx = QCursor::pos().x(), cy = QCursor::pos().y();
-    auto rg = probe::graphics::virtual_screen_geometry();
+    const auto cx = QCursor::pos().x();
+    const auto cy = QCursor::pos().y();
+    const auto rg = probe::graphics::virtual_screen_geometry();
 
     int mx = (rg.right() - cx > width()) ? cx + 16 : cx - width() - 16;
     int my = (rg.bottom() - cy > height()) ? cy + 16 : cy - height() - 16;
@@ -93,16 +88,15 @@ void Magnifier::showEvent(QShowEvent *) { move(position()); }
 
 void Magnifier::setGrabPixmap(const QPixmap& pixmap) { pixmap_ = pixmap; }
 
-QPixmap Magnifier::grab()
+QPixmap Magnifier::grab() const
 {
-    auto rect = grabRect();
+    const auto rect = grabRect();
     if (pixmap_.isNull()) {
         return QGuiApplication::primaryScreen()->grabWindow(
             probe::graphics::virtual_screen().handle, rect.x(), rect.y(), rect.width(), rect.height());
     }
-    else {
-        return pixmap_.copy(rect);
-    }
+
+    return pixmap_.copy(rect);
 }
 
 void Magnifier::paintEvent(QPaintEvent *)
@@ -110,7 +104,7 @@ void Magnifier::paintEvent(QPaintEvent *)
     QPainter painter(this);
 
     // 0.
-    auto draw = grab().scaled(psize_, Qt::KeepAspectRatioByExpanding);
+    const auto draw = grab().scaled(psize_, Qt::KeepAspectRatioByExpanding);
 
     // 1.
     painter.fillRect(rect(), QColor(0, 0, 0, 150));
@@ -136,7 +130,7 @@ void Magnifier::paintEvent(QPaintEvent *)
     painter.end();
 
     // 5. text
-    auto text = QString("(%1, %2)\n").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + colorname();
+    const auto text = QString("(%1, %2)\n").arg(QCursor::pos().x()).arg(QCursor::pos().y()) + colorname();
     label_->setText(text);
 }
 
