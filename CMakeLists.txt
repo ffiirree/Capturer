@@ -116,7 +116,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
         Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
-        $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGL Qt6::OpenGLWidgets>
+        $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGL> $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGLWidgets>
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg

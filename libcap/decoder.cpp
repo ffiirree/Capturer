@@ -327,14 +327,14 @@ int Decoder::produce(AVFrame *frame, AVMediaType type)
         if (vbuffer_.empty()) return ((eof_ & VDECODING_EOF) || !running()) ? AVERROR_EOF : AVERROR(EAGAIN);
 
         av_frame_unref(frame);
-        av_frame_move_ref(frame, vbuffer_.pop().get());
+        av_frame_move_ref(frame, vbuffer_.pop().value().get());
         return 0;
 
     case AVMEDIA_TYPE_AUDIO:
         if (abuffer_.empty()) return ((eof_ & ADECODING_EOF) || !running()) ? AVERROR_EOF : AVERROR(EAGAIN);
 
         av_frame_unref(frame);
-        av_frame_move_ref(frame, abuffer_.pop().get());
+        av_frame_move_ref(frame, abuffer_.pop().value().get());
         return 0;
 
     default: return -1;

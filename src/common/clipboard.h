@@ -4,6 +4,7 @@
 #include <memory>
 #include <QDataStream>
 #include <QMimeData>
+#include <QIODevice>
 
 namespace clipboard
 {

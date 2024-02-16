@@ -128,8 +128,6 @@ int WasapiCapturer::init_silent_render(IMMDevice *device)
 
 int WasapiCapturer::run()
 {
-    std::lock_guard lock(mtx_);
-
     if (!ready_ || running_) {
         LOG(ERROR) << "[  WASAPI-C] not ready or running.";
         return -1;
@@ -290,9 +288,7 @@ int WasapiCapturer::destroy()
     running_ = false;
     ready_   = false;
 
-    if (thread_.joinable()) {
-        thread_.join();
-    }
+    if (thread_.joinable()) thread_.join();
 
     buffer_.clear();
     start_time_ = AV_NOPTS_VALUE;

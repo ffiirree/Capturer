@@ -45,14 +45,6 @@ public:
 
     virtual void reset() = 0;
 
-    virtual int wait()
-    {
-        if (thread_.joinable()) {
-            thread_.join();
-        }
-        return 0;
-    }
-
     [[nodiscard]] virtual bool full(AVMediaType) const          = 0;
     [[nodiscard]] virtual bool accepts(AVMediaType) const       = 0;
     virtual void               enable(AVMediaType, bool = true) = 0;

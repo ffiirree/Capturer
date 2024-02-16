@@ -3,6 +3,7 @@
 
 #include "control-widget.h"
 #include "framelesswindow.h"
+#include "libcap/audio-fifo.h"
 #include "libcap/audio-renderer.h"
 #include "libcap/consumer.h"
 #include "libcap/decoder.h"
@@ -14,10 +15,6 @@
 #include "texture-widget.h"
 
 #include <QTimer>
-
-extern "C" {
-#include <libavutil/audio_fifo.h>
-}
 
 class VideoPlayer final : public FramelessWindow, public Consumer<AVFrame>
 {
@@ -109,8 +106,8 @@ private:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
-    lock_queue<av::frame> vbuffer_{};
-    AVAudioFifo          *abuffer_{};
+    safe_queue<av::frame>            vbuffer_{};
+    std::unique_ptr<safe_audio_fifo> abuffer_{};
 
     std::atomic<bool> seeking_{ false };
     std::atomic<int>  step_{ 0 };

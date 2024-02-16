@@ -43,7 +43,7 @@ private:
     winrt::com_ptr<IMediaControl>         control_{};
     winrt::com_ptr<IBaseFilter>           filter_;
 
-    lock_queue<av::frame> buffer_{};
+    safe_queue<av::frame> buffer_{};
 };
 
 #endif

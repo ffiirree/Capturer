@@ -92,9 +92,9 @@ private:
     int64_t    audio_next_pts_{ AV_NOPTS_VALUE }; // samples
     AVRational audio_next_pts_tb_{};
 
-    lock_queue<av::frame>  vbuffer_{};
-    lock_queue<av::frame>  abuffer_{};
-    lock_queue<AVSubtitle> sbuffer_{};
+    safe_queue<av::frame>  vbuffer_{};
+    safe_queue<av::frame>  abuffer_{};
+    safe_queue<AVSubtitle> sbuffer_{};
 };
 
 #endif //! CAPTURER_DECODER_H

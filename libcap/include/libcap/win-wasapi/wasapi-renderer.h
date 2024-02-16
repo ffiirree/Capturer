@@ -104,20 +104,20 @@ private:
     mutable std::mutex mtx_; // for stream switch
 
     winrt::com_ptr<IAudioClient>         audio_client_{};
-    winrt::com_ptr<IAudioRenderClient>   render_{};
+    winrt::com_ptr<IAudioRenderClient>   renderer_{};
     winrt::com_ptr<ISimpleAudioVolume>   volume_{};
     winrt::com_ptr<IAudioSessionControl> session_{};
 
-    WAVEFORMATEX *wfex_{ nullptr };
+    WAVEFORMATEX *wfex_{};
 
-    UINT32 buffer_frames_{ 0 };
+    UINT32 buffer_frames_{};
 
     std::atomic<bool> switching_{ false };
 
-    winrt::handle REQUEST_EVENT{ nullptr };
-    winrt::handle STOP_EVENT{ nullptr };
-    winrt::handle SWITCH_EVENT{ nullptr };
-    winrt::handle SWITCH_COMPLETE_EVENT{ nullptr };
+    winrt::handle REQUEST_EVENT{};
+    winrt::handle STOP_EVENT{};
+    winrt::handle SWITCH_EVENT{};
+    winrt::handle SWITCH_COMPLETE_EVENT{};
     // @}
 };
 #endif // _WIN32

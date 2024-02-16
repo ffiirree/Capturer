@@ -86,7 +86,7 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
     RETURN_IF_FAILED(audio_client_->SetEventHandle(REQUEST_EVENT.get()));
 
     // services
-    RETURN_IF_FAILED(audio_client_->GetService(winrt::guid_of<IAudioRenderClient>(), render_.put_void()));
+    RETURN_IF_FAILED(audio_client_->GetService(winrt::guid_of<IAudioRenderClient>(), renderer_.put_void()));
 
     RETURN_IF_FAILED(audio_client_->GetService(winrt::guid_of<ISimpleAudioVolume>(), volume_.put_void()));
 
@@ -123,8 +123,8 @@ int WasapiRenderer::start()
     // zero fill
     {
         BYTE *data_ptr = nullptr;
-        RETURN_NEGV_IF_FAILED(render_->GetBuffer(buffer_frames_, &data_ptr));
-        RETURN_NEGV_IF_FAILED(render_->ReleaseBuffer(buffer_frames_, AUDCLNT_BUFFERFLAGS_SILENT));
+        RETURN_NEGV_IF_FAILED(renderer_->GetBuffer(buffer_frames_, &data_ptr));
+        RETURN_NEGV_IF_FAILED(renderer_->ReleaseBuffer(buffer_frames_, AUDCLNT_BUFFERFLAGS_SILENT));
     }
 
     // start
@@ -241,9 +241,9 @@ HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
     const UINT32 request_frames = buffer_frames_ - padding_frames;
 
     // Grab all the available space in the shared buffer.
-    RETURN_IF_FAILED(render_->GetBuffer(request_frames, &buffer));
+    RETURN_IF_FAILED(renderer_->GetBuffer(request_frames, &buffer));
     const UINT32 wframes = callback(&buffer, request_frames, ts);
-    RETURN_IF_FAILED(render_->ReleaseBuffer(wframes, wframes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT));
+    RETURN_IF_FAILED(renderer_->ReleaseBuffer(wframes, wframes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT));
 
     return S_OK;
 }
@@ -261,7 +261,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
     RETURN_IF_FAILED(session_->UnregisterAudioSessionNotification(this));
 
     session_      = nullptr;
-    render_       = nullptr;
+    renderer_     = nullptr;
     volume_       = nullptr;
     audio_client_ = nullptr;
     endpoint_     = nullptr;
@@ -370,7 +370,7 @@ int WasapiRenderer::stop()
     if (thread_.joinable()) thread_.join();
 
     session_      = nullptr;
-    render_       = nullptr;
+    renderer_     = nullptr;
     volume_       = nullptr;
     audio_client_ = nullptr;
     endpoint_     = nullptr;

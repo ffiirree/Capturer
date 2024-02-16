@@ -1,6 +1,7 @@
 #ifndef CAPTURER_ENCODER_H
 #define CAPTURER_ENCODER_H
 
+#include "audio-fifo.h"
 #include "consumer.h"
 #include "logging.h"
 #include "ringvector.h"
@@ -8,7 +9,6 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/audio_fifo.h>
 }
 
 class Encoder : public Consumer<AVFrame>
@@ -35,8 +35,8 @@ public:
     bool full(AVMediaType type) const override
     {
         switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return video_buffer_.full();
-        case AVMEDIA_TYPE_AUDIO: return audio_buffer_.full();
+        case AVMEDIA_TYPE_VIDEO: return vbuffer_.full();
+        case AVMEDIA_TYPE_AUDIO: return abuffer_->size() > 4096;
         default:                 return true;
         }
     }
@@ -62,10 +62,9 @@ public:
     bool eof() const override { return eof_ == ENCODING_EOF; }
 
 private:
-    int new_video_stream();
-    int new_auido_stream();
+    int new_video_stream(const std::string& codec_name);
+    int new_auido_stream(const std::string& codec_name);
 
-    int                 run_f();
     std::pair<int, int> video_sync_process();
     int                 process_video_frames();
     int                 process_audio_frames();
@@ -77,13 +76,9 @@ private:
     std::atomic<bool> audio_enabled_{ false };
 
     // ffmpeg encoders @ {
-    AVFormatContext                   *fmt_ctx_{ nullptr };
-    std::string                        video_codec_name_{};
-    std::string                        audio_codec_name_{};
-    std::map<std::string, std::string> video_options_;
-    std::map<std::string, std::string> audio_options_;
-    AVCodecContext                    *video_encoder_ctx_{ nullptr };
-    AVCodecContext                    *audio_encoder_ctx_{ nullptr };
+    AVFormatContext *fmt_ctx_{};
+    AVCodecContext  *vcodec_ctx_{};
+    AVCodecContext  *acodec_ctx_{};
     // @}
 
     int64_t v_last_dts_{ AV_NOPTS_VALUE };
@@ -97,16 +92,10 @@ private:
     // the expected pts of next video frame computed by last pts and duration
     int64_t expected_pts_{ AV_NOPTS_VALUE };
 
-    AVAudioFifo *audio_fifo_buffer_{ nullptr };
-
-    RingVector<AVFrame *, 8> video_buffer_{
+    std::unique_ptr<safe_audio_fifo> abuffer_{};
+    RingVector<AVFrame *, 8>         vbuffer_{
         []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
-    };
-
-    RingVector<AVFrame *, 32> audio_buffer_{
-        []() { return av_frame_alloc(); },
-        [](AVFrame **frame) { av_frame_free(frame); },
+        [](AVFrame **frame) {         av_frame_free(frame); },
     };
 };
 

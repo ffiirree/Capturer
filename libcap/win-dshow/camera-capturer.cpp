@@ -39,7 +39,7 @@ int DShowCameraCapturer::produce(AVFrame *frame, AVMediaType mt)
     if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
 
     av_frame_unref(frame);
-    av_frame_move_ref(frame, buffer_.pop().get());
+    av_frame_move_ref(frame, buffer_.pop().value().get());
     return 0;
 }
 

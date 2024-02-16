@@ -94,7 +94,7 @@ void VideoPlayer::reset()
     audio_enabled_ = false;
 
     vbuffer_.clear();
-    if (abuffer_) av_audio_fifo_reset(abuffer_);
+    abuffer_->clear();
 
     audio_pts_ = av::clock::nopts;
     step_      = 0;
@@ -142,8 +142,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     setVolume(static_cast<int>(audio_renderer_->volume() * 100));
     mute(audio_renderer_->muted());
 
-    if (abuffer_) av_audio_fifo_free(abuffer_);
-    if (abuffer_ = av_audio_fifo_alloc(afmt.sample_fmt, afmt.channels, 1); !abuffer_) {
+    if (abuffer_ = std::make_unique<safe_audio_fifo>(afmt.sample_fmt, afmt.channels, 1); !abuffer_) {
         LOG(ERROR) << "[    PLAYER] failed to alloc audio buffer";
         return -1;
     }
@@ -192,7 +191,7 @@ bool VideoPlayer::full(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() > 2;
-    case AVMEDIA_TYPE_AUDIO: return av_audio_fifo_size(abuffer_) > 1024;
+    case AVMEDIA_TYPE_AUDIO: return abuffer_->size() > 1024;
     default:                 return true;
     }
 }
@@ -248,13 +247,8 @@ int VideoPlayer::consume(AVFrame *frame, AVMediaType type)
 
         if (full(AVMEDIA_TYPE_AUDIO)) return AVERROR(EAGAIN);
 
-        std::lock_guard lock(mtx_);
-
         // buffer
-        if (const auto buffer_size = av_audio_fifo_size(abuffer_);
-            av_audio_fifo_realloc(abuffer_, buffer_size + frame->nb_samples) < 0)
-            return -1;
-        av_audio_fifo_write(abuffer_, reinterpret_cast<void **>(frame->data), frame->nb_samples);
+        abuffer_->write(reinterpret_cast<void **>(frame->data), frame->nb_samples);
 
         // TODO: speed
         if (audio_pts_.load() == av::clock::nopts) audio_pts_ = av::clock::ns(frame->pts, afmt.time_base);
@@ -310,7 +304,8 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
     audio_pts_ = av::clock::nopts;
 
     vbuffer_.clear();
-    av_audio_fifo_reset(abuffer_);
+    abuffer_->clear();
+
     audio_renderer_->reset();
 
     if (paused()) {
@@ -349,9 +344,7 @@ int VideoPlayer::run()
 
     // audio thread
     audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
-        std::lock_guard lock(mtx_);
-
-        const uint32_t buffered_frames = av_audio_fifo_size(abuffer_); // per channel
+        const uint32_t buffered_frames = abuffer_->size(); // per channel
         if (!buffered_frames || seeking_ || paused()) return 0;
 
         const uint32_t remaining = buffered_frames + (audio_renderer_->buffer_size() - request_frames);
@@ -360,7 +353,7 @@ int VideoPlayer::run()
 
         LOG(INFO) << fmt::format("time = {:%T}", timeline_.time());
 
-        return av_audio_fifo_read(abuffer_, reinterpret_cast<void **>(ptr), request_frames);
+        return abuffer_->read(reinterpret_cast<void **>(ptr), request_frames);
     };
 
     if (audio_enabled_ && audio_renderer_->start() < 0) {
@@ -396,8 +389,10 @@ void VideoPlayer::video_thread_f()
             continue;
         }
 
-        // FIXME: if vbuffer is cleared, then pop will cause a crush
-        av::frame frame(vbuffer_.pop());
+        const auto has_next = vbuffer_.pop();
+        if (!has_next) continue;
+
+        av::frame frame = has_next.value();
         texture_->present(frame);
 
         if (!step_) {

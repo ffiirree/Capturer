@@ -2,10 +2,11 @@
 #define CAPTURER_QUEUE_H
 
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <utility>
 
-template<class T> class lock_queue
+template<class T> class safe_queue
 {
 public:
     using value_type      = T;
@@ -24,9 +25,11 @@ public:
         return buffer_.size();
     }
 
-    [[nodiscard]] value_type pop()
+    [[nodiscard]] std::optional<value_type> pop()
     {
         std::lock_guard lock(mtx_);
+
+        if (buffer_.empty()) return std::nullopt;
 
         value_type front = std::move(buffer_.front());
         buffer_.pop();
@@ -59,8 +62,9 @@ public:
     }
 
 private:
-    std::queue<T>      buffer_;
     mutable std::mutex mtx_;
+
+    std::queue<T> buffer_{};
 };
 
 #endif //! CAPTURER_QUEUE_H

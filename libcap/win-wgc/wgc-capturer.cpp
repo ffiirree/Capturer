@@ -165,8 +165,6 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
 
 int WindowsGraphicsCapturer::run()
 {
-    std::lock_guard lock(mtx_);
-
     if (!ready_ || running_) {
         LOG(ERROR) << "[       WGC] not ready or already running.";
         return -1;
@@ -413,12 +411,14 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
             vfmt.width != static_cast<int>(tex_desc.Width)) {
             context_->ClearRenderTargetView(rtv_.get(), black);
 
-            proj_    = DirectX::XMMatrixScaling(1, 1, 1);
-            float r1 = tex_desc.Width / static_cast<float>(tex_desc.Height);
-            float r2 = vfmt.width / static_cast<float>(vfmt.height);
-            auto  w  = r1 > r2 ? vfmt.width : vfmt.height * r1;
-            auto  h  = r1 > r2 ? vfmt.width / r1 : vfmt.height;
-            proj_    = DirectX::XMMatrixScaling(w / vfmt.width, h / vfmt.height, 1);
+            proj_ = DirectX::XMMatrixScaling(1, 1, 1);
+
+            const float r1 = tex_desc.Width / static_cast<float>(tex_desc.Height);
+            const float r2 = vfmt.width / static_cast<float>(vfmt.height);
+            const float w  = r1 > r2 ? vfmt.width : (vfmt.height * r1);
+            const float h  = r1 > r2 ? vfmt.width / r1 : vfmt.height;
+
+            proj_ = DirectX::XMMatrixScaling(w / vfmt.width, h / vfmt.height, 1);
 
             D3D11_MAPPED_SUBRESOURCE mapped{};
             context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
@@ -509,32 +509,31 @@ void WindowsGraphicsCapturer::reset()
 {
     std::lock_guard lock(mtx_);
 
-    auto expected = true;
-    if (running_.compare_exchange_strong(expected, false)) {
-        onarrived_.revoke();
-        onclosed_.revoke();
-        frame_pool_.Close();
-        session_.Close();
+    running_ = false;
 
-        device_.detach();
-        context_      = nullptr;
-        frame_pool_   = nullptr;
-        session_      = nullptr;
-        winrt_device_ = nullptr;
-        item_         = nullptr;
+    onarrived_.revoke();
+    onclosed_.revoke();
+    frame_pool_.Close();
+    session_.Close();
 
-        frame_number_ = 0;
-        box_          = { .front = 0, .back = 1 };
+    device_.detach();
+    context_      = nullptr;
+    frame_pool_   = nullptr;
+    session_      = nullptr;
+    winrt_device_ = nullptr;
+    item_         = nullptr;
 
-        buffer_.clear();
+    frame_number_ = 0;
+    box_          = { .front = 0, .back = 1 };
 
-        eof_ = 0x01;
+    buffer_.clear();
 
-        // TODO: ERROR! the thread may not exit yet
-        hwctx_ = nullptr;
+    eof_ = 0x01;
 
-        LOG(INFO) << "[       WGC] RESET";
-    }
+    // TODO: ERROR! the thread may not exit yet
+    hwctx_ = nullptr;
+
+    LOG(INFO) << "[       WGC] RESET";
 }
 
 #endif
