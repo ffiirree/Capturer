@@ -6,8 +6,6 @@
 
 #include <atomic>
 #include <map>
-#include <mutex>
-#include <thread>
 
 template<class T> class Consumer
 {

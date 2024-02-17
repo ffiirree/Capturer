@@ -51,6 +51,8 @@ public:
      */
     int read(void **data, int nb_samples);
 
+    int peek(void **data, int nb_samples);
+
     //
 
     void clear();

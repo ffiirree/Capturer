@@ -1,11 +1,12 @@
 #include "videoplayer.h"
 
+#include "libcap/devices.h"
+#include "libcap/sonic.h"
 #include "logging.h"
 #include "titlebar.h"
 
 #include <fmt/chrono.h>
 #include <fmt/ranges.h>
-#include <libcap/devices.h>
 #include <probe/graphics.h>
 #include <probe/thread.h>
 #include <QActionGroup>
@@ -19,15 +20,19 @@
 #include <QVBoxLayout>
 
 #ifdef _WIN32
-#include <libcap/win-wasapi/wasapi-renderer.h>
+#include "libcap/win-wasapi/wasapi-renderer.h"
 #elif __linux__
-#include <libcap/linux-pulse/pulse-renderer.h>
+#include "libcap/linux-pulse/pulse-renderer.h"
 #endif
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
-                                  Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent,
+                      Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint)
 {
+#ifdef NDEBUG
+    setWindowFlag(Qt::WindowStaysOnTopHint);
+#endif
+
     setMouseTracking(true);
     installEventFilter(this);
 
@@ -92,7 +97,12 @@ void VideoPlayer::reset()
     audio_enabled_ = false;
 
     vbuffer_.clear();
-    abuffer_->clear();
+    abuffer_.clear();
+
+    if (sonic_stream_ != nullptr) {
+        sonic_stream_destroy(sonic_stream_);
+        sonic_stream_ = nullptr;
+    };
 
     audio_pts_ = av::clock::nopts;
     step_      = 0;
@@ -102,7 +112,7 @@ void VideoPlayer::reset()
     timeline_.set_speed({ 1, 1 });
 }
 
-VideoPlayer ::~VideoPlayer()
+VideoPlayer::~VideoPlayer()
 {
     running_ = false;
     if (video_thread_.joinable()) video_thread_.join();
@@ -140,9 +150,10 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     setVolume(static_cast<int>(audio_renderer_->volume() * 100));
     mute(audio_renderer_->muted());
 
-    if (abuffer_ = std::make_unique<safe_audio_fifo>(afmt.sample_fmt, afmt.channels, 1); !abuffer_) {
-        LOG(ERROR) << "[    PLAYER] failed to alloc audio buffer";
-        return -1;
+    if (sonic_stream_ = sonic_stream_create(afmt.sample_fmt, afmt.sample_rate, afmt.channels);
+        !sonic_stream_) {
+        LOG(ERROR) << "[    PLAYER] failed to create sonic";
+        return false;
     }
 
     dispatcher_->afmt = audio_renderer_->format();
@@ -154,7 +165,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         texture_->isSupported(decoder_->vfmt.pix_fmt) ? decoder_->vfmt.pix_fmt : texture_->pix_fmts()[0];
 
     dispatcher_->set_clock(av::clock_t::device);
-    if (dispatcher_->initialize((options.contains("filters") ? options.at("filters") : ""), "atempo=1.0")) {
+    if (dispatcher_->initialize((options.contains("filters") ? options.at("filters") : ""), "")) {
         LOG(INFO) << "[    PLAYER] failed to create filter graph";
         return false;
     }
@@ -188,8 +199,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
 bool VideoPlayer::full(AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() > 2;
-    case AVMEDIA_TYPE_AUDIO: return abuffer_->size() > 1024;
+    case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() >= 2;
+    case AVMEDIA_TYPE_AUDIO: return abuffer_.size() >= 16;
     default:                 return true;
     }
 }
@@ -247,16 +258,7 @@ int VideoPlayer::consume(av::frame& frame, AVMediaType type)
 
         if (full(AVMEDIA_TYPE_AUDIO)) return AVERROR(EAGAIN);
 
-        abuffer_->write(reinterpret_cast<void **>(frame->data), frame->nb_samples);
-
-        // FIXME: speed
-        if (frame->pts >= 0) audio_pts_ = av::clock::ns(frame->pts, afmt.time_base);
-
-        if (audio_pts_.load() != av::clock::nopts) {
-            const auto duration = av::clock::ns(frame->nb_samples, { 1, afmt.sample_rate });
-
-            audio_pts_ = audio_pts_.load() + duration * timeline_.speed();
-        }
+        abuffer_.push(frame);
         return 0;
     }
 
@@ -302,7 +304,9 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
     audio_pts_ = av::clock::nopts;
 
     vbuffer_.clear();
-    abuffer_->clear();
+    abuffer_.clear();
+
+    sonic_stream_drain(sonic_stream_);
 
     audio_renderer_->reset();
 
@@ -313,10 +317,7 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
 
 void VideoPlayer::setSpeed(float speed)
 {
-    speed = std::max<float>(0.5, speed);
-
-    dispatcher_->afilters = fmt::format("atempo={:4.2f}", speed);
-    dispatcher_->send_command(AVMEDIA_TYPE_AUDIO, "atempo", "tempo", fmt::format("{:4.2f}", speed));
+    sonic_stream_set_speed(sonic_stream_, speed);
     timeline_.set_speed({ static_cast<intmax_t>(speed * 1000000), 1000000 });
 }
 
@@ -344,17 +345,28 @@ int VideoPlayer::run()
 
     // audio thread
     audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
-        const uint32_t buffered_frames = abuffer_->size(); // per channel
-        if (!buffered_frames || seeking_ || paused()) return 0;
+        if (abuffer_.empty() || seeking_ || paused()) return 0;
 
-        if (audio_pts_.load() != av::clock::nopts) {
-            const uint32_t remaining = buffered_frames + (audio_renderer_->buffer_size() - request_frames);
-            timeline_.set(audio_pts_.load() -
-                              av::clock::ns(remaining, { 1, afmt.sample_rate }) * timeline_.speed(),
-                          ts);
+        while (sonic_stream_available_samples(sonic_stream_) < request_frames * 1.5) {
+            const auto frame = abuffer_.pop();
+            if (!frame) return 0;
+
+            // update audio clock pts
+            if (frame.value()->pts >= 0) audio_pts_ = av::clock::ns(frame.value()->pts, afmt.time_base);
+
+            if (audio_pts_.load() != av::clock::nopts)
+                audio_pts_ = audio_pts_.load() + av::clock::ns(frame.value()->nb_samples, afmt.time_base);
+
+            sonic_stream_write(sonic_stream_, frame.value()->data[0], frame.value()->nb_samples);
         }
 
-        return abuffer_->read(reinterpret_cast<void **>(ptr), request_frames);
+        if (audio_pts_.load() != av::clock::nopts) {
+            const uint32_t N = sonic_stream_expected_samples(sonic_stream_);    // sonic
+            const uint32_t M = audio_renderer_->buffer_size() - request_frames; // renderer
+            timeline_.set(audio_pts_.load() - av::clock::ns(N + M, afmt.time_base) * timeline_.speed(), ts);
+        }
+
+        return sonic_stream_read(sonic_stream_, *ptr, request_frames);
     };
 
     if (audio_enabled_ && audio_renderer_->start() < 0) {

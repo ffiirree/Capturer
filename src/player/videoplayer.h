@@ -8,6 +8,7 @@
 #include "libcap/consumer.h"
 #include "libcap/decoder.h"
 #include "libcap/dispatcher.h"
+#include "libcap/sonic.h"
 #include "libcap/timeline.h"
 #include "menu.h"
 #include "texture-widget-d3d11.h"
@@ -111,8 +112,9 @@ private:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
-    safe_queue<av::frame>            vbuffer_{};
-    std::unique_ptr<safe_audio_fifo> abuffer_{};
+    safe_queue<av::frame> vbuffer_{};
+    safe_queue<av::frame> abuffer_{};
+    sonic_stream         *sonic_stream_{}; // audio speed up / down
 
     std::atomic<bool> seeking_{ false };
     std::atomic<int>  step_{ 0 };
@@ -120,10 +122,10 @@ private:
     std::atomic<bool> paused_{ false };
 
     // clock & timeline @{
-    // | audio renderer buffered samples |   abuffer samples  |  decoding
-    //                                                        ^
-    //                                                        |
-    //                                                    audio pts
+    // | renderer buffered samples |  sonic samples  |  decoding
+    //                                               ^
+    //                                               |
+    //                                           audio pts
     std::atomic<std::chrono::nanoseconds> audio_pts_{ av::clock::nopts };
 
     av::timeline_t timeline_{};

@@ -113,14 +113,14 @@ int Dispatcher::initialize(const std::string_view& video_graph_desc,
         return -1;
     }
 
-    vfilters = video_graph_desc;
-    afilters = audio_graph_desc;
+    vfilters_ = video_graph_desc;
+    afilters_ = audio_graph_desc;
 
     // audio filter graph
     if (audio_enabled_) {
-        if (afilters.empty() && aproducer_ctxs_.size() > 1) {
+        if (afilters_.empty() && aproducer_ctxs_.size() > 1) {
             // TODO: the amix may not be closed with duration=longest
-            afilters = fmt::format("amix=inputs={}:duration=first", aproducer_ctxs_.size());
+            afilters_ = fmt::format("amix=inputs={}:duration=first", aproducer_ctxs_.size());
         }
 
         consumer_ctx_.consumer->enable(AVMEDIA_TYPE_AUDIO);
@@ -133,7 +133,7 @@ int Dispatcher::initialize(const std::string_view& video_graph_desc,
 
     // video filter graph
     if (video_enabled_) {
-        if (vfilters.empty() && vproducer_ctxs_.size() > 1) {
+        if (vfilters_.empty() && vproducer_ctxs_.size() > 1) {
             LOG(ERROR) << "[DISPATCHER] no more than 1 video stream for simple filter graph";
             return -1;
         }
@@ -152,20 +152,30 @@ int Dispatcher::initialize(const std::string_view& video_graph_desc,
     return 0;
 }
 
+void Dispatcher::set_video_filters(std::string_view vf)
+{
+    vfilters_ = vf;
+    vf_dirty_ = true;
+}
+
+void Dispatcher::set_audio_filters(std::string_view af)
+{
+    afilters_ = af;
+    af_dirty_ = true;
+}
+
 int Dispatcher::send_command(AVMediaType mt, const std::string& target, const std::string& cmd,
                              const std::string& arg)
 {
     LOG(INFO) << fmt::format("[DISPATCHER] [{}] {}: {}={}", av::to_char(mt), target, cmd, arg);
 
+    // clang-format off
     switch (mt) {
-    case AVMEDIA_TYPE_AUDIO:
-        return avfilter_graph_send_command(agraph_, target.c_str(), cmd.c_str(), arg.c_str(), nullptr, 0,
-                                           0);
-    case AVMEDIA_TYPE_VIDEO:
-        return avfilter_graph_send_command(vgraph_, target.c_str(), cmd.c_str(), arg.c_str(), nullptr, 0,
-                                           0);
+    case AVMEDIA_TYPE_AUDIO: return avfilter_graph_send_command(agraph_, target.c_str(), cmd.c_str(), arg.c_str(), nullptr, 0, 0);
+    case AVMEDIA_TYPE_VIDEO: return avfilter_graph_send_command(vgraph_, target.c_str(), cmd.c_str(), arg.c_str(), nullptr, 0, 0);
     default: return -1;
     }
+    // clang-format on
 }
 
 int Dispatcher::create_filter_graph(AVMediaType type)
@@ -173,7 +183,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
     if (type != AVMEDIA_TYPE_AUDIO && type != AVMEDIA_TYPE_VIDEO) return -1;
 
     auto& graph         = (type == AVMEDIA_TYPE_AUDIO) ? agraph_ : vgraph_;
-    auto& filters       = (type == AVMEDIA_TYPE_AUDIO) ? afilters : vfilters;
+    auto& filters       = (type == AVMEDIA_TYPE_AUDIO) ? afilters_ : vfilters_;
     auto& producer_ctxs = (type == AVMEDIA_TYPE_AUDIO) ? aproducer_ctxs_ : vproducer_ctxs_;
     auto& sink          = (type == AVMEDIA_TYPE_AUDIO) ? consumer_ctx_.asink_ctx : consumer_ctx_.vsink_ctx;
 
@@ -374,15 +384,17 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
     auto& consumer_eof = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.veof : consumer_ctx_.aeof;
     auto& seeking      = (mt == AVMEDIA_TYPE_VIDEO) ? vseeking_ : aseeking_;
     auto& running      = (mt == AVMEDIA_TYPE_VIDEO) ? vrunning_ : arunning_;
+    auto& dirty        = (mt == AVMEDIA_TYPE_VIDEO) ? vf_dirty_ : af_dirty_;
 
     while (running && !consumer_eof) {
-        if (seeking) {
+        if (seeking || dirty) {
             if (create_filter_graph(mt) < 0) {
                 LOG(ERROR) << "[DISPATCHER] failed to reconfigure graph for " << av::to_string(mt);
                 running = false;
                 return -1;
             }
             seeking = false;
+            dirty   = false;
         }
 
         bool sleepy  = true;
@@ -418,12 +430,8 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
                     continue;
                 }
                 frame->pts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, frame_tb);
-                if (frame->pkt_dts != AV_NOPTS_VALUE)
-                    frame->pkt_dts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, frame_tb);
             }
             frame->pts -= av_rescale_q(paused_time().count(), OS_TIME_BASE_Q, frame_tb);
-            if (frame->pkt_dts != AV_NOPTS_VALUE)
-                frame->pkt_dts -= av_rescale_q(paused_time().count(), OS_TIME_BASE_Q, frame_tb);
 
             // send the frame to graph
             if (av_buffersrc_add_frame_flags(src_ctx, frame.get(), AV_BUFFERSRC_FLAG_PUSH) < 0) {
@@ -578,8 +586,8 @@ int Dispatcher::reset()
     vproducer_ctxs_.clear();
     consumer_ctx_ = {};
 
-    vfilters = {};
-    afilters = {};
+    vfilters_ = {};
+    afilters_ = {};
 
     audio_enabled_ = false;
     video_enabled_ = false;

@@ -6,6 +6,7 @@
 #include "media.h"
 #include "producer.h"
 
+#include <mutex>
 #include <set>
 #include <thread>
 
@@ -63,11 +64,12 @@ public:
     void                      set_clock(const av::clock_t t) { clock_ = t; }
     [[nodiscard]] av::clock_t clock() const { return clock_; }
 
+    void set_video_filters(std::string_view vf);
+
+    void set_audio_filters(std::string_view af);
+
     av::vformat_t vfmt{};
     av::aformat_t afmt{};
-
-    std::string vfilters{};
-    std::string afilters{};
 
 private:
     struct ProducerContext
@@ -118,8 +120,13 @@ private:
 
     ConsumerContext consumer_ctx_{};
 
-    AVFilterGraph *agraph_{};
-    AVFilterGraph *vgraph_{};
+    std::string vfilters_{};
+    std::string afilters_{};
+
+    AVFilterGraph    *agraph_{};
+    std::atomic<bool> af_dirty_{};
+    AVFilterGraph    *vgraph_{};
+    std::atomic<bool> vf_dirty_{};
     // @}
 
     std::atomic<bool> vrunning_{ false };

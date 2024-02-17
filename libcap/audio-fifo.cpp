@@ -47,6 +47,12 @@ int safe_audio_fifo::read(void **data, int nb_samples)
     return av_audio_fifo_read(buffer_, data, nb_samples);
 }
 
+int safe_audio_fifo::peek(void **data, int nb_samples)
+{
+    std::unique_lock lock(mtx_);
+    return av_audio_fifo_peek(buffer_, data, nb_samples);
+}
+
 void safe_audio_fifo::clear()
 {
     std::unique_lock lock(mtx_);
