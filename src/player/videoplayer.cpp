@@ -26,13 +26,9 @@
 #endif
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent,
-                      Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint)
+    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
+                                  Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
 {
-#ifdef NDEBUG
-    setWindowFlag(Qt::WindowStaysOnTopHint);
-#endif
-
     setMouseTracking(true);
     installEventFilter(this);
 
@@ -58,6 +54,9 @@ VideoPlayer::VideoPlayer(QWidget *parent)
             [this](auto val) { audio_renderer_->setVolume(val / 100.0f); });
     connect(control_, &ControlWidget::mute, [this](auto muted) { audio_renderer_->mute(muted); });
     connect(this, &VideoPlayer::timeChanged, control_, &ControlWidget::setTime, Qt::QueuedConnection);
+    connect(this, &VideoPlayer::video_finished, this, &VideoPlayer::finish, Qt::QueuedConnection);
+    connect(this, &VideoPlayer::audio_finished, this, &VideoPlayer::finish, Qt::QueuedConnection);
+
     stacked_layout->addWidget(control_);
 
     // texture
@@ -90,7 +89,7 @@ void VideoPlayer::reset()
     if (video_thread_.joinable()) video_thread_.join();
     audio_renderer_->stop();
 
-    eof_   = 0x00;
+    eof_   = AV_EOF;
     ready_ = false;
 
     video_enabled_ = false;
@@ -120,6 +119,8 @@ VideoPlayer::~VideoPlayer()
 
 int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string> options)
 {
+    filename_ = filename;
+
     std::map<std::string, std::string> decoder_options;
     if (options.contains("format")) decoder_options["format"] = options.at("format");
 
@@ -139,8 +140,8 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     dispatcher_->append(decoder_.get());
 
     // audio renderer
-    if (const auto default_render = av::default_audio_sink();
-        !default_render || audio_renderer_->open(default_render->id, {}) != 0) {
+    if (const auto default_asink = av::default_audio_sink();
+        !default_asink || audio_renderer_->open(default_asink->id, {}) != 0) {
         audio_renderer_->reset();
         LOG(INFO) << "[    PLAYER] failed to open audio render";
         return -1;
@@ -181,7 +182,7 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         resize(vfmt.width, vfmt.height);
     }
 
-    eof_ = 0x00;
+    eof_ = AV_EOF;
 
     if (dispatcher_->start() < 0) {
         dispatcher_->reset();
@@ -207,11 +208,13 @@ bool VideoPlayer::full(AVMediaType type) const
 
 void VideoPlayer::enable(AVMediaType type, bool v)
 {
+    // clang-format off
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
-    case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
-    default:                 break;
+    case AVMEDIA_TYPE_VIDEO: video_enabled_  = v; break;
+    case AVMEDIA_TYPE_AUDIO: audio_enabled_  = v; break;
+    default: break;
     }
+    // clang-format on
 }
 
 bool VideoPlayer::accepts(AVMediaType type) const
@@ -239,25 +242,33 @@ int VideoPlayer::consume(av::frame& frame, AVMediaType type)
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:
         if (!frame || !frame->data[0]) {
-            eof_ |= 0x01;
+            eof_     |= VSRC_EOF;
+            seeking_  = false;
+            if (timeline_.time() == av::clock::nopts && decoder_ && decoder_->duration() != AV_NOPTS_VALUE)
+                timeline_ = std::chrono::nanoseconds{ decoder_->duration() * 1000 };
             LOG(INFO) << "[    PLAYER] [V] EOF";
             return AVERROR_EOF;
         }
 
         if (full(AVMEDIA_TYPE_VIDEO)) return AVERROR(EAGAIN);
 
+        eof_ &= ~(VSRC_EOF | VSINK_EOF);
         vbuffer_.push(frame);
         return 0;
 
     case AVMEDIA_TYPE_AUDIO: {
         if (!frame || !frame->data[0]) {
-            eof_ |= 0x02;
+            eof_     |= ASRC_EOF;
+            seeking_  = false;
+            if (timeline_.time() == av::clock::nopts && decoder_ && decoder_->duration() != AV_NOPTS_VALUE)
+                timeline_ = std::chrono::nanoseconds{ decoder_->duration() * 1000 };
             LOG(INFO) << "[    PLAYER] [A] EOF";
             return AVERROR_EOF;
         }
 
         if (full(AVMEDIA_TYPE_AUDIO)) return AVERROR(EAGAIN);
 
+        eof_ &= ~(ASRC_EOF | ASINK_EOF);
         abuffer_.push(frame);
         return 0;
     }
@@ -285,13 +296,21 @@ void VideoPlayer::resume()
     audio_renderer_->resume();
 }
 
+void VideoPlayer::finish()
+{
+    if (eof()) {
+        LOG(INFO) << "[    PLAYER] \"" << filename_ << "\" is finished";
+        pause();
+        emit control_->pause();
+    }
+}
+
 void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel)
 {
-    if (seeking_) return;
-
     ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, std::chrono::microseconds{ decoder_->duration() });
 
     LOG(INFO) << fmt::format("seek: {:%T}", ts);
+    emit timeChanged(ts.count() / 1000);
 
     const auto lts = rel < 0ns ? av::clock::min : ts - rel * 3 / 4;
     const auto rts = rel > 0ns ? av::clock::max : ts - rel * 3 / 4;
@@ -302,6 +321,8 @@ void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel
     eof_       = 0;
     timeline_  = av::clock::nopts;
     audio_pts_ = av::clock::nopts;
+
+    eof_ &= ~(ASINK_EOF | VSINK_EOF);
 
     vbuffer_.clear();
     abuffer_.clear();
@@ -341,23 +362,36 @@ int VideoPlayer::run()
     timeline_.set(0ns);
 
     // video thread
-    video_thread_ = std::jthread([this] { video_thread_f(); });
+    if (video_enabled_) video_thread_ = std::jthread([this] { video_thread_f(); });
 
     // audio thread
     audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
-        if (abuffer_.empty() || seeking_ || paused()) return 0;
+        if (seeking_ || (eof_ & ASINK_EOF)) return 0;
 
-        while (sonic_stream_available_samples(sonic_stream_) < request_frames * 1.5) {
-            const auto frame = abuffer_.pop();
-            if (!frame) return 0;
+        if ((eof_ & ASRC_EOF) && abuffer_.empty()) {
+            sonic_stream_flush(sonic_stream_);
+            DLOG(INFO) << "flush sonic stream";
+            if (sonic_stream_available_samples(sonic_stream_) == 0) {
+                eof_ |= ASINK_EOF;
+                emit audio_finished();
+                DLOG(INFO) << "ASINK_EOF";
+            }
+        }
+        else {
+            while (!abuffer_.empty() &&
+                   sonic_stream_available_samples(sonic_stream_) < request_frames * 2) {
+                const auto frame = abuffer_.pop();
+                if (!frame) return 0;
 
-            // update audio clock pts
-            if (frame.value()->pts >= 0) audio_pts_ = av::clock::ns(frame.value()->pts, afmt.time_base);
+                // update audio clock pts
+                if (frame.value()->pts >= 0) audio_pts_ = av::clock::ns(frame.value()->pts, afmt.time_base);
 
-            if (audio_pts_.load() != av::clock::nopts)
-                audio_pts_ = audio_pts_.load() + av::clock::ns(frame.value()->nb_samples, afmt.time_base);
+                if (audio_pts_.load() != av::clock::nopts)
+                    audio_pts_ =
+                        audio_pts_.load() + av::clock::ns(frame.value()->nb_samples, afmt.time_base);
 
-            sonic_stream_write(sonic_stream_, frame.value()->data[0], frame.value()->nb_samples);
+                sonic_stream_write(sonic_stream_, frame.value()->data[0], frame.value()->nb_samples);
+            }
         }
 
         if (audio_pts_.load() != av::clock::nopts) {
@@ -396,8 +430,14 @@ void VideoPlayer::video_thread_f()
     defer(::timeEndPeriod(1));
 #endif
 
-    while (video_enabled_ && running_) {
-        if (vbuffer_.empty() || (paused() && !step_) || seeking_) {
+    while (running_) {
+        if (vbuffer_.empty() && (eof_ & VSRC_EOF) && !(eof_ & VSINK_EOF)) {
+            eof_ |= VSINK_EOF;
+            emit video_finished();
+            DLOG(INFO) << "VSINK-EOF";
+        }
+
+        if ((eof_ & VSINK_EOF) || vbuffer_.empty() || (paused() && !step_) || seeking_) {
             std::this_thread::sleep_for(5ms);
             continue;
         }
@@ -419,7 +459,7 @@ void VideoPlayer::video_thread_f()
             std::this_thread::sleep_for(sleep_ns);
         }
 
-        emit timeChanged(timeline_.time().count() / 1000);
+        if (timeline_.time() >= 0ns) emit timeChanged(timeline_.time().count() / 1000);
 
         step_ = std::max<int>(0, step_ - 1);
     }
@@ -534,7 +574,6 @@ void VideoPlayer::initContextMenu()
 
     menu_->addSeparator();
 
-    menu_->addAction(tr("Preferences"), this, &VideoPlayer::showPreferences, QKeySequence(Qt::Key_F5));
     menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
                      QKeySequence(Qt::CTRL | Qt::Key_I));
 }
@@ -574,25 +613,6 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
     }
 
     menu_->exec(event->globalPos());
-}
-
-void VideoPlayer::showPreferences()
-{
-    const auto win = new FramelessWindow(this);
-
-    win->setMinimumSize(400, 300);
-    win->setAttribute(Qt::WA_DeleteOnClose);
-    win->setWindowTitle(tr("Preferences"));
-
-    auto vlayout = new QVBoxLayout();
-    vlayout->setSpacing(0);
-    vlayout->setContentsMargins({});
-    win->setLayout(vlayout);
-
-    vlayout->addWidget(new TitleBar(win));
-    vlayout->addStretch();
-
-    win->show();
 }
 
 void VideoPlayer::showProperties()

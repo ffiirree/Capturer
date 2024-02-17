@@ -338,10 +338,6 @@
         <translation>显示/隐藏字幕</translation>
     </message>
     <message>
-        <source>Preferences</source>
-        <translation>选项</translation>
-    </message>
-    <message>
         <source>Properties</source>
         <translation>属性</translation>
     </message>

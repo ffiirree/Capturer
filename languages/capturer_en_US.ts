@@ -338,10 +338,6 @@
         <translation></translation>
     </message>
     <message>
-        <source>Preferences</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Properties</source>
         <translation></translation>
     </message>

@@ -21,6 +21,15 @@ class VideoPlayer final : public FramelessWindow, public Consumer<av::frame>
 {
     Q_OBJECT
 
+    enum
+    {
+        ASRC_EOF  = 0x01,
+        VSRC_EOF  = 0x02,
+        ASINK_EOF = 0x04,
+        VSINK_EOF = 0x08,
+        AV_EOF    = ASRC_EOF | VSRC_EOF | ASINK_EOF | VSINK_EOF
+    };
+
 public:
     explicit VideoPlayer(QWidget *parent = nullptr);
 
@@ -49,11 +58,7 @@ public:
     void               enable(AVMediaType type, bool v = true) override;
     [[nodiscard]] bool accepts(AVMediaType type) const override;
 
-    [[nodiscard]] bool eof() const override
-    {
-        return (((eof_ & 0x01) && video_enabled_) || !video_enabled_) &&
-               (((eof_ & 0x02) && audio_enabled_) || !audio_enabled_);
-    }
+    [[nodiscard]] bool eof() const override { return eof_ == AV_EOF; }
 
     bool paused() const { return paused_; }
 
@@ -69,12 +74,16 @@ public slots:
 
     void setVolume(int);
 
-    void showPreferences();
     void showProperties();
+
+    void finish();
 
 signals:
     void started();
     void timeChanged(int64_t);
+
+    void video_finished();
+    void audio_finished();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -89,6 +98,8 @@ private:
     void video_thread_f();
 
     void initContextMenu();
+
+    std::string filename_{};
 
     // UI
     ControlWidget   *control_{};

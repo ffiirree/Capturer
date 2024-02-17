@@ -21,24 +21,9 @@ public:
 
     ~Dispatcher() { reset(); }
 
-    void append(Producer<av::frame> *decoder)
-    {
-        if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
-            producers_.insert(decoder);
+    void append(Producer<av::frame> *decoder);
 
-            aproducer_ctxs_.push_back({ nullptr, decoder, false });
-            audio_enabled_ = true;
-        }
-
-        if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
-            producers_.insert(decoder);
-
-            vproducer_ctxs_.push_back({ nullptr, decoder, false });
-            video_enabled_ = true;
-        }
-    }
-
-    void set_encoder(Consumer<av::frame> *encoder) { consumer_ctx_.consumer = encoder; }
+    void set_encoder(Consumer<av::frame> *encoder);
 
     int initialize(const std::string_view& video_filters, const std::string_view& audio_filters);
 
@@ -76,7 +61,6 @@ private:
     {
         AVFilterContext     *src_ctx;
         Producer<av::frame> *producer;
-        bool                 eof;
     };
 
     struct ConsumerContext
@@ -84,8 +68,6 @@ private:
         AVFilterContext     *asink_ctx;
         AVFilterContext     *vsink_ctx;
         Consumer<av::frame> *consumer;
-        bool                 aeof;
-        bool                 veof;
     };
 
     int create_video_sink(const Consumer<av::frame> *, AVFilterContext **);

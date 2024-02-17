@@ -85,10 +85,10 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
 
         // subtitles
-        auto subtitles_btn = new QCheckBox();
-        subtitles_btn->setObjectName("subtitles-btn");
-        subtitles_btn->setCheckable(false);
-        hl->addWidget(subtitles_btn);
+        // auto subtitles_btn = new QCheckBox();
+        // subtitles_btn->setObjectName("subtitles-btn");
+        // subtitles_btn->setCheckable(false);
+        // hl->addWidget(subtitles_btn);
 
         // speed
         auto speed_box = new ComboBox();

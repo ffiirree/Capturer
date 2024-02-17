@@ -100,6 +100,25 @@ int Dispatcher::create_audio_sink(const Consumer<av::frame> *encoder, AVFilterCo
     return 0;
 }
 
+void Dispatcher::append(Producer<av::frame> *decoder)
+{
+    if (decoder && decoder->has(AVMEDIA_TYPE_AUDIO)) {
+        producers_.insert(decoder);
+
+        aproducer_ctxs_.push_back({ nullptr, decoder });
+        audio_enabled_ = true;
+    }
+
+    if (decoder && decoder->has(AVMEDIA_TYPE_VIDEO)) {
+        producers_.insert(decoder);
+
+        vproducer_ctxs_.push_back({ nullptr, decoder });
+        video_enabled_ = true;
+    }
+}
+
+void Dispatcher::set_encoder(Consumer<av::frame> *encoder) { consumer_ctx_.consumer = encoder; }
+
 int Dispatcher::initialize(const std::string_view& video_graph_desc,
                            const std::string_view& audio_graph_desc)
 {
@@ -195,7 +214,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
     }
 
     // 2. create buffersrc
-    for (auto& [ctx, producer, _] : producer_ctxs) {
+    for (auto& [ctx, producer] : producer_ctxs) {
         const auto args = producer->format_str(type);
         switch (type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -338,7 +357,7 @@ int Dispatcher::start()
     vrunning_ = true;
     if (video_enabled_) {
         video_thread_ = std::jthread([this] {
-            probe::thread::set_name("DISPATCH-v");
+            probe::thread::set_name("DISPATCH-V");
             dispatch_fn(AVMEDIA_TYPE_VIDEO);
         });
     }
@@ -381,10 +400,10 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
 
     auto& ctxs         = (mt == AVMEDIA_TYPE_VIDEO) ? vproducer_ctxs_ : aproducer_ctxs_;
     auto& sink         = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.vsink_ctx : consumer_ctx_.asink_ctx;
-    auto& consumer_eof = (mt == AVMEDIA_TYPE_VIDEO) ? consumer_ctx_.veof : consumer_ctx_.aeof;
     auto& seeking      = (mt == AVMEDIA_TYPE_VIDEO) ? vseeking_ : aseeking_;
     auto& running      = (mt == AVMEDIA_TYPE_VIDEO) ? vrunning_ : arunning_;
     auto& dirty        = (mt == AVMEDIA_TYPE_VIDEO) ? vf_dirty_ : af_dirty_;
+    auto  consumer_eof = false;
 
     while (running && !consumer_eof) {
         if (seeking || dirty) {
@@ -400,8 +419,8 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
         bool sleepy  = true;
         bool all_eof = true;
         // input streams
-        for (auto& [src_ctx, producer, stream_eof] : ctxs) {
-            if (stream_eof || !running) continue;
+        for (auto& [src_ctx, producer] : ctxs) {
+            if ((producer->eof() && producer->empty(mt)) || !running) continue;
 
             all_eof = false;
 
@@ -410,8 +429,7 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
                     LOG(ERROR) << "failed to send NULL to filter graph";
                 }
                 LOG(INFO) << fmt::format("[{}] send NULL", av::to_char(mt));
-                stream_eof = true;
-                sleepy     = false;
+                sleepy = false;
                 continue;
             }
 
@@ -538,7 +556,7 @@ int Dispatcher::reset()
     ready_ = false;
 
     // producers
-    for (auto& [ctx, coder, _] : vproducer_ctxs_) {
+    for (auto& [ctx, coder] : vproducer_ctxs_) {
         coder->reset();
 
         // push nullptr frame to close the video buffersrc
@@ -547,7 +565,7 @@ int Dispatcher::reset()
         }
     }
 
-    for (auto& [ctx, coder, _] : aproducer_ctxs_) {
+    for (auto& [ctx, coder] : aproducer_ctxs_) {
         coder->reset();
 
         // push nullptr frame to close the auido buffersrc
