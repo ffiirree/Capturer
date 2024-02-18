@@ -6,6 +6,8 @@
 #include "producer.h"
 #include "queue.h"
 
+#include <shared_mutex>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -38,18 +40,11 @@ public:
 
     int produce(av::frame& frame, AVMediaType type) override;
 
-    bool empty(AVMediaType type) override
-    {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return vbuffer_.empty();
-        case AVMEDIA_TYPE_AUDIO: return abuffer_.empty();
-        default:                 return true;
-        }
-    }
+    bool empty(AVMediaType type) override;
 
-    // AV_TIME_BASE
-    void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
-              std::chrono::nanoseconds rts) override;
+    void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel) override;
+
+    bool seeking() const override;
 
     bool has(AVMediaType) const override;
 
@@ -91,6 +86,13 @@ private:
 
     av::packet packet_{};
     av::frame  frame_{};
+
+    // seek, AV_TIME_BASE @{
+    mutable std::shared_mutex seek_mtx_{};
+    int64_t                   seek_min_{ std::numeric_limits<int64_t>::min() };
+    int64_t                   seek_pts_{ AV_NOPTS_VALUE };
+    int64_t                   seek_max_{ std::numeric_limits<int64_t>::max() };
+    // @}
 
     int64_t    audio_next_pts_{ AV_NOPTS_VALUE }; // samples
     AVRational audio_next_pts_tb_{};

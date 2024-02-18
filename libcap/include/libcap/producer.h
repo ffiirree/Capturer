@@ -40,15 +40,9 @@ public:
 
     [[nodiscard]] virtual int64_t duration() const { return AV_NOPTS_VALUE; }
 
-    virtual void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
-                      std::chrono::nanoseconds rts)
-    {
-        seek_.ts  = ts;
-        seek_.min = lts;
-        seek_.max = rts;
-    }
+    virtual void seek(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&) {}
 
-    [[nodiscard]] virtual bool seeking() const { return seek_.ts.load() != av::clock::nopts; }
+    [[nodiscard]] virtual bool seeking() const { return false; }
 
     virtual void stop() { running_ = false; }
 
@@ -79,13 +73,6 @@ protected:
     std::atomic<uint8_t> eof_{ 0x00 };
     std::map<int, bool>  enabled_{};
     std::atomic<bool>    muted_{ false };
-
-    struct seek_t
-    {
-        std::atomic<std::chrono::nanoseconds> ts{ av::clock::nopts };
-        std::atomic<std::chrono::nanoseconds> min{ av::clock::min };
-        std::atomic<std::chrono::nanoseconds> max{ av::clock::max };
-    } seek_;
 
     std::atomic<av::clock_t> clock_{ av::clock_t::system };
 };

@@ -3,7 +3,6 @@
 #include "libcap/clock.h"
 #include "libcap/hwaccel.h"
 
-#include <cassert>
 #include <filesystem>
 #include <fmt/chrono.h>
 #include <fmt/ranges.h>
@@ -337,6 +336,15 @@ int Decoder::produce(av::frame& frame, AVMediaType type)
     }
 }
 
+bool Decoder::empty(AVMediaType type)
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO: return vbuffer_.empty();
+    case AVMEDIA_TYPE_AUDIO: return abuffer_.empty();
+    default:                 return true;
+    }
+}
+
 bool Decoder::has_enough(AVMediaType type) const
 {
     switch (type) {
@@ -379,15 +387,10 @@ int Decoder::decode_fn()
 
     while (running_) {
         if (seeking()) {
-            LOG(INFO) << fmt::format("seek: {:%T}({:.3%S}, {:.3%S})", seek_.ts.load(), seek_.min.load(),
-                                     seek_.max.load());
+            std::shared_lock lock(seek_mtx_);
 
-            if (avformat_seek_file(fmt_ctx_, -1, seek_.min.load().count() / 1000,
-                                   seek_.ts.load().count() / 1000, seek_.max.load().count() / 1000,
-                                   0) < 0) {
-                LOG(ERROR) << fmt::format("failed to seek, VIDEO: [{:%T}, {:%T}]",
-                                          std::chrono::microseconds{ fmt_ctx_->start_time },
-                                          std::chrono::microseconds{ fmt_ctx_->duration });
+            if (avformat_seek_file(fmt_ctx_, -1, seek_min_, seek_pts_, seek_max_, 0) < 0) {
+                LOG(ERROR) << fmt::format("failed to seek");
             }
             else {
                 if (astream_idx_ >= 0) avcodec_flush_buffers(acodec_ctx_);
@@ -401,7 +404,9 @@ int Decoder::decode_fn()
                 audio_next_pts_ = AV_NOPTS_VALUE;
             }
 
-            seek_.ts = av::clock::nopts;
+            seek_pts_ = AV_NOPTS_VALUE;
+            seek_min_ = std::numeric_limits<int64_t>::min();
+            seek_max_ = std::numeric_limits<int64_t>::max();
         }
 
         // read
@@ -551,22 +556,27 @@ int Decoder::decode_fn()
     return 0;
 }
 
-void Decoder::seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
-                   std::chrono::nanoseconds rts)
+void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel)
 {
-    assert(fmt_ctx_);
+    std::scoped_lock lock(seek_mtx_);
 
-    seek_.ts  = std::clamp<std::chrono::nanoseconds>(ts, std::chrono::microseconds{ fmt_ctx_->start_time },
-                                                    std::chrono::microseconds{ fmt_ctx_->duration });
-    seek_.min = std::min<std::chrono::nanoseconds>(lts, std::chrono::microseconds{ duration() } - 5s);
-    seek_.max =
-        std::max<std::chrono::nanoseconds>(rts, std::chrono::microseconds{ fmt_ctx_->start_time } + 5s);
+    LOG(INFO) << fmt::format("seek: {:.3%T} {:+}s", ts, rel.count() / 1000000000);
+
+    seek_pts_ = std::clamp<int64_t>(ts.count() / 1000, fmt_ctx_->start_time, fmt_ctx_->duration);
+    seek_min_ = rel > 0s ? (ts - rel).count() / 1000 + 2 : std::numeric_limits<int64_t>::min();
+    seek_max_ = rel < 0s ? (ts - rel).count() / 1000 - 2 : std::numeric_limits<int64_t>::max();
 
     if (!running_) {
         eof_ = 0x00;
         if (thread_.joinable()) thread_.join();
         run();
     }
+}
+
+bool Decoder::seeking() const
+{
+    std::shared_lock lock(seek_mtx_);
+    return seek_pts_ != AV_NOPTS_VALUE;
 }
 
 void Decoder::reset()
@@ -597,7 +607,7 @@ void Decoder::destroy()
     astream_idx_ = -1;
     sstream_idx_ = -1;
 
-    seek_.ts = av::clock::nopts;
+    seek_pts_ = AV_NOPTS_VALUE;
 
     enabled_.clear();
 

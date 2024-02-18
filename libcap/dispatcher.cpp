@@ -498,11 +498,10 @@ int Dispatcher::dispatch_fn(AVMediaType mt)
     return 0;
 }
 
-void Dispatcher::seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds lts,
-                      std::chrono::nanoseconds rts)
+void Dispatcher::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel)
 {
     for (auto& producer : producers_) {
-        producer->seek(ts, lts, rts);
+        producer->seek(ts, rel);
     }
 
     vseeking_ = true;

@@ -36,9 +36,7 @@ public:
     std::chrono::nanoseconds paused_time();
     int                      reset();
 
-    // AV_TIME_BESE
-    void seek(const std::chrono::nanoseconds& ts, std::chrono::nanoseconds = 0ns,
-              std::chrono::nanoseconds = 0ns);
+    void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel);
 
     void stop() { reset(); }
 

@@ -73,8 +73,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     timer_->start(2000ms);
 
     // clang-format off
-    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 10s, + 10s); });
-    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { seek(timeline_.time() - 10s, - 10s); });
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 5s, + 5s); });
+    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { seek(timeline_.time() - 5s, - 5s); });
     connect(new QShortcut(Qt::Key_Space, this), &QShortcut::activated, [this] { control_->paused() ? control_->resume() : control_->pause(); });
     connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 + 5); });
     connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { control_->setVolume(audio_renderer_->volume() * 100 - 5); });
@@ -307,15 +307,7 @@ void VideoPlayer::finish()
 
 void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel)
 {
-    ts = std::clamp<std::chrono::nanoseconds>(ts, 0ns, std::chrono::microseconds{ decoder_->duration() });
-
-    LOG(INFO) << fmt::format("seek: {:%T}", ts);
-    emit timeChanged(ts.count() / 1000);
-
-    const auto lts = rel < 0ns ? av::clock::min : ts - rel * 3 / 4;
-    const auto rts = rel > 0ns ? av::clock::max : ts - rel * 3 / 4;
-
-    dispatcher_->seek(ts, lts, rts);
+    dispatcher_->seek(ts, rel);
 
     seeking_   = true;
     eof_       = 0;
@@ -365,7 +357,7 @@ int VideoPlayer::run()
     if (video_enabled_) video_thread_ = std::jthread([this] { video_thread_f(); });
 
     // audio thread
-    audio_renderer_->callback = [this](uint8_t **ptr, auto request_frames, auto ts) -> uint32_t {
+    audio_renderer_->callback = [this](uint8_t **ptr, uint32_t request_frames, auto ts) -> uint32_t {
         if (seeking_ || (eof_ & ASINK_EOF)) return 0;
 
         if ((eof_ & ASRC_EOF) && abuffer_.empty()) {
@@ -378,8 +370,8 @@ int VideoPlayer::run()
             }
         }
         else {
-            while (!abuffer_.empty() &&
-                   sonic_stream_available_samples(sonic_stream_) < request_frames * 2) {
+            while (!abuffer_.empty() && static_cast<uint32_t>(sonic_stream_available_samples(
+                                            sonic_stream_)) < request_frames * 2) {
                 const auto frame = abuffer_.pop();
                 if (!frame) return 0;
 

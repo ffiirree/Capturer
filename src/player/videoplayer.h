@@ -21,7 +21,7 @@ class VideoPlayer final : public FramelessWindow, public Consumer<av::frame>
 {
     Q_OBJECT
 
-    enum
+    enum : uint8_t
     {
         ASRC_EOF  = 0x01,
         VSRC_EOF  = 0x02,
