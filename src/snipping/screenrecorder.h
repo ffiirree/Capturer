@@ -6,7 +6,6 @@
 #include "libcap/producer.h"
 #include "menu/recording-menu.h"
 #include "selector.h"
-#include "videoplayer.h"
 
 #include <QSystemTrayIcon>
 #include <QTimer>
@@ -34,8 +33,6 @@ public slots:
     void record();
     void stop();
 
-    void switchCamera();
-
     void mute(int type, bool v);
 
     void updateTheme();
@@ -45,7 +42,7 @@ private:
 
     void setup();
 
-    int recording_type_{ VIDEO };
+    int rec_type_{ VIDEO };
 
     Selector *selector_{};
 
@@ -62,18 +59,15 @@ private:
     // filename
     std::string filename_{};
 
-    // preview camera
-    VideoPlayer *player_{};
-
     // recording menu
     RecordingMenu *menu_{};
     bool           m_mute_{};
     bool           s_mute_{};
 
     // sources
-    std::unique_ptr<Producer<av::frame>> desktop_capturer_{};
-    std::unique_ptr<Producer<av::frame>> microphone_capturer_{};
-    std::unique_ptr<Producer<av::frame>> speaker_capturer_{};
+    std::unique_ptr<Producer<av::frame>> desktop_src_{};
+    std::unique_ptr<Producer<av::frame>> mic_src_{};
+    std::unique_ptr<Producer<av::frame>> speaker_src_{};
 
     // encoder
     std::unique_ptr<Consumer<av::frame>> encoder_{};

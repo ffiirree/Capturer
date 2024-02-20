@@ -5,7 +5,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <map>
 
 template<class T> class Producer
 {
@@ -19,62 +18,63 @@ public:
 
     virtual ~Producer() = default;
 
-    // name
-    // options
-    [[nodiscard]] virtual int open(const std::string&, std::map<std::string, std::string>) = 0;
+    [[nodiscard]] virtual int open(const std::string& name, std::map<std::string, std::string> options) = 0;
 
-    virtual void reset() = 0;
+    [[nodiscard]] virtual bool ready() const { return ready_; }
 
-    virtual int run() = 0;
+    [[nodiscard]] virtual int start() = 0;
 
-    [[nodiscard]] virtual int produce(T&, AVMediaType) = 0;
-    virtual bool              empty(AVMediaType)       = 0;
-
-    [[nodiscard]] virtual bool        has(AVMediaType) const        = 0;
-    [[nodiscard]] virtual std::string format_str(AVMediaType) const = 0;
-    [[nodiscard]] virtual AVRational  time_base(AVMediaType) const  = 0;
-
-    [[nodiscard]] virtual bool enabled(AVMediaType t) { return enabled_.contains(t) && enabled_[t]; }
-
-    virtual void enable(const AVMediaType t) { enabled_[t] = true; }
-
-    [[nodiscard]] virtual int64_t duration() const { return AV_NOPTS_VALUE; }
+    [[nodiscard]] virtual bool running() const { return running_; }
 
     virtual void seek(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&) {}
-
-    [[nodiscard]] virtual bool seeking() const { return false; }
 
     virtual void stop() { running_ = false; }
 
     [[nodiscard]] virtual bool eof() { return eof_ != 0; }
 
-    void mute(const bool v) { muted_ = v; }
+    //
+    virtual void enable(AVMediaType, bool) {}
 
-    [[nodiscard]] bool ready() const { return ready_; }
+    virtual int switch_stream(int) { return av::err_t::unsupported; }
 
-    [[nodiscard]] bool running() const { return running_; }
+    [[nodiscard]] virtual bool has(AVMediaType) const = 0;
+
+    // system / relative clock
+    [[nodiscard]] virtual bool is_realtime() const = 0;
+
+    [[nodiscard]] virtual std::chrono::nanoseconds start_time() const { return start_time_; }
+
+    [[nodiscard]] virtual std::chrono::nanoseconds duration() const { return av::clock::nopts; }
+
+    // audio only
+    virtual void mute(const bool v) { muted_ = v; }
+
+    // audio only
+    [[nodiscard]] virtual bool muted() const { return muted_; }
 
     // supported formats
-    [[nodiscard]] virtual std::vector<av::vformat_t> vformats() const { return {}; }
-    [[nodiscard]] virtual std::vector<av::aformat_t> aformats() const { return {}; }
+    [[nodiscard]] virtual std::vector<av::vformat_t> video_formats() const { return {}; }
+    [[nodiscard]] virtual std::vector<av::aformat_t> audio_formats() const { return {}; }
 
-    virtual void                      set_clock(const av::clock_t t) { clock_ = t; }
-    [[nodiscard]] virtual av::clock_t clock() const { return clock_; }
-
-    virtual std::vector<std::map<std::string, std::string>> properties(AVMediaType) const { return {}; }
+    [[nodiscard]] virtual std::vector<std::map<std::string, std::string>> properties(AVMediaType) const
+    {
+        return {};
+    }
 
     // current format
     av::aformat_t afmt{};
     av::vformat_t vfmt{};
 
-protected:
-    std::atomic<bool>    ready_{ false };
-    std::atomic<bool>    running_{ false };
-    std::atomic<uint8_t> eof_{ 0x00 };
-    std::map<int, bool>  enabled_{};
-    std::atomic<bool>    muted_{ false };
+    // callback
+    std::function<void(const T&, AVMediaType)> onarrived = [](auto, auto) {};
 
-    std::atomic<av::clock_t> clock_{ av::clock_t::system };
+protected:
+    std::atomic<bool>    ready_{};
+    std::atomic<bool>    running_{};
+    std::atomic<bool>    muted_{};
+    std::atomic<uint8_t> eof_{};
+
+    std::chrono::nanoseconds start_time_{ av::clock::nopts };
 };
 
 #endif //! CAPTURER_PRODUCER_H

@@ -25,11 +25,12 @@ namespace av
         vfr,
     };
 
-    enum class clock_t
+    enum err_t : int
     {
-        none   = 0x00,
-        system = 0x01,
-        device = 0x02,
+        SUCCESS     = 0,
+        FAILURE     = -1,
+        unsupported = -2,
+        nullpointer = -3,
     };
 
     // video format options
@@ -165,15 +166,14 @@ namespace av
     // for creating abuffer src
     inline std::string to_string(const aformat_t& fmt)
     {
-        return fmt::format("sample_rate={}:sample_fmt={}:channels={}:channel_layout={}:time_base={}/{}",
-                           fmt.sample_rate, to_string(fmt.sample_fmt), fmt.channels,
-#if LIBAVUTIL_VERSION_MAJOR >= 57
-                           channel_layout_name(fmt.channels, fmt.channel_layout),
-#else
-                           fmt.channel_layout ? fmt.channel_layout
-                                              : av_get_default_channel_layout(fmt.channels),
-#endif
-                           fmt.time_base.num, fmt.time_base.den);
+        std::string repr =
+            fmt::format("sample_rate={}:sample_fmt={}:channels={}:time_base={}/{}", fmt.sample_rate,
+                        to_string(fmt.sample_fmt), fmt.channels, fmt.time_base.num, fmt.time_base.den);
+
+        if (fmt.channel_layout)
+            repr += ":channel_layout=" + channel_layout_name(fmt.channels, fmt.channel_layout);
+
+        return repr;
     }
 
     inline std::string to_string(const vsync_t m)

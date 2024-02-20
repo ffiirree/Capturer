@@ -91,9 +91,9 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         // hl->addWidget(subtitles_btn);
 
         // speed
-        auto speed_box = new ComboBox();
-        speed_box->setObjectName("speed-box");
-        speed_box
+        speed_box_ = new ComboBox();
+        speed_box_->setObjectName("speed-box");
+        speed_box_
             ->add({
                 { 0.5, "0.5x" },
                 { 0.75, "0.75x" },
@@ -105,9 +105,9 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
             })
             .onselected([this](const QVariant& v) { emit speed(v.toFloat()); })
             .select(1.0);
-        connect(this, &ControlWidget::validDruation, speed_box, &ComboBox::setVisible);
+        connect(this, &ControlWidget::validDruation, speed_box_, &ComboBox::setVisible);
 
-        hl->addWidget(speed_box);
+        hl->addWidget(speed_box_);
 
         // volume
         volume_btn_ = new QCheckBox();
@@ -126,22 +126,22 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         hl->addWidget(volume_slider_);
 
         // settings
-        const auto setting_btn = new QCheckBox();
-        setting_btn->setObjectName("setting-btn");
-        setting_btn->setCheckable(false);
-        hl->addWidget(setting_btn);
+        // const auto setting_btn = new QCheckBox();
+        // setting_btn->setObjectName("setting-btn");
+        // setting_btn->setCheckable(false);
+        // hl->addWidget(setting_btn);
     }
 }
 
-void ControlWidget::setDuration(int64_t duration)
+void ControlWidget::setDuration(const int64_t duration)
 {
-    emit validDruation(duration != AV_NOPTS_VALUE);
+    emit validDruation(duration >= 0);
 
     time_slider_->setMaximum(static_cast<int>(duration / 1000)); // ms
     duration_label_->setText(fmt::format("{:%T}", std::chrono::seconds{ duration / 1000000 }).c_str());
 }
 
-void ControlWidget::setTime(int64_t ts)
+void ControlWidget::setTime(const int64_t ts)
 {
     if (time_slider_ && !time_slider_->isSliderDown() && time_slider_->isVisible()) {
         time_slider_->setValue(static_cast<int>(ts / 1000)); // ms
@@ -157,6 +157,11 @@ void ControlWidget::setVolume(int v)
         volume_slider_->setValue(v);
     }
     volume_btn_->setChecked(v == 0);
+}
+
+void ControlWidget::setLiveMode(bool m)
+{
+    if (speed_box_) speed_box_->setVisible(!m);
 }
 
 void ControlWidget::setMute(bool muted) { volume_btn_->setChecked(muted); }

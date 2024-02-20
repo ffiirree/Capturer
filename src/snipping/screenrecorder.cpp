@@ -1,7 +1,6 @@
 #include "screenrecorder.h"
 
 #include "config.h"
-#include "libcap/decoder.h"
 #include "libcap/devices.h"
 #include "libcap/dispatcher.h"
 #include "libcap/encoder.h"
@@ -30,8 +29,39 @@ using AudioCapturer   = PulseCapturer;
 
 #endif
 
+static std::pair<AVPixelFormat, AVHWDeviceType>
+set_pix_fmt(const std::unique_ptr<Producer<av::frame>>& producer,
+            const std::unique_ptr<Consumer<av::frame>>& consumer, const AVCodec *vcodec)
+{
+    if (!vcodec) return {};
+
+    const AVCodecHWConfig *config = nullptr;
+    for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)); ++i) {
+        if (config->pix_fmt != AV_PIX_FMT_NONE) {
+
+            for (const auto& producer_fmt : producer->video_formats()) {
+                if (producer_fmt.hwaccel == config->device_type &&
+                    producer_fmt.pix_fmt == config->pix_fmt) {
+
+                    producer->vfmt.pix_fmt = config->pix_fmt;
+                    consumer->vfmt.hwaccel = config->device_type;
+
+                    return { config->pix_fmt, config->device_type };
+                }
+            }
+        }
+    }
+
+    // software
+    for (const auto& fmt : producer->video_formats()) {
+        if (fmt.hwaccel == AV_HWDEVICE_TYPE_NONE) producer->vfmt.pix_fmt = fmt.pix_fmt;
+    }
+    //
+    return {};
+}
+
 ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : QWidget(parent), recording_type_(type)
+    : QWidget(parent), rec_type_(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
@@ -43,59 +73,22 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     selector_->scope(Selector::scope_t::display);
 #endif
 
-    // sources & dispatcher & encoder
-    if (recording_type_ == VIDEO) {
-        microphone_capturer_ = std::make_unique<AudioCapturer>();
-        speaker_capturer_    = std::make_unique<AudioCapturer>();
-    }
-
-    desktop_capturer_ = std::make_unique<DesktopCapturer>();
-    dispatcher_       = std::make_unique<Dispatcher>();
-    encoder_          = std::make_unique<Encoder>();
-
     // recording menu
-    menu_ = new RecordingMenu(m_mute_, s_mute_,
-                              (type == GIF ? 0x00 : RecordingMenu::AUDIO) | RecordingMenu::CAMERA, this);
+    menu_ = new RecordingMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordingMenu::AUDIO), this);
     connect(menu_, &RecordingMenu::stopped, this, &ScreenRecorder::stop);
     connect(menu_, &RecordingMenu::muted, this, &ScreenRecorder::mute);
-    connect(menu_, &RecordingMenu::paused, [this] { dispatcher_->pause(); });
-    connect(menu_, &RecordingMenu::resumed, [this] { dispatcher_->resume(); });
-
-    // preview camera
-    player_ = new VideoPlayer(this);
-
-    connect(menu_, &RecordingMenu::opened, [this](bool) { switchCamera(); });
-    connect(menu_, &RecordingMenu::stopped, player_, &VideoPlayer::close);
-    connect(player_, &VideoPlayer::started, [this] { menu_->camera_checked(true); });
-    connect(player_, &VideoPlayer::closed, [this] { menu_->camera_checked(false); });
+    connect(menu_, &RecordingMenu::paused, [this] {
+        if (dispatcher_) dispatcher_->pause();
+    });
+    connect(menu_, &RecordingMenu::resumed, [this] {
+        if (dispatcher_) dispatcher_->resume();
+    });
 
     // update time of the menu
     timer_ = new QTimer(this);
     connect(timer_, &QTimer::timeout, [this] {
-        menu_->time(std::chrono::duration_cast<std::chrono::seconds>(dispatcher_->escaped()));
+        if (dispatcher_) menu_->time(av::clock::s(dispatcher_->escaped()));
     });
-}
-
-void ScreenRecorder::switchCamera()
-{
-    if (player_->ready()) {
-        player_->close();
-        return;
-    }
-
-    if (av::cameras().empty()) {
-        LOG(WARNING) << "camera not found";
-        return;
-    }
-
-    auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
-#ifdef _WIN32
-    if (!player_->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
-#elif __linux__
-    if (!player_->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
-#endif
-        player_->close();
-    }
 }
 
 void ScreenRecorder::mute(int type, bool v)
@@ -103,27 +96,24 @@ void ScreenRecorder::mute(int type, bool v)
     switch (type) {
     case 1:
         m_mute_ = v;
-        microphone_capturer_->mute(v);
+        if (mic_src_) mic_src_->mute(v);
         break;
     case 2:
         s_mute_ = v;
-        speaker_capturer_->mute(v);
+        if (speaker_src_) speaker_src_->mute(v);
         break;
     default: break;
     }
 }
 
-void ScreenRecorder::record()
-{
-    !recording_ ? start() : [this] { stop(); }();
-}
+void ScreenRecorder::record() { !recording_ ? start() : stop(); }
 
 void ScreenRecorder::start()
 {
     recording_ = true;
 
     auto time_str = QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
-    if (recording_type_ == VIDEO) {
+    if (rec_type_ == VIDEO) {
         pix_fmt_                  = AV_PIX_FMT_YUV420P;
         codec_name_               = Config::instance()["record"]["encoder"];
         filters_                  = "";
@@ -154,45 +144,13 @@ void ScreenRecorder::start()
     activateWindow();
 }
 
-static std::pair<AVPixelFormat, AVHWDeviceType>
-set_pix_fmt(const std::unique_ptr<Producer<av::frame>>& producer,
-            const std::unique_ptr<Consumer<av::frame>>& consumer, const AVCodec *vcodec)
-{
-    if (!vcodec) return {};
-
-    const AVCodecHWConfig *config = nullptr;
-    for (int i = 0; (config = avcodec_get_hw_config(vcodec, i)); ++i) {
-        if (config->pix_fmt != AV_PIX_FMT_NONE) {
-
-            for (const auto& producer_fmt : producer->vformats()) {
-                if (producer_fmt.hwaccel == config->device_type &&
-                    producer_fmt.pix_fmt == config->pix_fmt) {
-
-                    producer->vfmt.pix_fmt = config->pix_fmt;
-                    consumer->vfmt.hwaccel = config->device_type;
-
-                    return { config->pix_fmt, config->device_type };
-                }
-            }
-        }
-    }
-
-    // software
-    for (const auto& fmt : producer->vformats()) {
-        if (fmt.hwaccel == AV_HWDEVICE_TYPE_NONE) producer->vfmt.pix_fmt = fmt.pix_fmt;
-    }
-    //
-    return {};
-}
-
 void ScreenRecorder::setup()
 {
     selector_->status(SelectorStatus::LOCKED);
 
     QRect region = selector_->selected(selector_->scope() != Selector::scope_t::desktop);
 
-    const auto show_region =
-        Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>();
+    const auto show_region = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>();
 #ifdef _WIN32
     show_region && (selector_->prey().type != hunter::prey_type_t::window &&
                     selector_->prey().type != hunter::prey_type_t::display)
@@ -204,12 +162,10 @@ void ScreenRecorder::setup()
 
     menu_->disable_mic(true);
     menu_->disable_speaker(true);
-    menu_->disable_cam(av::cameras().empty());
 
     // desktop capturer
-    framerate_ = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
-    const auto draw_mouse =
-        Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
+    framerate_ = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
+    const auto draw_mouse = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
 
     std::string                        name{};
     std::map<std::string, std::string> options{
@@ -249,51 +205,60 @@ void ScreenRecorder::setup()
     }
 #endif
 
+    // sources & dispatcher & encoder
+    if (rec_type_ == VIDEO) {
+        mic_src_     = std::make_unique<AudioCapturer>();
+        speaker_src_ = std::make_unique<AudioCapturer>();
+    }
+
+    desktop_src_ = std::make_unique<DesktopCapturer>();
+    dispatcher_  = std::make_unique<Dispatcher>();
+    encoder_     = std::make_unique<Encoder>();
+
     // video source
-    if (desktop_capturer_->open(name, options) < 0) {
+    if (desktop_src_->open(name, options) < 0) {
         LOG(ERROR) << fmt::format("[RECORDER] failed to open the desktop capturer: {}", name);
-        desktop_capturer_->reset();
+        desktop_src_ = std::make_unique<DesktopCapturer>();
         stop();
         return;
     }
 
-    dispatcher_->append(desktop_capturer_.get());
+    dispatcher_->add_input(desktop_src_.get());
+
+    int nb_ainputs = 0;
 
     // audio source
-    if (recording_type_ == VIDEO) {
-        if (!av::audio_sources().empty() && microphone_capturer_) {
-            if (microphone_capturer_->open(Config::instance()["devices"]["microphones"].get<std::string>(),
-                                           {}) < 0) {
+    if (rec_type_ == VIDEO) {
+        if (!av::audio_sources().empty() && mic_src_) {
+            if (mic_src_->open(Config::instance()["devices"]["microphones"].get<std::string>(), {}) < 0) {
                 LOG(WARNING) << "open microphone failed";
-                microphone_capturer_->reset();
+                mic_src_ = {};
             }
-            else if (microphone_capturer_->ready()) {
+            else if (mic_src_->ready()) {
                 menu_->disable_mic(false);
-                microphone_capturer_->mute(m_mute_);
-                dispatcher_->append(microphone_capturer_.get());
+                mic_src_->mute(m_mute_);
+                dispatcher_->add_input(mic_src_.get());
+                nb_ainputs++;
             }
         }
 
-        if (!av::audio_sinks().empty() && speaker_capturer_) {
-            if (speaker_capturer_->open(Config::instance()["devices"]["speakers"].get<std::string>(), {}) <
-                0) {
+        if (!av::audio_sinks().empty() && speaker_src_) {
+            if (speaker_src_->open(Config::instance()["devices"]["speakers"].get<std::string>(), {}) < 0) {
                 LOG(WARNING) << "open speaker failed";
-                speaker_capturer_->reset();
+                speaker_src_ = {};
             }
-            else if (speaker_capturer_->ready()) {
+            else if (speaker_src_->ready()) {
                 menu_->disable_speaker(false);
-                speaker_capturer_->mute(s_mute_);
-                dispatcher_->append(speaker_capturer_.get());
+                speaker_src_->mute(s_mute_);
+                dispatcher_->add_input(speaker_src_.get());
+                nb_ainputs++;
             }
         }
     }
 
-    // outputs
-    dispatcher_->set_encoder(encoder_.get());
-
     // set hwaccel & pixel format if any
     auto [pix_fmt, hwaccel] =
-        set_pix_fmt(desktop_capturer_, encoder_, avcodec_find_encoder_by_name(codec_name_.c_str()));
+        set_pix_fmt(desktop_src_, encoder_, avcodec_find_encoder_by_name(codec_name_.c_str()));
 
     std::string quality_name = "crf"; // TODO: CRF / CQP
     if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
@@ -301,29 +266,33 @@ void ScreenRecorder::setup()
         pix_fmt_     = pix_fmt;
     }
 
-    encoder_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
+    encoder_->vfmt.pix_fmt        = pix_fmt_;
+    encoder_->vfmt.framerate      = { framerate_, 1 };
+    encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
+    encoder_->afmt.channels       = 2;
+    encoder_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
+    encoder_->afmt.sample_rate    = 48000;
+    encoder_->vfmt.hwaccel        = hwaccel;
 
-    // prepare the filter graph and properties of encoder, let dispather decide which pixel format to be
-    // used for encoding
-    dispatcher_->vfmt.pix_fmt        = pix_fmt_;
-    dispatcher_->vfmt.hwaccel        = hwaccel;
-    dispatcher_->vfmt.framerate      = { framerate_, 1 };
-    dispatcher_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
-    dispatcher_->afmt.channels       = 2;
-    dispatcher_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
-    dispatcher_->afmt.sample_rate    = 48000;
-    if (dispatcher_->initialize(filters_, {}) < 0) {
+    // outputs
+    dispatcher_->set_output(encoder_.get());
+
+    // dispatcher
+    dispatcher_->set_hwaccel(hwaccel);
+    // TODO: the amix may not be closed with duration=longest
+    const auto afilters = nb_ainputs > 1 ? fmt::format("amix=inputs={}:duration=first", nb_ainputs) : "";
+    if (dispatcher_->initialize(filters_, afilters) < 0) {
         LOG(INFO) << "create filters failed";
         stop();
         return;
     }
 
-    encoder_options_["vcodec"] = codec_name_;
-    encoder_options_["acodec"] = "aac";
+    encoder_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
+    encoder_options_["vcodec"]     = codec_name_;
+    encoder_options_["acodec"]     = "aac";
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";
-        encoder_->reset();
         stop();
         return;
     }
@@ -331,7 +300,6 @@ void ScreenRecorder::setup()
     // start
     if (dispatcher_->start()) {
         LOG(WARNING) << "RECORDING!! Please exit first.";
-        dispatcher_->reset();
         stop();
         return;
     }
@@ -343,13 +311,16 @@ void ScreenRecorder::setup()
 void ScreenRecorder::stop()
 {
     selector_->close();
-
     menu_->close();
 
-    dispatcher_->stop();
+    dispatcher_  = {};
+    mic_src_     = {};
+    speaker_src_ = {};
+    desktop_src_ = {};
+    encoder_     = {};
 
     if (timer_->isActive()) {
-        emit SHOW_MESSAGE(recording_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>",
+        emit SHOW_MESSAGE(rec_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>",
                           tr("Path: ") + QString::fromStdString(filename_));
         timer_->stop();
     }
@@ -372,7 +343,7 @@ void ScreenRecorder::keyPressEvent(QKeyEvent *event)
 
 void ScreenRecorder::updateTheme()
 {
-    const auto& style = Config::instance()[recording_type_ == VIDEO ? "record" : "gif"]["selector"];
+    const auto& style = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["selector"];
     selector_->setBorderStyle(QPen{
         style["border"]["color"].get<QColor>(),
         static_cast<qreal>(style["border"]["width"].get<int>()),

@@ -132,7 +132,7 @@ int WasapiRenderer::start()
     thread_ = std::jthread([this]() {
         probe::thread::set_name("WASAPI-R-" + devinfo_.id);
 
-        LOG(INFO) << "[A] STARTED";
+        DLOG(INFO) << "[A] WASAPI RENDER THREAD STARTED";
 
         const HANDLE events[] = { STOP_EVENT.get(), REQUEST_EVENT.get(), SWITCH_EVENT.get() };
         while (running_) {
@@ -155,7 +155,7 @@ int WasapiRenderer::start()
             }
         }
 
-        LOG(INFO) << "[A] EXITED";
+        DLOG(INFO) << "[A] WASAPI RENDER THREAD EXITED";
     });
 
     return 0;
@@ -211,7 +211,7 @@ bool WasapiRenderer::muted() const
     return SUCCEEDED(volume_->GetMute(&muted)) && muted;
 }
 
-int WasapiRenderer::setVolume(float volume)
+int WasapiRenderer::set_volume(const float volume)
 {
     std::lock_guard lock(mtx_);
 
@@ -364,18 +364,27 @@ int WasapiRenderer::reset()
 
 int WasapiRenderer::stop()
 {
+    ::SetEvent(STOP_EVENT.get());
+
     running_ = false;
     ready_   = false;
 
     if (thread_.joinable()) thread_.join();
 
-    session_      = nullptr;
-    renderer_     = nullptr;
-    volume_       = nullptr;
-    audio_client_ = nullptr;
-    endpoint_     = nullptr;
+    LOG(INFO) << "[A] [  RENDERER] STOPPED";
 
     return 0;
+}
+
+WasapiRenderer::~WasapiRenderer()
+{
+    stop();
+
+    if (wfex_) CoTaskMemFree(wfex_);
+
+    InterlockedDecrement(&refs);
+
+    LOG(INFO) << "[A] [  RENDERER] ~";
 }
 
 HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)

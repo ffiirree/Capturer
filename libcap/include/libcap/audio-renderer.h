@@ -15,7 +15,12 @@ struct AudioRenderer
         RENDER_ALLOW_STREAM_SWITCH = 0x01,
     };
 
-    virtual ~AudioRenderer() = default;
+    AudioRenderer()                                = default;
+    AudioRenderer(const AudioRenderer&)            = delete;
+    AudioRenderer(AudioRenderer&&)                 = delete;
+    AudioRenderer& operator=(const AudioRenderer&) = delete;
+    AudioRenderer& operator=(AudioRenderer&&)      = delete;
+    virtual ~AudioRenderer()                       = default;
 
     [[nodiscard]] virtual int  open(const std::string& name, RenderFlags flags) = 0;
     [[nodiscard]] virtual bool ready() const                                    = 0;
@@ -29,8 +34,8 @@ struct AudioRenderer
     [[nodiscard]] virtual bool muted() const = 0;
 
     // 0.0 ~ 1.0
-    virtual int                 setVolume(float) = 0;
-    [[nodiscard]] virtual float volume() const   = 0;
+    virtual int                 set_volume(float) = 0;
+    [[nodiscard]] virtual float volume() const    = 0;
 
     virtual int                pause()        = 0;
     virtual int                resume()       = 0;

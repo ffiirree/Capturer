@@ -294,6 +294,30 @@
         <source>Hotkeys</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Channel Layout</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Video:</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Audio:</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>File:</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Save Path</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>VideoPlayer</name>

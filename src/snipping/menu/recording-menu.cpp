@@ -38,14 +38,6 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
         layout->addWidget(speaker_btn_);
     }
 
-    if (buttons & RecordingMenu::CAMERA) {
-        camera_btn_ = new QCheckBox();
-        camera_btn_->setChecked(false);
-        camera_btn_->setObjectName("camera-btn");
-        connect(camera_btn_, &QCheckBox::clicked, [this](auto checked) { emit opened(checked); });
-        layout->addWidget(camera_btn_);
-    }
-
     // time
     time_label_ = new QLabel("--:--:--");
     time_label_->setObjectName("time");
@@ -104,18 +96,6 @@ void RecordingMenu::mute(int type, bool muted)
     }
     else if (speaker_btn_) {
         speaker_btn_->setChecked(muted);
-    }
-}
-
-void RecordingMenu::camera_checked(bool v)
-{
-    if (camera_btn_) camera_btn_->setChecked(v);
-}
-
-void RecordingMenu::disable_cam(bool v)
-{
-    if (camera_btn_) {
-        camera_btn_->setDisabled(v);
     }
 }
 

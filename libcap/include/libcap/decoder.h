@@ -13,64 +13,51 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-class Decoder : public Producer<av::frame>
+class Decoder final : public Producer<av::frame>
 {
-    enum
+    enum : uint8_t
     {
-        DEMUXING_EOF  = 0x10,
         VDECODING_EOF = 0x01,
         ADECODING_EOF = 0x02,
-        SDECODING_EOF = 0x02,
-        DECODING_EOF  = DEMUXING_EOF | VDECODING_EOF | ADECODING_EOF | SDECODING_EOF
+        SDECODING_EOF = 0x04,
+        DECODING_EOF  = VDECODING_EOF | ADECODING_EOF | SDECODING_EOF
     };
 
 public:
     using super = Producer<AVFrame>;
 
-    ~Decoder() override { destroy(); }
-
-    // reset and stop the thread
-    void reset() override;
+    ~Decoder() override;
 
     // open input
-    int open(const std::string& name, std::map<std::string, std::string> options = {}) override;
+    int open(const std::string& name, std::map<std::string, std::string> options) override;
 
     // start thread
-    int run() override;
+    int start() override;
 
-    int produce(av::frame& frame, AVMediaType type) override;
-
-    bool empty(AVMediaType type) override;
+    // reset and stop the thread
+    void stop() override;
 
     void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel) override;
 
-    bool seeking() const override;
+    bool seeking() const;
 
     bool has(AVMediaType) const override;
 
-    std::string format_str(AVMediaType) const override;
+    std::chrono::nanoseconds start_time() const override;
 
-    AVRational time_base(AVMediaType) const override;
+    std::chrono::nanoseconds duration() const override;
 
     bool eof() override;
 
-    std::vector<av::vformat_t> vformats() const override { return { vfmt }; }
-
-    std::vector<av::aformat_t> aformats() const override { return { afmt }; }
-
-    int64_t duration() const override { return fmt_ctx_ ? fmt_ctx_->duration : AV_NOPTS_VALUE; }
-
-    bool has_enough(AVMediaType type) const;
+    bool is_realtime() const override { return false; }
 
     std::vector<std::map<std::string, std::string>> properties(AVMediaType) const override;
 
 private:
-    int  decode_fn();
-    void destroy();
+    int decode_fn();
 
     std::string name_{ "unknown" };
 
-    std::mutex   mtx_{};
     std::jthread thread_{};
 
     AVFormatContext *fmt_ctx_{};
@@ -82,10 +69,9 @@ private:
     int astream_idx_{ -1 };
     int sstream_idx_{ -1 };
 
-    int64_t SYNC_PTS{ 0 };
+    av::frame frame_{};
 
-    av::packet packet_{};
-    av::frame  frame_{};
+    std::atomic<bool> feof_{};
 
     // seek, AV_TIME_BASE @{
     mutable std::shared_mutex seek_mtx_{};
@@ -97,9 +83,7 @@ private:
     int64_t    audio_next_pts_{ AV_NOPTS_VALUE }; // samples
     AVRational audio_next_pts_tb_{};
 
-    safe_queue<av::frame>  vbuffer_{};
-    safe_queue<av::frame>  abuffer_{};
-    safe_queue<AVSubtitle> sbuffer_{};
+    bool is_realtime_{ false };
 };
 
 #endif //! CAPTURER_DECODER_H

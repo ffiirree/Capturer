@@ -23,48 +23,13 @@ int DShowCameraCapturer::open(const std::string&, std::map<std::string, std::str
     return 0;
 }
 
-void DShowCameraCapturer::reset() {}
-
-int DShowCameraCapturer::run() { return 0; }
-
-int DShowCameraCapturer::produce(av::frame& frame, AVMediaType mt)
+void DShowCameraCapturer::enable(const AVMediaType t, const bool value)
 {
-    if (mt != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(mt);
-        return -1;
-    }
-
-    if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
-
-    frame = buffer_.pop().value();
-    return 0;
+    if (t == AVMEDIA_TYPE_VIDEO) enabled_ = value;
 }
 
-bool DShowCameraCapturer::empty(AVMediaType mt) { return mt != AVMEDIA_TYPE_VIDEO || buffer_.empty(); }
+int DShowCameraCapturer::start() { return 0; }
 
-bool DShowCameraCapturer::has(AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
-
-std::string DShowCameraCapturer::format_str(AVMediaType mt) const
-{
-    if (mt != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[     DShow] unsupported media type: " << std::to_string(mt);
-        return {};
-    }
-
-    return av::to_string(vfmt);
-}
-
-AVRational DShowCameraCapturer::time_base(AVMediaType mt) const
-{
-    if (mt != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[     DShow] unsupported media type: " << std::to_string(mt);
-        return OS_TIME_BASE_Q;
-    }
-
-    return vfmt.time_base;
-}
-std::vector<av::vformat_t> DShowCameraCapturer::vformats() const { return { vfmt }; }
-
-void DShowCameraCapturer::capture_fn() {}
+bool DShowCameraCapturer::has(const AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
 
 #endif

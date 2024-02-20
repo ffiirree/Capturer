@@ -161,7 +161,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     return 0;
 }
 
-int WindowsGraphicsCapturer::run()
+int WindowsGraphicsCapturer::start()
 {
     if (!ready_ || running_) {
         LOG(ERROR) << "[       WGC] not ready or already running.";
@@ -173,36 +173,9 @@ int WindowsGraphicsCapturer::run()
     return 0;
 }
 
-int WindowsGraphicsCapturer::produce(av::frame& frame, AVMediaType type)
-{
-    if (type != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[       WGC] unsupported media type : " << av::to_string(type);
-        return -1;
-    }
+bool WindowsGraphicsCapturer::has(const AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
 
-    if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
-
-    frame = buffer_.pop().value();
-    return 0;
-}
-
-bool WindowsGraphicsCapturer::empty(AVMediaType) { return buffer_.empty(); }
-
-bool WindowsGraphicsCapturer::has(AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
-
-std::string WindowsGraphicsCapturer::format_str(AVMediaType mt) const
-{
-    if (mt != AVMEDIA_TYPE_VIDEO) {
-        LOG(ERROR) << "[       WGC] not supported";
-        return {};
-    }
-
-    return av::to_string(vfmt);
-}
-
-AVRational WindowsGraphicsCapturer::time_base(AVMediaType) const { return vfmt.time_base; }
-
-std::vector<av::vformat_t> WindowsGraphicsCapturer::vformats() const
+std::vector<av::vformat_t> WindowsGraphicsCapturer::video_formats() const
 {
     return {
         {
@@ -481,13 +454,10 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     // transfer frame to CPU if needed
     av::hwaccel::transfer_frame(frame.get(), vfmt.pix_fmt);
 
-    DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
-                              frame->pts, frame->width, frame->height);
+    // DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
+    //                           frame->pts, frame->width, frame->height);
 
-    // push FFmpeg frame to our frame pool
-    LOG_IF(WARNING, buffer_.size() >= buffer_.capacity()) << "[V] buffer is full, drop a frame";
-
-    buffer_.push(frame, true);
+    onarrived(frame, AVMEDIA_TYPE_VIDEO);
 }
 
 void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
@@ -500,7 +470,7 @@ void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
 }
 
 // Process captured frames
-void WindowsGraphicsCapturer::reset()
+void WindowsGraphicsCapturer::stop()
 {
     std::lock_guard lock(mtx_);
 
@@ -511,24 +481,9 @@ void WindowsGraphicsCapturer::reset()
     frame_pool_.Close();
     session_.Close();
 
-    device_.detach();
-    context_      = nullptr;
-    frame_pool_   = nullptr;
-    session_      = nullptr;
-    winrt_device_ = nullptr;
-    item_         = nullptr;
-
-    frame_number_ = 0;
-    box_          = { .front = 0, .back = 1 };
-
-    buffer_.clear();
-
-    eof_ = 0x01;
-
-    // TODO: ERROR! the thread may not exit yet
-    hwctx_ = nullptr;
-
-    LOG(INFO) << "[       WGC] RESET";
+    LOG(INFO) << "[       WGC] STOPPED";
 }
+
+WindowsGraphicsCapturer::~WindowsGraphicsCapturer() { stop(); }
 
 #endif

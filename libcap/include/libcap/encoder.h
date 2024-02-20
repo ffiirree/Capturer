@@ -3,6 +3,7 @@
 
 #include "audio-fifo.h"
 #include "consumer.h"
+#include "ffmpeg-wrapper.h"
 #include "logging.h"
 #include "queue.h"
 
@@ -16,62 +17,42 @@ class Encoder : public Consumer<av::frame>
 public:
     enum
     {
-        V_ENCODING_EOF      = 0x01,
-        A_ENCODING_EOF      = 0x02,
-        A_ENCODING_FIFO_EOF = 0x04,
-        ENCODING_EOF        = V_ENCODING_EOF | A_ENCODING_EOF | A_ENCODING_FIFO_EOF
+        V_ENCODING_EOF = 0x01,
+        A_ENCODING_EOF = 0x02,
+        ENCODING_EOF   = V_ENCODING_EOF | A_ENCODING_EOF,
     };
 
 public:
-    ~Encoder() override { destroy(); }
-
-    void reset() override;
+    ~Encoder() override;
 
     int open(const std::string&, std::map<std::string, std::string>) override;
 
-    int run() override;
-    int consume(av::frame& frame, AVMediaType type) override;
+    int start() override;
 
-    bool full(AVMediaType type) const override
+    void stop() override;
+
+    int consume(const av::frame& frame, AVMediaType type) override;
+
+    bool accepts(AVMediaType type) const override;
+
+    void enable(AVMediaType type, bool v) override;
+
+    bool eof() const override
     {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return vbuffer_.size() > vbuffer_.capacity();
-        case AVMEDIA_TYPE_AUDIO: return abuffer_->size() > 4096;
-        default:                 return true;
-        }
+        return (vstream_idx_ < 0 || eof_ & V_ENCODING_EOF) && (astream_idx_ < 0 || eof_ & A_ENCODING_EOF);
     }
-
-    bool accepts(AVMediaType type) const override
-    {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: return video_enabled_;
-        case AVMEDIA_TYPE_AUDIO: return audio_enabled_;
-        default:                 return false;
-        }
-    }
-
-    void enable(AVMediaType type, bool v = true) override
-    {
-        switch (type) {
-        case AVMEDIA_TYPE_VIDEO: video_enabled_ = v; break;
-        case AVMEDIA_TYPE_AUDIO: audio_enabled_ = v; break;
-        default:                 break;
-        }
-    }
-
-    bool eof() const override { return eof_ == ENCODING_EOF; }
 
 private:
     int new_video_stream(const std::string& codec_name);
     int new_auido_stream(const std::string& codec_name);
 
-    std::pair<int, int> video_sync_process();
+    std::pair<int, int> video_sync_process(av::frame& frame);
     int                 process_video_frames();
     int                 process_audio_frames();
-    void                destroy();
+    void                close_output_file();
 
-    int               video_stream_idx_{ -1 };
-    int               audio_stream_idx_{ -1 };
+    int               vstream_idx_{ -1 };
+    int               astream_idx_{ -1 };
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
@@ -81,7 +62,6 @@ private:
     AVCodecContext  *acodec_ctx_{};
     // @}
 
-    std::mutex   mtx_{};
     std::jthread thread_{};
 
     int64_t v_last_dts_{ AV_NOPTS_VALUE };
@@ -89,12 +69,12 @@ private:
     int64_t audio_pts_{ 0 };
 
     av::packet packet_{};
-    av::frame  filtered_frame_{};
     av::frame  last_frame_{};
 
     // the expected pts of next video frame computed by last pts and duration
     int64_t expected_pts_{ AV_NOPTS_VALUE };
 
+    std::atomic<bool>                asrc_eof_{};
     std::unique_ptr<safe_audio_fifo> abuffer_{};
     safe_queue<av::frame>            vbuffer_{ 8 };
 

@@ -6,8 +6,9 @@
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/hwaccel.h"
 #include "libcap/producer.h"
-#include "libcap/queue.h"
 #include "win-wgc.h"
+
+#include <mutex>
 
 class WindowsGraphicsCapturer final : public Producer<av::frame>
 {
@@ -18,7 +19,7 @@ class WindowsGraphicsCapturer final : public Producer<av::frame>
     };
 
 public:
-    ~WindowsGraphicsCapturer() override { reset(); }
+    ~WindowsGraphicsCapturer() override;
 
     /**
      * @param name      window  capture: "window=<HWND>"
@@ -36,18 +37,15 @@ public:
      */
     int open(const std::string& name, std::map<std::string, std::string> options) override;
 
-    void reset() override;
+    int start() override;
 
-    int run() override;
+    void stop() override;
 
-    int  produce(av::frame&, AVMediaType) override;
-    bool empty(AVMediaType) override;
+    bool has(AVMediaType mt) const override;
 
-    bool        has(AVMediaType mt) const override;
-    std::string format_str(AVMediaType) const override;
-    AVRational  time_base(AVMediaType) const override;
+    std::vector<av::vformat_t> video_formats() const override;
 
-    std::vector<av::vformat_t> vformats() const override;
+    bool is_realtime() const override { return true; }
 
 private:
     void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
@@ -110,10 +108,8 @@ private:
     bool      show_region_{ true };
     D3D11_BOX box_{ .front = 0, .back = 1 };
     // @}
-
-    safe_queue<av::frame> buffer_{ 4 };
 };
 
-#endif //! CAPTURER_WGC_CAPTURER_H
-
 #endif
+
+#endif //! CAPTURER_WGC_CAPTURER_H

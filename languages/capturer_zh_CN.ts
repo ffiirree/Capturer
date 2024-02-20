@@ -294,6 +294,30 @@
         <source>Hotkeys</source>
         <translation>快捷键</translation>
     </message>
+    <message>
+        <source>Channel Layout</source>
+        <translation>声道</translation>
+    </message>
+    <message>
+        <source>Video:</source>
+        <translation>视频:</translation>
+    </message>
+    <message>
+        <source>Audio:</source>
+        <translation>音频:</translation>
+    </message>
+    <message>
+        <source>File:</source>
+        <translation>文件</translation>
+    </message>
+    <message>
+        <source>Save Path</source>
+        <translation>保存路径</translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation>封装格式</translation>
+    </message>
 </context>
 <context>
     <name>VideoPlayer</name>

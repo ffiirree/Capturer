@@ -1,6 +1,7 @@
 #ifndef CAPTURER_CONTROL_WIDGET_H
 #define CAPTURER_CONTROL_WIDGET_H
 
+#include "combobox.h"
 #include "framelesswindow.h"
 #include "slider.h"
 
@@ -14,11 +15,13 @@ public:
     explicit ControlWidget(FramelessWindow *parent);
 
 public slots:
-    void setDuration(int64_t duration); // milliseconds
-    void setTime(int64_t ts);           // milliseconds
+    void setDuration(int64_t duration); // microseconds
+    void setTime(int64_t ts);           // microseconds
 
     void setVolume(int);
     void setMute(bool);
+
+    void setLiveMode(bool);
 
     [[nodiscard]] bool paused() const;
 
@@ -34,6 +37,7 @@ signals:
 
 private:
     Slider    *time_slider_{};
+    ComboBox  *speed_box_{};
     QCheckBox *volume_btn_{};
     Slider    *volume_slider_{};
 

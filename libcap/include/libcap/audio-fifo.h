@@ -1,6 +1,7 @@
 #ifndef CAPTURER_AuDIO_FIFO_H
 #define CAPTURER_AuDIO_FIFO_H
 
+#include <condition_variable>
 #include <mutex>
 
 extern "C" {
@@ -10,7 +11,7 @@ extern "C" {
 class safe_audio_fifo
 {
 public:
-    explicit safe_audio_fifo(AVSampleFormat sample_fmt, int channels, int size);
+    explicit safe_audio_fifo(AVSampleFormat sample_fmt, int channels, int capacity);
 
     safe_audio_fifo(const safe_audio_fifo&)            = delete;
     safe_audio_fifo& operator=(const safe_audio_fifo&) = delete;
@@ -39,6 +40,8 @@ public:
      */
     int write(void **data, int nb_samples);
 
+    int wait_and_write(void **data, int nb_samples);
+
     /**
      * Read data from the AVAudioFifo.
      *
@@ -51,14 +54,26 @@ public:
      */
     int read(void **data, int nb_samples);
 
-    int peek(void **data, int nb_samples);
+    int wait_and_read(void **data, int nb_samples);
+
+    int peek(void **data, int nb_samples) const;
 
     //
 
-    void clear();
+    void drain();
+
+    void start();
+
+    void stop();
 
 private:
-    mutable std::mutex mtx_{};
+    mutable std::mutex      mtx_{};
+    std::condition_variable nonempty_{};
+    std::condition_variable nonfull_{};
+
+    int capacity_{ std::numeric_limits<int>::max() };
+
+    bool stopped_{};
 
     AVAudioFifo *buffer_{};
 };

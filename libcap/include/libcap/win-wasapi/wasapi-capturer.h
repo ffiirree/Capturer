@@ -6,7 +6,6 @@
 #include "libcap/devices.h"
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
-#include "libcap/queue.h"
 
 #include <Audioclient.h>
 #include <mmdeviceapi.h>
@@ -14,43 +13,27 @@
 #include <winrt/base.h>
 
 extern "C" {
-#include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 }
 
-class WasapiCapturer : public Producer<av::frame>
+class WasapiCapturer final : public Producer<av::frame>
 {
 public:
-    ~WasapiCapturer() override { reset(); }
+    ~WasapiCapturer() override;
 
     int open(const std::string&, std::map<std::string, std::string>) override;
 
-    void reset() override { destroy(); };
+    int start() override;
 
-    int run() override;
+    void stop() override;
 
-    int produce(av::frame&, AVMediaType) override;
+    bool has(const AVMediaType type) const override { return type == AVMEDIA_TYPE_AUDIO; }
 
-    bool empty(AVMediaType type) override
-    {
-        switch (type) {
-        case AVMEDIA_TYPE_AUDIO: return buffer_.empty();
-        default:                 return true;
-        }
-    }
+    bool is_realtime() const override { return true; }
 
-    bool has(AVMediaType type) const override { return type == AVMEDIA_TYPE_AUDIO; }
-
-    std::string format_str(AVMediaType) const override;
-    AVRational  time_base(AVMediaType) const override;
-
-    std::vector<av::vformat_t> vformats() const override { return {}; }
-
-    std::vector<av::aformat_t> aformats() const override { return { afmt }; }
+    std::vector<av::aformat_t> audio_formats() const override { return { afmt }; }
 
 private:
-    int destroy();
-
     void init_format(WAVEFORMATEX *);
 
     int init_capturer(IMMDevice *);
@@ -60,8 +43,6 @@ private:
     int process_received_data(BYTE *, UINT32, UINT64);
 
     std::jthread thread_{};
-
-    safe_queue<av::frame> buffer_{ 32 };
 
     int64_t start_time_{ AV_NOPTS_VALUE };
 
@@ -78,8 +59,8 @@ private:
     // @}
 
     // events
-    HANDLE ARRIVED_EVENT{ nullptr };
-    HANDLE STOP_EVENT{ nullptr };
+    winrt::handle ARRIVED_EVENT{};
+    winrt::handle STOP_EVENT{};
 
     av::device_t device_{};
 };

@@ -15,6 +15,7 @@
 #include <QListWidget>
 #include <QSettings>
 #include <QSpinBox>
+#include <QStandardPaths>
 #include <QVBoxLayout>
 
 static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString>> PENSTYLES = {
@@ -174,102 +175,171 @@ QWidget *SettingWindow::setupSnipWidget()
 
 QWidget *SettingWindow::setupRecordWidget()
 {
-    auto record_widget = new QWidget(pages_);
+    const auto record_widget = new QWidget(pages_);
 
-    auto layout = new QGridLayout();
+    const auto layout = new QGridLayout();
     layout->setContentsMargins(35, 10, 35, 15);
 
-    auto _0 = new QLabel(tr("Appearance:"));
-    _0->setObjectName("sub-title");
-    layout->addWidget(_0, 0, 1, 1, 1);
+    int ridx = 0;
 
-    auto _1_2 = new QSpinBox();
-    _1_2->setRange(1, 6);
-    _1_2->setContextMenuPolicy(Qt::NoContextMenu);
-    _1_2->setValue(config["record"]["selector"]["border"]["width"].get<int>());
-    connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            [this](int w) { config.set(config["record"]["selector"]["border"]["width"], w); });
-    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
-    layout->addWidget(_1_2, 1, 2, 1, 2);
+    const auto appearance = new QLabel(tr("Appearance:"));
+    appearance->setObjectName("sub-title");
+    layout->addWidget(appearance, ridx++, 1, 1, 1);
 
-    auto _2_2 = new ColorDialogButton(config["record"]["selector"]["border"]["color"].get<QColor>());
-    connect(_2_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["record"]["selector"]["border"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
-    layout->addWidget(_2_2, 2, 2, 1, 2);
+    {
+        const auto border_w = new QSpinBox();
+        border_w->setRange(1, 6);
+        border_w->setContextMenuPolicy(Qt::NoContextMenu);
+        border_w->setValue(config["record"]["selector"]["border"]["width"].get<int>());
+        connect(border_w, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+                [this](auto w) { config.set(config["record"]["selector"]["border"]["width"], w); });
+        layout->addWidget(new QLabel(tr("Border Width")), ridx, 1, 1, 1);
+        layout->addWidget(border_w, ridx++, 2, 1, 2);
 
-    auto _3_2 = new ComboBox();
-    _3_2->add(PENSTYLES)
-        .onselected([this](auto value) {
-            config.set(config["record"]["selector"]["border"]["style"], value.toInt());
-        })
-        .select(config["record"]["selector"]["border"]["style"].get<int>());
-    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
-    layout->addWidget(_3_2, 3, 2, 1, 2);
+        auto _2_2 = new ColorDialogButton(config["record"]["selector"]["border"]["color"].get<QColor>());
+        connect(_2_2, &ColorDialogButton::changed,
+                [this](auto&& c) { config.set(config["record"]["selector"]["border"]["color"], c); });
+        layout->addWidget(new QLabel(tr("Border Color")), ridx, 1, 1, 1);
+        layout->addWidget(_2_2, ridx++, 2, 1, 2);
 
-    auto _4_2 = new ColorDialogButton(config["record"]["selector"]["mask"]["color"].get<QColor>());
-    connect(_4_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["record"]["selector"]["mask"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
-    layout->addWidget(_4_2, 4, 2, 1, 2);
+        auto _3_2 = new ComboBox();
+        _3_2->add(PENSTYLES)
+            .onselected([this](auto value) {
+                config.set(config["record"]["selector"]["border"]["style"], value.toInt());
+            })
+            .select(config["record"]["selector"]["border"]["style"].get<int>());
+        layout->addWidget(new QLabel(tr("Line Type")), ridx, 1, 1, 1);
+        layout->addWidget(_3_2, ridx++, 2, 1, 2);
 
-    auto _5_2 = new QCheckBox();
-    _5_2->setChecked(config["record"]["box"].get<bool>());
-    connect(_5_2, &QCheckBox::stateChanged,
-            [this](int state) { config.set(config["record"]["box"], state == Qt::Checked); });
-    layout->addWidget(new QLabel(tr("Show Region")), 5, 1, 1, 1);
-    layout->addWidget(_5_2, 5, 2, 1, 2);
+        auto _4_2 = new ColorDialogButton(config["record"]["selector"]["mask"]["color"].get<QColor>());
+        connect(_4_2, &ColorDialogButton::changed,
+                [this](auto&& c) { config.set(config["record"]["selector"]["mask"]["color"], c); });
+        layout->addWidget(new QLabel(tr("Mask Color")), ridx, 1, 1, 1);
+        layout->addWidget(_4_2, ridx++, 2, 1, 2);
 
-    layout->addWidget(new QLabel(), 6, 1, 1, 1);
-
-    auto _5 = new QLabel(tr("Params:"));
-    _5->setObjectName("sub-title");
-    layout->addWidget(_5, 7, 1, 1, 1);
-
-    auto _6_2 = new QSpinBox();
-    _6_2->setRange(1, 144);
-    _6_2->setContextMenuPolicy(Qt::NoContextMenu);
-    _6_2->setValue(config["record"]["framerate"].get<int>());
-    connect(_6_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            [this](int w) { config.set(config["record"]["framerate"], w); });
-    layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
-    layout->addWidget(_6_2, 8, 2, 1, 2);
-
-    auto _7_2 = new ComboBox();
-    _7_2->add({
-        { "libx264", tr("Software x264 [H.264 / AVC]") },
-        { "libx265", tr("Software x265 [H.265 / HEVC]") },
-    });
-    if (av::hwaccel::is_supported(AV_HWDEVICE_TYPE_CUDA)) {
-        _7_2->add({
-            { "h264_nvenc", tr("Hardware NVENC [H.264 / AVC]") },
-            { "hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]") },
-        });
+        const auto box = new QCheckBox();
+        box->setChecked(config["record"]["box"].get<bool>());
+        connect(box, &QCheckBox::toggled,
+                [this](auto checked) { config.set(config["record"]["box"], checked); });
+        layout->addWidget(new QLabel(tr("Show Region")), ridx, 1, 1, 1);
+        layout->addWidget(box, ridx++, 2, 1, 2);
     }
-    _7_2->onselected([this](auto value) { config.set(config["record"]["encoder"], value.toString()); })
-        .select(config["record"]["encoder"].get<QString>());
-    layout->addWidget(new QLabel(tr("Encoder")), 9, 1, 1, 1);
-    layout->addWidget(_7_2, 9, 2, 1, 2);
 
-    auto _8_2 = new ComboBox();
-    _8_2->add({
-                  { "high", tr("High") },
-                  { "medium", tr("Medium") },
-                  { "low", tr("Low") },
-              })
-        .onselected([this](auto value) { config.set(config["record"]["quality"], value.toString()); })
-        .select(config["record"]["quality"].get<QString>());
-    layout->addWidget(new QLabel(tr("Quality")), 10, 1, 1, 1);
-    layout->addWidget(_8_2, 10, 2, 1, 2);
+    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
 
-    auto _cm_2 = new QCheckBox();
-    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
-    connect(_cm_2, &QCheckBox::stateChanged,
-            [this](int state) { config.set(config["record"]["mouse"], state == Qt::Checked); });
-    layout->addWidget(new QLabel(tr("Capture Mouse")), 11, 1, 1, 1);
-    layout->addWidget(_cm_2, 11, 2, 1, 2);
+    const auto file = new QLabel(tr("File:"));
+    file->setObjectName("sub-title");
+    layout->addWidget(file, ridx++, 1, 1, 1);
 
-    layout->setRowStretch(12, 1);
+    {
+        const auto path = new QLineEdit(QStandardPaths::writableLocation(QStandardPaths::MoviesLocation));
+        path->setContextMenuPolicy(Qt::NoContextMenu);
+        path->setReadOnly(true);
+        layout->addWidget(new QLabel(tr("Save Path")), ridx, 1, 1, 1);
+        layout->addWidget(path, ridx++, 2, 1, 2);
+
+        const auto format = new ComboBox();
+        format
+            ->add({
+                { "mp4", "MPEG-4 (.mp4)" },
+                { "mkv", "Matroska Video (.mkv)" },
+            })
+            .onselected([this](auto value) { config.set(config["record"]["mcf"], value.toString()); })
+            .select(config["record"]["mcf"].get<QString>());
+        layout->addWidget(new QLabel(tr("Format")), ridx, 1, 1, 1);
+        layout->addWidget(format, ridx++, 2, 1, 2);
+    }
+
+    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
+
+    const auto vparams = new QLabel(tr("Video:"));
+    vparams->setObjectName("sub-title");
+    layout->addWidget(vparams, ridx++, 1, 1, 1);
+
+    {
+        const auto framerate = new ComboBox();
+        framerate
+            ->add({
+                { QPoint{ 10, 1 }, "10" },
+                { QPoint{ 20, 1 }, "20" },
+                { QPoint{ 24, 1 }, "24 NTSC" },
+                { QPoint{ 25, 1 }, "25 PAL" },
+                { QPoint{ 29, 1 }, "30" },
+                { QPoint{ 30000, 10001 }, "30" },
+                { QPoint{ 48, 1 }, "48" },
+                { QPoint{ 50, 1 }, "50 PAL" },
+                { QPoint{ 60000, 1 }, "59.94" },
+                { QPoint{ 60, 1 }, "60" },
+                { QPoint{ 120, 1 }, "120" },
+            })
+            .onselected(
+                [this](auto value) { config.set(config["record"]["video"]["framerate"], value.toPoint()); })
+            .select(config["record"]["video"]["framerate"].get<QPoint>());
+        layout->addWidget(new QLabel(tr("Framerate")), ridx, 1, 1, 1);
+        layout->addWidget(framerate, ridx++, 2, 1, 2);
+
+        const auto encoder = new ComboBox();
+        encoder->add({
+            { "libx264", tr("Software x264 [H.264 / AVC]") },
+            { "libx265", tr("Software x265 [H.265 / HEVC]") },
+        });
+        if (av::hwaccel::is_supported(AV_HWDEVICE_TYPE_CUDA)) {
+            encoder->add({
+                { "h264_nvenc", tr("Hardware NVENC [H.264 / AVC]") },
+                { "hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]") },
+            });
+        }
+        encoder
+            ->onselected([this](auto value) { config.set(config["record"]["encoder"], value.toString()); })
+            .select(config["record"]["encoder"].get<QString>());
+        layout->addWidget(new QLabel(tr("Encoder")), ridx, 1, 1, 1);
+        layout->addWidget(encoder, ridx++, 2, 1, 2);
+
+        const auto quality = new ComboBox();
+        quality
+            ->add({
+                { "high", tr("High") },
+                { "medium", tr("Medium") },
+                { "low", tr("Low") },
+            })
+            .onselected([this](auto value) { config.set(config["record"]["quality"], value.toString()); })
+            .select(config["record"]["quality"].get<QString>());
+        layout->addWidget(new QLabel(tr("Quality")), ridx, 1, 1, 1);
+        layout->addWidget(quality, ridx++, 2, 1, 2);
+
+        auto _cm_2 = new QCheckBox();
+        _cm_2->setChecked(config["record"]["mouse"].get<bool>());
+        connect(_cm_2, &QCheckBox::toggled,
+                [this](auto checked) { config.set(config["record"]["mouse"], checked); });
+        layout->addWidget(new QLabel(tr("Capture Mouse")), ridx, 1, 1, 1);
+        layout->addWidget(_cm_2, ridx++, 2, 1, 2);
+    }
+
+    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
+
+    const auto aparams = new QLabel(tr("Audio:"));
+    aparams->setObjectName("sub-title");
+    layout->addWidget(aparams, ridx++, 1, 1, 1);
+
+    {
+        const auto codec = new ComboBox();
+        codec->add("aac", "AAC / Advanced Audio Coding")
+            .onselected(
+                [this](auto value) { config.set(config["record"]["audio"]["codec"], value.toString()); })
+            .select(config["record"]["audio"]["codec"].get<QString>());
+        layout->addWidget(new QLabel(tr("Encoder")), ridx, 1, 1, 1);
+        layout->addWidget(codec, ridx++, 2, 1, 2);
+
+        const auto channels = new ComboBox();
+        channels->add(2, "Stereo")
+            .onselected(
+                [this](auto value) { config.set(config["record"]["audio"]["channels"], value.toInt()); })
+            .select(config["record"]["audio"]["channels"].get<int>());
+        layout->addWidget(new QLabel(tr("Channel Layout")), ridx, 1, 1, 1);
+        layout->addWidget(channels, ridx++, 2, 1, 2);
+    }
+
+    layout->setRowStretch(ridx, 1);
 
     record_widget->setLayout(layout);
 

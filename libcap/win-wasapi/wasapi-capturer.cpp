@@ -81,17 +81,17 @@ int WasapiCapturer::init_capturer(IMMDevice *device)
         capturer_audio_client_->GetService(winrt::guid_of<IAudioCaptureClient>(), capturer_.put_void()));
 
     // events
-    if (STOP_EVENT = CreateEvent(nullptr, true, false, nullptr); !STOP_EVENT) {
+    if (STOP_EVENT.attach(CreateEvent(nullptr, true, false, nullptr)); !STOP_EVENT) {
         LOG(ERROR) << "failed to create STOP_EVENT.";
         return -1;
     }
 
-    if (ARRIVED_EVENT = CreateEvent(nullptr, false, false, nullptr); !ARRIVED_EVENT) {
+    if (ARRIVED_EVENT.attach(CreateEvent(nullptr, false, false, nullptr)); !ARRIVED_EVENT) {
         LOG(ERROR) << "failed to create ARRIVED_EVENT.";
         return -1;
     }
 
-    RETURN_NEGV_IF_FAILED(capturer_audio_client_->SetEventHandle(ARRIVED_EVENT));
+    RETURN_NEGV_IF_FAILED(capturer_audio_client_->SetEventHandle(ARRIVED_EVENT.get()));
 
     return 0;
 }
@@ -126,7 +126,7 @@ int WasapiCapturer::init_silent_render(IMMDevice *device)
     return 0;
 }
 
-int WasapiCapturer::run()
+int WasapiCapturer::start()
 {
     if (!ready_ || running_) {
         LOG(ERROR) << "[  WASAPI-C] not ready or running.";
@@ -151,7 +151,7 @@ int WasapiCapturer::run()
         DWORD  flags       = 0;
         UINT64 ts          = 0;
 
-        const HANDLE events[] = { STOP_EVENT, ARRIVED_EVENT };
+        const HANDLE events[] = { STOP_EVENT.get(), ARRIVED_EVENT.get() };
 
         while (running_) {
             switch (
@@ -195,7 +195,7 @@ int WasapiCapturer::run()
 
         winrt::check_hresult(capturer_audio_client_->Stop());
 
-        LOG(INFO) << "[A] EXITED";
+        DLOG(INFO) << "[A] THREAD EXITED";
     });
 
     return 0;
@@ -203,15 +203,19 @@ int WasapiCapturer::run()
 
 int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UINT64)
 {
-    av::frame frame{};
+    const av::frame frame{};
 
     frame->pts         = av::clock::ns().count() - av_rescale(nb_samples, OS_TIME_BASE, afmt.sample_rate);
     frame->pkt_dts     = frame->pts;
     frame->nb_samples  = static_cast<int>(nb_samples);
     frame->format      = afmt.sample_fmt;
     frame->sample_rate = afmt.sample_rate;
-    frame->channels    = afmt.channels;
+#if FFMPEG_NEW_CHANNEL_LAYOUT
+    frame->ch_layout = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
+#else
+    frame->channels       = afmt.channels;
     frame->channel_layout = afmt.channel_layout;
+#endif
 
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
@@ -221,82 +225,36 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     }
 
     if (muted_)
-        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels,
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, afmt.channels,
                                static_cast<AVSampleFormat>(frame->format));
 
-    LOG_IF(WARNING, buffer_.size() >= buffer_.capacity()) << "[A] buffer is full, drop a packet";
-    buffer_.push(frame, true);
+    // DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
+    //                           frame_number_++, frame->pts, frame->nb_samples, muted_.load());
 
-    DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-                              frame_number_++, frame->pts, frame->nb_samples, muted_.load());
+    onarrived(frame, AVMEDIA_TYPE_AUDIO);
 
     return 0;
 }
 
-std::string WasapiCapturer::format_str(AVMediaType type) const
+void WasapiCapturer::stop()
 {
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO: return av::to_string(afmt);
-    default:                 LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return {};
-    }
-}
-
-AVRational WasapiCapturer::time_base(AVMediaType type) const
-{
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO: {
-        return afmt.time_base;
-    }
-    default:
-        LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type);
-        return OS_TIME_BASE_Q;
-    }
-}
-
-int WasapiCapturer::produce(av::frame& frame, AVMediaType type)
-{
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO:
-        if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
-
-        frame = buffer_.pop().value();
-        return 0;
-
-    default: LOG(ERROR) << "[  WASAPI-C] unsupported media type : " << av::to_string(type); return -1;
-    }
-}
-
-int WasapiCapturer::destroy()
-{
-    ::SetEvent(STOP_EVENT);
+    ::SetEvent(STOP_EVENT.get());
 
     running_ = false;
     ready_   = false;
 
     if (thread_.joinable()) thread_.join();
 
-    buffer_.clear();
-    start_time_ = AV_NOPTS_VALUE;
+    if (render_audio_client_) render_audio_client_->Stop();
 
-    if (render_audio_client_) {
-        render_audio_client_->Stop();
-    }
+    LOG(INFO) << "[  WASAPI-C] STOPPED";
+}
 
-    if (STOP_EVENT && STOP_EVENT != INVALID_HANDLE_VALUE) {
-        ::CloseHandle(STOP_EVENT);
-    }
+WasapiCapturer::~WasapiCapturer()
+{
+    stop();
 
-    // TODO : Exception thrown at 0x00007FFC1FC72D6A (ntdll.dll) in capturer.exe: 0xC0000008: An invalid
-    // handle was specified.
-    if (ARRIVED_EVENT && ARRIVED_EVENT != INVALID_HANDLE_VALUE) {
-        ::CloseHandle(ARRIVED_EVENT);
-    }
-
-    frame_number_ = 0;
-
-    LOG(INFO) << "[  WASAPI-C] RESET";
-
-    return 0;
+    LOG(INFO) << "[  WASAPI-C] ~";
 }
 
 #endif // _WIN32

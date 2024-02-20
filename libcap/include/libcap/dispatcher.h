@@ -2,9 +2,11 @@
 #define CAPTURER_DISPATCHER_H
 
 #include "consumer.h"
+#include "ffmpeg-wrapper.h"
 #include "hwaccel.h"
 #include "media.h"
 #include "producer.h"
+#include "queue.h"
 
 #include <mutex>
 #include <set>
@@ -14,62 +16,60 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 }
 
+struct DispatchContext
+{
+    std::unordered_map<Producer<av::frame> *, AVFilterContext *> srcs{};
+    AVFilterContext                                             *sink{};
+
+    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 24 };
+
+    AVFilterGraph    *graph{};
+    AVHWDeviceType    hwaccel{ AV_HWDEVICE_TYPE_NONE };
+    std::string       graph_desc{};
+    std::atomic<bool> dirty{};
+
+    std::atomic<bool> enabled{};
+    std::atomic<bool> running{};
+    std::atomic<bool> seeking{};
+
+    std::jthread thread;
+};
+
 class Dispatcher
 {
 public:
     explicit Dispatcher() = default;
 
-    ~Dispatcher() { reset(); }
+    ~Dispatcher();
 
-    void append(Producer<av::frame> *decoder);
+    int add_input(Producer<av::frame> *decoder);
 
-    void set_encoder(Consumer<av::frame> *encoder);
+    void set_output(Consumer<av::frame> *encoder);
+
+    void set_hwaccel(AVHWDeviceType);
 
     int initialize(const std::string_view& video_filters, const std::string_view& audio_filters);
-
-    int send_command(AVMediaType mt, const std::string& target, const std::string& cmd,
-                     const std::string& arg);
 
     int                      start();
     void                     pause();
     void                     resume();
     std::chrono::nanoseconds paused_time();
-    int                      reset();
 
     void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel);
 
-    void stop() { reset(); }
+    void stop();
 
-    [[nodiscard]] bool running() const { return vrunning_ || arunning_; }
+    [[nodiscard]] bool running() const { return vctx_.running || actx_.running; }
 
     [[nodiscard]] std::chrono::nanoseconds escaped();
-
-    void                      set_clock(const av::clock_t t) { clock_ = t; }
-    [[nodiscard]] av::clock_t clock() const { return clock_; }
 
     void set_video_filters(std::string_view vf);
 
     void set_audio_filters(std::string_view af);
 
-    av::vformat_t vfmt{};
-    av::aformat_t afmt{};
-
 private:
-    struct ProducerContext
-    {
-        AVFilterContext     *src_ctx;
-        Producer<av::frame> *producer;
-    };
-
-    struct ConsumerContext
-    {
-        AVFilterContext     *asink_ctx;
-        AVFilterContext     *vsink_ctx;
-        Consumer<av::frame> *consumer;
-    };
-
-    int create_video_sink(const Consumer<av::frame> *, AVFilterContext **);
-    int create_audio_sink(const Consumer<av::frame> *, AVFilterContext **);
+    int create_video_sink(AVFilterContext **ctx, const av::vformat_t& args) const;
+    int create_audio_sink(AVFilterContext **ctx, const av::aformat_t& args) const;
 
     int create_filter_graph(AVMediaType);
 
@@ -89,37 +89,13 @@ private:
     std::chrono::nanoseconds start_time_{ av::clock::nopts };
     //@}
 
-    // filter graphs @{
-    bool video_enabled_{};
-    bool audio_enabled_{};
-
     std::set<Producer<av::frame> *> producers_{};
+    Consumer<av::frame>            *consumer_{};
 
-    std::vector<ProducerContext> aproducer_ctxs_{};
-    std::vector<ProducerContext> vproducer_ctxs_{};
+    std::atomic<bool> ready_{};
 
-    ConsumerContext consumer_ctx_{};
-
-    std::string vfilters_{};
-    std::string afilters_{};
-
-    AVFilterGraph    *agraph_{};
-    std::atomic<bool> af_dirty_{};
-    AVFilterGraph    *vgraph_{};
-    std::atomic<bool> vf_dirty_{};
-    // @}
-
-    std::atomic<bool> vrunning_{ false };
-    std::atomic<bool> arunning_{ false };
-    std::atomic<bool> draining_{ false };
-    std::atomic<bool> ready_{ false };
-
-    std::jthread video_thread_;
-    std::jthread audio_thread_;
-
-    std::atomic<bool>        vseeking_{ false };
-    std::atomic<bool>        aseeking_{ false };
-    std::atomic<av::clock_t> clock_{ av::clock_t::system };
+    DispatchContext vctx_{};
+    DispatchContext actx_{};
 };
 
 #endif //! CAPTURER_DISPATCHER_H

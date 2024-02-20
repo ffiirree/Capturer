@@ -54,10 +54,16 @@ Config::Config()
     IF_NULL_SET(settings_["record"]["selector"]["border"]["color"], "#ffff5500");
     IF_NULL_SET(settings_["record"]["selector"]["border"]["style"], Qt::SolidLine);
     IF_NULL_SET(settings_["record"]["selector"]["mask"]["color"],   "#88000000");
+
+    IF_NULL_SET(settings_["record"]["mcf"],                         "mp4");
+
     IF_NULL_SET(settings_["record"]["encoder"],                     "libx264");
     IF_NULL_SET(settings_["record"]["quality"],                     "medium");
     IF_NULL_SET(settings_["record"]["box"],                         false);
     IF_NULL_SET(settings_["record"]["mouse"],                       true);
+
+    IF_NULL_SET(settings_["record"]["audio"]["codec"],              "aac");
+    IF_NULL_SET(settings_["record"]["audio"]["channels"],            2);
 
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["width"],    2);
     IF_NULL_SET(settings_["gif"]["selector"]["border"]["color"],    "#ffff00ff");
@@ -73,7 +79,7 @@ Config::Config()
     IF_NULL_SET(settings_["record"]["hotkey"],                      "Ctrl+Alt+V");
     IF_NULL_SET(settings_["gif"]["hotkey"],                         "Ctrl+Alt+G");
 
-    IF_NULL_SET(settings_["record"]["framerate"],                   30);
+    IF_NULL_SET(settings_["record"]["video"]["framerate"],          QPoint(60, 1));
     IF_NULL_SET(settings_["gif"]["framerate"],                      6);
     // clang-format on
 

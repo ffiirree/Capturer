@@ -7,11 +7,11 @@
 
 #include <fmt/chrono.h>
 
+PulseAudioRenderer::PulseAudioRenderer() { pulse::init(); }
+
 int PulseAudioRenderer::open(const std::string&, RenderFlags)
 {
-    pulse::init();
-
-    pa_sample_spec spec{
+    constexpr pa_sample_spec spec{
         .format   = PA_SAMPLE_S16LE,
         .rate     = 48000,
         .channels = 2,
@@ -44,8 +44,8 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     ::pa_stream_set_latency_update_callback(stream_, pulse_stream_latency_callback, this);
 
     const pa_buffer_attr buffer_attr{
-        .maxlength = static_cast<uint32_t>(1024 * bytes_per_frame_) * 2,
-        .tlength   = static_cast<uint32_t>(1024 * bytes_per_frame_),
+        .maxlength = 1024 * bytes_per_frame_ * 2,
+        .tlength   = 1024 * bytes_per_frame_,
         .prebuf    = 0,
         .minreq    = static_cast<uint32_t>(-1),
         .fragsize  = 0,
@@ -94,7 +94,7 @@ void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t b
 
 void PulseAudioRenderer::pulse_stream_latency_callback(pa_stream *, void *)
 {
-    DLOG(INFO) << "[PULSE-AUDIO] latency updated";
+    // DLOG(INFO) << "[PULSE-AUDIO] latency updated";
     pulse::signal(0);
 }
 
@@ -159,33 +159,33 @@ int PulseAudioRenderer::stop()
         pulse::loop_unlock();
     }
 
-    buffer_frames_   = 0;
-    bytes_per_frame_ = 1;
-
-    pulse::unref();
-
-    LOG(INFO) << "[PULSE-AUDIO] RESET";
+    LOG(INFO) << "[PULSE-AUDIO] STOPPED";
 
     return 0;
 }
 
+PulseAudioRenderer::~PulseAudioRenderer()
+{
+    stop();
+
+    pulse::unref();
+
+    LOG(INFO) << "[PULSE-AUDIO] ~";
+}
+
 int PulseAudioRenderer::mute(bool muted)
 {
-    assert(stream_);
+    if (!stream_) return av::err_t::nullpointer;
 
     return pulse::stream::set_sink_mute(stream_, muted);
 }
 
-bool PulseAudioRenderer::muted() const
-{
-    assert(stream_);
-    return pulse::stream::get_sink_muted(stream_);
-}
+bool PulseAudioRenderer::muted() const { return stream_ && pulse::stream::get_sink_muted(stream_); }
 
 // 0.0 ~ 1.0
-int PulseAudioRenderer::setVolume(float value)
+int PulseAudioRenderer::set_volume(const float value)
 {
-    assert(stream_);
+    if (!stream_) return av::err_t::nullpointer;
 
     pa_cvolume volume{};
     ::pa_cvolume_set(&volume, format_.channels, pa_sw_volume_from_linear(value));
@@ -194,20 +194,21 @@ int PulseAudioRenderer::setVolume(float value)
 
 float PulseAudioRenderer::volume() const
 {
-    assert(stream_);
+    if (!stream_) return av::err_t::nullpointer;
+
     return pulse::stream::get_sink_volume(stream_);
 }
 
 int PulseAudioRenderer::pause()
 {
-    assert(stream_);
+    if (!stream_) return av::err_t::nullpointer;
 
     return !paused() ? pulse::stream::cork(stream_, true, pulse_stream_success_callback, this) : 0;
 }
 
 int PulseAudioRenderer::resume()
 {
-    assert(stream_);
+    if (!stream_) return av::err_t::nullpointer;
 
     return paused() ? pulse::stream::cork(stream_, false, pulse_stream_success_callback, this) : 0;
 }

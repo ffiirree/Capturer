@@ -36,9 +36,9 @@ public:
         }
     }
 
-    decltype(auto) operator[](const std::string& key) { return settings_[key]; }
+    decltype(auto) operator[](const std::string & key) { return settings_[key]; }
 
-    decltype(auto) operator[](const std::string& key) const { return settings_[key]; }
+    decltype(auto) operator[](const std::string & key) const { return settings_[key]; }
 
 public slots:
     void save();

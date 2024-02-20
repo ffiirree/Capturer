@@ -7,10 +7,18 @@
 #include <fmt/format.h>
 #include <probe/defer.h>
 
+PulseCapturer::PulseCapturer() { pulse::init(); }
+
+bool PulseCapturer::has(const AVMediaType type) const
+{
+    switch (type) {
+    case AVMEDIA_TYPE_AUDIO: return ready_;
+    default:                 return false;
+    }
+}
+
 int PulseCapturer::open(const std::string& name, std::map<std::string, std::string>)
 {
-    pulse::init();
-
     const auto spec = pulse::source_format(name);
     afmt            = {
                    .sample_rate    = static_cast<int>(spec.rate),
@@ -84,12 +92,12 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
         return;
     }
 
-    av::frame frame{};
+    const av::frame frame{};
 
     frame->nb_samples = static_cast<int>(bytes / self->bytes_per_frame_);
     // FIXME: calculate the exact pts
     frame->pts =
-        av::clock::ns().count() - av_rescale(frame->nb_samples, OS_TIME_BASE, self->afmt.sample_rate);
+        av::clock::ns().count() - av_rescale(frame->nb_samples, self->afmt.sample_rate, OS_TIME_BASE);
     frame->pkt_dts        = frame->pts;
     frame->format         = self->afmt.sample_fmt;
     frame->sample_rate    = self->afmt.sample_rate;
@@ -103,55 +111,20 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
         return;
     }
 
-    if (self->muted_) {
-        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels,
-                               static_cast<AVSampleFormat>(frame->format));
-    }
+    if (self->muted_)
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels, self->afmt.sample_fmt);
 
-    DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
+    DLOG(INFO) << fmt::format("[A] # {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
                               self->frame_number_++, frame->pts, frame->nb_samples, self->muted_.load());
 
-    self->buffer_.push(frame, true);
+    self->onarrived(frame, AVMEDIA_TYPE_AUDIO);
 
     pa_stream_drop(stream);
 }
 
-int PulseCapturer::run() { return 0; }
+int PulseCapturer::start() { return 0; }
 
-int PulseCapturer::produce(av::frame& frame, AVMediaType type)
-{
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO:
-        if (buffer_.empty()) return (eof_ & 0x01) ? AVERROR_EOF : AVERROR(EAGAIN);
-
-        frame = buffer_.pop().value();
-        return 0;
-
-    default: LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type); return -1;
-    }
-}
-
-std::string PulseCapturer::format_str(AVMediaType type) const
-{
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO: return av::to_string(afmt);
-    default:                 LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type); return {};
-    }
-}
-
-AVRational PulseCapturer::time_base(AVMediaType type) const
-{
-    switch (type) {
-    case AVMEDIA_TYPE_AUDIO: {
-        return afmt.time_base;
-    }
-    default:
-        LOG(ERROR) << "[PULSE-AUDIO] unsupported media type : " << av::to_string(type);
-        return OS_TIME_BASE_Q;
-    }
-}
-
-int PulseCapturer::destroy()
+void PulseCapturer::stop()
 {
     running_ = false;
     ready_   = false;
@@ -163,15 +136,12 @@ int PulseCapturer::destroy()
         stream_ = nullptr;
         pulse::loop_unlock();
     }
+}
 
-    bytes_per_frame_ = 1;
+PulseCapturer::~PulseCapturer()
+{
+    stop();
     pulse::unref();
-
-    buffer_.clear();
-    eof_          = 0x01;
-    frame_number_ = 0;
-
-    return 0;
 }
 
 #endif

@@ -3,7 +3,6 @@
 
 #include "control-widget.h"
 #include "framelesswindow.h"
-#include "libcap/audio-fifo.h"
 #include "libcap/audio-renderer.h"
 #include "libcap/consumer.h"
 #include "libcap/decoder.h"
@@ -13,7 +12,6 @@
 #include "menu.h"
 #include "texture-widget-d3d11.h"
 #include "texture-widget-opengl.h"
-#include "texture-widget.h"
 
 #include <QTimer>
 
@@ -23,11 +21,12 @@ class VideoPlayer final : public FramelessWindow, public Consumer<av::frame>
 
     enum : uint8_t
     {
-        ASRC_EOF  = 0x01,
-        VSRC_EOF  = 0x02,
-        ASINK_EOF = 0x04,
-        VSINK_EOF = 0x08,
-        AV_EOF    = ASRC_EOF | VSRC_EOF | ASINK_EOF | VSINK_EOF
+        AINPUT_EOF = 0x01,
+        VINPUT_EOF = 0x02,
+        APLAY_EOF  = 0x04,
+        VPLAY_EOF  = 0x08,
+        INPUT_EOF  = AINPUT_EOF | VINPUT_EOF,
+        PLAY_EOF   = APLAY_EOF | VPLAY_EOF,
     };
 
 public:
@@ -37,30 +36,16 @@ public:
 
     int open(const std::string&, std::map<std::string, std::string>) override;
 
-    int run() override;
+    int start() override;
 
-    [[nodiscard]] bool ready() const override
-    {
-        return decoder_ && decoder_->ready() && audio_renderer_ &&
-               ((audio_renderer_->ready() && audio_enabled_) || !audio_enabled_);
-    }
+    void stop() override;
 
-    void stop() override
-    {
-        if (dispatcher_) dispatcher_->reset();
-    }
+    int consume(const av::frame& frame, AVMediaType type) override;
 
-    void reset() override;
-
-    [[nodiscard]] bool full(AVMediaType type) const override;
-    int                consume(av::frame& frame, AVMediaType type) override;
-
-    void               enable(AVMediaType type, bool v = true) override;
+    void               enable(AVMediaType type, bool v) override;
     [[nodiscard]] bool accepts(AVMediaType type) const override;
 
-    [[nodiscard]] bool eof() const override { return eof_ == AV_EOF; }
-
-    bool paused() const { return paused_; }
+    [[nodiscard]] bool eof() const override;
 
 public slots:
     void pause() override;
@@ -95,11 +80,13 @@ protected:
     bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
-    void video_thread_f();
+    void video_thread_fn();
 
     void initContextMenu();
 
     std::string filename_{};
+
+    bool is_live_{};
 
     // UI
     ControlWidget   *control_{};
@@ -123,14 +110,13 @@ private:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
-    safe_queue<av::frame> vbuffer_{};
-    safe_queue<av::frame> abuffer_{};
+    safe_queue<av::frame> vbuffer_{ 4 };
+    safe_queue<av::frame> abuffer_{ 16 };
     sonic_stream         *sonic_stream_{}; // audio speed up / down
 
     std::atomic<bool> seeking_{ false };
-    std::atomic<int>  step_{ 0 };
-
-    std::atomic<bool> paused_{ false };
+    std::atomic<int>  vstep_{ 0 };
+    std::atomic<int>  astep_{ 0 };
 
     // clock & timeline @{
     // | renderer buffered samples |  sonic samples  |  decoding

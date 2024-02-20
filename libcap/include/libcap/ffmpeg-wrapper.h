@@ -1,6 +1,8 @@
 #ifndef CAPTURER_FFMPEG_WRAPPER_H
 #define CAPTURER_FFMPEG_WRAPPER_H
 
+#include <utility>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavcodec/packet.h>
@@ -34,7 +36,9 @@ namespace av
         inline void free(AVCodecContext **avctx) { avcodec_free_context(avctx); }
     } // namespace ffmpeg
 
-    template<typename T> struct ptr
+    template<typename T>
+    requires std::same_as<T, AVFrame> || std::same_as<T, AVPacket>
+    struct ptr
     {
         using value_type      = T;
         using pointer         = T *;
@@ -42,38 +46,40 @@ namespace av
         using reference       = T&;
         using const_reference = const T&;
 
-        explicit ptr(std::nullptr_t = nullptr) { alloc(); }
+        ptr() { ffmpeg::alloc(&ptr_); }
 
-        explicit ptr(const T *ptr)
-        {
-            alloc();
-            ffmpeg::ref(ptr_, ptr);
-        }
+        ptr(std::nullptr_t) noexcept {}
 
+        // ref
         ptr(const ptr& other)
         {
-            alloc();
-            ffmpeg::ref(ptr_, other.ptr_);
+            if (other.ptr_) {
+                ffmpeg::alloc(&ptr_);
+                ffmpeg::ref(ptr_, other.ptr_);
+            }
         }
 
         ptr(ptr&& other) noexcept
         {
-            ptr_       = other.ptr_;
-            other.ptr_ = nullptr;
+            if (other.ptr_) {
+                ffmpeg::alloc(&ptr_);
+                ffmpeg::move_ref(ptr_, other.ptr_);
+            }
         }
 
-        ptr& operator=(const T *other)
-        {
-            unref();
-            ffmpeg::ref(ptr_, other);
-            return *this;
-        }
+        ~ptr() { release(); }
 
         ptr& operator=(const ptr& other)
         {
             if (this != &other) {
-                unref();
-                ffmpeg::ref(ptr_, other.ptr_);
+                if (other.ptr_) {
+                    ptr_ ? ffmpeg::unref(ptr_) : ffmpeg::alloc(&ptr_);
+                    ffmpeg::ref(ptr_, other.ptr_);
+                }
+                // = nullptr
+                else {
+                    release();
+                }
             }
 
             return *this;
@@ -82,15 +88,17 @@ namespace av
         ptr& operator=(ptr&& other) noexcept
         {
             if (this != &other) {
-                unref();
-                ptr_       = other.ptr_;
-                other.ptr_ = nullptr;
+                if (other.ptr_) {
+                    ptr_ ? ffmpeg::unref(ptr_) : ffmpeg::alloc(&ptr_);
+                    ffmpeg::move_ref(ptr_, other.ptr_);
+                }
+                // = nullptr
+                else {
+                    release();
+                }
             }
-
             return *this;
         }
-
-        ~ptr() { release(); }
 
         explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
@@ -98,38 +106,29 @@ namespace av
 
         auto put()
         {
-            unref();
+            ptr_ ? ffmpeg::unref(ptr_) : ffmpeg::alloc(&ptr_);
             return ptr_;
         }
 
         auto operator->() const noexcept { return ptr_; }
 
-        void ref(const T *other)
+        void unref()
         {
-            unref();
-            ffmpeg::ref(ptr_, other);
-        }
-
-        void move_ref(const T *other)
-        {
-            unref();
-            ffmpeg::move_ref(ptr_, other);
-        }
-
-        void unref() { ffmpeg::unref(ptr_); }
-
-        void reset()
-        {
-            if (ptr_) release();
-            alloc();
+            if (ptr_) {
+                ffmpeg::unref(ptr_);
+            }
         }
 
     private:
-        void alloc() { ffmpeg::alloc(&ptr_); }
+        void release()
+        {
+            if (ptr_) {
+                ffmpeg::free(&ptr_);
+                ptr_ = nullptr;
+            }
+        }
 
-        void release() { ffmpeg::free(&ptr_); }
-
-        T *ptr_{ nullptr };
+        value_type *ptr_{};
     };
 
     using frame  = ptr<AVFrame>;

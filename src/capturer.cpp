@@ -3,9 +3,11 @@
 #include "clipboard.h"
 #include "color-window.h"
 #include "image-window.h"
+#include "libcap/devices.h"
 #include "logging.h"
 #include "menu.h"
 #include "probe/system.h"
+#include "videoplayer.h"
 
 #include <QApplication>
 #include <QFileInfo>
@@ -108,7 +110,23 @@ void Capturer::setupSystemTray()
         menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record, video_sc_->shortcut());
         menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_,  &ScreenRecorder::record, gif_sc_->shortcut());
         menu->addSeparator();
-        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  recorder_, &ScreenRecorder::switchCamera);
+        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  [this] {
+            const auto player = new VideoPlayer();
+
+            if (av::cameras().empty()) {
+                LOG(WARNING) << "camera not found";
+                return;
+            }
+
+            auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
+            #ifdef _WIN32
+            if (!player->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
+            #elif __linux__
+            if (!player->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
+            #endif
+                LOG(ERROR) << "failed to open camera";
+            }
+        });
         menu->addSeparator();
         menu->addAction(QIcon(":/icons/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
         menu->addSeparator();

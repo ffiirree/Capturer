@@ -14,7 +14,6 @@ public:
     {
         DEFAULT = 0x00,
         AUDIO   = 0x01,
-        CAMERA  = 0x04,
         ALL     = 0xff
     };
 
@@ -32,10 +31,8 @@ public slots:
     void start();
     void time(const std::chrono::seconds&);
     void mute(int, bool);
-    void camera_checked(bool);
 
     void disable_mic(bool);
-    void disable_cam(bool);
     void disable_speaker(bool);
 
 protected:
@@ -44,7 +41,6 @@ protected:
 private:
     QCheckBox *mic_btn_{ nullptr };
     QCheckBox *speaker_btn_{ nullptr };
-    QCheckBox *camera_btn_{ nullptr };
     QCheckBox *pause_btn_{ nullptr };
     QCheckBox *close_btn_{ nullptr };
 

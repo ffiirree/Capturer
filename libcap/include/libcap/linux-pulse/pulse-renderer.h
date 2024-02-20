@@ -11,6 +11,9 @@ extern "C" {
 class PulseAudioRenderer final : public AudioRenderer
 {
 public:
+    PulseAudioRenderer();
+    ~PulseAudioRenderer() override;
+
     int                open(const std::string& name, RenderFlags flags) override;
     [[nodiscard]] bool ready() const override { return ready_; }
 
@@ -22,7 +25,7 @@ public:
     [[nodiscard]] bool muted() const override;
 
     // 0.0 ~ 1.0
-    int                 setVolume(float) override;
+    int                 set_volume(float) override;
     [[nodiscard]] float volume() const override;
 
     int                pause() override;

@@ -21,16 +21,7 @@ class WasapiRenderer : public AudioRenderer, public IMMNotificationClient, publi
 public:
     WasapiRenderer() { InterlockedIncrement(&refs); }
 
-    ~WasapiRenderer() override
-    {
-        ::SetEvent(STOP_EVENT.get());
-
-        if (thread_.joinable()) thread_.join();
-
-        if (wfex_) CoTaskMemFree(wfex_);
-
-        InterlockedDecrement(&refs);
-    }
+    ~WasapiRenderer() override;
 
     int  open(const std::string& name, RenderFlags flags) override;
     bool ready() const override { return ready_; }
@@ -42,7 +33,7 @@ public:
     int  mute(bool) override;
     bool muted() const override;
 
-    int   setVolume(float) override;
+    int   set_volume(float) override;
     float volume() const override;
 
     int  pause() override;
@@ -101,8 +92,7 @@ private:
     winrt::com_ptr<IMMDeviceEnumerator> enumerator_{};
     winrt::com_ptr<IMMDevice>           endpoint_{};
 
-    mutable std::mutex mtx_; // for stream switch
-
+    mutable std::mutex                   mtx_;
     winrt::com_ptr<IAudioClient>         audio_client_{};
     winrt::com_ptr<IAudioRenderClient>   renderer_{};
     winrt::com_ptr<ISimpleAudioVolume>   volume_{};
