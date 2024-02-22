@@ -24,8 +24,6 @@ class Decoder final : public Producer<av::frame>
     };
 
 public:
-    using super = Producer<AVFrame>;
-
     ~Decoder() override;
 
     // open input

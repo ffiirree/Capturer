@@ -310,7 +310,7 @@ TextureGLWidget ::~TextureGLWidget()
     doneCurrent();
 }
 
-std::vector<AVPixelFormat> TextureGLWidget::pix_fmts() const
+std::vector<AVPixelFormat> TextureGLWidget::pix_fmts()
 {
     // clang-format off
     return {

@@ -152,8 +152,8 @@ void Config::monitor_system_theme(bool m)
     }
 #elif __linux__
     if (m && theme_monitor_ == nullptr) {
-        if (probe::system::desktop() == probe::system::desktop_t::GNOME ||
-            probe::system::desktop() == probe::system::desktop_t::Unity) {
+        if (probe::system::desktop_environment() == probe::system::desktop_environment_t::GNOME ||
+            probe::system::desktop_environment() == probe::system::desktop_environment_t::Unity) {
 
             theme_monitor_ = std::make_shared<probe::util::PipeListener>();
 
@@ -163,12 +163,9 @@ void Config::monitor_system_theme(bool m)
                 theme_monitor_->listen(
                     std::vector{ "gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme" },
                     [this](auto str) {
-                        probe::system::theme_t _theme = probe::system::theme_t::dark;
+                        auto _theme = probe::system::theme_t::light;
                         if (std::any_cast<std::string>(str).find("dark") != std::string::npos) {
                             _theme = probe::system::theme_t::dark;
-                        }
-                        if (std::any_cast<std::string>(str).find("light") != std::string::npos) {
-                            _theme = probe::system::theme_t::light;
                         }
                         emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
                     });
@@ -182,12 +179,9 @@ void Config::monitor_system_theme(bool m)
                 theme_monitor_->listen(
                     std::vector{ "gsettings", "monitor", "org.gnome.desktop.interface", "gtk-theme" },
                     [this](auto str) {
-                        probe::system::theme_t _theme = probe::system::theme_t::dark;
+                        auto _theme = probe::system::theme_t::light;
                         if (std::any_cast<std::string>(str).find("dark") != std::string::npos) {
                             _theme = probe::system::theme_t::dark;
-                        }
-                        if (std::any_cast<std::string>(str).find("light") != std::string::npos) {
-                            _theme = probe::system::theme_t::light;
                         }
                         emit SYSTEM_THEME_CHANGED(static_cast<int>(_theme));
                     });

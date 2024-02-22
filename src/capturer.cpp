@@ -96,8 +96,8 @@ void Capturer::setupSystemTray()
     auto update_tray_menu = [=, this]() {
         QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
 #ifdef __linux__
-        if (probe::system::os_name().find("Ubuntu") != std::string::npos) {
-            auto ver = probe::system::os_version();
+        if (probe::system::name().find("Ubuntu") != std::string::npos) {
+            const auto ver = probe::system::version();
             if (ver.major == 20 && ver.minor == 4)
                 icon_color = "dark";  // ubuntu 2004, system trays are always light
             else if (ver.major == 18 && ver.minor == 4)

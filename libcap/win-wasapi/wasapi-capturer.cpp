@@ -81,12 +81,12 @@ int WasapiCapturer::init_capturer(IMMDevice *device)
         capturer_audio_client_->GetService(winrt::guid_of<IAudioCaptureClient>(), capturer_.put_void()));
 
     // events
-    if (STOP_EVENT.attach(CreateEvent(nullptr, true, false, nullptr)); !STOP_EVENT) {
+    if (STOP_EVENT.attach(CreateEvent(nullptr, true, false, L"Stop")); !STOP_EVENT) {
         LOG(ERROR) << "failed to create STOP_EVENT.";
         return -1;
     }
 
-    if (ARRIVED_EVENT.attach(CreateEvent(nullptr, false, false, nullptr)); !ARRIVED_EVENT) {
+    if (ARRIVED_EVENT.attach(CreateEvent(nullptr, false, false, L"Arrived")); !ARRIVED_EVENT) {
         LOG(ERROR) << "failed to create ARRIVED_EVENT.";
         return -1;
     }

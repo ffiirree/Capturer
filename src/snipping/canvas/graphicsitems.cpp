@@ -645,8 +645,6 @@ GraphicsPixmapItem::GraphicsPixmapItem(const QPixmap& pixmap, const QPointF& cen
 
 void GraphicsPixmapItem::setPixmap(const QPixmap& pixmap)
 {
-    if (pixmap == pixmap_) return;
-
     prepareGeometryChange();
     pixmap_ = pixmap;
 

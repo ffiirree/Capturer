@@ -65,13 +65,17 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     stacked_layout->addWidget(texture_);
 
     //
+    setAttribute(Qt::WA_Hover);
+
     timer_ = new QTimer(this);
-    connect(timer_, &QTimer::timeout, [this]() {
-        setCursor(Qt::BlankCursor);
-        control_->hide();
-        timer_->stop();
+    timer_->setSingleShot(true);
+    timer_->start(2500ms);
+    connect(timer_, &QTimer::timeout, [this] {
+        if (control_->isVisible() && control_->hideable()) {
+            setCursor(Qt::BlankCursor);
+            control_->hide();
+        }
     });
-    timer_->start(2000ms);
 
     // clang-format off
     connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { seek(timeline_.time() + 5s, + 5s); });
@@ -459,18 +463,18 @@ void VideoPlayer::video_thread_fn()
     }
 }
 
-bool VideoPlayer::eventFilter(QObject *, QEvent *event)
+bool VideoPlayer::event(QEvent *event)
 {
-    if (event->type() == QEvent::ChildAdded)
-        dynamic_cast<QChildEvent *>(event)->child()->installEventFilter(this);
+    if (event->type() == QEvent::HoverMove) {
+        timer_->start(2500ms);
 
-    if (event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonPress) {
-        setCursor(Qt::ArrowCursor);
-        dynamic_cast<QStackedLayout *>(layout())->widget(0)->show();
-        timer_->start(2000ms);
+        if (control_ && !control_->isVisible()) {
+            setCursor(Qt::ArrowCursor);
+            control_->show();
+        }
     }
 
-    return false;
+    return FramelessWindow::event(event);
 }
 
 void VideoPlayer::closeEvent(QCloseEvent *event)

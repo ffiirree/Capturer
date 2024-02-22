@@ -26,18 +26,19 @@ int main(int argc, char *argv[])
 
     LOG(INFO) << "Capturer               " << CAPTURER_VERSION;
     LOG(INFO) << " -- Qt               : " << qVersion();
-    LOG(INFO) << " -- Operating System : " << probe::system::os_name() << " ("
-              << probe::to_string(probe::system::os_version()) << ")";
-    LOG(INFO) << " -- Kernel           : " << probe::system::kernel_name() << " "
-              << probe::to_string(probe::system::kernel_version());
+    LOG(INFO) << " -- Operating System : " << probe::system::name() << " ("
+              << probe::to_string(probe::system::version()) << ")";
+    LOG(INFO) << " -- Kernel           : " << probe::system::kernel::name() << " "
+              << probe::to_string(probe::system::kernel::version());
     LOG(INFO) << " -- CPU              : " << probe::cpu::info().name;
     LOG(INFO) << " -- Architecture     : " << probe::to_string(probe::cpu::architecture());
     LOG(INFO) << " -- Virtual Screen   : " << probe::to_string(probe::graphics::virtual_screen_geometry());
     for (const auto& display : probe::graphics::displays()) {
-        LOG(INFO) << fmt::format(" -- # {:>14} : ", display.id) << probe::to_string(display.geometry);
+        LOG(INFO) << fmt::format(" --   {:>14} : ", display.id) << probe::to_string(display.geometry);
     }
-    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop()) << " ("
-              << probe::to_string(probe::system::desktop_version()) << ")";
+    LOG(INFO) << " -- Windowing System : " << probe::to_string(probe::system::windowing_system());
+    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop_environment()) << " ("
+              << probe::to_string(probe::system::desktop_environment_version()) << ")";
 
     Config::instance().load_theme(Config::theme());
 

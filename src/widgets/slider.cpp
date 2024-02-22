@@ -9,7 +9,7 @@ Slider::Slider(QWidget *parent)
     : QSlider(parent)
 {}
 
-Slider::Slider(Qt::Orientation orientation, QWidget *parent)
+Slider::Slider(const Qt::Orientation orientation, QWidget *parent)
     : QSlider(orientation, parent)
 {}
 

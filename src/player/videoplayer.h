@@ -71,13 +71,13 @@ signals:
     void audio_finished();
 
 protected:
+    bool event(QEvent *event) override;
+
     void closeEvent(QCloseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
     void contextMenuEvent(QContextMenuEvent *) override;
-
-    bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void video_thread_fn();

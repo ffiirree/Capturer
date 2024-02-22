@@ -22,7 +22,7 @@ public:
 
     void present(const av::frame& frame);
 
-    std::vector<AVPixelFormat> pix_fmts() const;
+    static std::vector<AVPixelFormat> pix_fmts() ;
 
     bool isSupported(AVPixelFormat) const;
 

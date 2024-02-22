@@ -504,8 +504,8 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::Key_Enter,  this), &QShortcut::activated, [this] { copy(); exit(); });
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this] { exit(); });
 
-    connect(new QShortcut(QKeySequence::Undo, this), &QShortcut::activated, undo_stack_, &QUndoStack::undo);
-    connect(new QShortcut(QKeySequence::Redo, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Z,             this), &QShortcut::activated, undo_stack_, &QUndoStack::undo);
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
     // clang-format on
 
     connect(new QShortcut(QKeySequence::Delete, this), &QShortcut::activated, [this] {

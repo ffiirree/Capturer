@@ -303,7 +303,7 @@ int Decoder::decode_fn()
     av::packet packet{};
     while (running_) {
         if (seeking()) {
-            std::shared_lock lock(seek_mtx_);
+            std::scoped_lock lock(seek_mtx_);
 
             if (avformat_seek_file(fmt_ctx_, -1, seek_min_, seek_pts_, seek_max_, 0) < 0) {
                 LOG(ERROR) << fmt::format("failed to seek");

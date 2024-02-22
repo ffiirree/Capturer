@@ -14,6 +14,8 @@ class ControlWidget final : public QWidget
 public:
     explicit ControlWidget(FramelessWindow *parent);
 
+    [[nodiscard]] bool hideable() const;
+
 public slots:
     void setDuration(int64_t duration); // microseconds
     void setTime(int64_t ts);           // microseconds
@@ -36,6 +38,7 @@ signals:
     void validDruation(bool);
 
 private:
+    QWidget   *control_bar_{};
     Slider    *time_slider_{};
     ComboBox  *speed_box_{};
     QCheckBox *volume_btn_{};

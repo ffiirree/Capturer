@@ -87,12 +87,12 @@ namespace av::clock
 
     inline auto us(const int64_t pts, const AVRational timebase)
     {
-        return std::chrono::nanoseconds{ av_rescale_q(pts, timebase, { 1, 1000000 }) };
+        return std::chrono::microseconds{ av_rescale_q(pts, timebase, { 1, 1000000 }) };
     }
 
     inline auto ms(const int64_t pts, const AVRational timebase)
     {
-        return std::chrono::nanoseconds{ av_rescale_q(pts, timebase, { 1, 1000 }) };
+        return std::chrono::milliseconds{ av_rescale_q(pts, timebase, { 1, 1000 }) };
     }
 
     //

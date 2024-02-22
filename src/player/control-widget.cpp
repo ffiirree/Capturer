@@ -5,6 +5,7 @@
 
 #include <fmt/chrono.h>
 #include <libcap/media.h>
+#include <qabstractitemview.h>
 #include <QVBoxLayout>
 
 ControlWidget::ControlWidget(FramelessWindow *parent)
@@ -29,10 +30,9 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
     // control
     {
-        const auto control = new QWidget();
-        control->setMouseTracking(true);
-        control->setObjectName("control-bar");
-        layout->addWidget(control);
+        control_bar_ = new QWidget();
+        control_bar_->setObjectName("control-bar");
+        layout->addWidget(control_bar_);
 
         auto vl = new QVBoxLayout();
         vl->setSpacing(0);
@@ -40,7 +40,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         connect(this, &ControlWidget::validDruation, [vl](auto valid) {
             vl->setContentsMargins({ 10, valid ? 0 : 10, 10, 10 });
         });
-        control->setLayout(vl);
+        control_bar_->setLayout(vl);
 
         time_slider_ = new Slider(Qt::Horizontal);
         time_slider_->setObjectName("time-slider");
@@ -50,7 +50,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         connect(this, &ControlWidget::validDruation, time_slider_, &Slider::setVisible);
         vl->addWidget(time_slider_);
 
-        auto hl = new QHBoxLayout();
+        const auto hl = new QHBoxLayout();
         hl->setSpacing(7);
         hl->setContentsMargins({});
         vl->addLayout(hl);
@@ -58,10 +58,10 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         pause_btn_ = new QCheckBox();
         pause_btn_->setObjectName("pause-btn");
         connect(pause_btn_, &QCheckBox::stateChanged, [this](int state) { state ? pause() : resume(); });
-        connect(this, &ControlWidget::pause, [this]() {
+        connect(this, &ControlWidget::pause, [this] {
             if (!pause_btn_->isChecked()) pause_btn_->setChecked(true);
         });
-        connect(this, &ControlWidget::resume, [this]() {
+        connect(this, &ControlWidget::resume, [this] {
             if (pause_btn_->isChecked()) pause_btn_->setChecked(false);
         });
         hl->addWidget(pause_btn_);
@@ -72,7 +72,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         time_label_->setAlignment(Qt::AlignCenter);
         hl->addWidget(time_label_);
 
-        auto separator = new QLabel("/");
+        const auto separator = new QLabel("/");
         connect(this, &ControlWidget::validDruation, separator, &QLabel::setVisible);
         hl->addWidget(separator);
 
@@ -131,6 +131,12 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         // setting_btn->setCheckable(false);
         // hl->addWidget(setting_btn);
     }
+}
+
+bool ControlWidget::hideable() const
+{
+    return !time_slider_->isSliderDown() && !volume_slider_->isSliderDown() &&
+           !speed_box_->view()->isVisible();
 }
 
 void ControlWidget::setDuration(const int64_t duration)
