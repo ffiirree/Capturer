@@ -7,24 +7,22 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 
+#ifdef Q_OS_WIN
+#include "platforms/window-effect-windows.h"
+#endif
+
 EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::ToolTip)
+    : FramelessWindow(parent, Qt::WindowStaysOnTopHint | Qt::ToolTip)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
     QWidget::setVisible(false);
 
-    // frameless: background & border
-    const auto backgroud_layout = new QHBoxLayout(this);
-    backgroud_layout->setSpacing(0);
-    backgroud_layout->setContentsMargins({});
-    backgroud_layout->setSizeConstraint(QLayout::SetFixedSize);
+#ifdef Q_OS_WIN
+    windows::dwm::set_window_corner(reinterpret_cast<HWND>(winId()), DWMWCP_DONOTROUND);
+#endif
 
-    const auto background = new QWidget(this);
-    background->setObjectName("editing-submenu");
-    backgroud_layout->addWidget(background);
-
-    const auto layout = new QHBoxLayout(background);
+    const auto layout = new QHBoxLayout(this);
     layout->setSpacing(0);
     layout->setContentsMargins({});
     layout->setSizeConstraint(QLayout::SetFixedSize);

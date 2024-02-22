@@ -3,6 +3,7 @@
 #include "logging.h"
 
 #include <QMouseEvent>
+#include <QStyle>
 #include <QWindow>
 
 #ifdef Q_OS_WIN
@@ -33,6 +34,10 @@ FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags flags)
     if (windowFlags() & Qt::WindowTitleHint) style |= WS_CAPTION | WS_THICKFRAME;
     ::SetWindowLong(hwnd, GWL_STYLE, style & (~WS_SYSMENU));
 #endif
+
+#ifdef Q_OS_LINUX
+    setAttribute(Qt::WA_Hover, true);
+#endif
 }
 
 bool FramelessWindow::isSizeFixed() const
@@ -62,6 +67,7 @@ void FramelessWindow::mousePressEvent(QMouseEvent *event)
     if (!isFullScreen()) {
         windowHandle()->startSystemMove();
     }
+
     return QWidget::mousePressEvent(event);
 }
 
@@ -87,6 +93,55 @@ void FramelessWindow::changeEvent(QEvent *event)
     }
     QWidget::changeEvent(event);
 }
+
+#ifdef Q_OS_LINUX
+void FramelessWindow::updateCursor(Qt::Edges edges)
+{
+    switch (edges) {
+    case Qt::LeftEdge:
+    case Qt::RightEdge:                  setCursor(Qt::SizeHorCursor); break;
+    case Qt::TopEdge:
+    case Qt::BottomEdge:                 setCursor(Qt::SizeVerCursor); break;
+    case Qt::LeftEdge | Qt::TopEdge:
+    case Qt::RightEdge | Qt::BottomEdge: setCursor(Qt::SizeFDiagCursor); break;
+    case Qt::RightEdge | Qt::TopEdge:
+    case Qt::LeftEdge | Qt::BottomEdge:  setCursor(Qt::SizeBDiagCursor); break;
+    default:                             setCursor(Qt::ArrowCursor); break;
+    }
+}
+
+bool FramelessWindow::event(QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::MouseButtonPress:
+        if (edges_) {
+            window()->windowHandle()->startSystemResize(edges_);
+            return true;
+        }
+        break;
+    case QEvent::MouseButtonRelease: break;
+    case QEvent::HoverEnter:
+    case QEvent::HoverLeave:
+    case QEvent::HoverMove:          {
+        const auto pos = dynamic_cast<QHoverEvent *>(event)->pos();
+        const auto ftn = style()->pixelMetric(QStyle::PM_LayoutBottomMargin);
+
+        edges_ = Qt::Edges{};
+
+        if (pos.x() < ftn) edges_ |= Qt::LeftEdge;
+        if (pos.x() > width() - ftn) edges_ |= Qt::RightEdge;
+        if (pos.y() < ftn) edges_ |= Qt::TopEdge;
+        if (pos.y() > height() - ftn) edges_ |= Qt::BottomEdge;
+
+        updateCursor(edges_);
+        break;
+    }
+    default: break;
+    }
+
+    return QWidget::event(event);
+}
+#endif
 
 #ifdef Q_OS_WIN
 static bool operator==(const RECT& lhs, const RECT& rhs) noexcept
@@ -115,11 +170,9 @@ static bool IsFullscreen(HWND hwnd)
     const auto monitor = MonitorInfoFromWindow(hwnd);
     return monitor && (monitor->rcMonitor == winrect);
 }
-#endif
 
 bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result)
 {
-#ifdef Q_OS_WIN
     if (!message || !result || !static_cast<MSG *>(message)->hwnd) return false;
 
     const auto wmsg = static_cast<MSG *>(message);
@@ -245,7 +298,8 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
 
     default: break;
     }
-#endif
 
     return QWidget::nativeEvent(eventType, message, result);
 }
+#endif
+

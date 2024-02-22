@@ -58,9 +58,8 @@ RecordingMenu QCheckBox#pause-btn::indicator:checked {
 
 /*///////////////////////////////// Editing Menu //////////////////////////////*/
 
-EditingMenu QWidget#editing-menu, EditingSubmenu QWidget#editing-submenu {
+EditingMenu, EditingSubmenu {
     background-color: #232323;
-    border: 1px solid #323232;
 }
 
 EditingMenu QCheckBox::indicator:unchecked:hover {

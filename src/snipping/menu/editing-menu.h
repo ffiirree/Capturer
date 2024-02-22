@@ -4,11 +4,11 @@
 #include "buttongroup.h"
 #include "canvas/types.h"
 #include "editing-submenu.h"
+#include "framelesswindow.h"
 
 #include <QCheckBox>
-#include <QWidget>
 
-class EditingMenu final : public QWidget
+class EditingMenu final : public FramelessWindow
 {
     Q_OBJECT
 

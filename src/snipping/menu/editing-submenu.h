@@ -3,14 +3,14 @@
 
 #include "colorpanel.h"
 #include "combobox.h"
+#include "framelesswindow.h"
 #include "widthbutton.h"
 
 #include <QCheckBox>
 #include <QFont>
 #include <QPen>
-#include <QWidget>
 
-class EditingSubmenu final : public QWidget
+class EditingSubmenu final : public FramelessWindow
 {
     Q_OBJECT
 public:

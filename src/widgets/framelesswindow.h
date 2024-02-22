@@ -40,7 +40,15 @@ protected:
     void hideEvent(QHideEvent *event) override;
     void changeEvent(QEvent *) override;
 
+#ifdef Q_OS_LINUX
+    Qt::Edges edges_{};
+    void      updateCursor(Qt::Edges edges);
+    bool      event(QEvent *event) override;
+#endif
+
+#ifdef Q_OS_WIN
     bool nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result) override;
+#endif
 };
 
 #endif //! CAPTURER_FRAMELESS_WINDOW_H
