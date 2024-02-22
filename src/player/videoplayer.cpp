@@ -307,8 +307,11 @@ void VideoPlayer::finish()
     }
 }
 
+// only called by UI thread
 void VideoPlayer::seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel)
 {
+    if (seeking_ || ts < 0s) return;
+
     vbuffer_.stop();
     abuffer_.stop();
 
