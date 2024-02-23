@@ -11,8 +11,6 @@
 ControlWidget::ControlWidget(FramelessWindow *parent)
     : QWidget(parent)
 {
-    setMouseTracking(true);
-
     const auto layout = new QVBoxLayout();
     layout->setSpacing(0);
     layout->setContentsMargins({});
@@ -103,7 +101,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
                 { 2.0, "2.0x" },
                 { 3.0, "3.0x" },
             })
-            .onselected([this](const QVariant& v) { emit speed(v.toFloat()); })
+            .onselected([this](const QVariant& v) { emit speedChanged(v.toFloat()); })
             .select(1.0);
         connect(this, &ControlWidget::validDruation, speed_box_, &ComboBox::setVisible);
 
@@ -121,7 +119,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         volume_slider_->setRange(0, 100);
         connect(volume_slider_, &Slider::valueChanged, [this](int v) {
             volume_btn_->setChecked(v == 0);
-            emit volume(v);
+            emit volumeChanged(v);
         });
         hl->addWidget(volume_slider_);
 

@@ -16,7 +16,7 @@
 #include <Windows.h>
 #include <winrt/base.h>
 
-class WasapiRenderer : public AudioRenderer, public IMMNotificationClient, public IAudioSessionEvents
+class WasapiRenderer final : public AudioRenderer, public IMMNotificationClient, public IAudioSessionEvents
 {
 public:
     WasapiRenderer() { InterlockedIncrement(&refs); }

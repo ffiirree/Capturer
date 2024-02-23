@@ -27,11 +27,32 @@ namespace av
             return *this;
         }
 
-        [[nodiscard]] duration time() const
+        [[nodiscard]] auto time() const
         {
             std::shared_lock lock(mtx_);
 
             return _time();
+        }
+
+        [[nodiscard]] auto ns() const
+        {
+            std::shared_lock lock(mtx_);
+
+            return _time();
+        }
+
+        [[nodiscard]] auto us() const
+        {
+            std::shared_lock lock(mtx_);
+
+            return std::chrono::duration_cast<std::chrono::microseconds>(_time());
+        }
+
+        [[nodiscard]] auto ms() const
+        {
+            std::shared_lock lock(mtx_);
+
+            return std::chrono::duration_cast<std::chrono::milliseconds>(_time());
         }
 
         template<class Rep, class Period>
@@ -92,13 +113,17 @@ namespace av
         }
 
     private:
-        // | ---- escaped ----- | ------- > now
-        //                      ^
-        //                      |
-        //                    updated
+        // | ------------------ | -------- > clock::ns()   [system]
+        //                      ^                ^
+        //                      |                |
+        //                   updated             |
+        //                    pause              |
+        // | ---- escaped ----- | ----------- > time        [local]
         [[nodiscard]] duration _time() const
         {
-            return escaped_ + (paused_ ? duration{ 0 } : (clock::ns() - updated_) * speed_);
+            if (escaped_ == clock::nopts || updated_ == clock::nopts) return clock::nopts;
+
+            return escaped_ + (paused_ ? 0ns : (clock::ns() - updated_) * speed_);
         }
 
         mutable std::shared_mutex mtx_{};

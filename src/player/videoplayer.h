@@ -34,8 +34,10 @@ public:
 
     ~VideoPlayer() override;
 
-    int open(const std::string&, std::map<std::string, std::string>) override;
+    // open the file & playback
+    int open(const std::string& filename, std::map<std::string, std::string> options) override;
 
+    // do not call this function manually, called by dispatcher automatically
     int start() override;
 
     void stop() override;
@@ -67,8 +69,8 @@ signals:
     void started();
     void timeChanged(int64_t);
 
-    void video_finished();
-    void audio_finished();
+    void videoFinished();
+    void audioFinished();
 
 protected:
     bool event(QEvent *event) override;
@@ -80,9 +82,10 @@ protected:
     void contextMenuEvent(QContextMenuEvent *) override;
 
 private:
-    void video_thread_fn();
-
     void initContextMenu();
+
+    void     video_thread_fn();
+    uint32_t audio_callback(uint8_t **ptr, uint32_t request_frames, std::chrono::nanoseconds ts);
 
     std::string filename_{};
 
@@ -101,32 +104,26 @@ private:
     QActionGroup *ssgroup_{};
 
     // video & audio
-    std::jthread video_thread_;
+    std::jthread video_thread_{};
 
     std::unique_ptr<Decoder>       decoder_{};
     std::unique_ptr<AudioRenderer> audio_renderer_{};
-    std::unique_ptr<Dispatcher>    dispatcher_{}; // TODO: ctor & dtor order
+    std::unique_ptr<Dispatcher>    dispatcher_{};
 
-    std::atomic<bool> video_enabled_{ false };
-    std::atomic<bool> audio_enabled_{ false };
+    std::atomic<bool> video_enabled_{};
+    std::atomic<bool> audio_enabled_{};
 
     safe_queue<av::frame> vbuffer_{ 4 };
     safe_queue<av::frame> abuffer_{ 16 };
     sonic_stream         *sonic_stream_{}; // audio speed up / down
 
-    std::atomic<bool> seeking_{ false };
-    std::atomic<int>  vstep_{ 0 };
-    std::atomic<int>  astep_{ 0 };
+    std::atomic<bool> seeking_{};
 
-    // clock & timeline @{
-    // | renderer buffered samples |  sonic samples  |  decoding
-    //                                               ^
-    //                                               |
-    //                                           audio pts
+    std::atomic<int> vstep_{ 0 };
+    std::atomic<int> astep_{ 0 };
+
     std::atomic<std::chrono::nanoseconds> audio_pts_{ av::clock::nopts };
-
-    av::timeline_t timeline_{};
-    // @}
+    av::timeline_t                        timeline_{ av::clock::nopts };
 };
 
 #endif // !CAPTURER_VIDEO_PLAYER_H

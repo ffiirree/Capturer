@@ -31,8 +31,8 @@ signals:
     void pause();
     void resume();
     void seek(std::chrono::nanoseconds ts, std::chrono::nanoseconds rel);
-    void speed(float);
-    void volume(int);
+    void speedChanged(float);
+    void volumeChanged(int);
     void mute(bool);
 
     void validDruation(bool);

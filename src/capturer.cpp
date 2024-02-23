@@ -110,23 +110,7 @@ void Capturer::setupSystemTray()
         menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record, video_sc_->shortcut());
         menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_,  &ScreenRecorder::record, gif_sc_->shortcut());
         menu->addSeparator();
-        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  [this] {
-            const auto player = new VideoPlayer();
-
-            if (av::cameras().empty()) {
-                LOG(WARNING) << "camera not found";
-                return;
-            }
-
-            auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
-            #ifdef _WIN32
-            if (!player->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
-            #elif __linux__
-            if (!player->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
-            #endif
-                LOG(ERROR) << "failed to open camera";
-            }
-        });
+        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  this,      &Capturer::openCamera);
         menu->addSeparator();
         menu->addAction(QIcon(":/icons/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
         menu->addSeparator();
@@ -147,12 +131,6 @@ void Capturer::setupSystemTray()
     });
 }
 
-void Capturer::showMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
-                           int msecs)
-{
-    sys_tray_icon_->showMessage(title, msg, icon, msecs);
-}
-
 void Capturer::pin() { pinMimeData(clipboard::back(true)); }
 
 void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
@@ -166,6 +144,7 @@ void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
 
             auto player = new VideoPlayer();
             player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
 
             iter = windows_.emplace(windows_.end(), player);
@@ -185,10 +164,35 @@ void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
     }
 }
 
+void Capturer::openCamera()
+{
+    const auto player = new VideoPlayer(); // delete on close
+
+    if (av::cameras().empty()) {
+        LOG(WARNING) << "camera not found";
+        return;
+    }
+
+    auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
+#ifdef _WIN32
+    if (!player->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
+#elif __linux__
+    if (!player->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
+#endif
+        LOG(ERROR) << "failed to open camera";
+    }
+}
+
 void Capturer::showImages()
 {
     const bool visible = !windows_.empty() && windows_.front()->isVisible();
     for (const auto& win : windows_) {
         win->setVisible(!visible);
     }
+}
+
+void Capturer::showMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
+                           int msecs)
+{
+    sys_tray_icon_->showMessage(title, msg, icon, msecs);
 }

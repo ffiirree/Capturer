@@ -55,8 +55,8 @@ void WasapiRenderer::InitializeWaveFormat(WAVEFORMATEX *wfex)
 {
     DWORD layout = 0;
     if (wfex->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
-        auto ext = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(wfex);
-        layout   = ext->dwChannelMask;
+        const auto ext = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(wfex);
+        layout         = ext->dwChannelMask;
     }
 
     format_ = av::aformat_t{
@@ -191,7 +191,7 @@ bool WasapiRenderer::paused() const
     return FAILED(session_->GetState(&state)) || state != AudioSessionStateActive;
 }
 
-int WasapiRenderer::mute(bool muted)
+int WasapiRenderer::mute(const bool muted)
 {
     std::lock_guard lock(mtx_);
 

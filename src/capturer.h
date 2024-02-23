@@ -19,7 +19,11 @@ public:
 
 private slots:
     void pin();
+
     void pinMimeData(const std::shared_ptr<QMimeData>&);
+
+    void openCamera();
+
     void showImages();
 
     void updateConfig();

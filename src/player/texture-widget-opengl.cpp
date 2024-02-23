@@ -558,10 +558,7 @@ void TextureGLWidget::paintGL()
 
     std::lock_guard lock(mtx_);
 
-    if (!frame_->data[0] || frame_->height <= 0 || frame_->width <= 0) {
-        LOG(WARNING) << "invalid painting frame.";
-        return;
-    }
+    if (!frame_->data[0] || frame_->height <= 0 || frame_->width <= 0) return;
 
     // reconfigure
     if (config_dirty_) {
