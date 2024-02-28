@@ -2,54 +2,83 @@
 #define CAPTURER_H
 
 #include "framelesswindow.h"
-#include "qhotkey.h"
+#include "menu.h"
 #include "screenrecorder.h"
 #include "screenshoter.h"
 #include "settingdialog.h"
+#include "videoplayer.h"
 
 #include <memory>
+#include <QApplication>
+#include <qhotkey.h>
+#include <QMimeData>
+#include <QPointer>
+#include <QScopedPointer>
 #include <QSystemTrayIcon>
 
-class Capturer final : public QWidget
+class Capturer final : public QApplication
 {
     Q_OBJECT
 
 public:
-    explicit Capturer(QWidget *parent = nullptr);
+    Capturer(int& argc, char **argv);
 
-private slots:
-    void pin();
+    void Init();
 
-    void pinMimeData(const std::shared_ptr<QMimeData>&);
+public slots:
+    void QuickLook();
 
-    void openCamera();
+    void PreviewClipboard();
+    void PreviewMimeData(const std::shared_ptr<QMimeData>& data);
+    void TogglePreviews();
 
-    void showImages();
+    void ToggleCamera();
+    void OpenSettingsDialog();
 
-    void updateConfig();
+    void UpdateHotkeys();
 
-    void showMessage(const QString& title, const QString& msg,
+    void TrayActivated(QSystemTrayIcon::ActivationReason reason);
+    void ShowMessage(const QString& title, const QString& msg,
                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
 
+    void SetTheme(const QString& theme);
+
+    void UpdateScreenshotStyle();
+    void UPdateVideoRecordingStyle();
+    void UPdateGifRecordingStyle();
+
 private:
-    void setupSystemTray();
+    void SystemTrayInit();
 
-    ScreenShoter   *sniper_{ nullptr };
-    ScreenRecorder *recorder_{ nullptr };
-    ScreenRecorder *gifcptr_{ nullptr };
+    QString theme_{};
 
-    QSystemTrayIcon *sys_tray_icon_{ nullptr };
+    QScopedPointer<QSystemTrayIcon> tray_{};
+    QScopedPointer<Menu>            tray_menu_{};
+    QPointer<QAction>               tray_snip_{};
+    QPointer<QAction>               tray_record_video_{};
+    QPointer<QAction>               tray_record_gif_{};
+    QPointer<QAction>               tray_open_camera_{};
+    QPointer<QAction>               tray_settings_{};
+    QPointer<QAction>               tray_exit_{};
 
-    std::shared_ptr<SettingWindow> setting_dialog_{};
+    QPointer<SettingWindow> settings_window_{};
 
     // hotkey
-    QHotkey *snip_sc_{ nullptr };
-    QHotkey *show_pin_sc_{ nullptr };
-    QHotkey *pin_sc_{ nullptr };
-    QHotkey *gif_sc_{ nullptr };
-    QHotkey *video_sc_{ nullptr };
+    QPointer<QHotkey> snip_hotkey_{};    // screenshot
+    QPointer<QHotkey> video_hotkey_{};   // video recording
+    QPointer<QHotkey> gif_hotkey_{};     // gif recording
+    QPointer<QHotkey> preview_hotkey_{}; // preview
+    QPointer<QHotkey> quicklook_hotkey_{};
+    QPointer<QHotkey> toggle_hotkey_{};  // toggle previews
 
-    std::list<FramelessWindow *> windows_{};
+    QScopedPointer<ScreenShoter>   sniper_{};
+    QScopedPointer<ScreenRecorder> recorder_{};
+    QScopedPointer<ScreenRecorder> gifcptr_{};
+    QScopedPointer<VideoPlayer>    camera_{};
+
+    std::list<QPointer<FramelessWindow>> previews_{};
 };
+
+inline Capturer *App() { return static_cast<Capturer *>(qApp); }
 
 #endif // CAPTURER_H

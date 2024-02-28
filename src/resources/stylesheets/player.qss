@@ -28,6 +28,38 @@ ControlWidget QCheckBox#full-btn:hover {
     background: rgba(0, 0, 0, 75);
 }
 
+ControlWidget TitleBar QCheckBox#pin-btn::indicator:unchecked  {
+    image: url(:/icons/title-pin-light);
+}
+
+ControlWidget TitleBar QCheckBox#pin-btn::indicator:checked  {
+    image: url(:/icons/title-pin-fill-light);
+}
+
+ControlWidget TitleBar QCheckBox#min-btn::indicator {
+    image: url(:/icons/minimize-light);
+}
+
+ControlWidget TitleBar QCheckBox#max-btn::indicator:unchecked {
+    image: url(:/icons/maximize-light);
+}
+
+ControlWidget TitleBar QCheckBox#max-btn::indicator:checked {
+    image: url(:/icons/normal-light);
+}
+
+ControlWidget TitleBar QCheckBox#full-btn::indicator:unchecked {
+    image: url(:/icons/fullscreen-light);
+}
+
+ControlWidget TitleBar QCheckBox#full-btn::indicator:checked {
+    image: url(:/icons/fullscreen-back-light);
+}
+
+ControlWidget TitleBar QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-light);
+}
+
 /*////////////////////////////////////////////////*/
 ControlWidget QWidget#control-bar {
     background-color: rgba(25, 25, 25, 175);

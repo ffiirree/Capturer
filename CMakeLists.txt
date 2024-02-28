@@ -129,6 +129,7 @@ target_link_libraries(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
+        src/
         src/common
         src/widgets
         src/preview

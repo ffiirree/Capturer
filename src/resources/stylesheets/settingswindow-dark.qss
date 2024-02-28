@@ -2,8 +2,8 @@ SettingWindow * {
     color: #e6e6e6;
 }
 
-SettingWindow TitleBar QCheckBox#icon-title {
-    background-color: #202021;
+SettingWindow, SettingWindow QWidget#scroll-content {
+    background: #272728;
 }
 
 SettingWindow QListWidget {
@@ -16,13 +16,9 @@ SettingWindow QListWidget:item {
 
 SettingWindow QListWidget:item:hover,
 SettingWindow QListWidget:item:selected {
-    background: #272728;
+    background: #2c2c2c;
 }
 
-SettingWindow QStackedWidget {
-    background-color: #272728;
-}
-
-SettingWindow #copyright-label {
-    color: #e6e6e6;
+SettingWindow QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-light);
 }

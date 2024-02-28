@@ -9,7 +9,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QShortcut>
-#include <QVBoxLayout>
 #include <string>
 
 // clang-format off
@@ -125,7 +124,7 @@ ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
     nbar->setId(static_cast<int>(number_t::hybrid));
 }
 
-void ColorWindow::refresh(number_t format)
+void ColorWindow::refresh(const number_t format)
 {
     format_ = format;
 

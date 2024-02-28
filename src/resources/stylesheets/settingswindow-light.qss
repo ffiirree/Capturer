@@ -2,8 +2,8 @@ SettingWindow * {
     color: #333333;
 }
 
-SettingWindow TitleBar QCheckBox#icon-title {
-    background-color: #f4f6f6;
+SettingWindow, SettingWindow QWidget#scroll-content {
+    background: #f9f9f9;
 }
 
 SettingWindow QListWidget {
@@ -19,15 +19,6 @@ SettingWindow QListWidget:item:selected {
     background: #e5e7e7;
 }
 
-SettingWindow QStackedWidget {
-    background-color: #fcfbfb;
-}
-
-SettingWindow ShortcutInput {
-    color: #363636;
-}
-
-SettingWindow  #copyright-label {
-    color: #363636;
-    font-size: 11pt;
+SettingWindow QCheckBox#close-btn::indicator {
+    image: url(:/icons/close-dark);
 }

@@ -25,8 +25,7 @@ public:
 signals:
     void pinData(const std::shared_ptr<QMimeData>&);
 
-    void SHOW_MESSAGE(const QString& title, const QString& msg,
-                      QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::Information, int msecs = 10000);
+    void saved(const QString& path);
 
 public slots:
     void start();
@@ -37,7 +36,7 @@ public slots:
     void                       pin();
     std::pair<QPixmap, QPoint> snip();
 
-    void updateTheme();
+    void setStyle(const SelectorStyle& style);
 
     void moveMenu();
 

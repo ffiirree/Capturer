@@ -166,7 +166,5 @@
         <file alias="settingswindow-dark">resources/stylesheets/settingswindow-dark.qss</file>
         <file alias="settingswindow-light">resources/stylesheets/settingswindow-light.qss</file>
         <file alias="player">resources/stylesheets/player.qss</file>
-        <file alias="player-dark">resources/stylesheets/player-dark.qss</file>
-        <file alias="player-light">resources/stylesheets/player-light.qss</file>
     </qresource>
 </RCC>

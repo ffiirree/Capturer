@@ -47,7 +47,7 @@ private:
     [[nodiscard]] QPixmap grab() const;
     [[nodiscard]] QPoint  position() const;
 
-    QPixmap pixmap_{};
+    QPixmap desktop_{};
 
     QLabel *label_{};
 

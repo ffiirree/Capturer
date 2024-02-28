@@ -1,4 +1,13 @@
 /*///////////////////////////////////////////////////////////////*/
+QScrollArea {
+    background-color: #fcfbfb;
+}
+
+QGroupBox {
+    border: 1px solid #e9e8e7;
+    background-color: #fefefe;
+}
+/*///////////////////////////////////////////////////////////////*/
 QCheckBox {
     color: #50505f;
 }

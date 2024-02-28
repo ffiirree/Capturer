@@ -4,6 +4,38 @@ QWidget {
 }
 
 /*///////////////////////////////////////////////////////////////*/
+QScrollArea {
+    border: none;
+}
+
+QGroupBox {
+    border-radius: 8px;
+    font-weight: bold;
+    margin-top: 1.25em;
+
+    padding: 0px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+}
+
+/*///////////////////////////////////////////////////////////////*/
+QListWidget {
+    font-size: 11pt;
+    border: none;
+}
+
+QListWidget::item {
+    font-size: 10.5pt;
+    height: 1.5em;
+    border: none;
+    border-radius: 7px;
+    padding: 0.25em 0em 0.25em 0.5em;
+    margin: 0.125em 0.5em;
+}
+
+/*///////////////////////////////////////////////////////////////*/
 QCheckBox {
     spacing: 0px;
 }
@@ -108,7 +140,7 @@ QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
 /*///////////////////////////////////////////////////////////////*/
 
 QMenu {
-    border-radius: 7px;
+    border-radius: 8px;
     padding: 0.25em;
 }
 
@@ -119,7 +151,7 @@ QMenu::icon {
 
 QMenu::item {
     background-color: transparent;
-    border-radius: 5px;
+    border-radius: 6px;
 
     font-family: "Microsoft YaHei";
     font-size: 10pt;
@@ -152,7 +184,7 @@ QMenu::right-arrow {
 
 QMenu::separator {
     height: 1px;
-    margin: 3px;
+    margin: 0.25em;
 }
 
 /*///////////////////////////////////////////////////////////////*/

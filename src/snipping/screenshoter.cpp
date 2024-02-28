@@ -1,7 +1,6 @@
 #include "screenshoter.h"
 
 #include "clipboard.h"
-#include "config.h"
 #include "logging.h"
 
 #include <QApplication>
@@ -410,7 +409,7 @@ void ScreenShoter::save()
         auto [pixmap, _] = snip();
         pixmap.save(filename);
 
-        emit SHOW_MESSAGE("Capturer<PICTURE>", "Path: " + filename);
+        emit saved(filename);
         exit();
     }
 }
@@ -454,16 +453,15 @@ void ScreenShoter::exit()
     QWidget::close();
 }
 
-void ScreenShoter::updateTheme()
+void ScreenShoter::setStyle(const SelectorStyle& style)
 {
-    const auto& style = Config::instance()["snip"]["selector"];
     selector_->setBorderStyle(QPen{
-        style["border"]["color"].get<QColor>(),
-        static_cast<qreal>(style["border"]["width"].get<int>()),
-        style["border"]["style"].get<Qt::PenStyle>(),
+        style.border_color,
+        static_cast<qreal>(style.border_width),
+        style.border_style,
     });
 
-    selector_->setMaskStyle(style["mask"]["color"].get<QColor>());
+    selector_->setMaskStyle(style.mask_color);
 }
 
 void ScreenShoter::registerShortcuts()
@@ -505,7 +503,7 @@ void ScreenShoter::registerShortcuts()
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this] { exit(); });
 
     connect(new QShortcut(Qt::CTRL + Qt::Key_Z,             this), &QShortcut::activated, undo_stack_, &QUndoStack::undo);
-    connect(new QShortcut(Qt::CTRL | Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
+    connect(new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, this), &QShortcut::activated, undo_stack_, &QUndoStack::redo);
     // clang-format on
 
     connect(new QShortcut(QKeySequence::Delete, this), &QShortcut::activated, [this] {

@@ -115,13 +115,6 @@
     </message>
 </context>
 <context>
-    <name>ScreenRecorder</name>
-    <message>
-        <source>Path: </source>
-        <translation></translation>
-    </message>
-</context>
-<context>
     <name>ScreenShoter</name>
     <message>
         <source>Save Image</source>
@@ -183,10 +176,6 @@
         <translation></translation>
     </message>
     <message>
-        <source>Appearance:</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Border Width</source>
         <translation></translation>
     </message>
@@ -195,19 +184,11 @@
         <translation></translation>
     </message>
     <message>
-        <source>Line Type</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Mask Color</source>
         <translation></translation>
     </message>
     <message>
         <source>Show Region</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Params:</source>
         <translation></translation>
     </message>
     <message>
@@ -235,59 +216,11 @@
         <translation></translation>
     </message>
     <message>
-        <source>High</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Low</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Quality</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Capture Mouse</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Microphones</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Speakers</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Cameras</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Hide/Show All Images</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Video Recording</source>
         <translation></translation>
     </message>
     <message>
         <source>Gif Recording</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Version</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
         <translation></translation>
     </message>
     <message>
@@ -299,23 +232,99 @@
         <translation></translation>
     </message>
     <message>
-        <source>Video:</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Audio:</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>File:</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Save Path</source>
         <translation></translation>
     </message>
     <message>
         <source>Format</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Toggle Previews</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Border Style</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Params</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Microphone</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Speaker</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Copyright © 2018 - 2024 ffiirree</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Rate Control</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Preset</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Max Colors</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Dither</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Sample Rate</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Preview Clipboard</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Quick Look</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Mouse</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>System Audio</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Captured by Default</source>
         <translation></translation>
     </message>
 </context>

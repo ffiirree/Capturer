@@ -1,21 +1,22 @@
 #include "settingdialog.h"
 
+#include "capturer.h"
 #include "colorpanel.h"
 #include "combobox.h"
+#include "config.h"
 #include "libcap/devices.h"
 #include "libcap/hwaccel.h"
 #include "logging.h"
+#include "scrollwidget.h"
 #include "shortcutinput.h"
-#include "titlebar.h"
 #include "version.h"
 
-#include <QCoreApplication>
+#include <QCheckBox>
 #include <QDir>
-#include <QLabel>
+#include <QFormLayout>
 #include <QListWidget>
-#include <QSettings>
 #include <QSpinBox>
-#include <QStandardPaths>
+#include <QStackedWidget>
 #include <QVBoxLayout>
 
 static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString>> PENSTYLES = {
@@ -29,254 +30,291 @@ static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString
 SettingWindow::SettingWindow(QWidget *parent)
     : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint)
 {
-    setMinimumSize(850, 600);
+    setMinimumSize(1080, 760);
     setContentsMargins({});
 
-    //
-    auto vlayout = new QVBoxLayout();
-    vlayout->setSpacing(0);
-    vlayout->setContentsMargins({});
-    setLayout(vlayout);
+    setWindowModality(Qt::ApplicationModal);
+    setAttribute(Qt::WA_DeleteOnClose);
 
-    // title bar
-    vlayout->addWidget(new TitleBar(this));
     setWindowTitle(tr("Settings"));
     setWindowIcon(QIcon(":/icons/capturer"));
 
-    auto layout = new QHBoxLayout();
+    //
+    const auto layout = new QHBoxLayout(this);
     layout->setSpacing(0);
     layout->setContentsMargins({});
-    vlayout->addLayout(layout);
+    setLayout(layout);
 
-    auto menu = new QListWidget();
-    menu->setFocusPolicy(Qt::NoFocus);
-    menu->addItem(new QListWidgetItem(tr("General")));
-    menu->addItem(new QListWidgetItem(tr("Hotkeys")));
-    menu->addItem(new QListWidgetItem(tr("Screenshot")));
-    menu->addItem(new QListWidgetItem(tr("Video Recording")));
-    menu->addItem(new QListWidgetItem(tr("GIF Recording")));
-    menu->addItem(new QListWidgetItem(tr("Devices")));
-    menu->addItem(new QListWidgetItem(tr("About")));
-    layout->addWidget(menu);
+    {
+        const auto menu = new QListWidget();
+        menu->setFocusPolicy(Qt::NoFocus);
+        menu->addItem(tr("General"));
+        menu->addItem(tr("Hotkeys"));
+        menu->addItem(tr("Screenshot"));
+        menu->addItem(tr("Video Recording"));
+        menu->addItem(tr("GIF Recording"));
+        menu->addItem(tr("Devices"));
+        menu->addItem(tr("About"));
+        menu->setMinimumWidth(275);
+        menu->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        layout->addWidget(menu);
 
-    pages_ = new QStackedWidget();
-    layout->addWidget(pages_);
+        const auto vlayout = new QVBoxLayout();
+        vlayout->setSpacing(0);
+        vlayout->setContentsMargins({});
+        {
+            const auto close_btn = new QCheckBox();
+            close_btn->setObjectName("close-btn");
+            close_btn->setCheckable(false);
+            connect(close_btn, &QCheckBox::clicked, this, &QWidget::close);
 
-    pages_->addWidget(setupGeneralWidget());
-    pages_->addWidget(setupHotkeyWidget());
-    pages_->addWidget(setupSnipWidget());
-    pages_->addWidget(setupRecordWidget());
-    pages_->addWidget(setupGIFWidget());
-    pages_->addWidget(setupDevicesWidget());
-    pages_->addWidget(setupAboutWidget());
+            vlayout->addWidget(close_btn, 0, Qt::AlignRight);
 
-    connect(menu, &QListWidget::currentItemChanged,
-            [=, this](auto current, auto) { pages_->setCurrentIndex(menu->row(current)); });
-    menu->setCurrentRow(0);
+            const auto pages = new QStackedWidget();
+
+            pages->addWidget(setupGeneralWidget());
+            pages->addWidget(setupHotkeyWidget());
+            pages->addWidget(setupSnipWidget());
+            pages->addWidget(setupRecordWidget());
+            pages->addWidget(setupGIFWidget());
+            pages->addWidget(setupDevicesWidget());
+            pages->addWidget(setupAboutWidget());
+
+            vlayout->addWidget(pages);
+
+            connect(menu, &QListWidget::currentRowChanged, pages, &QStackedWidget::setCurrentIndex);
+        }
+        layout->addLayout(vlayout);
+
+        menu->setCurrentRow(0);
+    }
+
+    connect(this, &SettingWindow::closed, [] { config::save(); });
+}
+
+static QLabel *LABEL(const QString& text, int width)
+{
+    const auto label = new QLabel(text);
+    label->setMinimumWidth(width);
+    return label;
 }
 
 QWidget *SettingWindow::setupGeneralWidget()
 {
-    auto general_widget = new QWidget(pages_);
+    const auto page = new ScrollWidget();
+    {
+        const auto form = page->addForm(tr("General"));
 
-    auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
+        const auto autorun = new QCheckBox();
+        autorun->setChecked(config::autorun);
+        connect(autorun, &QCheckBox::toggled, [](bool checked) { config::set_autorun(checked); });
+        form->addRow(LABEL(tr("Run on Startup"), 175), autorun);
 
-    autorun_ = new QCheckBox();
-    autorun_->setObjectName("autorun");
-    autorun_->setChecked(config["autorun"].get<bool>());
-    setAutoRun(autorun_->checkState());
-    connect(autorun_, &QCheckBox::stateChanged, this, &SettingWindow::setAutoRun);
-    layout->addWidget(new QLabel(tr("Run on Startup")), 0, 0, 1, 1);
-    layout->addWidget(autorun_, 0, 1, 1, 2);
+        //
+        const auto language = new ComboBox({
+            { "en_US", "English" },
+            { "zh_CN", "简体中文" },
+        });
+        language->select(config::language);
+        language->onselected([this](auto value) { config::language = value.toString(); });
+        form->addRow(tr("Language"), language);
 
-    //
-    auto _1_2 = new ComboBox();
-    _1_2->add({
-                  { "en_US", "English" },
-                  { "zh_CN", "简体中文" },
-              })
-        .select(config["language"].get<QString>())
-        .onselected([this](auto value) { config.set(config["language"], value.toString()); });
-    layout->addWidget(new QLabel(tr("Language")), 1, 0, 1, 1);
-    layout->addWidget(_1_2, 1, 1, 1, 2);
+        //
+        const auto file = new QLineEdit(config::filepath);
+        file->setContextMenuPolicy(Qt::NoContextMenu);
+        file->setReadOnly(true);
+        form->addRow(tr("Settings File"), file);
 
-    //
-    auto _2_2 = new QLineEdit(config.getFilePath());
-    _2_2->setContextMenuPolicy(Qt::NoContextMenu);
-    _2_2->setReadOnly(true);
-    layout->addWidget(new QLabel(tr("Settings File")), 2, 0, 1, 1);
-    layout->addWidget(_2_2, 2, 1, 1, 2);
+        //
+        const auto theme = new ComboBox({
+            { "auto", tr("Auto") },
+            { "dark", tr("Dark") },
+            { "light", tr("Light") },
+        });
+        theme->onselected([this](auto value) { config::set_theme(value.toString().toStdString()); });
+        theme->select(config::theme);
+        form->addRow(tr("Theme"), theme);
+    }
 
-    //
-    auto _3_2 = new ComboBox();
-    _3_2->add({
-                  { "auto", tr("Auto") },
-                  { "dark", tr("Dark") },
-                  { "light", tr("Light") },
-              })
-        .onselected([this](auto value) { config.set_theme(value.toString().toStdString()); })
-        .select(config["theme"].get<QString>());
-    layout->addWidget(new QLabel(tr("Theme")), 3, 0, 1, 1);
-    layout->addWidget(_3_2, 3, 1, 1, 2);
+    page->addSpacer();
+    return page;
+}
 
-    layout->setRowStretch(4, 1);
-    general_widget->setLayout(layout);
+QWidget *SettingWindow::setupHotkeyWidget()
+{
+    using namespace config;
 
-    return general_widget;
+    const auto page = new ScrollWidget();
+    {
+        const auto form = page->addForm(tr("Hotkeys"));
+
+        const auto snip = new ShortcutInput(config::hotkeys::screenshot);
+        connect(snip, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::screenshot = ks; });
+        connect(snip, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(LABEL(tr("Screenshot"), 175), snip);
+
+        const auto preview = new ShortcutInput(config::hotkeys::preview);
+        connect(preview, &ShortcutInput::changed, [this](auto&& ks) { config::hotkeys::preview = ks; });
+        connect(preview, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Preview Clipboard"), preview);
+
+        const auto tp = new ShortcutInput(config::hotkeys::toggle_previews);
+        connect(tp, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::toggle_previews = ks; });
+        connect(tp, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Toggle Previews"), tp);
+
+#if _WIN32
+        const auto qlook = new ShortcutInput(config::hotkeys::quick_look);
+        connect(qlook, &ShortcutInput::changed, [this](auto&& ks) { config::hotkeys::quick_look = ks; });
+        connect(qlook, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Quick Look"), qlook);
+#endif
+
+        const auto rvideo = new ShortcutInput(config::hotkeys::record_video);
+        connect(rvideo, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::record_video = ks; });
+        connect(rvideo, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Video Recording"), rvideo);
+
+        const auto rgif = new ShortcutInput(config::hotkeys::record_gif);
+        connect(rgif, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::record_gif = ks; });
+        connect(rgif, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Gif Recording"), rgif);
+    }
+
+    page->addSpacer();
+    return page;
 }
 
 QWidget *SettingWindow::setupSnipWidget()
 {
-    auto snip_widget = new QWidget(pages_);
+    const auto page = new ScrollWidget();
+    {
+        const auto form = page->addForm(tr("Appearance"));
 
-    auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
+        const auto bwidth = new QSpinBox();
+        bwidth->setRange(1, 6);
+        bwidth->setContextMenuPolicy(Qt::NoContextMenu);
+        bwidth->setValue(config::snip::style.border_width);
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                [](int w) { config::snip::style.border_width = w; });
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                [] { App()->UpdateScreenshotStyle(); });
+        form->addRow(LABEL(tr("Border Width"), 175), bwidth);
 
-    auto _0 = new QLabel(tr("Appearance:"));
-    _0->setObjectName("sub-title");
-    layout->addWidget(_0, 0, 1, 1, 1);
+        const auto bcolor = new ColorDialogButton(config::snip::style.border_color);
+        connect(bcolor, &ColorDialogButton::changed,
+                [](auto&& c) { config::snip::style.border_color = c; });
+        connect(bcolor, &ColorDialogButton::changed, [] { App()->UpdateScreenshotStyle(); });
+        form->addRow(tr("Border Color"), bcolor);
 
-    auto _1_2 = new QSpinBox();
-    _1_2->setRange(1, 6);
-    _1_2->setContextMenuPolicy(Qt::NoContextMenu);
-    _1_2->setValue(config["snip"]["selector"]["border"]["width"].get<int>());
-    connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            [this](int w) { config.set(config["snip"]["selector"]["border"]["width"], w); });
-    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
-    layout->addWidget(_1_2, 1, 2, 1, 2);
+        const auto bstyle = new ComboBox();
+        bstyle->add(PENSTYLES);
+        bstyle->onselected([&](auto value) {
+            config::snip::style.border_style = static_cast<Qt::PenStyle>(value.toInt());
+        });
+        connect(bstyle, &ComboBox::selected, [] { App()->UpdateScreenshotStyle(); });
+        bstyle->select(static_cast<int>(config::snip::style.border_style));
+        form->addRow(tr("Border Style"), bstyle);
 
-    auto _2_2 = new ColorDialogButton(config["snip"]["selector"]["border"]["color"].get<QColor>());
-    connect(_2_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["snip"]["selector"]["border"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
-    layout->addWidget(_2_2, 2, 2, 1, 2);
+        const auto mcolor = new ColorDialogButton(config::snip::style.mask_color);
+        connect(mcolor, &ColorDialogButton::changed, [&](auto&& c) { config::snip::style.mask_color = c; });
+        connect(mcolor, &ColorDialogButton::changed, [] { App()->UpdateScreenshotStyle(); });
+        form->addRow(tr("Mask Color"), mcolor);
+    }
 
-    auto _3_2 = new ComboBox();
-    _3_2->add(PENSTYLES)
-        .onselected([this](auto value) {
-            config.set(config["snip"]["selector"]["border"]["style"], value.toInt());
-        })
-        .select(config["snip"]["selector"]["border"]["style"].get<int>());
-    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
-    layout->addWidget(_3_2, 3, 2, 1, 2);
+    const auto form = page->addForm(tr("File"));
+    {
+        const auto path = new QLineEdit(config::snip::path);
+        path->setContextMenuPolicy(Qt::NoContextMenu);
+        path->setReadOnly(true);
+        form->addRow(LABEL(tr("Save Path"), 175), path);
+    };
 
-    auto _4_2 = new ColorDialogButton(config["snip"]["selector"]["mask"]["color"].get<QColor>());
-    connect(_4_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["snip"]["selector"]["mask"]["color"], c); });
-    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
-    layout->addWidget(_4_2, 4, 2, 1, 2);
-
-    layout->setRowStretch(5, 1);
-    snip_widget->setLayout(layout);
-
-    return snip_widget;
+    page->addSpacer();
+    return page;
 }
 
 QWidget *SettingWindow::setupRecordWidget()
 {
-    const auto record_widget = new QWidget(pages_);
-
-    const auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
-
-    int ridx = 0;
-
-    const auto appearance = new QLabel(tr("Appearance:"));
-    appearance->setObjectName("sub-title");
-    layout->addWidget(appearance, ridx++, 1, 1, 1);
-
+    const auto page = new ScrollWidget();
     {
-        const auto border_w = new QSpinBox();
-        border_w->setRange(1, 6);
-        border_w->setContextMenuPolicy(Qt::NoContextMenu);
-        border_w->setValue(config["record"]["selector"]["border"]["width"].get<int>());
-        connect(border_w, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-                [this](auto w) { config.set(config["record"]["selector"]["border"]["width"], w); });
-        layout->addWidget(new QLabel(tr("Border Width")), ridx, 1, 1, 1);
-        layout->addWidget(border_w, ridx++, 2, 1, 2);
+        const auto form = page->addForm(tr("Appearance"));
 
-        auto _2_2 = new ColorDialogButton(config["record"]["selector"]["border"]["color"].get<QColor>());
-        connect(_2_2, &ColorDialogButton::changed,
-                [this](auto&& c) { config.set(config["record"]["selector"]["border"]["color"], c); });
-        layout->addWidget(new QLabel(tr("Border Color")), ridx, 1, 1, 1);
-        layout->addWidget(_2_2, ridx++, 2, 1, 2);
+        auto& style = config::recording::video::style;
 
-        auto _3_2 = new ComboBox();
-        _3_2->add(PENSTYLES)
-            .onselected([this](auto value) {
-                config.set(config["record"]["selector"]["border"]["style"], value.toInt());
-            })
-            .select(config["record"]["selector"]["border"]["style"].get<int>());
-        layout->addWidget(new QLabel(tr("Line Type")), ridx, 1, 1, 1);
-        layout->addWidget(_3_2, ridx++, 2, 1, 2);
+        const auto bwidth = new QSpinBox();
+        bwidth->setRange(1, 6);
+        bwidth->setContextMenuPolicy(Qt::NoContextMenu);
+        bwidth->setValue(style.border_width);
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                [&](auto w) { style.border_width = w; });
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                [] { App()->UPdateVideoRecordingStyle(); });
+        form->addRow(LABEL(tr("Border Width"), 175), bwidth);
 
-        auto _4_2 = new ColorDialogButton(config["record"]["selector"]["mask"]["color"].get<QColor>());
-        connect(_4_2, &ColorDialogButton::changed,
-                [this](auto&& c) { config.set(config["record"]["selector"]["mask"]["color"], c); });
-        layout->addWidget(new QLabel(tr("Mask Color")), ridx, 1, 1, 1);
-        layout->addWidget(_4_2, ridx++, 2, 1, 2);
+        const auto bcolor = new ColorDialogButton(style.border_color);
+        connect(bcolor, &ColorDialogButton::changed, [&](auto c) { style.border_color = c; });
+        connect(bcolor, &ColorDialogButton::changed, [] { App()->UPdateVideoRecordingStyle(); });
+        form->addRow(tr("Border Color"), bcolor);
 
-        const auto box = new QCheckBox();
-        box->setChecked(config["record"]["box"].get<bool>());
-        connect(box, &QCheckBox::toggled,
-                [this](auto checked) { config.set(config["record"]["box"], checked); });
-        layout->addWidget(new QLabel(tr("Show Region")), ridx, 1, 1, 1);
-        layout->addWidget(box, ridx++, 2, 1, 2);
+        const auto bstyle = new ComboBox();
+        bstyle->add(PENSTYLES)
+            .onselected([&](auto value) { style.border_style = static_cast<Qt::PenStyle>(value.toInt()); })
+            .select(static_cast<int>(style.border_style));
+        connect(bstyle, &ComboBox::selected, [] { App()->UPdateVideoRecordingStyle(); });
+        form->addRow(tr("Border Style"), bstyle);
+
+        const auto mcolor = new ColorDialogButton(style.mask_color);
+        connect(mcolor, &ColorDialogButton::changed, [&](auto&& c) { style.mask_color = c; });
+        connect(mcolor, &ColorDialogButton::changed, [] { App()->UPdateVideoRecordingStyle(); });
+        form->addRow(tr("Mask Color"), mcolor);
+
+        const auto region = new QCheckBox();
+        region->setChecked(config::recording::video::show_region);
+        connect(region, &QCheckBox::toggled,
+                [](auto checked) { config::recording::video::show_region = checked; });
+        form->addRow(tr("Show Region"), region);
     }
 
-    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
-
-    const auto file = new QLabel(tr("File:"));
-    file->setObjectName("sub-title");
-    layout->addWidget(file, ridx++, 1, 1, 1);
-
     {
-        const auto path = new QLineEdit(QStandardPaths::writableLocation(QStandardPaths::MoviesLocation));
+        const auto form = page->addForm(tr("File"));
+
+        const auto path = new QLineEdit(config::recording::video::path);
         path->setContextMenuPolicy(Qt::NoContextMenu);
         path->setReadOnly(true);
-        layout->addWidget(new QLabel(tr("Save Path")), ridx, 1, 1, 1);
-        layout->addWidget(path, ridx++, 2, 1, 2);
+        form->addRow(LABEL(tr("Save Path"), 175), path);
 
         const auto format = new ComboBox();
-        format
-            ->add({
-                { "mp4", "MPEG-4 (.mp4)" },
-                { "mkv", "Matroska Video (.mkv)" },
-            })
-            .onselected([this](auto value) { config.set(config["record"]["mcf"], value.toString()); })
-            .select(config["record"]["mcf"].get<QString>());
-        layout->addWidget(new QLabel(tr("Format")), ridx, 1, 1, 1);
-        layout->addWidget(format, ridx++, 2, 1, 2);
+        format->add({ { "mp4", "MPEG-4 (.mp4)" }, { "mkv", "Matroska Video (.mkv)" } })
+            .onselected([this](auto value) { config::recording::video::mcf = value.toString(); })
+            .select(config::recording::video::mcf);
+        form->addRow(tr("Format"), format);
     }
 
-    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
+    {
+        const auto form = page->addForm(tr("Captured by Default"));
 
-    const auto vparams = new QLabel(tr("Video:"));
-    vparams->setObjectName("sub-title");
-    layout->addWidget(vparams, ridx++, 1, 1, 1);
+        auto mouse = new QCheckBox();
+        mouse->setChecked(config::recording::video::capture_mouse);
+        connect(mouse, &QCheckBox::toggled,
+                [this](auto checked) { config::recording::video::capture_mouse = checked; });
+        form->addRow(LABEL(tr("Mouse"), 175), mouse);
+
+        const auto mic_en = new QCheckBox();
+        mic_en->setChecked(config::recording::video::mic_enabled);
+        connect(mic_en, &QCheckBox::toggled,
+                [](auto checked) { config::recording::video::mic_enabled = checked; });
+        form->addRow(tr("Microphone"), mic_en);
+
+        const auto sa_en = new QCheckBox();
+        sa_en->setChecked(config::recording::video::speaker_enabled);
+        connect(sa_en, &QCheckBox::toggled,
+                [](auto checked) { config::recording::video::speaker_enabled = checked; });
+        form->addRow(tr("System Audio"), sa_en);
+    }
 
     {
-        const auto framerate = new ComboBox();
-        framerate
-            ->add({
-                { QPoint{ 10, 1 }, "10" },
-                { QPoint{ 20, 1 }, "20" },
-                { QPoint{ 24, 1 }, "24 NTSC" },
-                { QPoint{ 25, 1 }, "25 PAL" },
-                { QPoint{ 29, 1 }, "30" },
-                { QPoint{ 30000, 10001 }, "30" },
-                { QPoint{ 48, 1 }, "48" },
-                { QPoint{ 50, 1 }, "50 PAL" },
-                { QPoint{ 60000, 1 }, "59.94" },
-                { QPoint{ 60, 1 }, "60" },
-                { QPoint{ 120, 1 }, "120" },
-            })
-            .onselected(
-                [this](auto value) { config.set(config["record"]["video"]["framerate"], value.toPoint()); })
-            .select(config["record"]["video"]["framerate"].get<QPoint>());
-        layout->addWidget(new QLabel(tr("Framerate")), ridx, 1, 1, 1);
-        layout->addWidget(framerate, ridx++, 2, 1, 2);
+        const auto form = page->addForm(tr("Video"));
 
         const auto encoder = new ComboBox();
         encoder->add({
@@ -289,313 +327,281 @@ QWidget *SettingWindow::setupRecordWidget()
                 { "hevc_nvenc", tr("Hardware NVENC [H.265 / HEVC]") },
             });
         }
-        encoder
-            ->onselected([this](auto value) { config.set(config["record"]["encoder"], value.toString()); })
-            .select(config["record"]["encoder"].get<QString>());
-        layout->addWidget(new QLabel(tr("Encoder")), ridx, 1, 1, 1);
-        layout->addWidget(encoder, ridx++, 2, 1, 2);
+        encoder->onselected(
+            [this](auto value) { config::recording::video::v::codec = value.toString().toStdString(); });
+        encoder->select(QString::fromStdString(config::recording::video::v::codec));
+        form->addRow(tr("Encoder"), encoder);
 
-        const auto quality = new ComboBox();
-        quality
+        const auto framerate = new ComboBox();
+        framerate
             ->add({
-                { "high", tr("High") },
-                { "medium", tr("Medium") },
-                { "low", tr("Low") },
+                { QPoint{ 10, 1 }, "10" },
+                { QPoint{ 20, 1 }, "20" },
+                { QPoint{ 24, 1 }, "24 NTSC" },
+                { QPoint{ 25, 1 }, "25 PAL" },
+                { QPoint{ 30, 1 }, "30" },
+                { QPoint{ 30000, 1001 }, "29.97" },
+                { QPoint{ 48, 1 }, "48" },
+                { QPoint{ 50, 1 }, "50 PAL" },
+                { QPoint{ 60000, 1001 }, "59.94" },
+                { QPoint{ 60, 1 }, "60" },
+                { QPoint{ 120, 1 }, "120" },
             })
-            .onselected([this](auto value) { config.set(config["record"]["quality"], value.toString()); })
-            .select(config["record"]["quality"].get<QString>());
-        layout->addWidget(new QLabel(tr("Quality")), ridx, 1, 1, 1);
-        layout->addWidget(quality, ridx++, 2, 1, 2);
+            .onselected([this](auto value) {
+                const auto fps                         = value.toPoint();
+                config::recording::video::v::framerate = { fps.x(), fps.y() };
+            })
+            .select(QPoint{ config::recording::video::v::framerate.num,
+                            config::recording::video::v::framerate.den });
+        form->addRow(LABEL(tr("Framerate"), 175), framerate);
 
-        auto _cm_2 = new QCheckBox();
-        _cm_2->setChecked(config["record"]["mouse"].get<bool>());
-        connect(_cm_2, &QCheckBox::toggled,
-                [this](auto checked) { config.set(config["record"]["mouse"], checked); });
-        layout->addWidget(new QLabel(tr("Capture Mouse")), ridx, 1, 1, 1);
-        layout->addWidget(_cm_2, ridx++, 2, 1, 2);
+        const auto ratectrl = new ComboBox();
+        ratectrl->add("crf", "CRF")
+            .onselected([this](auto value) {
+                config::recording::video::v::rate_control = value.toString().toStdString();
+            })
+            .select(QString::fromStdString(config::recording::video::v::rate_control));
+        form->addRow(tr("Rate Control"), ratectrl);
+
+        const auto crf = new QSpinBox();
+        crf->setRange(15, 35);
+        crf->setContextMenuPolicy(Qt::NoContextMenu);
+        crf->setValue(config::recording::video::v::crf);
+        connect(crf, QOverload<int>::of(&QSpinBox::valueChanged),
+                [&](auto w) { config::recording::video::v::crf = w; });
+        form->addRow("CRF/CQ", crf);
+
+        const auto preset = new ComboBox();
+        preset
+            ->add({
+                { "ultrafast", "ultrafast" },
+                { "superfast", "superfast" },
+                { "veryfast", "veryfast" },
+                { "faster", "faster" },
+                { "fast", "fast" },
+                { "medium", "medium" },
+                { "slow", "slow" },
+                { "slower", "slower" },
+                { "veryslow", "veryslow" },
+            })
+            .onselected([this](auto value) {
+                config::recording::video::v::preset = value.toString().toStdString();
+            })
+            .select(QString::fromStdString(config::recording::video::v::preset));
+        form->addRow(tr("Preset"), preset);
+
+        const auto profile = new ComboBox();
+        profile
+            ->add({
+                { "baseline", "baseline" },
+                { "main", "main" },
+                { "high", "high" },
+            })
+            .onselected([this](auto value) {
+                config::recording::video::v::profile = value.toString().toStdString();
+            })
+            .select(QString::fromStdString(config::recording::video::v::profile));
+        form->addRow(tr("Profile"), profile);
     }
 
-    layout->addWidget(new QLabel(), ridx++, 1, 1, 1);
-
-    const auto aparams = new QLabel(tr("Audio:"));
-    aparams->setObjectName("sub-title");
-    layout->addWidget(aparams, ridx++, 1, 1, 1);
-
     {
+        const auto form = page->addForm(tr("Audio"));
+
         const auto codec = new ComboBox();
         codec->add("aac", "AAC / Advanced Audio Coding")
             .onselected(
-                [this](auto value) { config.set(config["record"]["audio"]["codec"], value.toString()); })
-            .select(config["record"]["audio"]["codec"].get<QString>());
-        layout->addWidget(new QLabel(tr("Encoder")), ridx, 1, 1, 1);
-        layout->addWidget(codec, ridx++, 2, 1, 2);
+                [this](auto value) { config::recording::video::a::codec = value.toString().toStdString(); })
+            .select(QString::fromStdString(config::recording::video::a::codec));
+        form->addRow(LABEL(tr("Encoder"), 175), codec);
 
         const auto channels = new ComboBox();
         channels->add(2, "Stereo")
-            .onselected(
-                [this](auto value) { config.set(config["record"]["audio"]["channels"], value.toInt()); })
-            .select(config["record"]["audio"]["channels"].get<int>());
-        layout->addWidget(new QLabel(tr("Channel Layout")), ridx, 1, 1, 1);
-        layout->addWidget(channels, ridx++, 2, 1, 2);
+            .onselected([this](auto value) { config::recording::video::a::channels = value.toInt(); })
+            .select(config::recording::video::a::channels);
+        form->addRow(tr("Channel Layout"), channels);
+
+        const auto srate = new ComboBox();
+        srate->add(48000, "48 kHz")
+            .onselected([this](auto r) { config::recording::video::a::sample_rate = r.toInt(); })
+            .select(config::recording::video::a::sample_rate);
+        form->addRow(tr("Sample Rate"), srate);
     }
 
-    layout->setRowStretch(ridx, 1);
-
-    record_widget->setLayout(layout);
-
-    return record_widget;
+    page->addSpacer();
+    return page;
 }
 
 QWidget *SettingWindow::setupGIFWidget()
 {
-    auto gif_widget = new QWidget();
+    const auto page = new ScrollWidget();
+    {
+        const auto form = page->addForm(tr("Appearance"));
 
-    auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
+        auto&      style  = config::recording::gif::style;
+        const auto bwidth = new QSpinBox();
+        bwidth->setRange(1, 6);
+        bwidth->setValue(style.border_width);
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                [&](int width) { style.border_width = width; });
+        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+                []() { App()->UPdateGifRecordingStyle(); });
+        form->addRow(LABEL(tr("Border Width"), 175), bwidth);
 
-    auto _0 = new QLabel(tr("Appearance:"));
-    _0->setObjectName("sub-title");
-    layout->addWidget(_0, 0, 1, 1, 1);
+        const auto bcolor = new ColorDialogButton(style.border_color);
+        connect(bcolor, &ColorDialogButton::changed, [&](auto&& c) { style.border_color = c; });
+        connect(bcolor, &ColorDialogButton::changed, []() { App()->UPdateGifRecordingStyle(); });
+        form->addRow(tr("Border Color"), bcolor);
 
-    auto _1_2 = new QSpinBox();
-    _1_2->setRange(1, 6);
-    _1_2->setValue(config["gif"]["selector"]["border"]["width"].get<int>());
-    connect(_1_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            [this](int w) { config.set(config["gif"]["selector"]["border"]["width"], w); });
-    layout->addWidget(new QLabel(tr("Border Width")), 1, 1, 1, 1);
-    layout->addWidget(_1_2, 1, 2, 1, 2);
+        const auto bstyle = new ComboBox();
+        bstyle->add(PENSTYLES);
+        bstyle->onselected([&](auto s) { style.border_style = static_cast<Qt::PenStyle>(s.toInt()); });
+        bstyle->onselected([]() { App()->UPdateGifRecordingStyle(); });
+        bstyle->select(static_cast<int>(style.border_style));
+        form->addRow(tr("Border Style"), bstyle);
 
-    auto _2_2 = new ColorDialogButton(config["gif"]["selector"]["border"]["color"].get<QColor>());
-    connect(_2_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["gif"]["selector"]["border"]["color"], c); });
-    layout->addWidget(_2_2, 2, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Border Color")), 2, 1, 1, 1);
+        const auto mcolor = new ColorDialogButton(style.mask_color);
+        connect(mcolor, &ColorDialogButton::changed, [&](auto&& c) { style.mask_color = c; });
+        connect(mcolor, &ColorDialogButton::changed, []() { App()->UPdateGifRecordingStyle(); });
+        form->addRow(tr("Mask Color"), mcolor);
 
-    auto _3_2 = new ComboBox();
-    _3_2->add(PENSTYLES)
-        .onselected(
-            [this](auto value) { config.set(config["gif"]["selector"]["border"]["style"], value.toInt()); })
-        .select(config["gif"]["selector"]["border"]["style"].get<int>());
-    layout->addWidget(_3_2, 3, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Line Type")), 3, 1, 1, 1);
+        const auto region = new QCheckBox();
+        region->setChecked(config::recording::gif::show_region);
+        connect(region, &QCheckBox::toggled,
+                [](auto checked) { config::recording::gif::show_region = checked; });
+        form->addRow(tr("Show Region"), region);
+    }
+    
+    {
+        const auto form = page->addForm(tr("Captured by Default"));
 
-    auto _4_2 = new ColorDialogButton(config["gif"]["selector"]["mask"]["color"].get<QColor>());
-    connect(_4_2, &ColorDialogButton::changed,
-            [this](auto&& c) { config.set(config["gif"]["selector"]["mask"]["color"], c); });
-    layout->addWidget(_4_2, 4, 2, 1, 2);
-    layout->addWidget(new QLabel(tr("Mask Color")), 4, 1, 1, 1);
+        auto mouse = new QCheckBox();
+        mouse->setChecked(config::recording::gif::capture_mouse);
+        connect(mouse, &QCheckBox::toggled,
+                [this](auto checked) { config::recording::gif::capture_mouse = checked; });
+        form->addRow(LABEL(tr("Mouse"), 175), mouse);
+    }
 
-    auto _5_2 = new QCheckBox();
-    _5_2->setChecked(config["gif"]["box"].get<bool>());
-    connect(_5_2, &QCheckBox::stateChanged,
-            [this](int state) { config.set(config["gif"]["box"], state == Qt::Checked); });
-    layout->addWidget(new QLabel(tr("Show Region")), 5, 1, 1, 1);
-    layout->addWidget(_5_2, 5, 2, 1, 2);
+    {
+        const auto form = page->addForm(tr("Params"));
 
-    layout->addWidget(new QLabel(), 6, 1, 1, 1);
+        const auto framerate = new QSpinBox();
+        framerate->setContextMenuPolicy(Qt::NoContextMenu);
+        framerate->setValue(config::recording::gif::framerate.num);
+        connect(framerate, QOverload<int>::of(&QSpinBox::valueChanged),
+                [](int w) { config::recording::gif::framerate.num = w; });
+        form->addRow(LABEL(tr("Framerate"), 175), framerate);
 
-    auto _5 = new QLabel(tr("Params:"));
-    _5->setObjectName("sub-title");
-    layout->addWidget(_5, 7, 1, 1, 1);
+        const auto colors = new QSpinBox();
+        colors->setRange(32, 256);
+        colors->setValue(config::recording::gif::colors);
+        connect(colors, QOverload<int>::of(&QSpinBox::valueChanged),
+                [&](int n) { config::recording::gif::colors = n; });
+        form->addRow(tr("Max Colors"), colors);
 
-    auto _7_2 = new QSpinBox();
-    _7_2->setContextMenuPolicy(Qt::NoContextMenu);
-    _7_2->setValue(config["gif"]["framerate"].get<int>());
-    connect(_7_2, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            [this](int w) { config.set(config["gif"]["framerate"], w); });
-    layout->addWidget(new QLabel(tr("Framerate")), 8, 1, 1, 1);
-    layout->addWidget(_7_2, 8, 2, 1, 2);
+        const auto dither = new QCheckBox();
+        dither->setChecked(config::recording::gif::dither);
+        connect(dither, &QCheckBox::toggled,
+                [](auto checked) { config::recording::gif::dither = checked; });
+        form->addRow(tr("Dither"), dither);
+    }
 
-    auto _8_2 = new ComboBox();
-    _8_2->add({
-                  { "high", tr("High") },
-                  { "medium", tr("Medium") },
-                  { "low", tr("Low") },
-              })
-        .onselected([this](auto value) { config.set(config["gif"]["quality"], value.toString()); })
-        .select(config["gif"]["quality"].get<QString>());
-    layout->addWidget(new QLabel(tr("Quality")), 9, 1, 1, 1);
-    layout->addWidget(_8_2, 9, 2, 1, 2);
-
-    auto _cm_2 = new QCheckBox();
-    _cm_2->setChecked(config["record"]["mouse"].get<bool>());
-    connect(_cm_2, &QCheckBox::stateChanged,
-            [this](int state) { config.set(config["gif"]["mouse"], state == Qt::Checked); });
-    layout->addWidget(new QLabel(tr("Capture Mouse")), 10, 1, 1, 1);
-    layout->addWidget(_cm_2, 10, 2, 1, 2);
-
-    layout->setRowStretch(11, 1);
-    gif_widget->setLayout(layout);
-
-    return gif_widget;
+    page->addSpacer();
+    return page;
 }
 
 QWidget *SettingWindow::setupDevicesWidget()
 {
-    auto devices_widget = new QWidget(pages_);
-
-    auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
-
-    // microphones / sources
-    auto _1_2 = new ComboBox();
+    // microphones
+    std::vector<std::pair<QVariant, QString>> microphones{};
     for (const auto& dev : av::audio_sources()) {
-        std::string name = dev.name;
 #ifdef _WIN32
-        name = dev.description + " - " + name;
+        std::string name = dev.description + " - " + dev.name;
+#else
+        std::string name = dev.name;
 #endif
-        _1_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
+        microphones.emplace_back(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
     }
-    _1_2->onselected(
-        [this](auto value) { config.set(config["devices"]["microphones"], value.toString()); });
-    auto default_src = av::default_audio_source();
-    if (default_src.has_value()) {
-        _1_2->select(default_src.value().id);
-    }
-    layout->addWidget(new QLabel(tr("Microphones")), 1, 1, 1, 1);
-    layout->addWidget(_1_2, 1, 2, 1, 2);
 
-    // speakers / monitor of sinks
-    auto _2_2 = new ComboBox();
+    // speakers
+    std::vector<std::pair<QVariant, QString>> speakers{};
+
     for (const auto& dev : av::audio_sinks()) {
-        std::string name = dev.name;
 #ifdef _WIN32
-        name = dev.description + " - " + name;
+        std::string name = dev.description + " - " + dev.name;
+#else
+        std::string name = dev.name;
 #endif
-        _2_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
+        speakers.emplace_back(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(name.c_str()));
     }
-    _2_2->onselected([this](auto value) { config.set(config["devices"]["speakers"], value.toString()); });
-    auto default_sink = av::default_audio_sink();
-    if (default_sink.has_value()) {
-        _2_2->select(default_sink.value().id);
-    }
-    layout->addWidget(new QLabel(tr("Speakers")), 2, 1, 1, 1);
-    layout->addWidget(_2_2, 2, 2, 1, 2);
 
-    // cameras / sources
-    auto _3_2 = new ComboBox();
+    // cameras
+    std::vector<std::pair<QVariant, QString>> cameras{};
     for (const auto& dev : av::cameras()) {
 #ifdef _WIN32
-        _3_2->add(QString::fromUtf8(dev.name.c_str()), QString::fromUtf8(dev.name.c_str()));
+        cameras.emplace_back(QString::fromUtf8(dev.name.c_str()), QString::fromUtf8(dev.name.c_str()));
 #else
-        _3_2->add(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
+        cameras.emplace_back(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
 #endif
     }
-    _3_2->onselected([this](auto value) { config.set(config["devices"]["cameras"], value.toString()); });
-    if (!config["devices"]["cameras"].is_null())
-        _3_2->select(config["devices"]["cameras"].get<std::string>());
-    layout->addWidget(new QLabel(tr("Cameras")), 3, 1, 1, 1);
-    layout->addWidget(_3_2, 3, 2, 1, 2);
 
-    layout->setRowStretch(5, 1);
+    const auto page = new ScrollWidget();
+    {
+        const auto form = page->addForm(tr("Devices"));
 
-    devices_widget->setLayout(layout);
+        const auto mic = new ComboBox(microphones);
+        mic->onselected([](auto value) { config::devices::mic = value.toString().toStdString(); });
+        auto default_src = av::default_audio_source();
+        if (default_src.has_value()) mic->select(default_src.value().id);
+        form->addRow(LABEL(tr("Microphone"), 175), mic);
 
-    return devices_widget;
-}
+        const auto speaker = new ComboBox(speakers);
+        speaker->onselected([](auto value) { config::devices::speaker = value.toString().toStdString(); });
+        auto default_sink = av::default_audio_sink();
+        if (default_sink.has_value()) speaker->select(default_sink.value().id);
+        form->addRow(tr("Speaker"), speaker);
 
-QWidget *SettingWindow::setupHotkeyWidget()
-{
-    auto hotkey_widget = new QWidget(pages_);
-    auto idx_row       = 1;
+        const auto camera = new ComboBox(cameras);
+        camera->onselected([](auto value) { config::devices::camera = value.toString().toStdString(); });
+        if (config::devices::camera.empty()) camera->select(config::devices::camera);
+        form->addRow(tr("Camera"), camera);
+    }
 
-    auto layout = new QGridLayout();
-    layout->setContentsMargins(35, 10, 35, 15);
-    layout->setVerticalSpacing(10);
-
-    auto _1_2 = new ShortcutInput(config["snip"]["hotkey"].get<QKeySequence>());
-    connect(_1_2, &ShortcutInput::changed, [this](auto&& ks) { config.set(config["snip"]["hotkey"], ks); });
-    layout->addWidget(new QLabel(tr("Screenshot")), idx_row, 1, 1, 1);
-    layout->addWidget(_1_2, idx_row++, 2, 1, 3);
-
-    auto _2_2 = new ShortcutInput(config["pin"]["hotkey"].get<QKeySequence>());
-    connect(_2_2, &ShortcutInput::changed, [this](auto&& ks) { config.set(config["pin"]["hotkey"], ks); });
-    layout->addWidget(new QLabel(tr("Paste")), idx_row, 1, 1, 1);
-    layout->addWidget(_2_2, idx_row++, 2, 1, 3);
-
-    auto hide_show_images = new ShortcutInput(config["pin"]["visible"]["hotkey"].get<QKeySequence>());
-    connect(hide_show_images, &ShortcutInput::changed,
-            [this](auto&& ks) { config.set(config["pin"]["visible"]["hotkey"], ks); });
-    layout->addWidget(new QLabel(tr("Hide/Show All Images")), idx_row, 1, 1, 1);
-    layout->addWidget(hide_show_images, idx_row++, 2, 1, 3);
-
-    auto _3_2 = new ShortcutInput(config["record"]["hotkey"].get<QKeySequence>());
-    connect(_3_2, &ShortcutInput::changed,
-            [this](auto&& ks) { config.set(config["record"]["hotkey"], ks); });
-    layout->addWidget(new QLabel(tr("Video Recording")), idx_row, 1, 1, 1);
-    layout->addWidget(_3_2, idx_row++, 2, 1, 3);
-
-    auto _4_2 = new ShortcutInput(config["gif"]["hotkey"].get<QKeySequence>());
-    connect(_4_2, &ShortcutInput::changed, [this](auto&& ks) { config.set(config["gif"]["hotkey"], ks); });
-    layout->addWidget(new QLabel(tr("Gif Recording")), idx_row, 1, 1, 1);
-    layout->addWidget(_4_2, idx_row++, 2, 1, 3);
-
-    layout->setRowStretch(idx_row, 1);
-    hotkey_widget->setLayout(layout);
-
-    return hotkey_widget;
+    page->addSpacer();
+    return page;
 }
 
 QWidget *SettingWindow::setupAboutWidget()
 {
-    auto about_widget = new QWidget(pages_);
-    pages_->addWidget(about_widget);
+    const auto page    = new QWidget();
+    const auto vlayout = new QVBoxLayout();
+    vlayout->setContentsMargins(35, 0, 35, 15);
 
-    auto parent_layout = new QVBoxLayout();
-    about_widget->setLayout(parent_layout);
-    parent_layout->setContentsMargins(35, 10, 35, 15);
+    {
+        vlayout->addStretch(1);
 
-    /////
-    auto layout = new QGridLayout();
-    parent_layout->addLayout(layout);
+        const auto icon = new QLabel();
+        icon->setPixmap(QPixmap(":/icons/capturer"));
+        icon->setAlignment(Qt::AlignCenter);
+        vlayout->addWidget(icon);
 
-    layout->addWidget(new QLabel(tr("Version")), 0, 0, 1, 1);
-    auto version = new QLineEdit(CAPTURER_VERSION);
-    version->setFocusPolicy(Qt::NoFocus);
-    version->setAlignment(Qt::AlignCenter);
-    layout->addWidget(version, 0, 1, 1, 2);
+        const auto name = new QLabel("Capturer");
+        name->setAlignment(Qt::AlignCenter);
+        name->setObjectName("about-name");
+        vlayout->addWidget(name);
 
-    /////
-    parent_layout->addStretch();
+        const auto version = new QLabel("Version : " + QString(CAPTURER_VERSION));
+        version->setAlignment(Qt::AlignCenter);
+        version->setObjectName("about-version");
+        vlayout->addWidget(version);
 
-    auto copyright_ = new QLabel(tr("Copyright © 2018 - 2024 ffiirree. All rights reserved"));
-    copyright_->setObjectName("copyright-label");
-    copyright_->setAlignment(Qt::AlignCenter);
-    parent_layout->addWidget(copyright_);
+        vlayout->addStretch(2);
 
-    return about_widget;
-}
-
-void SettingWindow::setAutoRun(int state)
-{
-#ifdef _WIN32
-    QString   exec_path = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
-    QSettings settings(R"(HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run)",
-                       QSettings::NativeFormat);
-    settings.setValue("capturer_run", state == Qt::Checked ? exec_path : "");
-#elif __linux__
-    std::string desktop_file = "/usr/share/applications/capturer.desktop";
-    std::string autorun_dir = std::string{ ::getenv("HOME") } + "/.config/autostart";
-    std::string autorun_file = autorun_dir + "/capturer.desktop";
-
-    if (!std::filesystem::exists(desktop_file)) {
-        LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";
-        state = Qt::Unchecked;
-        autorun_->setCheckState(Qt::Unchecked);
+        const auto copyright = new QLabel(tr("Copyright © 2018 - 2024 ffiirree"));
+        copyright->setAlignment(Qt::AlignCenter);
+        copyright->setObjectName("about-copyright");
+        vlayout->addWidget(copyright);
     }
+    page->setLayout(vlayout);
 
-    if (state == Qt::Checked) {
-        if (std::filesystem::exists(desktop_file) && !std::filesystem::exists(autorun_file)) {
-            if (!std::filesystem::exists(autorun_dir)) {
-                std::filesystem::create_directories(autorun_dir);
-            }
-            std::filesystem::create_symlink(desktop_file, autorun_file);
-        }
-    }
-    else {
-        std::filesystem::remove(autorun_file);
-    }
-#endif
-
-    config.set(config["autorun"], state == Qt::Checked);
+    return page;
 }

@@ -8,6 +8,7 @@ class ComboBox : public QComboBox
     Q_OBJECT
 public:
     explicit ComboBox(QWidget *parent = nullptr);
+    ComboBox(const std::vector<std::pair<QVariant, QString>>& items, QWidget *parent = nullptr);
 
     template<typename T>
     requires std::integral<T>
@@ -26,7 +27,7 @@ public:
     ComboBox& select(const QVariant& value);
     ComboBox& select(const std::string& value);
 
-    template<class Slot> inline ComboBox& onselected(Slot slot)
+    template<class Slot> ComboBox& onselected(Slot slot)
     {
         connect(this, &ComboBox::selected, std::move(slot));
         return *this;

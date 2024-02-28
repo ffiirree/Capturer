@@ -17,7 +17,7 @@
     </message>
     <message>
         <source>Open Camera</source>
-        <translation>打开摄像头</translation>
+        <translation>打开相机</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -115,13 +115,6 @@
     </message>
 </context>
 <context>
-    <name>ScreenRecorder</name>
-    <message>
-        <source>Path: </source>
-        <translation>路径：</translation>
-    </message>
-</context>
-<context>
     <name>ScreenShoter</name>
     <message>
         <source>Save Image</source>
@@ -183,10 +176,6 @@
         <translation>主题</translation>
     </message>
     <message>
-        <source>Appearance:</source>
-        <translation>外观</translation>
-    </message>
-    <message>
         <source>Border Width</source>
         <translation>边框宽度</translation>
     </message>
@@ -195,20 +184,12 @@
         <translation>边框颜色</translation>
     </message>
     <message>
-        <source>Line Type</source>
-        <translation>线条类型</translation>
-    </message>
-    <message>
         <source>Mask Color</source>
         <translation>遮罩颜色</translation>
     </message>
     <message>
         <source>Show Region</source>
         <translation>显示录制区域</translation>
-    </message>
-    <message>
-        <source>Params:</source>
-        <translation>参数：</translation>
     </message>
     <message>
         <source>Framerate</source>
@@ -235,60 +216,12 @@
         <translation>编码器</translation>
     </message>
     <message>
-        <source>High</source>
-        <translation>高</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>中</translation>
-    </message>
-    <message>
-        <source>Low</source>
-        <translation>低</translation>
-    </message>
-    <message>
-        <source>Quality</source>
-        <translation>质量</translation>
-    </message>
-    <message>
-        <source>Capture Mouse</source>
-        <translation>捕获光标</translation>
-    </message>
-    <message>
-        <source>Microphones</source>
-        <translation>麦克风</translation>
-    </message>
-    <message>
-        <source>Speakers</source>
-        <translation>扬声器</translation>
-    </message>
-    <message>
-        <source>Cameras</source>
-        <translation>摄像头</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation>粘贴</translation>
-    </message>
-    <message>
-        <source>Hide/Show All Images</source>
-        <translation>隐藏/显示 全部贴图</translation>
-    </message>
-    <message>
         <source>Video Recording</source>
         <translation>视频录制</translation>
     </message>
     <message>
         <source>Gif Recording</source>
         <translation>GIF录制</translation>
-    </message>
-    <message>
-        <source>Version</source>
-        <translation>版本</translation>
-    </message>
-    <message>
-        <source>Copyright © 2018 - 2024 ffiirree. All rights reserved</source>
-        <translation></translation>
     </message>
     <message>
         <source>Hotkeys</source>
@@ -299,24 +232,100 @@
         <translation>声道</translation>
     </message>
     <message>
-        <source>Video:</source>
-        <translation>视频:</translation>
-    </message>
-    <message>
-        <source>Audio:</source>
-        <translation>音频:</translation>
-    </message>
-    <message>
-        <source>File:</source>
-        <translation>文件</translation>
-    </message>
-    <message>
         <source>Save Path</source>
         <translation>保存路径</translation>
     </message>
     <message>
         <source>Format</source>
         <translation>封装格式</translation>
+    </message>
+    <message>
+        <source>Toggle Previews</source>
+        <translation>显示/隐藏所有预览</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>外观</translation>
+    </message>
+    <message>
+        <source>Border Style</source>
+        <translation>边框风格</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>文件</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>视频</translation>
+    </message>
+    <message>
+        <source>Audio</source>
+        <translation>音频</translation>
+    </message>
+    <message>
+        <source>Params</source>
+        <translation>参数</translation>
+    </message>
+    <message>
+        <source>Microphone</source>
+        <translation>麦克风</translation>
+    </message>
+    <message>
+        <source>Speaker</source>
+        <translation>扬声器</translation>
+    </message>
+    <message>
+        <source>Camera</source>
+        <translation>相机</translation>
+    </message>
+    <message>
+        <source>Copyright © 2018 - 2024 ffiirree</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Rate Control</source>
+        <translation>速率控制</translation>
+    </message>
+    <message>
+        <source>Preset</source>
+        <translation>预设</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>配置</translation>
+    </message>
+    <message>
+        <source>Max Colors</source>
+        <translation>最大色彩数</translation>
+    </message>
+    <message>
+        <source>Dither</source>
+        <translation>抖动</translation>
+    </message>
+    <message>
+        <source>Sample Rate</source>
+        <translation>采样率</translation>
+    </message>
+    <message>
+        <source>Preview Clipboard</source>
+        <translation>预览剪切板</translation>
+    </message>
+    <message>
+        <source>Quick Look</source>
+        <translation>快速预览</translation>
+    </message>
+    <message>
+        <source>Mouse</source>
+        <translation>鼠标</translation>
+    </message>
+    <message>
+        <source>System Audio</source>
+        <translation>系统声音</translation>
+    </message>
+    <message>
+        <source>Captured by Default</source>
+        <translation>默认捕获</translation>
     </message>
 </context>
 <context>

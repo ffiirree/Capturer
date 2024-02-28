@@ -2,17 +2,19 @@
 
 #include "clipboard.h"
 #include "color-window.h"
+#include "config.h"
 #include "image-window.h"
 #include "libcap/devices.h"
 #include "logging.h"
-#include "menu.h"
-#include "probe/system.h"
+#include "settingdialog.h"
 #include "videoplayer.h"
 
+#include <probe/system.h>
 #include <QApplication>
 #include <QFileInfo>
 #include <QKeyEvent>
 #include <QScreen>
+#include <QUrl>
 
 #define SET_HOTKEY(X, Y)                                                                                   \
     if (!X->setShortcut(Y, true)) {                                                                        \
@@ -20,189 +22,273 @@
         error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());                               \
     }
 
-Capturer::Capturer(QWidget *parent)
-    : QWidget(parent)
+Capturer::Capturer(int& argc, char **argv)
+    : QApplication(argc, argv)
 {
-    sniper_   = new ScreenShoter(this);
-    recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO, this);
-    gifcptr_  = new ScreenRecorder(ScreenRecorder::GIF, this);
-
-    connect(sniper_, &ScreenShoter::pinData, this, &Capturer::pinMimeData);
-
-    clipboard::init();
-
-    sys_tray_icon_ = new QSystemTrayIcon(QIcon(":/icons/capturer"), this);
-
-    snip_sc_ = new QHotkey(this);
-    connect(snip_sc_, &QHotkey::activated, sniper_, &ScreenShoter::start);
-
-    pin_sc_ = new QHotkey(this);
-    connect(pin_sc_, &QHotkey::activated, this, &Capturer::pin);
-
-    show_pin_sc_ = new QHotkey(this);
-    connect(show_pin_sc_, &QHotkey::activated, this, &Capturer::showImages);
-
-    video_sc_ = new QHotkey(this);
-    connect(video_sc_, &QHotkey::activated, recorder_, &ScreenRecorder::record);
-
-    gif_sc_ = new QHotkey(this);
-    connect(gif_sc_, &QHotkey::activated, gifcptr_, &ScreenRecorder::record);
-
-    connect(&Config::instance(), &Config::changed, this, &Capturer::updateConfig);
-
-    // setting
-    setting_dialog_ = std::make_shared<SettingWindow>();
-
-    updateConfig();
-
-    // System tray icon
-    // @attention Must after setting.
-    setupSystemTray();
-
     setWindowIcon(QIcon(":/icons/capturer"));
 
-    // show message
-    connect(sniper_, &ScreenShoter::SHOW_MESSAGE, this, &Capturer::showMessage);
-    connect(recorder_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
-    connect(gifcptr_, &ScreenRecorder::SHOW_MESSAGE, this, &Capturer::showMessage);
+    snip_hotkey_      = new QHotkey(this);
+    preview_hotkey_   = new QHotkey(this);
+    toggle_hotkey_    = new QHotkey(this);
+    video_hotkey_     = new QHotkey(this);
+    gif_hotkey_       = new QHotkey(this);
+    quicklook_hotkey_ = new QHotkey(this);
+
+    sniper_.reset(new ScreenShoter());
+    recorder_.reset(new ScreenRecorder(ScreenRecorder::VIDEO));
+    gifcptr_.reset(new ScreenRecorder(ScreenRecorder::GIF));
+
+    connect(snip_hotkey_, &QHotkey::activated, sniper_.get(), &ScreenShoter::start);
+    connect(preview_hotkey_, &QHotkey::activated, this, &Capturer::PreviewClipboard);
+    connect(toggle_hotkey_, &QHotkey::activated, this, &Capturer::TogglePreviews);
+    connect(video_hotkey_, &QHotkey::activated, recorder_.get(), &ScreenRecorder::record);
+    connect(gif_hotkey_, &QHotkey::activated, gifcptr_.get(), &ScreenRecorder::record);
+    connect(quicklook_hotkey_, &QHotkey::activated, this, &Capturer::QuickLook);
+    connect(sniper_.get(), &ScreenShoter::pinData, this, &Capturer::PreviewMimeData);
+}
+
+void Capturer::Init()
+{
+    clipboard::init();
+
+    SystemTrayInit();
+
+    UpdateHotkeys();
+
+    UpdateScreenshotStyle();
+    UPdateVideoRecordingStyle();
+    UPdateGifRecordingStyle();
+
+    SetTheme(config::definite_theme());
+
+    config::on_theme_changed = [this](const QString& theme) { SetTheme(theme); };
+
+    config::set_autorun(config::autorun);
+
+    //
+    // microphones: default or null
+    auto asrc            = av::default_audio_source();
+    config::devices::mic = asrc.value_or(av::device_t{}).id;
+
+    // speakers: default or null
+    auto asink               = av::default_audio_sink();
+    config::devices::speaker = asink.value_or(av::device_t{}).id;
 
     LOG(INFO) << "initialized.";
 }
 
-void Capturer::updateConfig()
+void Capturer::SystemTrayInit()
 {
-    auto& config = Config::instance();
+    tray_.reset(new QSystemTrayIcon(QIcon(":/icons/capturer"), this));
+    tray_->setToolTip("Capturer Settings");
 
-    QString error = "";
-    // clang-format off
-    SET_HOTKEY(snip_sc_,        config["snip"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(pin_sc_,         config["pin"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(show_pin_sc_,    config["pin"]["visible"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(gif_sc_,         config["gif"]["hotkey"].get<QKeySequence>());
-    SET_HOTKEY(video_sc_,       config["record"]["hotkey"].get<QKeySequence>());
-    // clang-format on
-    if (!error.isEmpty()) showMessage("Capturer", error, QSystemTrayIcon::Critical);
+    tray_menu_.reset(new Menu());
+    tray_menu_->setObjectName("tray-menu");
 
-    sniper_->updateTheme();
-    recorder_->updateTheme();
-    gifcptr_->updateTheme();
+    QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+
+    tray_snip_         = new QAction(QIcon(":/icons/screenshot-" + color), tr("Screenshot"));
+    tray_record_video_ = new QAction(QIcon(":/icons/capture-" + color), tr("Record Video"));
+    tray_record_gif_   = new QAction(QIcon(":/icons/gif-" + color), tr("Record GIF"));
+    tray_open_camera_  = new QAction(QIcon(":/icons/camera-" + color), tr("Open Camera"));
+    tray_settings_     = new QAction(QIcon(":/icons/setting-" + color), tr("Settings"));
+    tray_exit_         = new QAction(QIcon(":/icons/exit-" + color), tr("Quit"));
+
+    tray_menu_->addAction(tray_snip_);
+    tray_menu_->addAction(tray_record_video_);
+    tray_menu_->addAction(tray_record_gif_);
+    tray_menu_->addSeparator();
+    tray_menu_->addAction(tray_open_camera_);
+    tray_menu_->addSeparator();
+    tray_menu_->addAction(tray_settings_);
+    tray_menu_->addSeparator();
+    tray_menu_->addAction(tray_exit_);
+
+    tray_->setContextMenu(tray_menu_.data());
+    tray_->show();
+
+    connect(tray_.data(), &QSystemTrayIcon::activated, this, &Capturer::TrayActivated);
+    connect(tray_snip_, &QAction::triggered, sniper_.data(), &ScreenShoter::start);
+    connect(tray_record_video_, &QAction::triggered, recorder_.data(), &ScreenRecorder::start);
+    connect(tray_record_gif_, &QAction::triggered, gifcptr_.data(), &ScreenRecorder::start);
+    connect(tray_open_camera_, &QAction::triggered, this, &Capturer::ToggleCamera);
+    connect(tray_settings_, &QAction::triggered, this, &Capturer::OpenSettingsDialog);
+    connect(tray_exit_, &QAction::triggered, qApp, &QCoreApplication::exit);
 }
 
-void Capturer::setupSystemTray()
-{
-    const auto menu = new Menu(this);
-    menu->setObjectName("tray-menu");
+void Capturer::PreviewClipboard() { PreviewMimeData(clipboard::back(true)); }
 
-    // SystemTrayIcon
-    auto update_tray_menu = [=, this]() {
-        QString icon_color = (Config::theme() == "dark") ? "light" : "dark";
-#ifdef __linux__
-        if (probe::system::name().find("Ubuntu") != std::string::npos) {
-            const auto ver = probe::system::version();
-            if (ver.major == 20 && ver.minor == 4)
-                icon_color = "dark";  // ubuntu 2004, system trays are always light
-            else if (ver.major == 18 && ver.minor == 4)
-                icon_color = "light"; // ubuntu 1804, system trays are always dark
-        }
-#endif
-        // clang-format off
-        menu->clear();
-        menu->addAction(QIcon(":/icons/screenshot-" + icon_color),   tr("Screenshot"),   sniper_,   &ScreenShoter::start,    snip_sc_->shortcut());
-        menu->addAction(QIcon(":/icons/capture-" + icon_color),      tr("Record Video"), recorder_, &ScreenRecorder::record, video_sc_->shortcut());
-        menu->addAction(QIcon(":/icons/gif-" + icon_color),          tr("Record GIF"),   gifcptr_,  &ScreenRecorder::record, gif_sc_->shortcut());
-        menu->addSeparator();
-        menu->addAction(QIcon(":/icons/camera-" + icon_color),       tr("Open Camera"),  this,      &Capturer::openCamera);
-        menu->addSeparator();
-        menu->addAction(QIcon(":/icons/setting-" + icon_color),      tr("Settings"),     [this](){ setting_dialog_->show(); setting_dialog_->activateWindow(); });
-        menu->addSeparator();
-        menu->addAction(QIcon(":/icons/exit-" + icon_color),         tr("Quit"),         qApp,      &QCoreApplication::exit);
-        // clang-format on
-    };
-
-    // dark / light theme
-    connect(&Config::instance(), &Config::theme_changed, update_tray_menu);
-    update_tray_menu();
-
-    sys_tray_icon_->setContextMenu(menu);
-    sys_tray_icon_->show();
-    sys_tray_icon_->setToolTip("Capturer Settings");
-
-    connect(sys_tray_icon_, &QSystemTrayIcon::activated, [this](auto&& r) {
-        if (r == QSystemTrayIcon::DoubleClick) sniper_->start();
-    });
-}
-
-void Capturer::pin() { pinMimeData(clipboard::back(true)); }
-
-void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
+void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
 {
     if (mimedata != nullptr) {
-        std::list<FramelessWindow *>::iterator iter;
 
-        if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
+        FramelessWindow *preview{};
+
+        if (mimedata->hasUrls() && mimedata->urls().size() == 1 && mimedata->urls()[0].isLocalFile() &&
+            QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
             QString("gif;mp4;mkv;m2ts;avi;wmv")
+                .split(';')
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
 
-            auto player = new VideoPlayer();
-            player->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+            preview = new VideoPlayer();
+            dynamic_cast<VideoPlayer *>(preview)->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
 
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
-
-            iter = windows_.emplace(windows_.end(), player);
         }
         else if (mimedata->hasColor()) {
-            auto win = new ColorWindow(mimedata);
-            iter     = windows_.emplace(windows_.end(), win);
-            win->show();
-            win->move(QApplication::screenAt(QCursor::pos())->geometry().center() - win->rect().center());
+            preview = new ColorWindow(mimedata);
         }
         else {
-            auto win = new ImageWindow(mimedata);
-            iter     = windows_.emplace(windows_.end(), win);
-
-            win->show();
-            if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
-                win->move(QApplication::screenAt(QCursor::pos())->geometry().center() -
-                          win->rect().center());
-            }
+            preview = new ImageWindow(mimedata);
         }
 
-        connect(*iter, &FramelessWindow::closed, [=, this]() {
-            (*iter)->deleteLater();
-            windows_.erase(iter);
+        preview->setAttribute(Qt::WA_DeleteOnClose);
+        preview->show();
+        if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
+            preview->move(QApplication::screenAt(QCursor::pos())->geometry().center() -
+                          preview->rect().center());
+        }
+        previews_.push_back(preview);
+
+        connect(preview, &FramelessWindow::closed, [this]() {
+            previews_.erase(
+                std::remove_if(previews_.begin(), previews_.end(), [](auto ptr) { return !ptr; }),
+                previews_.end());
         });
     }
 }
 
-void Capturer::openCamera()
+void Capturer::ToggleCamera()
 {
-    const auto player = new VideoPlayer(); // delete on close
+    // close
+    if (camera_) {
+        camera_.reset();
+        return;
+    }
+
+    // open
+    camera_.reset(new VideoPlayer());
 
     if (av::cameras().empty()) {
         LOG(WARNING) << "camera not found";
         return;
     }
 
-    auto camera = Config::instance()["devices"]["cameras"].get<std::string>();
+    auto& name = config::devices::camera;
 #ifdef _WIN32
-    if (!player->open("video=" + camera, { { "format", "dshow" }, { "filters", "hflip" } })) {
+    if (!camera_->open("video=" + name, { { "format", "dshow" }, { "filters", "hflip" } })) {
 #elif __linux__
-    if (!player->open(camera, { { "format", "v4l2" }, { "filters", "hflip" } })) {
+    if (!camera_->open(name, { { "format", "v4l2" }, { "filters", "hflip" } })) {
 #endif
         LOG(ERROR) << "failed to open camera";
     }
 }
 
-void Capturer::showImages()
+void Capturer::OpenSettingsDialog()
 {
-    const bool visible = !windows_.empty() && windows_.front()->isVisible();
-    for (const auto& win : windows_) {
-        win->setVisible(!visible);
+    if (settings_window_) {
+        settings_window_->activateWindow();
+        return;
+    }
+
+    settings_window_ = new SettingWindow();
+    settings_window_->show();
+}
+
+void Capturer::TogglePreviews()
+{
+    if (previews_.empty()) return;
+
+    bool visible = false; // current state
+    for (const auto& win : previews_) {
+        if (win && win->isVisible()) {
+            visible = true;
+            break;
+        }
+    }
+
+    for (const auto& win : previews_) {
+        if (win) {
+            win->setVisible(!visible);
+        }
     }
 }
 
-void Capturer::showMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
+void Capturer::UpdateHotkeys()
+{
+    QString error = "";
+    // clang-format off
+    SET_HOTKEY(snip_hotkey_,        config::hotkeys::screenshot);
+    SET_HOTKEY(preview_hotkey_,     config::hotkeys::preview);
+    SET_HOTKEY(toggle_hotkey_,      config::hotkeys::toggle_previews);
+    SET_HOTKEY(video_hotkey_,       config::hotkeys::record_video);
+    SET_HOTKEY(gif_hotkey_,         config::hotkeys::record_gif);
+#if _WIN32
+    SET_HOTKEY(quicklook_hotkey_,   QKeySequence(Qt::Key_F2));
+#endif
+    // clang-format on
+    if (!error.isEmpty()) ShowMessage("Capturer", error, QSystemTrayIcon::Critical);
+}
+
+void Capturer::TrayActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    if (reason == QSystemTrayIcon::DoubleClick && sniper_) sniper_->start();
+}
+
+void Capturer::ShowMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
                            int msecs)
 {
-    sys_tray_icon_->showMessage(title, msg, icon, msecs);
+    tray_->showMessage(title, msg, icon, msecs);
+}
+
+void Capturer::SetTheme(const QString& theme)
+{
+    if (theme_ == theme || (theme != "dark" && theme != "light")) return;
+
+    theme_ = theme;
+
+    std::vector<QString> files{
+        ":/stylesheets/capturer",       ":/stylesheets/capturer-" + theme,
+        ":/stylesheets/menu",           ":/stylesheets/menu-" + theme,
+        ":/stylesheets/settingswindow", ":/stylesheets/settingswindow-" + theme,
+        ":/stylesheets/player",
+    };
+
+    QString style{};
+    for (auto& qss : files) {
+
+        QFile file(qss);
+        file.open(QFile::ReadOnly);
+
+        if (file.isOpen()) {
+            style += file.readAll();
+            file.close();
+        }
+    }
+    setStyleSheet(style);
+
+    // system tray menu icons
+    QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+
+    tray_snip_->setIcon(QIcon(":/icons/screenshot-" + color));
+    tray_record_video_->setIcon(QIcon(":/icons/capture-" + color));
+    tray_record_gif_->setIcon(QIcon(":/icons/gif-" + color));
+    tray_open_camera_->setIcon(QIcon(":/icons/camera-" + color));
+    tray_settings_->setIcon(QIcon(":/icons/setting-" + color));
+    tray_exit_->setIcon(QIcon(":/icons/exit-" + color));
+}
+
+void Capturer::UpdateScreenshotStyle()
+{
+    if (sniper_) sniper_->setStyle(config::snip::style);
+}
+
+void Capturer::UPdateVideoRecordingStyle()
+{
+    if (recorder_) recorder_->setStyle(config::recording::video::style);
+}
+
+void Capturer::UPdateGifRecordingStyle()
+{
+    if (gifcptr_) gifcptr_->setStyle(config::recording::gif::style);
 }

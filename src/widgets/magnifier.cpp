@@ -38,7 +38,7 @@ QRect Magnifier::grabRect() const
 {
     auto mouse_pos = QCursor::pos();
 
-    if (!pixmap_.isNull()) {
+    if (!desktop_.isNull()) {
         const auto offset  = probe::graphics::virtual_screen_geometry();
         mouse_pos         -= QPoint{ offset.x, offset.y };
     }
@@ -86,17 +86,17 @@ bool Magnifier::eventFilter(QObject *obj, QEvent *event)
 // TODO: clear the background when close
 void Magnifier::showEvent(QShowEvent *) { move(position()); }
 
-void Magnifier::setGrabPixmap(const QPixmap& pixmap) { pixmap_ = pixmap; }
+void Magnifier::setGrabPixmap(const QPixmap& pixmap) { desktop_ = pixmap; }
 
 QPixmap Magnifier::grab() const
 {
     const auto rect = grabRect();
-    if (pixmap_.isNull()) {
+    if (desktop_.isNull()) {
         return QGuiApplication::primaryScreen()->grabWindow(
             probe::graphics::virtual_screen().handle, rect.x(), rect.y(), rect.width(), rect.height());
     }
 
-    return pixmap_.copy(rect);
+    return desktop_.copy(rect);
 }
 
 void Magnifier::paintEvent(QPaintEvent *)
@@ -136,6 +136,6 @@ void Magnifier::paintEvent(QPaintEvent *)
 
 void Magnifier::closeEvent(QCloseEvent *event)
 {
-    pixmap_ = {};
+    desktop_ = {};
     QWidget::closeEvent(event);
 }

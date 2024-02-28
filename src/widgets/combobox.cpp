@@ -9,8 +9,14 @@ ComboBox::ComboBox(QWidget *parent)
     view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     view()->window()->setAttribute(Qt::WA_TranslucentBackground);
 
-    connect(this, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+    connect(this, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [this](int) { emit selected(currentData()); });
+}
+
+ComboBox::ComboBox(const std::vector<std::pair<QVariant, QString>>& items, QWidget *parent)
+    : ComboBox(parent)
+{
+    add(items);
 }
 
 ComboBox& ComboBox::add(const std::vector<std::pair<QVariant, QString>>& items)

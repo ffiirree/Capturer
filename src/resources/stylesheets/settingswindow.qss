@@ -1,29 +1,38 @@
-/*///////////////////////////////////////////////////////////////*/
-SettingWindow QCheckBox#icon-title {
-    font-size: 11pt;
-    min-width: 10em;
-    max-width: 10em;
-}
-
-SettingWindow QCheckBox#icon-title::indicator {
-    image: url(:/icons/capturer);
-}
-
-/*///////////////////////////////////////////////////////////////*/
 SettingWindow QListWidget {
-    font-size: 11pt;
-    min-width: 10em;
-    max-width: 10em;
-    border: none;
+    padding-top: 1.25em;
 }
 
-SettingWindow QListWidget::item {
+SettingWindow QCheckBox#close-btn::indicator {
+    font-size: 8pt;
+
+    height: 1em;
+    width: 1em;
+
+    padding: 0.95em 1.3em 0.95em 1.3em;
+}
+
+SettingWindow QCheckBox#close-btn::indicator {
+    font-size: 8pt;
+    height: 1em;
+    width: 1em;
+
+    padding: 0.75em 1em;
+}
+
+SettingWindow QCheckBox#close-btn::indicator:hover {
+    background-color: #C42B1C;
+    image: url(:/icons/close);
+}
+
+#about-name {
+    font-size: 16pt;
+    font-weight: bold;
+    padding-bottom: 10px;
+}
+
+#about-version {
     font-size: 10.5pt;
-    height: 1.5em;
-    border: none;
-    border-radius: 5px;
-    padding: 0.25em 0em 0.25em 0.5em;
-    margin: 0.125em 0.5em;
+    font-weight: bold;
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -35,12 +44,4 @@ ColorDialogButton {
     height: 32px;
     border-radius: 3px;
     margin: 1px 0px;
-}
-
-SettingWindow #sub-title {
-    font-weight: bold;
-}
-
-SettingWindow #copyright-label {
-    font-size: 11pt;
 }

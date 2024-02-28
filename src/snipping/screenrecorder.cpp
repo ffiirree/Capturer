@@ -74,7 +74,9 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
 #endif
 
     // recording menu
-    menu_ = new RecordingMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordingMenu::AUDIO), this);
+    m_mute_ = !config::recording::video::mic_enabled;
+    s_mute_ = !config::recording::video::speaker_enabled;
+    menu_   = new RecordingMenu(m_mute_, s_mute_, (type == GIF ? 0x00 : RecordingMenu::AUDIO), this);
     connect(menu_, &RecordingMenu::stopped, this, &ScreenRecorder::stop);
     connect(menu_, &RecordingMenu::muted, this, &ScreenRecorder::mute);
     connect(menu_, &RecordingMenu::paused, [this] {
@@ -108,6 +110,9 @@ void ScreenRecorder::mute(int type, bool v)
 
 void ScreenRecorder::record() { !recording_ ? start() : stop(); }
 
+constexpr auto GIF_FILTERS =
+    "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors={} [p];[b][p] paletteuse=new=1";
+
 void ScreenRecorder::start()
 {
     recording_ = true;
@@ -115,20 +120,20 @@ void ScreenRecorder::start()
     auto time_str = QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
     if (rec_type_ == VIDEO) {
         pix_fmt_                  = AV_PIX_FMT_YUV420P;
-        codec_name_               = Config::instance()["record"]["encoder"];
+        codec_name_               = config::recording::video::v::codec;
         filters_                  = "";
         encoder_options_["vsync"] = av::to_string(av::vsync_t::cfr);
 
-        auto root_dir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation).toStdString();
-        filename_     = fmt::format("{}/Capturer_{}.mp4", root_dir, time_str);
+        filename_ = config::recording::video::path.toStdString() + "/Capturer_" + time_str + "." +
+                    config::recording::video::mcf.toStdString();
     }
     else {
         pix_fmt_    = AV_PIX_FMT_PAL8;
         codec_name_ = "gif";
-        filters_    = gif_filters_[Config::instance()["gif"]["quality"]];
+        filters_    = fmt::format(GIF_FILTERS, config::recording::gif::colors);
+        if (!config::recording::gif::dither) filters_ += ":dither=none";
 
-        auto root_dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation).toStdString();
-        filename_     = fmt::format("{}/Capturer_{}.gif", root_dir, time_str);
+        filename_ = fmt::format("{}/Capturer_{}.gif", config::recording::gif::path.toStdString(), time_str);
     }
 
     // window selector
@@ -150,7 +155,8 @@ void ScreenRecorder::setup()
 
     QRect region = selector_->selected(selector_->scope() != Selector::scope_t::desktop);
 
-    const auto show_region = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["box"].get<bool>();
+    const auto show_region =
+        (rec_type_ == VIDEO) ? config::recording::video::show_region : config::recording::gif::show_region;
 #ifdef _WIN32
     show_region && (selector_->prey().type != hunter::prey_type_t::window &&
                     selector_->prey().type != hunter::prey_type_t::display)
@@ -164,12 +170,14 @@ void ScreenRecorder::setup()
     menu_->disable_speaker(true);
 
     // desktop capturer
-    framerate_ = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["framerate"].get<int>();
-    const auto draw_mouse = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["mouse"].get<bool>();
+    framerate_ =
+        (rec_type_ == VIDEO) ? config::recording::video::v::framerate : config::recording::gif::framerate;
+    const auto draw_mouse = (rec_type_ == VIDEO) ? config::recording::video::capture_mouse
+                                                 : config::recording::gif::capture_mouse;
 
     std::string                        name{};
     std::map<std::string, std::string> options{
-        { "framerate", std::to_string(framerate_) },
+        { "framerate", std::to_string(framerate_.num) },
         { "video_size", fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2) },
         { "draw_mouse", std::to_string(static_cast<int>(draw_mouse)) },
     };
@@ -230,7 +238,7 @@ void ScreenRecorder::setup()
     // audio source
     if (rec_type_ == VIDEO) {
         if (!av::audio_sources().empty() && mic_src_) {
-            if (mic_src_->open(Config::instance()["devices"]["microphones"].get<std::string>(), {}) < 0) {
+            if (mic_src_->open(config::devices::mic, {}) < 0) {
                 LOG(WARNING) << "open microphone failed";
                 mic_src_ = {};
             }
@@ -243,7 +251,7 @@ void ScreenRecorder::setup()
         }
 
         if (!av::audio_sinks().empty() && speaker_src_) {
-            if (speaker_src_->open(Config::instance()["devices"]["speakers"].get<std::string>(), {}) < 0) {
+            if (speaker_src_->open(config::devices::speaker, {}) < 0) {
                 LOG(WARNING) << "open speaker failed";
                 speaker_src_ = {};
             }
@@ -267,7 +275,7 @@ void ScreenRecorder::setup()
     }
 
     encoder_->vfmt.pix_fmt        = pix_fmt_;
-    encoder_->vfmt.framerate      = { framerate_, 1 };
+    encoder_->vfmt.framerate      = framerate_;
     encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     encoder_->afmt.channels       = 2;
     encoder_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
@@ -287,7 +295,7 @@ void ScreenRecorder::setup()
         return;
     }
 
-    encoder_options_[quality_name] = video_qualities_[Config::instance()["record"]["quality"]];
+    encoder_options_[quality_name] = config::recording::video::v::crf;
     encoder_options_["vcodec"]     = codec_name_;
     encoder_options_["acodec"]     = "aac";
 
@@ -320,8 +328,7 @@ void ScreenRecorder::stop()
     encoder_     = {};
 
     if (timer_->isActive()) {
-        emit SHOW_MESSAGE(rec_type_ == VIDEO ? "Capturer<VIDEO>" : "Capturer<GIF>",
-                          tr("Path: ") + QString::fromStdString(filename_));
+        emit saved(QString::fromStdString(filename_));
         timer_->stop();
     }
 
@@ -341,14 +348,13 @@ void ScreenRecorder::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void ScreenRecorder::updateTheme()
+void ScreenRecorder::setStyle(const SelectorStyle& style)
 {
-    const auto& style = Config::instance()[rec_type_ == VIDEO ? "record" : "gif"]["selector"];
     selector_->setBorderStyle(QPen{
-        style["border"]["color"].get<QColor>(),
-        static_cast<qreal>(style["border"]["width"].get<int>()),
-        style["border"]["style"].get<Qt::PenStyle>(),
+        style.border_color,
+        static_cast<qreal>(style.border_width),
+        style.border_style,
     });
 
-    selector_->setMaskStyle(style["mask"]["color"].get<QColor>());
+    selector_->setMaskStyle(style.mask_color);
 }

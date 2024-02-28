@@ -377,7 +377,7 @@ int Encoder::process_video_frames()
             v_last_dts_ = packet_->dts;
 
             DLOG(INFO) << fmt::format(
-                "[V] # {:>5d}, pts = {:>14d}, dts = {:>14d}, ts = {:%T}", vcodec_ctx_->frame_number,
+                "[V] # {:>5d}, pts = {:>14d}, dts = {:>14d}, ts = {:.3%T}", vcodec_ctx_->frame_number,
                 packet_->pts, packet_->dts,
                 av::clock::ns(packet_->pts, fmt_ctx_->streams[vstream_idx_]->time_base));
 
@@ -455,7 +455,7 @@ int Encoder::process_audio_frames()
             }
             a_last_dts_ = packet_->dts;
 
-            DLOG(INFO) << fmt::format("[A] # {:>5d}, pts = {:>14d}, dts = {:>14d}, ts = {:%T}",
+            DLOG(INFO) << fmt::format("[A] # {:>5d}, pts = {:>14d}, dts = {:>14d}, ts = {:.3%T}",
                                       acodec_ctx_->frame_number, packet_->pts, packet_->dts,
                                       av::clock::ns(packet_->pts, stream->time_base));
 

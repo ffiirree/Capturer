@@ -2,7 +2,6 @@
 
 #include <QApplication>
 #include <QClipboard>
-#include <QColor>
 #include <QPixmap>
 #include <ranges>
 

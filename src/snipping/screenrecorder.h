@@ -25,8 +25,7 @@ public:
     explicit ScreenRecorder(int type = VIDEO, QWidget * = nullptr);
 
 signals:
-    void SHOW_MESSAGE(const QString&, const QString&,
-                      QSystemTrayIcon::MessageIcon = QSystemTrayIcon::Information, int = 10000);
+    void saved(const QString& path);
 
 public slots:
     void start();
@@ -35,7 +34,7 @@ public slots:
 
     void mute(int type, bool v);
 
-    void updateTheme();
+    void setStyle(const SelectorStyle& style);
 
 private:
     void keyPressEvent(QKeyEvent *) override;
@@ -52,7 +51,7 @@ private:
     AVPixelFormat                      pix_fmt_{ AV_PIX_FMT_YUV420P };
     std::string                        codec_name_{ "libx264" };
     std::string                        quality_{ "medium" };
-    int                                framerate_{ 30 };
+    AVRational                         framerate_{ 30, 1 };
     std::string                        filters_{};
     std::map<std::string, std::string> encoder_options_{};
 
@@ -75,21 +74,6 @@ private:
 
     // timer for displaying time on recording menu
     QTimer *timer_{ nullptr };
-
-    // TODO: wgc bgra -> transparent / black frames.
-    // clang-format off
-    std::map<std::string, std::string> gif_filters_{
-        { "high",   "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=256 [p];[b][p] paletteuse=new=1" },
-        { "medium", "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=128 [p];[b][p] paletteuse=new=1:dither=none" },
-        { "low",    "[0:v] split [a][b];[a] palettegen=stats_mode=single:max_colors=96  [p];[b][p] paletteuse=new=1:dither=none" },
-    };
-
-    std::map<std::string, std::string> video_qualities_ = {
-        { "high",   "18" },
-        { "medium", "23" },
-        { "low",    "28" },
-    };
-    // clang-format on
 };
 
 #endif //! CAPTURER_SCREEN_RECORDER_H

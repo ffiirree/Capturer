@@ -17,19 +17,17 @@
 #include <QVBoxLayout>
 
 ImageWindow::ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent)
-    : FramelessWindow(parent)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint)
 {
-    setWindowFlags((windowFlags() & ~Qt::Window) | Qt::Tool | Qt::WindowStaysOnTopHint);
-
     setWindowTitle("Image Window");
 
     setAcceptDrops(true);
 
-    preview_ = new TextureWidget(this);
+    texture_ = new TextureWidget(this);
     setLayout(new QVBoxLayout());
     layout()->setSpacing(0);
     layout()->setContentsMargins({});
-    layout()->addWidget(preview_);
+    layout()->addWidget(texture_);
 
     preview(data);
 
@@ -48,7 +46,7 @@ void ImageWindow::preview(const std::shared_ptr<QMimeData>& mimedata)
 
     if (const auto pixmap = render(data_); pixmap) {
         pixmap_ = pixmap.value();
-        preview_->present(pixmap_);
+        texture_->present(pixmap_);
 
         if (mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
             move(clipboard::deserialize<QPoint>(mimedata->data(clipboard::MIME_TYPE_POINT)));
@@ -62,7 +60,7 @@ void ImageWindow::present(const QPixmap& pixmap)
 {
     pixmap_ = pixmap;
 
-    preview_->present(pixmap_);
+    texture_->present(pixmap_);
 
     auto _geometry = QRect{ {}, pixmap_.size() * scale_ };
     _geometry.moveCenter(geometry().center());
@@ -78,11 +76,11 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
     if (thumbnail_) {
         _geometry.setSize(THUMBNAIL_SIZE_);
         _geometry.moveCenter(event->pos());
-        preview_->present(pixmap_.copy(_geometry));
+        texture_->present(pixmap_.copy(_geometry));
     }
     else {
         _geometry.setSize(pixmap_.size().scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio));
-        preview_->present(pixmap_);
+        texture_->present(pixmap_);
     }
 
     _geometry.moveCenter(geometry().center());
@@ -92,7 +90,7 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
 void ImageWindow::wheelEvent(QWheelEvent *event)
 {
     const auto delta = event->angleDelta().y();
-    if (ctrl_) {
+    if (event->modifiers() & Qt::CTRL) {
         opacity_ += (delta / 12000.0);
         opacity_  = std::clamp(opacity_, 0.01, 1.0);
 
@@ -148,9 +146,9 @@ void ImageWindow::saveAs()
     const QString default_filename =
         "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
 
-    const QString filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
-                                                          save_path_ + QDir::separator() + default_filename,
-                                                          "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+    const auto filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
+                                                       save_path_ + QDir::separator() + default_filename,
+                                                       "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
     if (!filename.isEmpty()) {
         const QFileInfo fileinfo(filename);
@@ -165,8 +163,8 @@ void ImageWindow::initContextMenu()
 {
     context_menu_ = new Menu(this);
 
-    addAction(context_menu_->addAction(tr("Copy"),          [this]() { clipboard::push(data_); },   QKeySequence::Copy));
-    addAction(context_menu_->addAction(tr("Paste"),         [this]() { paste(); },                  QKeySequence::Paste));
+    addAction(context_menu_->addAction(tr("Copy"),          [this] { clipboard::push(data_); },   QKeySequence::Copy));
+    addAction(context_menu_->addAction(tr("Paste"),         [this] { paste(); },                  QKeySequence::Paste));
 
     context_menu_->addSeparator();
 
@@ -175,21 +173,21 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    addAction(context_menu_->addAction(tr("Grayscale"),     [this]() { present(grayscale(pixmap_));  },                                 QKeySequence(Qt::Key_G)));
-    addAction(context_menu_->addAction(tr("Rotate +90"),    [this]() { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }, QKeySequence(Qt::Key_R)));
-    addAction(context_menu_->addAction(tr("Rotate -90"),    [this]() { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }, QKeySequence(Qt::CTRL | Qt::Key_R)));
-    addAction(context_menu_->addAction(tr("H Flip"),        [this]() { present(pixmap_.transformed(QTransform().scale(-1, +1))); },     QKeySequence(Qt::Key_H)));
-    addAction(context_menu_->addAction(tr("V Flip"),        [this]() { present(pixmap_.transformed(QTransform().scale(+1, -1))); },     QKeySequence(Qt::Key_V)));
+    addAction(context_menu_->addAction(tr("Grayscale"),     [this] { present(grayscale(pixmap_));  },                                 QKeySequence(Qt::Key_G)));
+    addAction(context_menu_->addAction(tr("Rotate +90"),    [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }, QKeySequence(Qt::Key_R)));
+    addAction(context_menu_->addAction(tr("Rotate -90"),    [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }, QKeySequence(Qt::CTRL | Qt::Key_R)));
+    addAction(context_menu_->addAction(tr("H Flip"),        [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); },     QKeySequence(Qt::Key_H)));
+    addAction(context_menu_->addAction(tr("V Flip"),        [this] { present(pixmap_.transformed(QTransform().scale(+1, -1))); },     QKeySequence(Qt::Key_V)));
 
     context_menu_->addSeparator();
 
-    auto sub_menu = new Menu(tr("Background"), this);
+    const auto sub_menu = new Menu(tr("Background"), this);
 
-    auto group = new QActionGroup(this);
-    group->addAction(sub_menu->addAction(tr("White"),        [this]() { setStyleSheet("ImageWindow{ background: white; }"); }))->setCheckable(true);
-    group->addAction(sub_menu->addAction(tr("Gray"),         [this]() { setStyleSheet("ImageWindow{ background: gray; }"); }))->setCheckable(true);
-    group->addAction(sub_menu->addAction(tr("Black"),        [this]() { setStyleSheet("ImageWindow{ background: black; }"); }))->setCheckable(true);
-    group->actions().back()->trigger();
+    const auto group = new QActionGroup(this);
+    group->addAction(sub_menu->addAction(tr("White"),        [this] { setStyleSheet("ImageWindow{ background: white; }"); }))->setCheckable(true);
+    group->addAction(sub_menu->addAction(tr("Gray"),         [this] { setStyleSheet("ImageWindow{ background: gray; }"); }))->setCheckable(true);
+    group->addAction(sub_menu->addAction(tr("Black"),        [this] { setStyleSheet("ImageWindow{ background: black; }"); }))->setCheckable(true);
+    group->actions()[config::definite_theme() == "light" ? 0 : 1]->trigger();
     context_menu_->addMenu(sub_menu);
 
     zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");
@@ -197,7 +195,7 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    context_menu_->addAction(tr("Recover"), [this]() { preview(data_); });
+    context_menu_->addAction(tr("Recover"), [this] { preview(data_); });
     context_menu_->addAction(tr("Close"),   this, &ImageWindow::close, QKeySequence(Qt::Key_Escape));
 }
 // clang-format on
@@ -224,20 +222,6 @@ void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
     }
 }
 
-void ImageWindow::keyPressEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Control) {
-        ctrl_ = true;
-    }
-}
-
-void ImageWindow::keyReleaseEvent(QKeyEvent *event)
-{
-    if (event->key() == Qt::Key_Control) {
-        ctrl_ = false;
-    }
-}
-
 void ImageWindow::closeEvent(QCloseEvent *event)
 {
     data_->setData(clipboard::MIME_TYPE_STATUS, "N");
@@ -247,20 +231,20 @@ void ImageWindow::closeEvent(QCloseEvent *event)
 void ImageWindow::registerShortcuts()
 {
     // clang-format off
-    connect(new QShortcut(Qt::Key_Escape, this),    &QShortcut::activated, [this]() { close(); });
+    connect(new QShortcut(Qt::Key_Escape, this),    &QShortcut::activated, [this] { close(); });
 
     // move
-    connect(new QShortcut(Qt::Key_W, this),         &QShortcut::activated, [this]() { setGeometry(geometry().translated(0, -1)); });
-    connect(new QShortcut(Qt::Key_Up, this),        &QShortcut::activated, [this]() { setGeometry(geometry().translated(0, -1)); });
+    connect(new QShortcut(Qt::Key_W, this),         &QShortcut::activated, [this] { setGeometry(geometry().translated(0, -1)); });
+    connect(new QShortcut(Qt::Key_Up, this),        &QShortcut::activated, [this] { setGeometry(geometry().translated(0, -1)); });
 
-    connect(new QShortcut(Qt::Key_S, this),         &QShortcut::activated, [this]() { setGeometry(geometry().translated(0, +1)); });
-    connect(new QShortcut(Qt::Key_Down, this),      &QShortcut::activated, [this]() { setGeometry(geometry().translated(0, +1)); });
+    connect(new QShortcut(Qt::Key_S, this),         &QShortcut::activated, [this] { setGeometry(geometry().translated(0, +1)); });
+    connect(new QShortcut(Qt::Key_Down, this),      &QShortcut::activated, [this] { setGeometry(geometry().translated(0, +1)); });
 
-    connect(new QShortcut(Qt::Key_A, this),         &QShortcut::activated, [this]() { setGeometry(geometry().translated(-1, 0)); });
-    connect(new QShortcut(Qt::Key_Left, this),      &QShortcut::activated, [this]() { setGeometry(geometry().translated(-1, 0)); });
+    connect(new QShortcut(Qt::Key_A, this),         &QShortcut::activated, [this] { setGeometry(geometry().translated(-1, 0)); });
+    connect(new QShortcut(Qt::Key_Left, this),      &QShortcut::activated, [this] { setGeometry(geometry().translated(-1, 0)); });
 
-    connect(new QShortcut(Qt::Key_D, this),         &QShortcut::activated, [this]() { setGeometry(geometry().translated(+1, 0)); });
-    connect(new QShortcut(Qt::Key_Right, this),     &QShortcut::activated, [this]() { setGeometry(geometry().translated(+1, 0)); });
+    connect(new QShortcut(Qt::Key_D, this),         &QShortcut::activated, [this] { setGeometry(geometry().translated(+1, 0)); });
+    connect(new QShortcut(Qt::Key_Right, this),     &QShortcut::activated, [this] { setGeometry(geometry().translated(+1, 0)); });
     // clang-format on
 }
 
@@ -292,15 +276,20 @@ std::optional<QPixmap> ImageWindow::render(const std::shared_ptr<QMimeData>& mim
     }
 
     // 3. urls
-    if (mimedata->hasUrls() && mimedata->urls().size() == 1 &&
-        QString("jpg;jpeg;png;bmp;ico;svg")
-            .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
-        return QPixmap(mimedata->urls()[0].toLocalFile());
+    if (mimedata->hasUrls() && mimedata->urls().size() == 1) {
+        const auto path = QFileInfo(mimedata->urls()[0].fileName());
+        if (mimedata->urls()[0].isLocalFile() && QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
+            QString("jpg;jpeg;png;bmp;ico;svg;webp")
+                .split(';')
+                .contains(path.suffix(), Qt::CaseInsensitive)) {
+            return QPixmap(mimedata->urls()[0].toLocalFile());
+        }
     }
 
     // TODO: text
     if (mimedata->hasUrls() &&
         QString("txt;json;html")
+            .split(';')
             .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {}
 
     // TODO: microsoft rich text format
@@ -318,8 +307,8 @@ std::optional<QPixmap> ImageWindow::render(const std::shared_ptr<QMimeData>& mim
         QLabel label(text);
         label.setWordWrap(false);
         label.setMargin(10);
-        label.setStyleSheet(Config::theme() == "light" ? "background-color:white; color: black;"
-                                                       : "background-color:black; color: white;");
+        label.setStyleSheet(config::definite_theme() == "light" ? "background-color:white; color: black;"
+                                                                : "background-color:black; color: white;");
         return label.grab();
     }
 

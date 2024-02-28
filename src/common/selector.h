@@ -26,6 +26,14 @@ enum class SelectorStatus
     ENABLE_BITMASK_OPERATORS()
 };
 
+struct SelectorStyle
+{
+    int          border_width{ 2 };
+    QColor       border_color{ "#409EFF" };
+    Qt::PenStyle border_style{ Qt::SolidLine };
+    QColor       mask_color{ "#88000000" };
+};
+
 class Selector : public QWidget
 {
     Q_OBJECT
