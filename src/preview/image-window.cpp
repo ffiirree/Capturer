@@ -187,7 +187,7 @@ void ImageWindow::initContextMenu()
     group->addAction(sub_menu->addAction(tr("White"),        [this] { setStyleSheet("ImageWindow{ background: white; }"); }))->setCheckable(true);
     group->addAction(sub_menu->addAction(tr("Gray"),         [this] { setStyleSheet("ImageWindow{ background: gray; }"); }))->setCheckable(true);
     group->addAction(sub_menu->addAction(tr("Black"),        [this] { setStyleSheet("ImageWindow{ background: black; }"); }))->setCheckable(true);
-    group->actions()[config::definite_theme() == "light" ? 0 : 1]->trigger();
+    group->actions()[config::definite_theme() == "light" ? 0 : 2]->trigger();
     context_menu_->addMenu(sub_menu);
 
     zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");

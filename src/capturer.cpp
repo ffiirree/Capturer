@@ -195,6 +195,25 @@ void Capturer::OpenSettingsDialog()
     settings_window_->show();
 }
 
+void Capturer::QuickLook()
+{
+#if _WIN32
+    const auto actived = probe::graphics::active_window();
+    if (!actived || actived->pname != "explorer.exe") return;
+
+    LOG(INFO) << (HWND)actived->handle;
+
+    const auto file = probe::graphics::explorer_focused(actived->handle);
+
+    if (file.empty()) return;
+
+    auto data = std::make_shared<QMimeData>();
+    data->setUrls({ QUrl::fromLocalFile(QString::fromUtf8(file.c_str())) });
+
+    PreviewMimeData(data);
+#endif
+}
+
 void Capturer::TogglePreviews()
 {
     if (previews_.empty()) return;
