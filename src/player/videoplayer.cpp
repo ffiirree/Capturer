@@ -32,10 +32,9 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
                                   Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
 {
-    setMouseTracking(true);
-    installEventFilter(this);
-
     setAttribute(Qt::WA_DeleteOnClose);
+
+    setMouseTracking(true);
 
     const auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
@@ -95,14 +94,19 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string> options)
 {
     filename_ = filename;
+    const QFileInfo file(QString::fromStdString(filename_));
 
     std::map<std::string, std::string> decoder_options;
     if (options.contains("format")) {
         decoder_options["format"] = options.at("format");
         if (options.at("format") == "dshow" || options.at("format") == "v4l2") {
             is_live_ = true;
-            control_->setLiveMode(true);
+            control_->setPlaybackMode(PlaybackMode::LIVE);
         }
+    }
+
+    if (QString("GIF;APNG;WebP").contains(file.suffix(), Qt::CaseInsensitive)) {
+        control_->setPlaybackMode(PlaybackMode::ANIMATED_IMAGE);
     }
 
 #if 0
@@ -165,15 +169,14 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     }
 
     // title
-    const QFileInfo info(QString::fromStdString(filename_));
-    setWindowTitle(info.isFile() ? info.fileName() : info.filePath());
+    setWindowTitle(file.isFile() ? file.fileName() : file.filePath());
 
     // resize & move to center
     (vfmt.width > 1920 && vfmt.height > 1080)
         ? resize(QSize(vfmt.width, vfmt.height).scaled(1920, 1080, Qt::KeepAspectRatio))
         : resize(vfmt.width, vfmt.height);
 
-    move(QApplication::primaryScreen()->geometry().center() - QPoint(vfmt.width / 2, vfmt.height / 2));
+    move(QApplication::primaryScreen()->geometry().center() - QPoint{ width() / 2, height() / 2 });
 
     QWidget::show();
 
@@ -306,7 +309,7 @@ int VideoPlayer::consume(const av::frame& frame, const AVMediaType type)
         abuffer_.start();
     }
 
-    if (timeline_.time() == av::clock::nopts && frame->pts >= 0) {
+    if (timeline_.time() == av::clock::nopts && (frame && frame->pts >= 0)) {
         timeline_ = av::clock::ns(frame->pts, type == AVMEDIA_TYPE_VIDEO ? vfmt.time_base : afmt.time_base);
         LOG(INFO) << fmt::format("[{}] clock: nopts -> {:%T}", av::to_char(type), timeline_.time());
     }

@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QFileInfo>
 #include <QKeyEvent>
+#include <QScreen>
 
 #define SET_HOTKEY(X, Y)                                                                                   \
     if (!X->setShortcut(Y, true)) {                                                                        \
@@ -150,13 +151,22 @@ void Capturer::pinMimeData(const std::shared_ptr<QMimeData>& mimedata)
             iter = windows_.emplace(windows_.end(), player);
         }
         else if (mimedata->hasColor()) {
-            iter = windows_.emplace(windows_.end(), new ColorWindow(mimedata));
+            auto win = new ColorWindow(mimedata);
+            iter     = windows_.emplace(windows_.end(), win);
+            win->show();
+            win->move(QApplication::screenAt(QCursor::pos())->geometry().center() - win->rect().center());
         }
         else {
-            iter = windows_.emplace(windows_.end(), new ImageWindow(mimedata));
+            auto win = new ImageWindow(mimedata);
+            iter     = windows_.emplace(windows_.end(), win);
+
+            win->show();
+            if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
+                win->move(QApplication::screenAt(QCursor::pos())->geometry().center() -
+                          win->rect().center());
+            }
         }
 
-        (*iter)->show();
         connect(*iter, &FramelessWindow::closed, [=, this]() {
             (*iter)->deleteLater();
             windows_.erase(iter);

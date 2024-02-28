@@ -21,7 +21,7 @@ struct DispatchContext
     std::unordered_map<Producer<av::frame> *, AVFilterContext *> srcs{};
     AVFilterContext                                             *sink{};
 
-    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 24 };
+    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 60 };
 
     AVFilterGraph    *graph{};
     AVHWDeviceType    hwaccel{ AV_HWDEVICE_TYPE_NONE };
@@ -93,6 +93,10 @@ private:
     Consumer<av::frame>            *consumer_{};
 
     std::atomic<bool> ready_{};
+
+    // check we have enough frames for each media type
+    std::mutex              notenough_mtx_{};
+    std::condition_variable notenough_{};
 
     DispatchContext vctx_{};
     DispatchContext actx_{};

@@ -163,9 +163,25 @@ void ControlWidget::setVolume(int v)
     volume_btn_->setChecked(v == 0);
 }
 
-void ControlWidget::setLiveMode(bool m)
+void ControlWidget::setPlaybackMode(const PlaybackMode mode)
 {
-    if (speed_box_) speed_box_->setVisible(!m);
+    switch (mode) {
+    case PlaybackMode::LIVE:
+        speed_box_->hide();
+        volume_btn_->show();
+        volume_slider_->show();
+        break;
+    case PlaybackMode::ANIMATED_IMAGE:
+        speed_box_->show();
+        volume_btn_->hide();
+        volume_slider_->hide();
+        break;
+    default:
+        speed_box_->show();
+        volume_btn_->show();
+        volume_slider_->show();
+        break;
+    }
 }
 
 void ControlWidget::setMute(bool muted) { volume_btn_->setChecked(muted); }

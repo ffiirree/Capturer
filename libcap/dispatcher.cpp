@@ -98,6 +98,12 @@ int Dispatcher::add_input(Producer<av::frame> *producer)
     if (producer->has(AVMEDIA_TYPE_VIDEO)) vctx_.enabled = true;
 
     producer->onarrived = [=, this](const av::frame& frame, auto type) {
+        std::unique_lock lock(notenough_mtx_);
+        notenough_.wait(lock, [this] {
+            return (actx_.enabled && (actx_.queue.stopped() || actx_.queue.size() < 16)) ||
+                   (vctx_.enabled && (vctx_.queue.stopped() || vctx_.queue.size() < 4));
+        });
+
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: actx_.queue.wait_and_push({ frame, producer }); break;
         case AVMEDIA_TYPE_VIDEO: vctx_.queue.wait_and_push({ frame, producer }); break;
@@ -346,6 +352,8 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
         auto has_next = ctx.queue.wait_and_pop();
         if (!has_next) continue;
 
+        notenough_.notify_all();
+
         frame         = has_next.value().first;
         auto producer = has_next.value().second;
         auto src      = ctx.srcs[producer];
@@ -370,6 +378,7 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
         if (av_buffersrc_add_frame_flags(src, frame.get(), AV_BUFFERSRC_FLAG_PUSH) < 0) {
             LOG(ERROR) << fmt::format("[{}] failed to send the frame to filter graph.", av::to_char(mt));
             ctx.running = false;
+            ctx.queue.stop();
             break;
         }
 
@@ -389,6 +398,7 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
             else if (ret < 0) {
                 LOG(ERROR) << fmt::format("[{}] failed to get frame.", av::to_char(mt));
                 ctx.running = false;
+                ctx.queue.stop();
                 break;
             }
 
@@ -416,6 +426,9 @@ void Dispatcher::seek(const std::chrono::nanoseconds& ts, const std::chrono::nan
 
     actx_.queue.drain();
     vctx_.queue.drain();
+
+    notenough_.notify_all();
+
     // @}
 
     if ((actx_.enabled && !actx_.running) || (vctx_.enabled && !vctx_.running)) {
@@ -467,6 +480,8 @@ void Dispatcher::stop()
     // must be called before calling producer->stop()
     actx_.queue.stop();
     vctx_.queue.stop();
+
+    notenough_.notify_all();
 
     // producers
     for (auto& producer : producers_) {

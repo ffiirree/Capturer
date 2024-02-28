@@ -331,7 +331,7 @@ int Decoder::decode_fn()
 
         // read
         int ret = av_read_frame(fmt_ctx_, packet.put());
-        if ((ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) && !feof_) {
+        if (ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) {
             feof_ = true;
             LOG(INFO) << "ENTER DRAINING MODE";
         }

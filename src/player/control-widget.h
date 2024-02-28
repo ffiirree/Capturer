@@ -8,6 +8,13 @@
 #include <QCheckBox>
 #include <QLabel>
 
+enum class PlaybackMode
+{
+    VIDEO          = 0x00,
+    LIVE           = 0x10,
+    ANIMATED_IMAGE = 0x20,
+};
+
 class ControlWidget final : public QWidget
 {
     Q_OBJECT
@@ -23,7 +30,7 @@ public slots:
     void setVolume(int);
     void setMute(bool);
 
-    void setLiveMode(bool);
+    void setPlaybackMode(PlaybackMode mode);
 
     [[nodiscard]] bool paused() const;
 
