@@ -21,6 +21,7 @@ namespace config
         inline QKeySequence quick_look{ "F2" };
         inline QKeySequence record_video{ "Ctrl+Alt+V" };
         inline QKeySequence record_gif{ "Ctrl+Alt+G" };
+        inline QKeySequence transparent_input{ "Ctrl+T" };
     }; // namespace hotkeys
 
     namespace snip

@@ -23,6 +23,7 @@ public slots:
     void minimize(bool = true);
     void fullscreen(bool = true);
     void toggleFullScreen();
+    void toggleTransparentInput();
 
 signals:
     void hidden();
@@ -39,6 +40,8 @@ protected:
     void closeEvent(QCloseEvent *) override;
     void hideEvent(QHideEvent *event) override;
     void changeEvent(QEvent *) override;
+
+    bool transparent_input_{};
 
 #ifdef Q_OS_LINUX
     Qt::Edges edges_{};

@@ -3,6 +3,7 @@
 #include "clipboard.h"
 #include "config.h"
 #include "logging.h"
+#include "platforms/window-effect.h"
 
 #include <QActionGroup>
 #include <QApplication>
@@ -192,6 +193,7 @@ void ImageWindow::initContextMenu()
 
     zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");
     opacity_action_ = context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
+    context_menu_->addAction(tr("Transparent Input"),       [this] { toggleTransparentInput(); setWindowOpacity(opacity_ == 1.0 ? 0.99 : opacity_); });
 
     context_menu_->addSeparator();
 

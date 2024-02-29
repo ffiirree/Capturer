@@ -1,6 +1,7 @@
 #include "framelesswindow.h"
 
 #include "logging.h"
+#include "platforms/window-effect.h"
 
 #include <QMouseEvent>
 #include <QStyle>
@@ -61,6 +62,13 @@ void FramelessWindow::minimize(bool state) { state ? showMinimized() : showNorma
 void FramelessWindow::fullscreen(bool state) { state ? showFullScreen() : showNormal(); }
 
 void FramelessWindow::toggleFullScreen() { isFullScreen() ? showNormal() : showFullScreen(); }
+
+void FramelessWindow::toggleTransparentInput()
+{
+    transparent_input_ = !transparent_input_;
+
+    TransparentInput(this, transparent_input_);
+}
 
 void FramelessWindow::mousePressEvent(QMouseEvent *event)
 {

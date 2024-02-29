@@ -11,7 +11,7 @@
 #include <QStandardPaths>
 
 #ifdef Q_OS_WIN
-#include "platforms/window-effect-windows.h"
+#include "platforms/window-effect.h"
 #endif
 
 EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)

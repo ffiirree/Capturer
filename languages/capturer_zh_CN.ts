@@ -113,6 +113,10 @@
         <source>Close</source>
         <translation>关闭</translation>
     </message>
+    <message>
+        <source>Transparent Input</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScreenShoter</name>
@@ -326,6 +330,10 @@
     <message>
         <source>Captured by Default</source>
         <translation>默认捕获</translation>
+    </message>
+    <message>
+        <source>Transparent Input</source>
+        <translation>输入穿透</translation>
     </message>
 </context>
 <context>

@@ -125,7 +125,7 @@ namespace windows::dwm
 
 void TransparentInput(const QWidget *win, const bool en)
 {
-    const auto hwnd = static_cast<HWND>(win->winId());
+    const auto hwnd = reinterpret_cast<HWND>(win->winId());
     ::SetWindowLong(hwnd, GWL_EXSTYLE,
                     en ? GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT
                        : GetWindowLong(hwnd, GWL_EXSTYLE) & (~WS_EX_TRANSPARENT));

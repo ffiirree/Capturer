@@ -8,7 +8,7 @@
 #include <QLineEdit>
 
 #ifdef Q_OS_WIN
-#include "platforms/window-effect-windows.h"
+#include "platforms/window-effect.h"
 #endif
 
 EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)

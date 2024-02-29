@@ -27,12 +27,13 @@ Capturer::Capturer(int& argc, char **argv)
 {
     setWindowIcon(QIcon(":/icons/capturer"));
 
-    snip_hotkey_      = new QHotkey(this);
-    preview_hotkey_   = new QHotkey(this);
-    toggle_hotkey_    = new QHotkey(this);
-    video_hotkey_     = new QHotkey(this);
-    gif_hotkey_       = new QHotkey(this);
-    quicklook_hotkey_ = new QHotkey(this);
+    snip_hotkey_       = new QHotkey(this);
+    preview_hotkey_    = new QHotkey(this);
+    toggle_hotkey_     = new QHotkey(this);
+    video_hotkey_      = new QHotkey(this);
+    gif_hotkey_        = new QHotkey(this);
+    quicklook_hotkey_  = new QHotkey(this);
+    transparent_input_ = new QHotkey(this);
 
     sniper_.reset(new ScreenShoter());
     recorder_.reset(new ScreenRecorder(ScreenRecorder::VIDEO));
@@ -44,6 +45,7 @@ Capturer::Capturer(int& argc, char **argv)
     connect(video_hotkey_, &QHotkey::activated, recorder_.get(), &ScreenRecorder::record);
     connect(gif_hotkey_, &QHotkey::activated, gifcptr_.get(), &ScreenRecorder::record);
     connect(quicklook_hotkey_, &QHotkey::activated, this, &Capturer::QuickLook);
+    connect(transparent_input_, &QHotkey::activated, this, &Capturer::TransparentPreviewInput);
     connect(sniper_.get(), &ScreenShoter::pinData, this, &Capturer::PreviewMimeData);
 }
 
@@ -201,8 +203,6 @@ void Capturer::QuickLook()
     const auto actived = probe::graphics::active_window();
     if (!actived || actived->pname != "explorer.exe") return;
 
-    LOG(INFO) << (HWND)actived->handle;
-
     const auto file = probe::graphics::explorer_focused(actived->handle);
 
     if (file.empty()) return;
@@ -233,6 +233,18 @@ void Capturer::TogglePreviews()
     }
 }
 
+void Capturer::TransparentPreviewInput()
+{
+    for (const auto& win : previews_) {
+        if (win && win->geometry().contains(QCursor::pos())) {
+            win->toggleTransparentInput();
+#if _WIN32
+            if (win->windowOpacity() == 1.0) win->setWindowOpacity(0.99);
+#endif
+        }
+    }
+}
+
 void Capturer::UpdateHotkeys()
 {
     QString error = "";
@@ -243,8 +255,9 @@ void Capturer::UpdateHotkeys()
     SET_HOTKEY(video_hotkey_,       config::hotkeys::record_video);
     SET_HOTKEY(gif_hotkey_,         config::hotkeys::record_gif);
 #if _WIN32
-    SET_HOTKEY(quicklook_hotkey_,   QKeySequence(Qt::Key_F2));
+    SET_HOTKEY(quicklook_hotkey_,   config::hotkeys::quick_look);
 #endif
+    SET_HOTKEY(transparent_input_,  config::hotkeys::transparent_input);
     // clang-format on
     if (!error.isEmpty()) ShowMessage("Capturer", error, QSystemTrayIcon::Critical);
 }

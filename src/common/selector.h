@@ -136,8 +136,6 @@ protected:
     // selecting
     QPoint sbegin_{ 0, 0 };
 
-    bool prevent_transparent_ = true;
-
 private:
     void registerShortcuts();
 

@@ -113,6 +113,10 @@
         <source>Close</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Transparent Input</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScreenShoter</name>
@@ -325,6 +329,10 @@
     </message>
     <message>
         <source>Captured by Default</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Transparent Input</source>
         <translation></translation>
     </message>
 </context>

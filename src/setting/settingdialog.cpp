@@ -170,6 +170,12 @@ QWidget *SettingWindow::setupHotkeyWidget()
         form->addRow(tr("Quick Look"), qlook);
 #endif
 
+        const auto trans = new ShortcutInput(config::hotkeys::transparent_input);
+        connect(trans, &ShortcutInput::changed,
+                [this](auto ks) { config::hotkeys::transparent_input = ks; });
+        connect(trans, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
+        form->addRow(tr("Transparent Input"), trans);
+
         const auto rvideo = new ShortcutInput(config::hotkeys::record_video);
         connect(rvideo, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::record_video = ks; });
         connect(rvideo, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
@@ -470,7 +476,7 @@ QWidget *SettingWindow::setupGIFWidget()
                 [](auto checked) { config::recording::gif::show_region = checked; });
         form->addRow(tr("Show Region"), region);
     }
-    
+
     {
         const auto form = page->addForm(tr("Captured by Default"));
 

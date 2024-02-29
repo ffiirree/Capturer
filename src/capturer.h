@@ -31,6 +31,7 @@ public slots:
     void PreviewClipboard();
     void PreviewMimeData(const std::shared_ptr<QMimeData>& data);
     void TogglePreviews();
+    void TransparentPreviewInput();
 
     void ToggleCamera();
     void OpenSettingsDialog();
@@ -64,12 +65,13 @@ private:
     QPointer<SettingWindow> settings_window_{};
 
     // hotkey
-    QPointer<QHotkey> snip_hotkey_{};    // screenshot
-    QPointer<QHotkey> video_hotkey_{};   // video recording
-    QPointer<QHotkey> gif_hotkey_{};     // gif recording
-    QPointer<QHotkey> preview_hotkey_{}; // preview
-    QPointer<QHotkey> quicklook_hotkey_{};
-    QPointer<QHotkey> toggle_hotkey_{};  // toggle previews
+    QPointer<QHotkey> snip_hotkey_{};       // screenshot
+    QPointer<QHotkey> video_hotkey_{};      // video recording
+    QPointer<QHotkey> gif_hotkey_{};        // gif recording
+    QPointer<QHotkey> preview_hotkey_{};    // preview
+    QPointer<QHotkey> quicklook_hotkey_{};  // Explorer window, Windows only
+    QPointer<QHotkey> transparent_input_{}; // for preview window
+    QPointer<QHotkey> toggle_hotkey_{};     // toggle previews
 
     QScopedPointer<ScreenShoter>   sniper_{};
     QScopedPointer<ScreenRecorder> recorder_{};

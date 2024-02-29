@@ -28,6 +28,7 @@ namespace config
             JSON_GET(hotkeys::toggle_previews, j["hotkeys"], "toggle-previews");
             JSON_GET(hotkeys::record_video, j["hotkeys"], "record-video");
             JSON_GET(hotkeys::record_gif, j["hotkeys"], "record-gif");
+            JSON_GET(hotkeys::transparent_input, j["hotkeys"], "transparent-input");
         }
 
         if (j.contains("snip")) {
@@ -106,11 +107,12 @@ namespace config
         j["language"] = language;
         j["theme"]    = theme;
 
-        j["hotkeys"]["screenshot"]      = hotkeys::screenshot;
-        j["hotkeys"]["preview"]         = hotkeys::preview;
-        j["hotkeys"]["toggle-previews"] = hotkeys::toggle_previews;
-        j["hotkeys"]["record-video"]    = hotkeys::record_video;
-        j["hotkeys"]["record-gif"]      = hotkeys::record_gif;
+        j["hotkeys"]["screenshot"]        = hotkeys::screenshot;
+        j["hotkeys"]["preview"]           = hotkeys::preview;
+        j["hotkeys"]["toggle-previews"]   = hotkeys::toggle_previews;
+        j["hotkeys"]["record-video"]      = hotkeys::record_video;
+        j["hotkeys"]["record-gif"]        = hotkeys::record_gif;
+        j["hotkeys"]["transparent-input"] = hotkeys::transparent_input;
 
         j["snip"]["style"]["border-width"] = snip::style.border_width;
         j["snip"]["style"]["border-color"] = snip::style.border_color;

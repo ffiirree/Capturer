@@ -296,7 +296,7 @@ void Selector::paintEvent(QPaintEvent *)
 
             // draw border
             painter_.setPen(pen_);
-            if (prevent_transparent_) painter_.setBrush(QColor(0, 0, 0, 1));
+            painter_.setBrush(QColor(0, 0, 0, 1));
             painter_.drawRect(srect.adjusted(-pen_.width() % 2, -pen_.width() % 2, 0, 0));
 
             // draw anchors
