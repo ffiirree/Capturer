@@ -7,7 +7,6 @@
 #include <QGuiApplication>
 #include <QLabel>
 #include <QMouseEvent>
-#include <QScreen>
 #include <QShortcut>
 
 Selector::Selector(QWidget *parent)
@@ -27,7 +26,7 @@ Selector::Selector(QWidget *parent)
     status(SelectorStatus::READY);
 }
 
-void Selector::status(SelectorStatus status)
+void Selector::status(const SelectorStatus status)
 {
     if (status_ == status) return;
 
@@ -46,7 +45,7 @@ void Selector::status(SelectorStatus status)
     emit statusChanged(status_);
 }
 
-void Selector::start(probe::graphics::window_filter_t flags)
+void Selector::start(const probe::graphics::window_filter_t flags)
 {
     if (status_ == SelectorStatus::READY) {
         setMouseTracking(true);
@@ -249,14 +248,14 @@ void Selector::paintEvent(QPaintEvent *)
 
     if (coordinate_ != QRect{}) painter_.setWindow(coordinate_);
 
-    auto srect = selected();
+    const auto srect = selected();
 
     if (!mask_hidden_) {
         // draw cross hair
         if (crosshair_ && status_ < SelectorStatus::CAPTURED) {
             painter_.save();
 
-            auto pos = mapFromGlobal(QCursor::pos());
+            const auto pos = mapFromGlobal(QCursor::pos());
 
             painter_.setRenderHint(QPainter::Antialiasing);
 
@@ -339,7 +338,7 @@ void Selector::select(const QRect& rect)
     update();
 }
 
-void Selector::translate(int32_t dx, int32_t dy)
+void Selector::translate(const int32_t dx, const int32_t dy)
 {
     if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::MOVING) return;
 
@@ -349,7 +348,7 @@ void Selector::translate(int32_t dx, int32_t dy)
     emit moved();
 }
 
-void Selector::adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2)
+void Selector::adjust(const int32_t dx1, const int32_t dy1, const int32_t dx2, const int32_t dy2)
 {
     if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::RESIZING &&
         status_ != SelectorStatus::FREE_SELECTING)
@@ -361,11 +360,11 @@ void Selector::adjust(int32_t dx1, int32_t dy1, int32_t dx2, int32_t dy2)
     emit resized();
 }
 
-void Selector::margins(int32_t t, int32_t r, int32_t b, int32_t l)
+void Selector::margins(const int32_t dt, const int32_t dr, const int32_t db, const int32_t dl)
 {
     if (status_ != SelectorStatus::CAPTURED && status_ != SelectorStatus::RESIZING) return;
 
-    box_.margins(t, r, b, l);
+    box_.margins(dt, dr, db, dl);
     prey_ = hunter::prey_t::from(box_.rect());
 
     emit resized();
@@ -375,34 +374,34 @@ void Selector::registerShortcuts()
 {
     // clang-format off
     // move 1 pixel
-    connect(new QShortcut(Qt::Key_W,     this), &QShortcut::activated, [this]() { translate(0, -1); });
-    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this]() { translate(0, -1); });
+    connect(new QShortcut(Qt::Key_W,     this), &QShortcut::activated, [this] { translate(0, -1); });
+    connect(new QShortcut(Qt::Key_Up,    this), &QShortcut::activated, [this] { translate(0, -1); });
 
-    connect(new QShortcut(Qt::Key_S,     this), &QShortcut::activated, [this]() { translate(0, +1); });
-    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this]() { translate(0, +1); });
+    connect(new QShortcut(Qt::Key_S,     this), &QShortcut::activated, [this] { translate(0, +1); });
+    connect(new QShortcut(Qt::Key_Down,  this), &QShortcut::activated, [this] { translate(0, +1); });
 
-    connect(new QShortcut(Qt::Key_A,     this), &QShortcut::activated, [this]() { translate(-1, 0); });
-    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this]() { translate(-1, 0); });
+    connect(new QShortcut(Qt::Key_A,     this), &QShortcut::activated, [this] { translate(-1, 0); });
+    connect(new QShortcut(Qt::Key_Left,  this), &QShortcut::activated, [this] { translate(-1, 0); });
 
-    connect(new QShortcut(Qt::Key_D,     this), &QShortcut::activated, [this]() { translate(+1, 0); });
-    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this]() { translate(+1, 0); });
+    connect(new QShortcut(Qt::Key_D,     this), &QShortcut::activated, [this] { translate(+1, 0); });
+    connect(new QShortcut(Qt::Key_Right, this), &QShortcut::activated, [this] { translate(+1, 0); });
 
     // resize
     // expand 1 pixel
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Up,    this), &QShortcut::activated, [this]() { margins(-1, 0, 0, 0); });
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Down,  this), &QShortcut::activated, [this]() { margins(0, 0, +1, 0); });
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Left,  this), &QShortcut::activated, [this]() { margins(0, 0, 0, -1); });
-    connect(new QShortcut(Qt::CTRL | Qt::Key_Right, this), &QShortcut::activated, [this]() { margins(0, +1, 0, 0); });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Up,    this), &QShortcut::activated, [this] { margins(-1, 0, 0, 0); });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Down,  this), &QShortcut::activated, [this] { margins(0, 0, +1, 0); });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Left,  this), &QShortcut::activated, [this] { margins(0, 0, 0, -1); });
+    connect(new QShortcut(Qt::CTRL + Qt::Key_Right, this), &QShortcut::activated, [this] { margins(0, +1, 0, 0); });
 
     // shrink 1 pixel
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Up,   this), &QShortcut::activated, [this]() { margins(+1, 0, 0, 0); });
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [this]() { margins(0, 0, -1, 0); });
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Left, this), &QShortcut::activated, [this]() { margins(0, 0, 0, +1); });
-    connect(new QShortcut(Qt::SHIFT | Qt::Key_Right,this), &QShortcut::activated, [this]() { margins(0, -1, 0, 0); });
+    connect(new QShortcut(Qt::SHIFT + Qt::Key_Up,   this), &QShortcut::activated, [this] { margins(+1, 0, 0, 0); });
+    connect(new QShortcut(Qt::SHIFT + Qt::Key_Down, this), &QShortcut::activated, [this] { margins(0, 0, -1, 0); });
+    connect(new QShortcut(Qt::SHIFT + Qt::Key_Left, this), &QShortcut::activated, [this] { margins(0, 0, 0, +1); });
+    connect(new QShortcut(Qt::SHIFT + Qt::Key_Right,this), &QShortcut::activated, [this] { margins(0, -1, 0, 0); });
     // clang-format on
 
     // fullscreen
-    connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this]() {
+    connect(new QShortcut(Qt::CTRL + Qt::Key_A, this), &QShortcut::activated, [this] {
         if (status_ <= SelectorStatus::CAPTURED &&
             ((prey_.type != hunter::prey_type_t::desktop) ||
              (prey_.type != hunter::prey_type_t::display && scope_ == scope_t::display))) {
@@ -430,7 +429,6 @@ void Selector::registerShortcuts()
                     .codename = desktop.classname,
                 });
                 status(SelectorStatus::CAPTURED);
-                return;
             }
         }
     });
@@ -444,5 +442,6 @@ void Selector::showRegion()
 {
     info_->hide();
     mask_hidden_ = true;
+
     repaint();
 }

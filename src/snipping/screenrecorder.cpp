@@ -5,12 +5,14 @@
 #include "libcap/dispatcher.h"
 #include "libcap/encoder.h"
 #include "logging.h"
+#include "platforms/window-effect.h"
 
 #include <fmt/core.h>
 #include <QApplication>
 #include <QDateTime>
 #include <QMouseEvent>
 #include <QStandardPaths>
+#include <QTimer>
 
 #if _WIN32
 
@@ -60,12 +62,12 @@ set_pix_fmt(const std::unique_ptr<Producer<av::frame>>& producer,
     return {};
 }
 
-ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
-    : QWidget(parent), rec_type_(type)
+ScreenRecorder::ScreenRecorder(const int type, QWidget *parent)
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
+                          Qt::WindowStaysOnTopHint),
+      rec_type_(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
-                   Qt::WindowStaysOnTopHint);
 
     selector_ = new Selector(this);
     selector_->setMinValidSize(128, 128);
@@ -93,7 +95,7 @@ ScreenRecorder::ScreenRecorder(int type, QWidget *parent)
     });
 }
 
-void ScreenRecorder::mute(int type, bool v)
+void ScreenRecorder::mute(const int type, const bool v)
 {
     switch (type) {
     case 1:
@@ -117,14 +119,14 @@ void ScreenRecorder::start()
 {
     recording_ = true;
 
-    auto time_str = QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
+    filename_ = "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
     if (rec_type_ == VIDEO) {
         pix_fmt_                  = AV_PIX_FMT_YUV420P;
         codec_name_               = config::recording::video::v::codec;
         filters_                  = "";
         encoder_options_["vsync"] = av::to_string(av::vsync_t::cfr);
 
-        filename_ = config::recording::video::path.toStdString() + "/Capturer_" + time_str + "." +
+        filename_ = config::recording::video::path.toStdString() + "/" + filename_ + "." +
                     config::recording::video::mcf.toStdString();
     }
     else {
@@ -133,7 +135,7 @@ void ScreenRecorder::start()
         filters_    = fmt::format(GIF_FILTERS, config::recording::gif::colors);
         if (!config::recording::gif::dither) filters_ += ":dither=none";
 
-        filename_ = fmt::format("{}/Capturer_{}.gif", config::recording::gif::path.toStdString(), time_str);
+        filename_ = config::recording::gif::path.toStdString() + "/" + filename_ + ".gif";
     }
 
     // window selector
@@ -146,6 +148,7 @@ void ScreenRecorder::start()
 
     selector_->show();
     show();
+    TransparentInput(this, false);
     activateWindow();
 }
 
@@ -165,6 +168,7 @@ void ScreenRecorder::setup()
 #else
     show_region ? selector_->showRegion() : hide();
 #endif
+    TransparentInput(this, true);
 
     menu_->disable_mic(true);
     menu_->disable_speaker(true);
@@ -177,7 +181,7 @@ void ScreenRecorder::setup()
 
     std::string                        name{};
     std::map<std::string, std::string> options{
-        { "framerate", std::to_string(framerate_.num) },
+        { "framerate", av::to_string(framerate_) },
         { "video_size", fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2) },
         { "draw_mouse", std::to_string(static_cast<int>(draw_mouse)) },
     };
@@ -277,9 +281,9 @@ void ScreenRecorder::setup()
     encoder_->vfmt.pix_fmt        = pix_fmt_;
     encoder_->vfmt.framerate      = framerate_;
     encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
-    encoder_->afmt.channels       = 2;
-    encoder_->afmt.channel_layout = AV_CH_LAYOUT_STEREO;
-    encoder_->afmt.sample_rate    = 48000;
+    encoder_->afmt.channels       = config::recording::video::a::channels;
+    encoder_->afmt.channel_layout = av_get_default_channel_layout(encoder_->afmt.channels);
+    encoder_->afmt.sample_rate    = config::recording::video::a::sample_rate;
     encoder_->vfmt.hwaccel        = hwaccel;
 
     // outputs
@@ -295,9 +299,9 @@ void ScreenRecorder::setup()
         return;
     }
 
-    encoder_options_[quality_name] = config::recording::video::v::crf;
+    encoder_options_[quality_name] = std::to_string(config::recording::video::v::crf);
     encoder_options_["vcodec"]     = codec_name_;
-    encoder_options_["acodec"]     = "aac";
+    encoder_options_["acodec"]     = config::recording::video::a::codec;
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";

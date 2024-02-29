@@ -1,8 +1,10 @@
-#include "window-effect-windows.h"
+#include "window-effect.h"
 
 #if _WIN32
 
 #include <probe/system.h>
+#include <QWidget>
+#include <Winuser.h>
 
 namespace windows::dwm
 {
@@ -14,7 +16,8 @@ namespace windows::dwm
 
     HRESULT set_window_corner(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE corner)
     {
-        return ::DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof(DWMWINDOWATTRIBUTE));
+        return ::DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner,
+                                       sizeof(DWMWINDOWATTRIBUTE));
     }
 
     HRESULT blur_behind(HWND hwnd, BOOL en)
@@ -119,5 +122,13 @@ namespace windows::dwm
         return ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
     }
 }; // namespace windows::dwm
+
+void TransparentInput(const QWidget *win, const bool en)
+{
+    const auto hwnd = static_cast<HWND>(win->winId());
+    ::SetWindowLong(hwnd, GWL_EXSTYLE,
+                    en ? GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT
+                       : GetWindowLong(hwnd, GWL_EXSTYLE) & (~WS_EX_TRANSPARENT));
+}
 
 #endif

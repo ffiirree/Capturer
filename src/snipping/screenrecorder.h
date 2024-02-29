@@ -7,8 +7,7 @@
 #include "menu/recording-menu.h"
 #include "selector.h"
 
-#include <QSystemTrayIcon>
-#include <QTimer>
+class QTimer;
 
 class ScreenRecorder final : public QWidget
 {
@@ -50,7 +49,6 @@ private:
     // parameters
     AVPixelFormat                      pix_fmt_{ AV_PIX_FMT_YUV420P };
     std::string                        codec_name_{ "libx264" };
-    std::string                        quality_{ "medium" };
     AVRational                         framerate_{ 30, 1 };
     std::string                        filters_{};
     std::map<std::string, std::string> encoder_options_{};
@@ -68,9 +66,11 @@ private:
     std::unique_ptr<Producer<av::frame>> mic_src_{};
     std::unique_ptr<Producer<av::frame>> speaker_src_{};
 
-    // encoder
+    // dispatcher
+    std::unique_ptr<Dispatcher> dispatcher_{};
+
+    // sink
     std::unique_ptr<Consumer<av::frame>> encoder_{};
-    std::unique_ptr<Dispatcher>          dispatcher_{};
 
     // timer for displaying time on recording menu
     QTimer *timer_{ nullptr };

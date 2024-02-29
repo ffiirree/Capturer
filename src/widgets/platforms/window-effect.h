@@ -1,5 +1,5 @@
-#ifndef CAPTURER_WINDOW_EFFECT_WINDOWS_H
-#define CAPTURER_WINDOW_EFFECT_WINDOWS_H
+#ifndef CAPTURER_WINDOW_EFFECT_H
+#define CAPTURER_WINDOW_EFFECT_H
 
 #if _WIN32
 
@@ -104,6 +104,17 @@ namespace windows::dwm
     HRESULT update_theme(HWND hwnd, BOOL dark = FALSE);
 }; // namespace windows::dwm
 
+#elif __linux__
+
+namespace x11
+{
+
+} // namespace x11
+
 #endif
 
-#endif //! CAPTURER_WINDOW_EFFECT_WINDOWS_H
+class QWidget;
+
+void TransparentInput(const QWidget *win, bool en);
+
+#endif //! CAPTURER_WINDOW_EFFECT_H

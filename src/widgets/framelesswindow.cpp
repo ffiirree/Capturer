@@ -110,6 +110,7 @@ void FramelessWindow::updateCursor(Qt::Edges edges)
     }
 }
 
+// FIXME:
 bool FramelessWindow::event(QEvent *event)
 {
     switch (event->type()) {

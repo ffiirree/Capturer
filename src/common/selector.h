@@ -87,7 +87,7 @@ public:
     void select(const QRect& rect);
 
 public slots:
-    virtual void start(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
+    virtual void start(probe::graphics::window_filter_t);
 
     void status(SelectorStatus);
 
