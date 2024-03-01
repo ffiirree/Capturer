@@ -36,6 +36,12 @@ private:
     size_t       frame_number_{};
 
 private:
+    int             v4l2_start_capture();
+    int             video_decode(const av::packet& pkt);
+    AVCodecContext *vcodec_ctx_{};
+    av::frame       frame_{};
+
+private:
     struct v4l2_buffer_mapping
     {
         size_t size{};

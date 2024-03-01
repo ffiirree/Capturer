@@ -7,8 +7,10 @@
 
 #include <fmt/chrono.h>
 #include <libv4l2.h>
+#include <probe/defer.h>
 extern "C" {
 #include <fcntl.h>
+#include <libavutil/imgutils.h>
 #include <linux/videodev2.h>
 #include <sys/mman.h>
 #include <sys/select.h>
@@ -27,8 +29,6 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
         LOG(ERROR) << "[       V4L2] unable to get input : " << input_;
         return -1;
     }
-
-    LOG(INFO) << "[       V4L2] Input : " << input_;
 
     v4l2_input in{};
     in.index = input_;
@@ -121,19 +121,59 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     }
 
     // decoder
-    if (codec_id != AV_CODEC_ID_RAWVIDEO) {}
-
-    ready_ = true;
-    return 0;
-}
-
-int V4l2Capturer::start()
-{
-    if (!ready_ || running_) {
-        LOG(ERROR) << "[       V4L2] not ready or already running";
+    auto codec = avcodec_find_decoder(codec_id);
+    if (vcodec_ctx_ = avcodec_alloc_context3(codec); !vcodec_ctx_) {
+        LOG(ERROR) << "[       V4L2] failed to alloc decoder context";
         return -1;
     }
 
+    vcodec_ctx_->codec_type  = AVMEDIA_TYPE_VIDEO;
+    vcodec_ctx_->codec_id    = codec_id;
+    vcodec_ctx_->pix_fmt     = vfmt.pix_fmt;
+    vcodec_ctx_->width       = vfmt.width;
+    vcodec_ctx_->height      = vfmt.height;
+    vcodec_ctx_->flags2     |= AV_CODEC_FLAG2_FAST;
+    if (vfmt.pix_fmt != AV_PIX_FMT_NONE)
+        vcodec_ctx_->frame_size = av_image_get_buffer_size(vfmt.pix_fmt, vfmt.width, vfmt.height, 1);
+
+    if (codec_id == AV_CODEC_ID_RAWVIDEO) {
+        vcodec_ctx_->codec_tag = avcodec_pix_fmt_to_codec_tag(vfmt.pix_fmt);
+    }
+
+    if (avcodec_open2(vcodec_ctx_, codec, nullptr) < 0) {
+        LOG(ERROR) << "[       V4L2] can not open the decoder";
+        return -1;
+    }
+
+    ready_ = true;
+
+    // probe pixel format
+    if (codec_id != AV_CODEC_ID_NONE && vcodec_ctx_->pix_fmt == AV_PIX_FMT_NONE) {
+        onarrived = [this](const av::frame& frame, auto) {
+            vfmt.pix_fmt = static_cast<AVPixelFormat>(frame->format);
+        };
+
+        start();
+        for (int i = 0; i < 100 && vfmt.pix_fmt == AV_PIX_FMT_NONE; ++i) {
+            std::this_thread::sleep_for(25ms);
+        }
+        stop();
+        onarrived = [](auto, auto) {};
+
+        if (vfmt.pix_fmt == AV_PIX_FMT_NONE) {
+            ready_ = false;
+            LOG(ERROR) << "[       V4L2] failed to probe the pixel format";
+            return -1;
+        }
+    }
+
+    DLOG(INFO) << fmt::format("[       V4L2] {}, {}", avcodec_get_name(codec_id), av::to_string(vfmt));
+
+    return 0;
+}
+
+int V4l2Capturer::v4l2_start_capture()
+{
     v4l2_buffer qbuf{};
     qbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     qbuf.memory = V4L2_MEMORY_MMAP;
@@ -151,14 +191,26 @@ int V4l2Capturer::start()
         return -1;
     }
 
+    return 0;
+}
+
+int V4l2Capturer::start()
+{
+    if (!ready_ || running_) {
+        LOG(ERROR) << "[       V4L2] not ready or already running";
+        return -1;
+    }
+
+    if (v4l2_start_capture() < 0) return -1;
+
     running_ = true;
     thread_  = std::jthread([this] {
         probe::thread::set_name("V4L2-" + name_);
 
         fd_set      fds{};
         timeval     tv{};
-        v4l2_buffer buffer{};
-        av::frame   frame{};
+        v4l2_buffer buf{};
+        av::packet  pkt{};
 
         while (running_) {
             FD_ZERO(&fds);
@@ -182,46 +234,53 @@ int V4l2Capturer::start()
                 continue;
             }
 
-            buffer.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            buffer.memory = V4L2_MEMORY_MMAP;
-
-            if (::v4l2_ioctl(fd_, VIDIOC_DQBUF, &buffer) < 0) {
+            // dequeue
+            buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            buf.memory = V4L2_MEMORY_MMAP;
+            if (::v4l2_ioctl(fd_, VIDIOC_DQBUF, &buf) < 0) {
                 if (errno == EAGAIN) {
                     continue;
                 }
                 LOG(ERROR) << name_ << ": failed to dequeue buffer";
                 running_ = false;
+                continue;
             }
+            defer(::v4l2_ioctl(fd_, VIDIOC_QBUF, &buf));
 
-            // output
-            frame.unref();
-            frame->width  = vfmt.width;
-            frame->height = vfmt.height;
-            frame->format = vfmt.pix_fmt;
-            frame->pts    = av::clock::ns().count();
-            const auto x  = av_frame_get_buffer(frame.get(), 0);
-
-            void *ptr = buf_mappings_[buffer.index].data;
-            for (int i = 0; i < AV_NUM_DATA_POINTERS; ++i) {
-                for (int j = 0; j < frame->height; ++j) {
-                    std::memcpy(frame->data[i] + j * frame->linesize[i], ptr + j * frame->linesize[i],
-                                 frame->linesize[i]);
-                }
-            }
-
-            DLOG(INFO) << fmt::format(
-                "[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}, ts={:.3%T}", frame_number_++,
-                frame->pts, frame->width, frame->height, std::chrono::nanoseconds{ frame->pts });
-
-            onarrived(frame, AVMEDIA_TYPE_VIDEO);
-
-            if (::v4l2_ioctl(fd_, VIDIOC_QBUF, &buffer) < 0) {
-                LOG(ERROR) << name_ << ": failed to dequeue buffer";
+            //
+            if (av_new_packet(pkt.put(), static_cast<int>(buf.bytesused)) < 0) {
+                LOG(ERROR) << name_ << ": failed to allocate packet";
                 running_ = false;
+                continue;
             }
+
+            std::memcpy(pkt->data, buf_mappings_[buf.index].data, buf.bytesused);
+            pkt->pts = av::clock::ns().count();
+
+            video_decode(pkt);
         }
     });
     return 0;
+}
+
+int V4l2Capturer::video_decode(const av::packet& pkt)
+{
+    auto ret = avcodec_send_packet(vcodec_ctx_, pkt.get());
+    while (ret >= 0) {
+        ret = avcodec_receive_frame(vcodec_ctx_, frame_.put());
+        if (ret == AVERROR(EAGAIN)) {
+            break;
+        }
+        else if (ret < 0) {
+            running_ = false;
+            LOG(ERROR) << "[V] DECODING ERROR, ABORTING";
+            break;
+        }
+
+        onarrived(frame_, AVMEDIA_TYPE_VIDEO);
+    }
+
+    return ret;
 }
 
 bool V4l2Capturer::has(const AVMediaType type) const { return type == AVMEDIA_TYPE_VIDEO; }
@@ -229,7 +288,6 @@ bool V4l2Capturer::has(const AVMediaType type) const { return type == AVMEDIA_TY
 void V4l2Capturer::stop()
 {
     running_ = false;
-    ready_   = false;
 
     constexpr v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (::v4l2_ioctl(fd_, VIDIOC_STREAMOFF, &type) < 0) {
@@ -241,6 +299,8 @@ void V4l2Capturer::stop()
 
 V4l2Capturer::~V4l2Capturer()
 {
+    ready_ = false;
+
     stop();
 
     for (const auto& [size, data] : buf_mappings_) {
@@ -249,7 +309,9 @@ V4l2Capturer::~V4l2Capturer()
         }
     }
 
-    if (fd_ != -1) v4l2_close(fd_);
+    avcodec_free_context(&vcodec_ctx_);
+
+    if (fd_ != -1) ::v4l2_close(fd_);
 }
 
 #endif

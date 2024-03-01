@@ -76,7 +76,7 @@ private:
     QScopedPointer<ScreenShoter>   sniper_{};
     QScopedPointer<ScreenRecorder> recorder_{};
     QScopedPointer<ScreenRecorder> gifcptr_{};
-    QScopedPointer<VideoPlayer>    camera_{};
+    QPointer<VideoPlayer>          camera_{};
 
     std::list<QPointer<FramelessWindow>> previews_{};
 };

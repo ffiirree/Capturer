@@ -164,12 +164,12 @@ void Capturer::ToggleCamera()
 {
     // close
     if (camera_) {
-        camera_.reset();
+        camera_->close();
         return;
     }
 
     // open
-    camera_.reset(new VideoPlayer());
+    camera_ = new VideoPlayer();
 
     if (av::cameras().empty()) {
         LOG(WARNING) << "camera not found";
@@ -178,9 +178,9 @@ void Capturer::ToggleCamera()
 
     auto& name = config::devices::camera;
 #ifdef _WIN32
-    if (!camera_->open("video=" + name, { { "format", "dshow" }, { "filters", "hflip" } })) {
+    if (camera_->open("video=" + name, { { "format", "dshow" }, { "filters", "hflip" } }) < 0) {
 #elif __linux__
-    if (!camera_->open(name, { { "format", "v4l2" }, { "filters", "hflip" } })) {
+    if (camera_->open(name, { { "format", "v4l2" }, { "filters", "hflip" } }) < 0) {
 #endif
         LOG(ERROR) << "failed to open camera";
     }
