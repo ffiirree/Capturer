@@ -13,7 +13,7 @@ endif ()
 # #######################################################################################################################
 # dependencies
 # #######################################################################################################################
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/3rdparty/cmake-modules")
 
 # 3rdparty: QHotkey glog
 set(BUILD_SHARED_LIBS   OFF CACHE BOOL "Build static libraries")

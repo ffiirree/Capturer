@@ -21,7 +21,7 @@ struct DispatchContext
     std::unordered_map<Producer<av::frame> *, AVFilterContext *> srcs{};
     AVFilterContext                                             *sink{};
 
-    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 60 };
+    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 120 };
 
     AVFilterGraph    *graph{};
     AVHWDeviceType    hwaccel{ AV_HWDEVICE_TYPE_NONE };

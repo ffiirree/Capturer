@@ -114,7 +114,7 @@ private:
     std::atomic<bool> audio_enabled_{};
 
     safe_queue<av::frame> vbuffer_{ 4 };
-    safe_queue<av::frame> abuffer_{ 16 };
+    safe_queue<av::frame> abuffer_{ 4 };
     sonic_stream         *sonic_stream_{}; // audio speed up / down
 
     std::atomic<bool> seeking_{};

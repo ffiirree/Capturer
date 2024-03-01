@@ -15,10 +15,9 @@ elseif(UNIX AND NOT APPLE)
     find_package(Libv4l2 REQUIRED)
 endif()
 
-file(GLOB_RECURSE LIBCAP_HEADERS include/libcap/*.h)
 file(GLOB_RECURSE LIBCAP_SOURCES *.cpp)
 
-add_library(libcap ${LIBCAP_SOURCES} ${LIBCAP_HEADERS})
+add_library(libcap ${LIBCAP_SOURCES})
 add_library(libcap::libcap ALIAS libcap)
 
 target_compile_options(libcap

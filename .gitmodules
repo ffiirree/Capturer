@@ -13,3 +13,6 @@
 [submodule "3rdparty/json"]
 	path = 3rdparty/json
 	url = https://github.com/nlohmann/json.git
+[submodule "3rdparty/cmake-modules"]
+	path = 3rdparty/cmake-modules
+	url = https://github.com/ffiirree/cmake-modules.git

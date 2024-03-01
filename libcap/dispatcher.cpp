@@ -100,8 +100,8 @@ int Dispatcher::add_input(Producer<av::frame> *producer)
     producer->onarrived = [=, this](const av::frame& frame, auto type) {
         std::unique_lock lock(notenough_mtx_);
         notenough_.wait(lock, [this] {
-            return (actx_.enabled && (actx_.queue.stopped() || actx_.queue.size() < 16)) ||
-                   (vctx_.enabled && (vctx_.queue.stopped() || vctx_.queue.size() < 4));
+            return (actx_.enabled && (actx_.queue.stopped() || actx_.queue.size() < 2)) ||
+                   (vctx_.enabled && (vctx_.queue.stopped() || vctx_.queue.size() < 2));
         });
 
         switch (type) {
