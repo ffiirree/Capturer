@@ -40,12 +40,16 @@ sudo apt install -f
 
 ## 快捷键
 
-|       Keys       | Actions                             |
-| :--------------: | ----------------------------------- |
-|       `F1`       | 截图                                |
-|       `F3`       | 贴图， 将剪切板中的内容贴在桌面上   |
-| `Ctrl + Alt + V` | 录制视频，选择区域，`Enter`开始录制 |
-| `Ctrl + Alt + G` | 录制GIF，选择区域，`Enter`开始录制  |
+> 可自定义
+
+|       Keys       | Actions                                       |
+| :--------------: | --------------------------------------------- |
+|       `F1`       | 截图                                          |
+|       `F3`       | 预览剪切板内容并置顶在桌面上                  |
+|    `Shift+F3`    | 显示/隐藏所有预览窗口                         |
+|       `F2`       | 快速预览文件资源管理器中选中的项目(仅Windows) |
+| `Ctrl + Alt + V` | 录制视频，选择区域，`Enter`开始录制           |
+| `Ctrl + Alt + G` | 录制GIF，选择区域，`Enter`开始录制            |
 
 > 文件保存在系统默认的图片/视频文件夹中
 
@@ -168,7 +172,7 @@ sudo apt install build-essential cmake
 # ffmpeg: video / audio
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
-# Ubuntu 18.04 / 20.04 
+# Ubuntu 20.04 
 sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 # Ubuntu 22.04
 sudo apt install qtbase5-dev libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
@@ -185,10 +189,11 @@ sudo apt install libv4l-dev v4l-utils
 sudo apt install libxrandr-dev
 ```
 
+> 若CMake 版本过低，请先安装更高版本的CMake(>=3.21), 参见下一小节
+
 ```bash
 cd Capturer && mkdir build && cd build
 
-# Ubuntu 18.4 上的 CMake 版本过低，请先安装更高版本的CMake(>=3.16), 参见下一小节
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j8
 
@@ -198,9 +203,7 @@ make package
 
 ### Install CMake from Source
 
-> 如果你的CMake版本过低，从源代码安装CMake
->
-> 以CMake 3.26.1 为例
+以CMake 3.26.1 为例
 
 ```bash
 wget https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1.tar.gz
