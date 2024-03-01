@@ -25,7 +25,9 @@
 using AudioOutput = WasapiRenderer;
 #elif __linux__
 #include "libcap/linux-pulse/pulse-renderer.h"
+#include "libcap/linux-v4l2/v4l2-capturer.h"
 using AudioOutput = PulseAudioRenderer;
+using CameraInput = V4l2Capturer;
 #endif
 
 VideoPlayer::VideoPlayer(QWidget *parent)
@@ -56,7 +58,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     stacked_layout->addWidget(control_);
 
     // decoding
-    decoder_        = std::make_unique<Decoder>();
+    source_         = std::make_unique<Decoder>();
     // filter graph
     dispatcher_     = std::make_unique<Dispatcher>();
     // audio sink
@@ -102,6 +104,9 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
         if (options.at("format") == "dshow" || options.at("format") == "v4l2") {
             is_live_ = true;
             control_->setPlaybackMode(PlaybackMode::LIVE);
+#ifdef __linux__
+            source_ = std::make_unique<V4l2Capturer>();
+#endif
         }
     }
 
@@ -115,13 +120,13 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
 #endif
 
     // video decoder
-    if (decoder_->open(filename, decoder_options) != 0) {
-        decoder_ = std::make_unique<Decoder>();
+    if (source_->open(filename, decoder_options) != 0) {
+        source_ = std::make_unique<Decoder>();
         LOG(ERROR) << "[    PLAYER] failed to open video decoder";
         return -1;
     }
 
-    control_->setDuration(av::clock::us(decoder_->duration()).count());
+    control_->setDuration(av::clock::us(source_->duration()).count());
 
     // audio renderer
     if (const auto default_asink = av::default_audio_sink();
@@ -143,11 +148,11 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     }
 
     // sink video format
-    vfmt.pix_fmt = texture_->isSupported(decoder_->vfmt.pix_fmt) ? decoder_->vfmt.pix_fmt
-                                                                 : TextureGLWidget::pix_fmts()[0];
+    vfmt.pix_fmt = texture_->isSupported(source_->vfmt.pix_fmt) ? source_->vfmt.pix_fmt
+                                                                : TextureGLWidget::pix_fmts()[0];
 
     // dispatcher
-    dispatcher_->add_input(decoder_.get());
+    dispatcher_->add_input(source_.get());
     dispatcher_->set_output(this);
     if (dispatcher_->initialize((options.contains("filters") ? options.at("filters") : ""), "")) {
         LOG(ERROR) << "[    PLAYER] failed to create filter graph";
@@ -588,7 +593,7 @@ void VideoPlayer::initContextMenu()
 void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
 {
     asmenu_->clear();
-    for (auto& p : decoder_->properties(AVMEDIA_TYPE_AUDIO)) {
+    for (auto& p : source_->properties(AVMEDIA_TYPE_AUDIO)) {
         std::vector<std::string> title{};
         std::vector<std::string> attrs{};
 
@@ -606,7 +611,7 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
     }
 
     ssmenu_->clear();
-    for (auto& p : decoder_->properties(AVMEDIA_TYPE_SUBTITLE)) {
+    for (auto& p : source_->properties(AVMEDIA_TYPE_SUBTITLE)) {
         std::vector<std::string> title{};
         std::vector<std::string> attrs{};
 
@@ -624,12 +629,12 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
 
 void VideoPlayer::showProperties()
 {
-    assert(decoder_);
+    assert(source_);
 
-    auto fp = decoder_->properties(AVMEDIA_TYPE_UNKNOWN);
-    auto vp = decoder_->properties(AVMEDIA_TYPE_VIDEO);
-    auto ap = decoder_->properties(AVMEDIA_TYPE_AUDIO);
-    auto sp = decoder_->properties(AVMEDIA_TYPE_SUBTITLE);
+    auto fp = source_->properties(AVMEDIA_TYPE_UNKNOWN);
+    auto vp = source_->properties(AVMEDIA_TYPE_VIDEO);
+    auto ap = source_->properties(AVMEDIA_TYPE_AUDIO);
+    auto sp = source_->properties(AVMEDIA_TYPE_SUBTITLE);
 
     const auto win = new QWidget(this, Qt::Dialog);
     win->setMinimumSize(600, 800);

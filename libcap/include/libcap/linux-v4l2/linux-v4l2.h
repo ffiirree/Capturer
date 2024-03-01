@@ -1,36 +1,58 @@
 #ifndef CAPTURER_LINUX_V4L2_H
 #define CAPTURER_LINUX_V4L2_H
+#include <map>
 
 #ifdef __linux__
 
 #include "libcap/devices.h"
 
-#include <fmt/format.h>
-#include <linux/videodev2.h>
-#include <string>
 #include <vector>
+
+extern "C" {
+#include <libavcodec/codec_id.h>
+#include <libavutil/pixfmt.h>
+#include <linux/videodev2.h>
+}
 
 namespace v4l2
 {
     std::vector<av::device_t> device_list();
 
-    // open a v4l2 device by id, like /dev/vidoe0
-    int open(const std::string& id);
+    std::pair<AVCodecID, AVPixelFormat> to_ffmpeg_format(uint32_t);
 
-    // close a v4l2 device
-    void close(int dev);
+    namespace properties
+    {
+        std::vector<v4l2_input> inputs(int fd);
 
-    void input_list(int dev);
+        std::vector<v4l2_standard> standards(int fd);
 
-    void format_list(int dev);
+        std::vector<v4l2_fmtdesc> formats(int fd);
 
-    void standard_list(int dev);
+        std::vector<v4l2_frmsizeenum> resolutions(int fd, uint32_t pix_fmt);
 
-    void resolution_list(int dev, uint32_t pix_fmt);
+        std::vector<v4l2_frmivalenum> framerates(int fd, uint32_t pix_fmt, uint32_t w, uint32_t h);
+    } // namespace properties
 
-    void framerate_list(int dev, uint32_t pix_fmt, uint32_t w, uint32_t h);
+    namespace ctrl
+    {
+        struct control
+        {
+            uint32_t                       id{};
+            uint32_t                       type{};
+            std::string                    name{};
+            int32_t                        minimum{};
+            int32_t                        maximum{};
+            int32_t                        value{};
+            int32_t                        default_value{};
+            std::map<int32_t, std::string> options{};
+        };
 
-    void controls(uint32_t dev);
+        std::vector<control> controls(int fd);
+
+        std::optional<int32_t> get(int fd, uint32_t id);
+        int                    set(int fd, uint32_t id, int32_t value);
+    } // namespace ctrl
+
 } // namespace v4l2
 
 #endif //! __linux__

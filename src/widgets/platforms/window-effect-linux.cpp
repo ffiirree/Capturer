@@ -6,7 +6,7 @@
 #include <QWidget>
 #include <X11/extensions/shape.h>
 
-void TransparentInput(const QWidget *win, const bool en)
+void TransparentInput(QWidget *win, const bool en)
 {
     if (en) {
         ::XShapeCombineRectangles(QX11Info::display(), win->winId(), ShapeInput, 0, 0, nullptr, 0, ShapeSet,
@@ -14,6 +14,7 @@ void TransparentInput(const QWidget *win, const bool en)
         return;
     }
 
+    // FIXME: not working after window resizing
     XRectangle rect{
         .x      = 0,
         .y      = 0,
@@ -23,6 +24,8 @@ void TransparentInput(const QWidget *win, const bool en)
 
     ::XShapeCombineRectangles(QX11Info::display(), win->winId(), ShapeInput, 0, 0, &rect, 1, ShapeSet,
                               YXBanded);
+
+    win->activateWindow();
 }
 
 #endif

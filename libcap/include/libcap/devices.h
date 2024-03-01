@@ -82,7 +82,7 @@ namespace av
         return str;
     }
 
-    inline std::string to_string(device_format_t fmt)
+    inline std::string to_string(const device_format_t fmt)
     {
         switch (fmt) {
         case device_format_t::v4l2:    return "v4l2";

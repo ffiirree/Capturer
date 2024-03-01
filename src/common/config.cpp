@@ -12,7 +12,7 @@
 #include <QTextStream>
 
 #define JSON_GET(V, J, KEY)                                                                                \
-    if (J.contains(KEY)) V = J[KEY].get<decltype(V)>();
+    if ((J).contains(KEY)) V = (J)[KEY].get<decltype(V)>();
 
 namespace config
 {
@@ -182,23 +182,21 @@ namespace config
         catch (json::parse_error&) {
         }
 
-        if (config::snip::path.isEmpty())
-            config::snip::path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+        if (snip::path.isEmpty())
+            snip::path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
-        if (config::recording::video::path.isEmpty())
-            config::recording::video::path =
-                QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+        if (recording::video::path.isEmpty())
+            recording::video::path = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
 
-        if (config::recording::gif::path.isEmpty())
-            config::recording::gif::path =
-                QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+        if (recording::gif::path.isEmpty())
+            recording::gif::path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
         // cameras
-        if (!av::cameras().empty()) {
+        if (const auto& cameras = av::cameras(); !cameras.empty()) {
 #ifdef _WIN32
-            config::devices::camera = av::cameras()[0].name;
+            devices::camera = cameras[0].name;
 #else
-            config::devices::camera = av::cameras()[0].id;
+            devices::camera = cameras[0].id;
 #endif
         }
     }
@@ -307,9 +305,9 @@ namespace config
         run.setValue("capturer_run",
                      state ? QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) : "");
 #elif __linux__
-        std::string desktop_file = "/usr/share/applications/capturer.desktop";
-        std::string autorun_dir  = std::string{ ::getenv("HOME") } + "/.config/autostart";
-        std::string autorun_file = autorun_dir + "/capturer.desktop";
+        const std::string desktop_file = "/usr/share/applications/capturer.desktop";
+        const std::string autorun_dir  = std::string{ ::getenv("HOME") } + "/.config/autostart";
+        const std::string autorun_file = autorun_dir + "/capturer.desktop";
 
         if (!std::filesystem::exists(desktop_file)) {
             LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";

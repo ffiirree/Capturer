@@ -24,6 +24,7 @@ using AudioCapturer   = WasapiCapturer;
 
 #elif __linux__
 
+#include "libcap/decoder.h"
 #include "libcap/linux-pulse/pulse-capturer.h"
 
 using DesktopCapturer = Decoder;

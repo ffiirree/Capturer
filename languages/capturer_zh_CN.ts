@@ -99,11 +99,11 @@
     </message>
     <message>
         <source>Zoom : </source>
-        <translation>缩放 ：</translation>
+        <translation>缩放 :</translation>
     </message>
     <message>
         <source>Opacity : </source>
-        <translation>透明度 ：</translation>
+        <translation>透明度 :</translation>
     </message>
     <message>
         <source>Recover</source>
@@ -115,7 +115,7 @@
     </message>
     <message>
         <source>Transparent Input</source>
-        <translation type="unfinished"></translation>
+        <translation>输入穿透</translation>
     </message>
 </context>
 <context>

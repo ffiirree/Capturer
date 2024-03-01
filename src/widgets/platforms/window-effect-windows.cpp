@@ -123,7 +123,7 @@ namespace windows::dwm
     }
 }; // namespace windows::dwm
 
-void TransparentInput(const QWidget *win, const bool en)
+void TransparentInput(QWidget *win, const bool en)
 {
     const auto hwnd = reinterpret_cast<HWND>(win->winId());
     ::SetWindowLong(hwnd, GWL_EXSTYLE,

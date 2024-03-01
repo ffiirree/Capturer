@@ -1,7 +1,8 @@
 #ifndef CAPTURER_PULSE_CAPTURER_H
 #define CAPTURER_PULSE_CAPTURER_H
 
-#include "libcap/decoder.h"
+#include "libcap/ffmpeg-wrapper.h"
+#include "libcap/producer.h"
 #include "libcap/queue.h"
 
 extern "C" {

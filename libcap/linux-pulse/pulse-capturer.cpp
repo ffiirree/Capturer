@@ -3,6 +3,7 @@
 #include "libcap/linux-pulse/pulse-capturer.h"
 
 #include "libcap/linux-pulse/linux-pulse.h"
+#include "logging.h"
 
 #include <fmt/format.h>
 #include <probe/defer.h>

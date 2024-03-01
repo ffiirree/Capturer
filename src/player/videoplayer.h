@@ -106,9 +106,9 @@ private:
     // video & audio
     std::jthread video_thread_{};
 
-    std::unique_ptr<Decoder>       decoder_{};
-    std::unique_ptr<AudioRenderer> audio_renderer_{};
-    std::unique_ptr<Dispatcher>    dispatcher_{};
+    std::unique_ptr<Producer<av::frame>> source_{};
+    std::unique_ptr<AudioRenderer>       audio_renderer_{};
+    std::unique_ptr<Dispatcher>          dispatcher_{};
 
     std::atomic<bool> video_enabled_{};
     std::atomic<bool> audio_enabled_{};

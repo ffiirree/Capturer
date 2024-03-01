@@ -51,9 +51,9 @@ int main(int argc, char *argv[])
 #else
     translator.load("translations/capturer_" + config::language);
 #endif
-    app.installTranslator(&translator);
+    Capturer::installTranslator(&translator);
 
     app.Init();
 
-    return app.exec();
+    return Capturer::exec();
 }

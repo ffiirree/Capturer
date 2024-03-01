@@ -115,6 +115,6 @@ namespace x11
 
 class QWidget;
 
-void TransparentInput(const QWidget *win, bool en);
+void TransparentInput(QWidget *win, bool en);
 
 #endif //! CAPTURER_WINDOW_EFFECT_H

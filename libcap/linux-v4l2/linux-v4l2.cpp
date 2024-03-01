@@ -5,53 +5,71 @@
 #include "logging.h"
 #include "probe/defer.h"
 
+#include <fmt/format.h>
+#include <libv4l2.h>
+extern "C" {
 #include <dirent.h>
 #include <fcntl.h>
-#include <libv4l2.h>
+#include <linux/videodev2.h>
+}
 
 namespace v4l2
 {
     std::vector<av::device_t> device_list()
     {
-        std::vector<av::device_t> list;
+        std::vector<av::device_t> list{};
 
-        DIR *v4l2_dir = ::opendir("/sys/class/video4linux");
+#ifdef __FreeBSD__
+        constexpr auto dir = "/dev";
+#else
+        constexpr auto dir = "/sys/class/video4linux";
+#endif
+        DIR *v4l2_dir = ::opendir(dir);
+
         if (nullptr == v4l2_dir) {
-            LOG(ERROR) << "failed to open '/sys/class/video4linux'";
+            LOG(ERROR) << "[       V4L2] failed to open dir '" << dir << "'";
             return {};
         }
         defer(::closedir(v4l2_dir));
 
-        struct dirent *next_dir_entry = nullptr;
-        while ((next_dir_entry = ::readdir(v4l2_dir)) != nullptr) {
-            if (next_dir_entry->d_type == DT_DIR) {
-                continue;
-            }
+        dirent *dentry = nullptr;
+        while ((dentry = ::readdir(v4l2_dir)) != nullptr) {
+#ifdef __FreeBSD__
+            if (::strstr(dentry->d_name, "video") == nullptr) continue;
+#endif
 
-            std::string device_id = "/dev/" + std::string(next_dir_entry->d_name);
+            if (dentry->d_type == DT_DIR) continue;
+
+            std::string device_id = "/dev/" + std::string(dentry->d_name);
+            DLOG(INFO) << "[       V4L2] check " << device_id;
 
             int fd = -1;
             if ((fd = ::v4l2_open(device_id.c_str(), O_RDWR /* required */ | O_NONBLOCK)) == -1) {
-                LOG(INFO) << "Cannot open " << device_id;
+                DLOG(INFO) << "[       V4L2] cannot open camera " << device_id;
                 continue;
             }
             defer(::v4l2_close(fd));
 
             v4l2_capability v4l2_cap{};
             if (::v4l2_ioctl(fd, VIDIOC_QUERYCAP, &v4l2_cap) == -1) {
-                LOG(INFO) << "Failed to query capabilities for " << device_id;
+                DLOG(INFO) << "[       V4L2] failed to query capabilities for " << device_id;
                 continue;
             }
+#ifndef V4L2_CAP_DEVICE_CAPS
+            const auto caps = v4l2_cap.capabilities;
+#else
+            const auto caps = (v4l2_cap.capabilities & V4L2_CAP_DEVICE_CAPS) ? v4l2_cap.device_caps
+                                                                             : v4l2_cap.capabilities;
+#endif
 
-            auto caps = (v4l2_cap.capabilities & V4L2_CAP_DEVICE_CAPS) ? v4l2_cap.device_caps
-                                                                       : v4l2_cap.capabilities;
             if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
-                DLOG(INFO) << device_id << " seems to not support video capture";
+                DLOG(INFO) << "[       V4L2] " << device_id << " seems to not support video capture";
                 continue;
             }
 
-            DLOG(INFO) << fmt::format("Found device '{}' at {}",
-                                      reinterpret_cast<const char *>(v4l2_cap.card), device_id);
+            DLOG(INFO) << fmt::format("[       V4L2] found device '{} - {}' at {}",
+                                      reinterpret_cast<const char *>(v4l2_cap.card),
+                                      reinterpret_cast<const char *>(v4l2_cap.bus_info), device_id);
 
             list.push_back(av::device_t{
                 .name   = reinterpret_cast<char *>(v4l2_cap.card),
@@ -65,133 +83,261 @@ namespace v4l2
         return list;
     }
 
-    int open(const std::string& id) { return ::v4l2_open(id.c_str(), O_RDWR /* required */ | O_NONBLOCK); }
-
-    void close(int dev) { ::v4l2_close(dev); }
-
-    void input_list(int device)
+    std::pair<AVCodecID, AVPixelFormat> to_ffmpeg_format(const uint32_t fmt)
     {
-        v4l2_input input{};
-        while (v4l2_ioctl(device, VIDIOC_ENUMINPUT, &input) == 0) {
-            LOG(INFO) << fmt::format("fd {}: found input '{}' (Index {})", device,
-                                     reinterpret_cast<const char *>(input.name), input.index);
-            input.index++;
+        switch (fmt) {
+        case V4L2_PIX_FMT_RGB555:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB555LE };
+        case V4L2_PIX_FMT_RGB565:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB565LE };
+        case V4L2_PIX_FMT_RGB555X: return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB555BE };
+        case V4L2_PIX_FMT_RGB565X: return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB565BE };
+        case V4L2_PIX_FMT_BGR24:   return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BGR24 };
+        case V4L2_PIX_FMT_RGB24:   return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB24 };
+        case V4L2_PIX_FMT_ABGR32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BGRA };
+        case V4L2_PIX_FMT_BGRA32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_ABGR };
+        case V4L2_PIX_FMT_ARGB32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_ARGB };
+        case V4L2_PIX_FMT_RGBA32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGBA };
+        case V4L2_PIX_FMT_BGR32:   return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BGR0 };
+        case V4L2_PIX_FMT_RGB32:   return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_0RGB };
+        case V4L2_PIX_FMT_XBGR32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BGR0 };
+        case V4L2_PIX_FMT_BGRX32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_0BGR };
+        case V4L2_PIX_FMT_XRGB32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_0RGB };
+        case V4L2_PIX_FMT_RGBX32:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_RGB0 };
+        case V4L2_PIX_FMT_GREY:    return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_GRAY8 };
+        case V4L2_PIX_FMT_Y16:     return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_GRAY16LE };
+        case V4L2_PIX_FMT_Y16_BE:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_GRAY16BE };
+        case V4L2_PIX_FMT_PAL8:    return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_PAL8 };
+        case V4L2_PIX_FMT_YUYV:    return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_YUYV422 };
+        case V4L2_PIX_FMT_UYVY:    return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_UYVY422 };
+        case V4L2_PIX_FMT_NV12:    return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_NV12 };
+        case V4L2_PIX_FMT_YUV410:
+        case V4L2_PIX_FMT_YVU410:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_YUV410P };
+        case V4L2_PIX_FMT_YUV411P: return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_YUV411P };
+        case V4L2_PIX_FMT_YUV420:
+        case V4L2_PIX_FMT_YVU420:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_YUV420P };
+        case V4L2_PIX_FMT_YUV422P: return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_YUV422P };
+        case V4L2_PIX_FMT_SBGGR8:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BAYER_BGGR8 };
+        case V4L2_PIX_FMT_SGBRG8:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BAYER_GBRG8 };
+        case V4L2_PIX_FMT_SGRBG8:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BAYER_GRBG8 };
+        case V4L2_PIX_FMT_SRGGB8:  return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_BAYER_RGGB8 };
+        case V4L2_PIX_FMT_Z16:     return { AV_CODEC_ID_RAWVIDEO, AV_PIX_FMT_GRAY16LE };
+        case V4L2_PIX_FMT_MJPEG:
+        case V4L2_PIX_FMT_JPEG:    return { AV_CODEC_ID_MJPEG, AV_PIX_FMT_NONE };
+        case V4L2_PIX_FMT_H264:    return { AV_CODEC_ID_H264, AV_PIX_FMT_NONE };
+        case V4L2_PIX_FMT_MPEG4:   return { AV_CODEC_ID_MPEG4, AV_PIX_FMT_NONE };
+        case V4L2_PIX_FMT_VP8:     return { AV_CODEC_ID_VP8, AV_PIX_FMT_NONE };
+        case V4L2_PIX_FMT_VP9:     return { AV_CODEC_ID_VP9, AV_PIX_FMT_NONE };
+        case V4L2_PIX_FMT_HEVC:    return { AV_CODEC_ID_HEVC, AV_PIX_FMT_NONE };
+        default:                   return { AV_CODEC_ID_NONE, AV_PIX_FMT_NONE };
         }
     }
 
-    void format_list(int device)
+    namespace properties
     {
-        v4l2_fmtdesc fmt{};
-        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        std::vector<v4l2_input> inputs(int fd)
+        {
+            std::vector<v4l2_input> list{};
 
-        while (v4l2_ioctl(device, VIDIOC_ENUM_FMT, &fmt) == 0) {
-            std::string pix_fmt = reinterpret_cast<const char *>(fmt.description);
-            if (fmt.flags & V4L2_FMT_FLAG_EMULATED) pix_fmt += " (Emulated)";
-
-            LOG(INFO) << fmt::format("fd {} : {} is available", device, pix_fmt);
-
-            resolution_list(device, fmt.pixelformat);
-
-            fmt.index++;
-        }
-    }
-
-    void standard_list(int device)
-    {
-        v4l2_standard std{};
-
-        while (v4l2_ioctl(device, VIDIOC_ENUMSTD, &std) == 0) {
-            LOG(INFO) << fmt::format("fd {} : {}, {}", device, reinterpret_cast<const char *>(std.name),
-                                     std.id);
-            std.index++;
-        }
-    }
-
-    void resolution_list(int device, uint32_t pix_fmt)
-    {
-        v4l2_frmsizeenum frmsize{};
-        frmsize.pixel_format = pix_fmt;
-
-        v4l2_ioctl(device, VIDIOC_ENUM_FRAMESIZES, &frmsize);
-
-        switch (frmsize.type) {
-        case V4L2_FRMSIZE_TYPE_DISCRETE:
-            while (v4l2_ioctl(device, VIDIOC_ENUM_FRAMESIZES, &frmsize) == 0) {
-                LOG(INFO) << fmt::format("\tresolution={}x{}", frmsize.discrete.width,
-                                         frmsize.discrete.height);
-                framerate_list(device, pix_fmt, frmsize.discrete.width, frmsize.discrete.height);
-                frmsize.index++;
+            v4l2_input input{};
+            while (::v4l2_ioctl(fd, VIDIOC_ENUMINPUT, &input) == 0) {
+                DLOG(INFO) << fmt::format("[ V4L2-INPUT] {}: found input '{}' (Index {})", fd,
+                                          reinterpret_cast<const char *>(input.name), input.index);
+                list.push_back(input);
+                input.index++;
             }
 
-            break;
-
-        default: LOG(INFO) << "unsupported"; break;
+            return list;
         }
-    }
 
-    void framerate_list(int device, uint32_t pix_fmt, uint32_t w, uint32_t h)
-    {
-        v4l2_frmivalenum frmival{};
-        frmival.width        = w;
-        frmival.height       = h;
-        frmival.pixel_format = pix_fmt;
+        std::vector<v4l2_standard> standards(int fd)
+        {
+            std::vector<v4l2_standard> list{};
 
-        v4l2_ioctl(device, VIDIOC_ENUM_FRAMEINTERVALS, &frmival);
-
-        switch (frmival.type) {
-        case V4L2_FRMIVAL_TYPE_DISCRETE:
-            while (v4l2_ioctl(device, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0) {
-                LOG(INFO) << fmt::format("\t\tframerate: {}/{}", frmival.discrete.denominator,
-                                         frmival.discrete.numerator);
-                frmival.index++;
+            v4l2_standard std{};
+            while (::v4l2_ioctl(fd, VIDIOC_ENUMSTD, &std) == 0) {
+                DLOG(INFO) << fmt::format("[   V4L2-STD] fd {} : {}, {}", fd,
+                                          reinterpret_cast<const char *>(std.name), std.id);
+                list.push_back(std);
+                std.index++;
             }
-            break;
 
-        default: LOG(ERROR) << "unsupported"; break;
+            return list;
         }
-    }
 
-    static void v4l2_update_controls_menu(uint32_t device, struct v4l2_queryctrl *qctrl)
-    {
-        v4l2_querymenu qmenu{};
-        qmenu.id = qctrl->id;
+        std::vector<v4l2_fmtdesc> formats(int fd)
+        {
+            std::vector<v4l2_fmtdesc> list{};
 
-        for (qmenu.index  = qctrl->minimum; qmenu.index <= (uint32_t)qctrl->maximum;
-             qmenu.index += qctrl->step) {
-            if (v4l2_ioctl(device, VIDIOC_QUERYMENU, &qmenu) == 0) {
-                LOG(INFO) << fmt::format("\t\t name = {}, index = {}",
-                                         reinterpret_cast<const char *>(qmenu.name), (uint32_t)qmenu.index);
+            v4l2_fmtdesc fmt{};
+            fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+            while (::v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &fmt) == 0) {
+                std::string pix_fmt = reinterpret_cast<const char *>(fmt.description);
+                if (fmt.flags & V4L2_FMT_FLAG_EMULATED) pix_fmt += " (Emulated)";
+
+                DLOG(INFO) << fmt::format("[V4L2-PIXFMT] {}: found {}", fd, pix_fmt);
+
+                list.push_back(fmt);
+                fmt.index++;
             }
+
+            return list;
         }
-    }
 
-    void controls(uint32_t device)
-    {
-        v4l2_queryctrl qctrl{};
-        qctrl.id = V4L2_CTRL_FLAG_NEXT_CTRL;
+        std::vector<v4l2_frmsizeenum> resolutions(const int fd, const uint32_t pix_fmt)
+        {
+            std::vector<v4l2_frmsizeenum> list{};
 
-        while (v4l2_ioctl(device, VIDIOC_QUERYCTRL, &qctrl) == 0) {
-            switch (qctrl.type) {
-            case V4L2_CTRL_TYPE_INTEGER:
-                LOG(INFO) << fmt::format(
-                    "V4L2_CTRL_TYPE_INTEGER : name = {}, min = {}, max = {}, step = {}, default = {}",
-                    reinterpret_cast<const char *>(qctrl.name), qctrl.minimum, qctrl.maximum, qctrl.step,
-                    qctrl.default_value);
+            v4l2_frmsizeenum frmsize{};
+            frmsize.pixel_format = pix_fmt;
+
+            ::v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize);
+
+            switch (frmsize.type) {
+            case V4L2_FRMSIZE_TYPE_DISCRETE:
+                while (::v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) == 0) {
+
+                    DLOG(INFO) << fmt::format("[  V4L2-SIZE] {}: {} x {}", fd, frmsize.discrete.width,
+                                              frmsize.discrete.height);
+
+                    list.push_back(frmsize);
+                    frmsize.index++;
+                }
+
                 break;
-            case V4L2_CTRL_TYPE_BOOLEAN:
-                LOG(INFO) << fmt::format("V4L2_CTRL_TYPE_BOOLEAN : name = {}, default = {}",
-                                         reinterpret_cast<const char *>(qctrl.name), qctrl.default_value);
-                break;
-            case V4L2_CTRL_TYPE_MENU:
-            case V4L2_CTRL_TYPE_INTEGER_MENU:
-                LOG(INFO) << "V4L2_CTRL_TYPE_MENU : name = " << qctrl.name
-                          << ", default index = " << qctrl.default_value;
-                v4l2_update_controls_menu(device, &qctrl);
-                break;
+
+            default: LOG(ERROR) << "unsupported"; break;
             }
-            qctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+
+            return list;
         }
-    }
+
+        std::vector<v4l2_frmivalenum> framerates(const int fd, const uint32_t pix_fmt, const uint32_t w,
+                                                 const uint32_t h)
+        {
+            std::vector<v4l2_frmivalenum> list{};
+
+            v4l2_frmivalenum frmival{};
+            frmival.width        = w;
+            frmival.height       = h;
+            frmival.pixel_format = pix_fmt;
+
+            ::v4l2_ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival);
+
+            switch (frmival.type) {
+            case V4L2_FRMIVAL_TYPE_DISCRETE:
+                while (v4l2_ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0) {
+                    DLOG(INFO) << fmt::format("[   V4L2-FPS] \t\t{}/{}", frmival.discrete.denominator,
+                                              frmival.discrete.numerator);
+                    list.push_back(frmival);
+                    frmival.index++;
+                }
+                break;
+
+            default: LOG(ERROR) << "unsupported"; break;
+            }
+            return list;
+        }
+
+        std::vector<v4l2_dv_timings> timings(const int fd)
+        {
+            std::vector<v4l2_dv_timings> list{};
+
+            v4l2_enum_dv_timings iter{};
+            for (iter.index = 0; ::v4l2_ioctl(fd, VIDIOC_ENUM_DV_TIMINGS, &iter) == 0; ++iter.index) {
+                list.push_back(iter.timings);
+            }
+
+            return list;
+        }
+    } // namespace properties
+
+    namespace ctrl
+    {
+        std::vector<control> controls(const int fd)
+        {
+            std::vector<control> list{};
+
+            v4l2_queryctrl qctrl{};
+            for (qctrl.id  = V4L2_CTRL_FLAG_NEXT_CTRL; ::v4l2_ioctl(fd, VIDIOC_QUERYCTRL, &qctrl) == 0;
+                 qctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL) {
+                switch (qctrl.type) {
+                case V4L2_CTRL_TYPE_INTEGER:
+                    list.push_back({
+                        .id            = qctrl.id,
+                        .type          = qctrl.type,
+                        .name          = reinterpret_cast<const char *>(qctrl.name),
+                        .minimum       = qctrl.minimum,
+                        .maximum       = qctrl.maximum,
+                        .value         = get(fd, qctrl.id).value_or(qctrl.default_value),
+                        .default_value = qctrl.default_value,
+                    });
+                    break;
+
+                case V4L2_CTRL_TYPE_BOOLEAN:
+                    list.push_back({
+                        .id            = qctrl.id,
+                        .type          = qctrl.type,
+                        .name          = reinterpret_cast<const char *>(qctrl.name),
+                        .minimum       = qctrl.minimum,
+                        .maximum       = qctrl.maximum,
+                        .value         = get(fd, qctrl.id).value_or(qctrl.default_value),
+                        .default_value = qctrl.default_value,
+                    });
+                    break;
+
+                case V4L2_CTRL_TYPE_MENU:
+                case V4L2_CTRL_TYPE_INTEGER_MENU: {
+                    v4l2_querymenu qmenu{};
+                    qmenu.id = qctrl.id;
+
+                    std::map<int32_t, std::string> options{};
+                    for (qmenu.index  = qctrl.minimum; qmenu.index <= static_cast<uint32_t>(qctrl.maximum);
+                         qmenu.index += qctrl.step) {
+                        if (::v4l2_ioctl(fd, VIDIOC_QUERYMENU, &qmenu) == 0) {
+                            options[static_cast<int32_t>(qmenu.index)] =
+                                reinterpret_cast<const char *>(qmenu.name);
+                        }
+                    }
+
+                    list.push_back({
+                        .id            = qctrl.id,
+                        .type          = qctrl.type,
+                        .name          = reinterpret_cast<const char *>(qctrl.name),
+                        .minimum       = qctrl.minimum,
+                        .maximum       = qctrl.maximum,
+                        .value         = get(fd, qctrl.id).value_or(qctrl.default_value),
+                        .default_value = qctrl.default_value,
+                        .options       = options,
+                    });
+
+                    break;
+                }
+
+                default: break;
+                }
+            }
+
+            return list;
+        }
+
+        std::optional<int32_t> get(const int fd, const uint32_t id)
+        {
+            v4l2_control ctrl{};
+            ctrl.id = id;
+            if (::v4l2_ioctl(fd, VIDIOC_G_CTRL, &ctrl) != 0) return std::nullopt;
+
+            return ctrl.value;
+        }
+
+        int set(const int fd, const uint32_t id, const int32_t value)
+        {
+            v4l2_control ctrl{ .id = id, .value = value };
+            if (::v4l2_ioctl(fd, VIDIOC_S_CTRL, &ctrl) != 0) return -1;
+
+            return 0;
+        }
+    } // namespace ctrl
+
 } // namespace v4l2
 
 #endif //! __linux__
