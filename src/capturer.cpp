@@ -9,11 +9,11 @@
 #include "settingdialog.h"
 #include "videoplayer.h"
 
-#include <probe/system.h>
 #include <QApplication>
 #include <QFileInfo>
 #include <QKeyEvent>
 #include <QScreen>
+#include <QSystemTrayIcon>
 #include <QUrl>
 
 #define SET_HOTKEY(X, Y)                                                                                   \
@@ -69,11 +69,11 @@ void Capturer::Init()
 
     //
     // microphones: default or null
-    auto asrc            = av::default_audio_source();
+    const auto asrc      = av::default_audio_source();
     config::devices::mic = asrc.value_or(av::device_t{}).id;
 
     // speakers: default or null
-    auto asink               = av::default_audio_sink();
+    const auto asink         = av::default_audio_sink();
     config::devices::speaker = asink.value_or(av::device_t{}).id;
 
     LOG(INFO) << "initialized.";
@@ -87,7 +87,7 @@ void Capturer::SystemTrayInit()
     tray_menu_.reset(new Menu());
     tray_menu_->setObjectName("tray-menu");
 
-    QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+    const QString color = (config::definite_theme() == "dark") ? "light" : "dark";
 
     tray_snip_         = new QAction(QIcon(":/icons/screenshot-" + color), tr("Screenshot"));
     tray_record_video_ = new QAction(QIcon(":/icons/capture-" + color), tr("Record Video"));
@@ -147,15 +147,13 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
         preview->setAttribute(Qt::WA_DeleteOnClose);
         preview->show();
         if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
-            preview->move(QApplication::screenAt(QCursor::pos())->geometry().center() -
-                          preview->rect().center());
+            preview->move(screenAt(QCursor::pos())->geometry().center() - preview->rect().center());
         }
         previews_.push_back(preview);
 
-        connect(preview, &FramelessWindow::closed, [this]() {
-            previews_.erase(
-                std::remove_if(previews_.begin(), previews_.end(), [](auto ptr) { return !ptr; }),
-                previews_.end());
+        connect(preview, &FramelessWindow::closed, [this] {
+            previews_.erase(std::ranges::remove_if(previews_, [](auto ptr) { return !ptr; }).begin(),
+                            previews_.end());
         });
     }
 }
@@ -180,7 +178,7 @@ void Capturer::ToggleCamera()
 #ifdef _WIN32
     if (camera_->open("video=" + name, { { "format", "dshow" }, { "filters", "hflip" } }) < 0) {
 #elif __linux__
-    if (camera_->open(name, { { "format", "v4l2" }, { "filters", "hflip" } }) < 0) {
+    if (camera_->open(name, { { "format", "v4l2" }, {} }) < 0) {
 #endif
         LOG(ERROR) << "failed to open camera";
     }
@@ -262,13 +260,13 @@ void Capturer::UpdateHotkeys()
     if (!error.isEmpty()) ShowMessage("Capturer", error, QSystemTrayIcon::Critical);
 }
 
-void Capturer::TrayActivated(QSystemTrayIcon::ActivationReason reason)
+void Capturer::TrayActivated(const QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::DoubleClick && sniper_) sniper_->start();
 }
 
-void Capturer::ShowMessage(const QString& title, const QString& msg, QSystemTrayIcon::MessageIcon icon,
-                           int msecs)
+void Capturer::ShowMessage(const QString& title, const QString& msg,
+                           const QSystemTrayIcon::MessageIcon icon, const int msecs)
 {
     tray_->showMessage(title, msg, icon, msecs);
 }
@@ -300,7 +298,7 @@ void Capturer::SetTheme(const QString& theme)
     setStyleSheet(style);
 
     // system tray menu icons
-    QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+    const QString color = (config::definite_theme() == "dark") ? "light" : "dark";
 
     tray_snip_->setIcon(QIcon(":/icons/screenshot-" + color));
     tray_record_video_->setIcon(QIcon(":/icons/capture-" + color));

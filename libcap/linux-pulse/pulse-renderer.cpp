@@ -1,11 +1,12 @@
-#ifdef __linux__
-
 #include "libcap/linux-pulse/pulse-renderer.h"
+
+#ifdef __linux__
 
 #include "libcap/linux-pulse/linux-pulse.h"
 #include "logging.h"
 
 #include <fmt/chrono.h>
+#include <probe/defer.h>
 
 PulseAudioRenderer::PulseAudioRenderer() { pulse::init(); }
 
@@ -39,22 +40,22 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     bytes_per_frame_ = ::pa_frame_size(&spec);
 
     pulse::loop_lock();
+    defer(pulse::loop_unlock());
 
     ::pa_stream_set_state_callback(stream_, pulse_stream_state_callback, this);
     ::pa_stream_set_latency_update_callback(stream_, pulse_stream_latency_callback, this);
 
-    const pa_buffer_attr buffer_attr{
+    buffer_attrs_ = {
         .maxlength = 1024 * bytes_per_frame_ * 2,
         .tlength   = 1024 * bytes_per_frame_,
         .prebuf    = 0,
         .minreq    = static_cast<uint32_t>(-1),
         .fragsize  = 0,
     };
-    if (::pa_stream_connect_playback(stream_, nullptr, &buffer_attr,
+    if (::pa_stream_connect_playback(stream_, nullptr, &buffer_attrs_,
                                      PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
                                          PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_ADJUST_LATENCY,
                                      nullptr, nullptr) != 0) {
-        pulse::loop_unlock();
         LOG(ERROR) << "[PULSE-AUDIO] failed to connect playback.";
         return -1;
     }
@@ -62,7 +63,7 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     while (!stream_ready_)
         pulse::wait();
 
-    pulse::loop_unlock();
+    buffer_attrs_ = *pa_stream_get_buffer_attr(stream_);
 
     ready_ = true;
 
@@ -85,10 +86,9 @@ void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t b
     void *buffer = nullptr;
     ::pa_stream_begin_write(stream, &buffer, &bytes);
     memset(buffer, 0, bytes);
-    self->buffer_frames_ = bytes / self->bytes_per_frame_;
 
     // fixme: assume that we always have enough frames
-    self->callback(reinterpret_cast<uint8_t **>(&buffer), self->buffer_frames_, av::clock::ns());
+    self->callback(reinterpret_cast<uint8_t **>(&buffer), bytes / self->bytes_per_frame_, av::clock::ns());
     ::pa_stream_write(stream, buffer, bytes, nullptr, 0, PA_SEEK_RELATIVE);
 }
 

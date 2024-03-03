@@ -14,7 +14,8 @@
 #include <QMimeData>
 #include <QPointer>
 #include <QScopedPointer>
-#include <QSystemTrayIcon>
+
+struct QSystemTrayIcon;
 
 class Capturer final : public QApplication
 {
@@ -29,7 +30,7 @@ public slots:
     void QuickLook();
 
     void PreviewClipboard();
-    void PreviewMimeData(const std::shared_ptr<QMimeData>& data);
+    void PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata);
     void TogglePreviews();
     void TransparentPreviewInput();
 

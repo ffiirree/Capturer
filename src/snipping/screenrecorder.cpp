@@ -8,7 +8,6 @@
 #include "platforms/window-effect.h"
 
 #include <fmt/core.h>
-#include <QApplication>
 #include <QDateTime>
 #include <QMouseEvent>
 #include <QStandardPaths>
@@ -24,16 +23,16 @@ using AudioCapturer   = WasapiCapturer;
 
 #elif __linux__
 
-#include "libcap/decoder.h"
 #include "libcap/linux-pulse/pulse-capturer.h"
+#include "libcap/linux-x/xshm-capturer.h"
 
-using DesktopCapturer = Decoder;
+using DesktopCapturer = XshmCapturer;
 using AudioCapturer   = PulseCapturer;
 
 #endif
 
 static std::pair<AVPixelFormat, AVHWDeviceType>
-set_pix_fmt(const std::unique_ptr<Producer<av::frame>>& producer,
+set_pix_fmt(const std::unique_ptr<ScreenCapturer>&      producer,
             const std::unique_ptr<Consumer<av::frame>>& consumer, const AVCodec *vcodec)
 {
     if (!vcodec) return {};
@@ -180,20 +179,13 @@ void ScreenRecorder::setup()
     const auto draw_mouse = (rec_type_ == VIDEO) ? config::recording::video::capture_mouse
                                                  : config::recording::gif::capture_mouse;
 
-    std::string                        name{};
-    std::map<std::string, std::string> options{
-        { "framerate", av::to_string(framerate_) },
-        { "video_size", fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2) },
-        { "draw_mouse", std::to_string(static_cast<int>(draw_mouse)) },
-    };
-
-    options["video_size"] = fmt::format("{}x{}", (region.width() / 2) * 2, (region.height() / 2) * 2);
+    std::string name{};
 
 #ifdef __linux__
     // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
     // echo $DISPLAY
-    name              = fmt::format("{}.0+{},{}", getenv("DISPLAY"), region.x(), region.y());
-    options["format"] = "x11grab";
+    // hostname:D.S means screen S on display D of host hostname;
+    name = fmt::format("{}.0", getenv("DISPLAY"));
 #elif _WIN32
     // TODO:
     //   1. rectanle mode: OK, use display mode
@@ -219,17 +211,18 @@ void ScreenRecorder::setup()
 #endif
 
     // sources & dispatcher & encoder
-    if (rec_type_ == VIDEO) {
-        mic_src_     = std::make_unique<AudioCapturer>();
-        speaker_src_ = std::make_unique<AudioCapturer>();
-    }
-
     desktop_src_ = std::make_unique<DesktopCapturer>();
     dispatcher_  = std::make_unique<Dispatcher>();
     encoder_     = std::make_unique<Encoder>();
 
     // video source
-    if (desktop_src_->open(name, options) < 0) {
+    desktop_src_->left           = region.x();
+    desktop_src_->top            = region.y();
+    desktop_src_->vfmt.width     = region.width();
+    desktop_src_->vfmt.height    = region.height();
+    desktop_src_->vfmt.framerate = framerate_;
+    desktop_src_->draw_cursor    = draw_mouse;
+    if (desktop_src_->open(name, {}) < 0) {
         LOG(ERROR) << fmt::format("[RECORDER] failed to open the desktop capturer: {}", name);
         desktop_src_ = std::make_unique<DesktopCapturer>();
         stop();
@@ -238,34 +231,24 @@ void ScreenRecorder::setup()
 
     dispatcher_->add_input(desktop_src_.get());
 
+    // audio sources
     int nb_ainputs = 0;
-
-    // audio source
     if (rec_type_ == VIDEO) {
-        if (!av::audio_sources().empty() && mic_src_) {
-            if (mic_src_->open(config::devices::mic, {}) < 0) {
-                LOG(WARNING) << "open microphone failed";
-                mic_src_ = {};
-            }
-            else if (mic_src_->ready()) {
-                menu_->disable_mic(false);
-                mic_src_->mute(m_mute_);
-                dispatcher_->add_input(mic_src_.get());
-                nb_ainputs++;
-            }
+        mic_src_     = std::make_unique<AudioCapturer>();
+        speaker_src_ = std::make_unique<AudioCapturer>();
+
+        if (mic_src_->open(config::devices::mic, {}) >= 0) {
+            menu_->disable_mic(false);
+            mic_src_->mute(m_mute_);
+            dispatcher_->add_input(mic_src_.get());
+            nb_ainputs++;
         }
 
-        if (!av::audio_sinks().empty() && speaker_src_) {
-            if (speaker_src_->open(config::devices::speaker, {}) < 0) {
-                LOG(WARNING) << "open speaker failed";
-                speaker_src_ = {};
-            }
-            else if (speaker_src_->ready()) {
-                menu_->disable_speaker(false);
-                speaker_src_->mute(s_mute_);
-                dispatcher_->add_input(speaker_src_.get());
-                nb_ainputs++;
-            }
+        if (speaker_src_->open(config::devices::speaker, {}) >= 0) {
+            menu_->disable_speaker(false);
+            speaker_src_->mute(s_mute_);
+            dispatcher_->add_input(speaker_src_.get());
+            nb_ainputs++;
         }
     }
 

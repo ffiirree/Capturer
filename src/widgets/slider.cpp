@@ -11,7 +11,9 @@ Slider::Slider(QWidget *parent)
 
 Slider::Slider(const Qt::Orientation orientation, QWidget *parent)
     : QSlider(orientation, parent)
-{}
+{
+    setCursor(Qt::PointingHandCursor);
+}
 
 void Slider::mousePressEvent(QMouseEvent *event)
 {

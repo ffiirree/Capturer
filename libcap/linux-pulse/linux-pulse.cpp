@@ -423,10 +423,10 @@ namespace pulse
             if (!wait_operation(::pa_context_get_sink_input_info(
                     pulse_ctx, ::pa_stream_get_index(stream),
                     [](pa_context *, const pa_sink_input_info *info, int eol, void *userdata) {
-                        auto volume = static_cast<float *>(userdata);
+                        const auto vptr = static_cast<float *>(userdata);
 
                         if (eol == 0)
-                            *volume = static_cast<float>(::pa_sw_volume_to_linear(info->volume.values[0]));
+                            *vptr = static_cast<float>(::pa_sw_volume_to_linear(info->volume.values[0]));
 
                         pulse::signal(0);
                     },

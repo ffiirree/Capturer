@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.27)
 
 # Windows SDK >= 10.0.22621.0
 if (WIN32 AND "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_LESS "10.0.22621.0")
@@ -13,6 +13,7 @@ elseif(UNIX AND NOT APPLE)
     find_package(FFmpeg 4.2 REQUIRED)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
+    find_package(X11 REQUIRED)
 endif()
 
 file(GLOB_RECURSE LIBCAP_SOURCES *.cpp)
@@ -39,6 +40,10 @@ target_link_libraries(libcap
         $<$<PLATFORM_ID:Windows>:DXGI>
         $<$<PLATFORM_ID:Windows>:D3D11>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
+        $<$<PLATFORM_ID:Linux>:X11::X11>
+        $<$<PLATFORM_ID:Linux>:X11::xcb>
+        $<$<PLATFORM_ID:Linux>:X11::xcb_shm>
+        $<$<PLATFORM_ID:Linux>:X11::xcb_xfixes>
         $<$<PLATFORM_ID:Linux>:${PULSEAUDIO_LIBRARY}>
 )
 

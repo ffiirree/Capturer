@@ -88,7 +88,7 @@ int Decoder::open(const std::string& name, std::map<std::string, std::string> op
     if (options.contains("format")) {
         const auto format = options.at("format");
 
-        if (format == "x11grab" || format == "v4l2" || format == "dshow") is_realtime_ = true;
+        if (format == "dshow") is_realtime_ = true;
 
         if (input_fmt = av_find_input_format(format.c_str()); !input_fmt) {
             LOG(ERROR) << "[   DECODER] av_find_input_format";

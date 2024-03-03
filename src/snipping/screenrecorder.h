@@ -3,7 +3,7 @@
 
 #include "libcap/consumer.h"
 #include "libcap/dispatcher.h"
-#include "libcap/producer.h"
+#include "libcap/screen-capturer.h"
 #include "menu/recording-menu.h"
 #include "selector.h"
 
@@ -62,7 +62,7 @@ private:
     bool           s_mute_{};
 
     // sources
-    std::unique_ptr<Producer<av::frame>> desktop_src_{};
+    std::unique_ptr<ScreenCapturer>      desktop_src_{};
     std::unique_ptr<Producer<av::frame>> mic_src_{};
     std::unique_ptr<Producer<av::frame>> speaker_src_{};
 

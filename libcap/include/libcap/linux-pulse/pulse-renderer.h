@@ -34,8 +34,7 @@ public:
 
     [[nodiscard]] av::aformat_t format() const override { return format_; }
 
-    // sample number
-    [[nodiscard]] uint32_t buffer_size() const override { return buffer_frames_; }
+    [[nodiscard]] uint32_t buffer_size() const override { return buffer_attrs_.tlength; }
 
 private:
     static void pulse_stream_success_callback(pa_stream *, int success, void *);
@@ -54,6 +53,7 @@ private:
 
     // pulse audio @{
     pa_stream        *stream_{};
+    pa_buffer_attr    buffer_attrs_{};
     std::atomic<bool> ready_{ false };
     std::atomic<bool> stream_ready_{ false };
     std::atomic<int>  stream_retval_{};

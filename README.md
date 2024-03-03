@@ -185,8 +185,8 @@ sudo apt install libpulse-dev
 # v4l2: camera
 sudo apt install libv4l-dev v4l-utils
 
-# xrandr: display monitors
-sudo apt install libxrandr-dev
+# x11 & xcb
+sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
 ```
 
 > 若CMake 版本过低，请先安装更高版本的CMake(>=3.21), 参见下一小节
