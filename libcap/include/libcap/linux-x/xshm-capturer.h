@@ -20,8 +20,6 @@ public:
 
     void stop() override;
 
-    bool has(AVMediaType mt) const override;
-
 private:
     int xfixes_draw_cursor(av::frame& frame) const;
 

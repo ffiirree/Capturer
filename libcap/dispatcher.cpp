@@ -363,9 +363,8 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
         if (frame) {
             if (producer->is_realtime()) {
                 if (!is_valid_pts(av::clock::ns(frame->pts, tb))) {
-                    LOG(WARNING) << fmt::format("drop {:%T} - [-, {:%T}) | [{:%T}, +)",
-                                                av::clock::ns(frame->pts, tb),
-                                                std::max(start_time_, resumed_pts_), paused_pts_);
+                    LOG(WARNING) << fmt::format("[{}] drop {:.6%T} !in [{:.6%T}, {:.6%T})", av::to_char(mt),
+                                                av::clock::ns(frame->pts, tb), resumed_pts_, paused_pts_);
                     continue;
                 }
                 frame->pts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, tb);

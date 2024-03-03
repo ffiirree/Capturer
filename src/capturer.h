@@ -15,7 +15,7 @@
 #include <QPointer>
 #include <QScopedPointer>
 
-struct QSystemTrayIcon;
+class QSystemTrayIcon;
 
 class Capturer final : public QApplication
 {

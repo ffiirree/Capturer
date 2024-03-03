@@ -53,7 +53,7 @@ namespace config
                 // H.265: 0-51, default 28
                 // Vp9  : 0-63, 15-35
                 // Values of ±6 will result in about half or twice the original bitrate.
-                inline int         crf{ 23 };
+                inline int         crf{ 23 }; // CRF or  CQ
                 inline std::string rate_control{ "crf" };
                 inline std::string preset{ "medium" };
                 inline std::string profile{ "high" };

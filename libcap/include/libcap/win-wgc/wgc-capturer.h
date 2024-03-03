@@ -3,49 +3,24 @@
 
 #ifdef _WIN32
 
-#include "libcap/ffmpeg-wrapper.h"
 #include "libcap/hwaccel.h"
-#include "libcap/producer.h"
+#include "libcap/screen-capturer.h"
 #include "win-wgc.h"
 
 #include <mutex>
 
-class WindowsGraphicsCapturer final : public Producer<av::frame>
+class WindowsGraphicsCapturer final : public ScreenCapturer
 {
-    enum mode_t
-    {
-        monitor,
-        window,
-    };
-
 public:
     ~WindowsGraphicsCapturer() override;
 
-    /**
-     * @param name      window  capture: "window=<HWND>"
-     *                  display capture: "display=<HMONITOR>"
-     *                  desktop capture: "desktop"
-     * @param options   framerate      : set the grabbing frame rate.
-     *                  offset_x       : set the distance from the left edge of the screen or desktop.
-     *                  offset_y       : set the distance from the top edge of the screen or desktop.
-     *                  video_size     : set the video frame size. The default is to capture the full screen
-     *                                   if "desktop" is selected.
-     *                  draw_mouse     : specify whether to draw the mouse pointer, default value is 1.
-     *                  show_region    : show grabbed region on screen, default value is 1.
-     *
-     * @return int      zero on success, a negative code on failure.
-     */
     int open(const std::string& name, std::map<std::string, std::string> options) override;
 
     int start() override;
 
     void stop() override;
 
-    bool has(AVMediaType mt) const override;
-
     std::vector<av::vformat_t> video_formats() const override;
-
-    bool is_realtime() const override { return true; }
 
 private:
     void OnFrameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool& sender,
@@ -58,8 +33,6 @@ private:
     int InitalizeResizingResources();
 
     int InitializeHWFramesContext();
-
-    void parse_options(std::map<std::string, std::string>&);
 
 private:
     winrt::Windows::Graphics::Capture::GraphicsCaptureItem item_{ nullptr };
@@ -97,15 +70,11 @@ private:
     winrt::com_ptr<ID3D11Buffer> proj_buffer_{};
     // @}
 
-    mode_t mode_{};
-
     std::mutex mtx_{};
 
     uint32_t frame_number_{};
 
     // options @{
-    bool      draw_mouse_{ true };
-    bool      show_region_{ true };
     D3D11_BOX box_{ .front = 0, .back = 1 };
     // @}
 };

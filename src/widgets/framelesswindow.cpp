@@ -32,8 +32,11 @@ FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags flags)
 
     // Window Styles: https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles
     auto style = ::GetWindowLong(hwnd, GWL_STYLE);
-    if (windowFlags() & Qt::WindowTitleHint) style |= WS_CAPTION | WS_THICKFRAME;
-    ::SetWindowLong(hwnd, GWL_STYLE, style & (~WS_SYSMENU));
+    ::SetWindowLong(hwnd, GWL_STYLE, (style | WS_CAPTION | WS_THICKFRAME) & (~WS_SYSMENU));
+
+    ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
+                       SWP_FRAMECHANGED);
 #endif
 
 #ifdef Q_OS_LINUX
@@ -72,8 +75,9 @@ void FramelessWindow::toggleTransparentInput()
 
 void FramelessWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (!isFullScreen()) {
+    if (!isFullScreen() && event->button() == Qt::LeftButton) {
         windowHandle()->startSystemMove();
+        return;
     }
 
     return QWidget::mousePressEvent(event);

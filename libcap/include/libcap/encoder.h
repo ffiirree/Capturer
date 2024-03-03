@@ -56,6 +56,8 @@ private:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
+    int crf_{ -1 };
+
     // ffmpeg encoders @ {
     AVFormatContext *fmt_ctx_{};
     AVCodecContext  *vcodec_ctx_{};

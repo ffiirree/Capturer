@@ -2,13 +2,12 @@
 
 #include "libcap/win-wgc/wgc-capturer.h"
 
-#include "fmt/format.h"
-#include "fmt/ranges.h"
 #include "logging.h"
 #include "ResizingPixelShader.h"
 #include "ResizingVertexShader.h"
 
-#include <regex>
+#include <fmt/chrono.h>
+#include <fmt/format.h>
 
 extern "C" {
 #include <libavutil/hwcontext_d3d11va.h>
@@ -30,52 +29,18 @@ static constexpr float vertices[] = {
 
 static constexpr FLOAT black[4]{ 0.0, 0.0, 0.0, 0.0 };
 
-void WindowsGraphicsCapturer::parse_options(std::map<std::string, std::string>& options)
+int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std::string>)
 {
-    // options
-    if (options.contains("draw_mouse")) {
-        draw_mouse_ =
-            std::regex_match(options["draw_mouse"], std::regex("1|on|true", std::regex_constants::icase));
+    // clang-format off
+    switch (level) {
+    case CAPTURE_DESKTOP: return av::err_t::unsupported;
+    case CAPTURE_DISPLAY: item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(handle)); break;
+    case CAPTURE_WINDOW: item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(handle)); break;
     }
-
-    if (options.contains("show_region")) {
-        show_region_ =
-            std::regex_match(options["show_region"], std::regex("1|on|true", std::regex_constants::icase));
-    }
-
-    // capture box
-    if (options.contains("offset_x") && options.contains("offset_y") && options.contains("video_size") &&
-        std::regex_match(options.at("offset_x"), std::regex("\\d+")) &&
-        std::regex_match(options.at("offset_y"), std::regex("\\d+"))) {
-        std::smatch matchs;
-        if (std::regex_match(options.at("video_size"), matchs, std::regex("([\\d]+)x([\\d]+)"))) {
-            box_.left   = std::stoul(options.at("offset_x"));
-            box_.top    = std::stoul(options.at("offset_y"));
-            // the box region includes the left pixel but not the right pixel.
-            box_.right  = box_.left + std::stoul(matchs[1]);
-            box_.bottom = box_.top + std::stoul(matchs[2]);
-        }
-    }
-}
-
-int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string, std::string> options)
-{
-    LOG(INFO) << fmt::format("[     WGC] [{}] options = {}", name, options);
-
-    parse_options(options);
-
-    // parse capture item
-    if (std::smatch matches; std::regex_match(name, matches, std::regex("window=(\\d+)"))) {
-        item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(std::stoull(matches[1])));
-        mode_ = mode_t::window;
-    }
-    else if (std::regex_match(name, matches, std::regex("display=(\\d+)"))) {
-        item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(std::stoull(matches[1])));
-        mode_ = mode_t::monitor;
-    }
+    // clang-format on
 
     if (!item_) {
-        LOG(ERROR) << "[     WGC] can not create capture item for: '" << name << "'.";
+        LOG(ERROR) << "[     WGC] can not create capture item";
         return -1;
     }
     onclosed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
@@ -117,25 +82,18 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     session_ = frame_pool_.CreateCaptureSession(item_);
 
     // cursor & border
-    if (wgc::is_cursor_toggle_supported()) session_.IsCursorCaptureEnabled(draw_mouse_);
-    if (wgc::is_border_toggle_supported()) session_.IsBorderRequired(show_region_);
+    if (wgc::is_cursor_toggle_supported()) session_.IsCursorCaptureEnabled(draw_cursor);
+    if (wgc::is_border_toggle_supported()) session_.IsBorderRequired(show_region);
 
-    // must be multiple of 2, round downwards
-    if (box_ == D3D11_BOX{ .front = 0, .back = 1 }) {
-        box_.right  = item_.Size().Width;
-        box_.bottom = item_.Size().Height;
-    }
+    //
+    left = box_.left = std::max<int>(0, left);
+    top = box_.top = std::max<int>(0, top);
 
-    // TODO: Window Mode: change this
-    box_.right  = box_.left + ((std::min<UINT>(box_.right, item_.Size().Width) - box_.left) & ~0x01);
-    box_.bottom = box_.top + ((std::min<UINT>(box_.bottom, item_.Size().Height) - box_.top) & ~0x01);
+    vfmt.width  = vfmt.width <= 0 ? item_.Size().Width : vfmt.width;
+    vfmt.height = vfmt.height <= 0 ? item_.Size().Height : vfmt.height;
 
-    if (box_.right <= box_.left || box_.bottom <= box_.top) {
-        LOG(ERROR) << fmt::format(
-            "[       WGC] [{}] invalid recording region <({},{}), ({},{})> in ({}x{})", name, box_.left,
-            box_.top, box_.right, box_.bottom, item_.Size().Width, item_.Size().Height);
-        return -1;
-    }
+    box_.right  = left + ((std::min<int32_t>(left + vfmt.width + 1, item_.Size().Width) - left) & ~1);
+    box_.bottom = top + ((std::min<int32_t>(top + vfmt.height + 1, item_.Size().Height) - top) & ~1);
 
     // video output format
     vfmt = av::vformat_t{
@@ -153,7 +111,7 @@ int WindowsGraphicsCapturer::open(const std::string& name, std::map<std::string,
     // FFmpeg hardware frame pool
     if (InitializeHWFramesContext() < 0) return -1;
 
-    if (mode_ == mode_t::window && InitalizeResizingResources() < 0) return -1;
+    if (level == CAPTURE_WINDOW && InitalizeResizingResources() < 0) return -1;
 
     eof_   = 0x00;
     ready_ = true;
@@ -172,8 +130,6 @@ int WindowsGraphicsCapturer::start()
     session_.StartCapture();
     return 0;
 }
-
-bool WindowsGraphicsCapturer::has(const AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
 
 std::vector<av::vformat_t> WindowsGraphicsCapturer::video_formats() const
 {
@@ -348,7 +304,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     frame_texture->GetDesc(&tex_desc);
 
     // Window Capture Mode: resize the frame pool to frame size
-    if (mode_ == mode_t::window && d3d11frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
+    if (level == CAPTURE_WINDOW && d3d11frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
                                                                    static_cast<int32_t>(tex_desc.Height),
                                                                    static_cast<int32_t>(tex_desc.Width) }) {
         frame_pool_.Recreate(winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
@@ -365,17 +321,17 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     frame->sample_aspect_ratio = { 1, 1 };
     frame->pts                 = av::clock::ns().count();
     // According to MSDN, all integer formats contain sRGB image data
-    frame->color_range         = AVCOL_RANGE_JPEG;
-    frame->color_primaries     = AVCOL_PRI_BT709;
-    frame->color_trc           = AVCOL_TRC_IEC61966_2_1;
-    frame->colorspace          = AVCOL_SPC_RGB;
+    frame->color_range         = vfmt.color.range;
+    frame->color_primaries     = vfmt.color.primaries;
+    frame->color_trc           = vfmt.color.transfer;
+    frame->colorspace          = vfmt.color.space;
 
     // copy the texture to the FFmpeg frame
     // 1. Display   Mode: CopyResource
     // 2. Window    Mode: CopyResource and reisze the texture2d [TODO]
     // 3. Rectangle Mode: Rectangle region of Display, CopySubresourceRegion
-    switch (mode_) {
-    case mode_t::window:
+    switch (level) {
+    case CAPTURE_WINDOW:
         if (vfmt.height != static_cast<int>(tex_desc.Height) ||
             vfmt.width != static_cast<int>(tex_desc.Width)) {
             context_->ClearRenderTargetView(rtv_.get(), black);
@@ -435,7 +391,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
                                    frame_texture.get());
         }
         break;
-    case mode_t::monitor:
+    case CAPTURE_DISPLAY:
         // Rectangle
         if (vfmt.height != static_cast<int>(tex_desc.Height) ||
             vfmt.width != static_cast<int>(tex_desc.Width)) {
@@ -454,8 +410,8 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     // transfer frame to CPU if needed
     av::hwaccel::transfer_frame(frame.get(), vfmt.pix_fmt);
 
-    // DLOG(INFO) << fmt::format("[V]  frame = {:>5d}, pts = {:>14d}, size = {:>4d}x{:>4d}", frame_number_++,
-    //                           frame->pts, frame->width, frame->height);
+    DLOG(INFO) << fmt::format("[V] pts = {:>14d}, size = {:>4d}x{:>4d}, ts = {:.3%T}", frame->pts,
+                              frame->width, frame->height, std::chrono::nanoseconds{ frame->pts });
 
     onarrived(frame, AVMEDIA_TYPE_VIDEO);
 }

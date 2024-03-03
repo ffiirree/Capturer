@@ -17,6 +17,7 @@ namespace wgc
         DWORD affinity{};
         if (::GetWindowDisplayAffinity(winid, &affinity)) {
             if (affinity != WDA_EXCLUDEFROMCAPTURE) {
+                // The window is displayed only on a monitor. Everywhere else, the window does not appear at all.
                 ::SetWindowDisplayAffinity(winid, WDA_EXCLUDEFROMCAPTURE);
             }
         }

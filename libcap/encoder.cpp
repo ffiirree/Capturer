@@ -31,6 +31,13 @@ int Encoder::open(const std::string& filename, std::map<std::string, std::string
         vsync_ = av::to_vsync(options.at("vsync"));
     }
 
+    if (options.contains("crf")) {
+        // x264  : 0 ~ 51, default 23, 10 bit: 0 ~ 63
+        // x265  : 0 ~ 51, default 28
+        // libvpx: 0 ~ 63, default 31
+        crf_ = std::clamp<int>(std::stoul(options.at("crf")), 0, 51);
+    }
+
     // format context
     if (avformat_alloc_output_context2(&fmt_ctx_, nullptr, nullptr, filename.c_str()) < 0) {
         LOG(ERROR) << "[   ENCODER] filed to alloc the output format context.";
@@ -89,6 +96,7 @@ int Encoder::new_video_stream(const std::string& codec_name)
     AVDictionary *options = nullptr;
     defer(av_dict_free(&options));
     av_dict_set(&options, "threads", "auto", 0);
+    av_dict_set(&options, (vfmt.hwaccel) ? "cq" : "crf", std::to_string(crf_).c_str(), 0);
 
     vcodec_ctx_->height              = vfmt.height;
     vcodec_ctx_->width               = vfmt.width;

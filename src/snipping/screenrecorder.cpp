@@ -63,8 +63,8 @@ set_pix_fmt(const std::unique_ptr<ScreenCapturer>&      producer,
 }
 
 ScreenRecorder::ScreenRecorder(const int type, QWidget *parent)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint |
-                          Qt::WindowStaysOnTopHint),
+    : QWidget(parent,
+              Qt::Tool | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint | Qt::WindowStaysOnTopHint),
       rec_type_(type)
 {
     setAttribute(Qt::WA_TranslucentBackground);
@@ -158,26 +158,33 @@ void ScreenRecorder::setup()
 
     QRect region = selector_->selected(selector_->scope() != Selector::scope_t::desktop);
 
-    const auto show_region =
-        (rec_type_ == VIDEO) ? config::recording::video::show_region : config::recording::gif::show_region;
-#ifdef _WIN32
-    show_region && (selector_->prey().type != hunter::prey_type_t::window &&
-                    selector_->prey().type != hunter::prey_type_t::display)
-        ? selector_->showRegion()
-        : hide();
-#else
-    show_region ? selector_->showRegion() : hide();
-#endif
-    TransparentInput(this, true);
-
     menu_->disable_mic(true);
     menu_->disable_speaker(true);
 
-    // desktop capturer
-    framerate_ =
-        (rec_type_ == VIDEO) ? config::recording::video::v::framerate : config::recording::gif::framerate;
-    const auto draw_mouse = (rec_type_ == VIDEO) ? config::recording::video::capture_mouse
-                                                 : config::recording::gif::capture_mouse;
+    // sources & dispatcher & encoder
+    desktop_src_ = std::make_unique<DesktopCapturer>();
+    dispatcher_  = std::make_unique<Dispatcher>();
+    encoder_     = std::make_unique<Encoder>();
+
+    switch (rec_type_) {
+    case GIF:
+        desktop_src_->vfmt.framerate = config::recording::gif::framerate;
+        desktop_src_->draw_cursor    = config::recording::gif::capture_mouse;
+        desktop_src_->show_region    = config::recording::gif::show_region;
+        encoder_->vfmt.framerate     = config::recording::gif::framerate;
+        break;
+
+    default:
+        desktop_src_->vfmt.framerate = config::recording::video::v::framerate;
+        desktop_src_->draw_cursor    = config::recording::video::capture_mouse;
+        desktop_src_->show_region    = config::recording::video::show_region;
+        encoder_->vfmt.framerate     = config::recording::video::v::framerate;
+        break;
+    }
+
+    desktop_src_->show_region ? selector_->showRegion() : hide();
+
+    TransparentInput(this, true);
 
     std::string name{};
 
@@ -185,7 +192,12 @@ void ScreenRecorder::setup()
     // https://askubuntu.com/questions/432255/what-is-the-display-environment-variable/432257#432257
     // echo $DISPLAY
     // hostname:D.S means screen S on display D of host hostname;
-    name = fmt::format("{}.0", getenv("DISPLAY"));
+    name                      = fmt::format("{}.0", getenv("DISPLAY"));
+    desktop_src_->level       = CAPTURE_DESKTOP;
+    desktop_src_->left        = region.x();
+    desktop_src_->top         = region.y();
+    desktop_src_->vfmt.width  = region.width();
+    desktop_src_->vfmt.height = region.height();
 #elif _WIN32
     // TODO:
     //   1. rectanle mode: OK, use display mode
@@ -193,35 +205,35 @@ void ScreenRecorder::setup()
     //   3. window   mode: OK
     //   4. display  mode: OK
     //   5. desktop  mode: NO, not supported
-    options["show_region"] = show_region ? "true" : "false";
     switch (selector_->prey().type) {
     case hunter::prey_type_t::rectangle:
     case hunter::prey_type_t::widget:    {
-        options["show_region"] = "false";
-        options["offset_x"]    = std::to_string(region.x());
-        options["offset_y"]    = std::to_string(region.y());
-        auto display           = probe::graphics::display_contains(selector_->selected().center()).value();
-        name                   = "display=" + std::to_string(display.handle);
+        desktop_src_->level = CAPTURE_DISPLAY;
+        const auto& display = probe::graphics::display_contains(selector_->selected().center()).value();
+
+        desktop_src_->left        = region.x();
+        desktop_src_->top         = region.y();
+        desktop_src_->vfmt.width  = region.width();
+        desktop_src_->vfmt.height = region.height();
+        desktop_src_->handle      = display.handle;
+        desktop_src_->show_region = false;
         break;
     }
-    case hunter::prey_type_t::window:  name = "window=" + std::to_string(selector_->prey().handle); break;
-    case hunter::prey_type_t::display: name = "display=" + std::to_string(selector_->prey().handle); break;
-    default:                           LOG(ERROR) << "unsuppored mode"; return;
+    case hunter::prey_type_t::window:
+        desktop_src_->level  = CAPTURE_WINDOW;
+        desktop_src_->handle = selector_->prey().handle;
+        selector_->hide();
+        break;
+    case hunter::prey_type_t::display:
+        desktop_src_->level  = CAPTURE_DISPLAY;
+        desktop_src_->handle = selector_->prey().handle;
+        selector_->hide();
+        break;
+    default: LOG(ERROR) << "unsuppored mode"; return;
     }
 #endif
 
-    // sources & dispatcher & encoder
-    desktop_src_ = std::make_unique<DesktopCapturer>();
-    dispatcher_  = std::make_unique<Dispatcher>();
-    encoder_     = std::make_unique<Encoder>();
-
     // video source
-    desktop_src_->left           = region.x();
-    desktop_src_->top            = region.y();
-    desktop_src_->vfmt.width     = region.width();
-    desktop_src_->vfmt.height    = region.height();
-    desktop_src_->vfmt.framerate = framerate_;
-    desktop_src_->draw_cursor    = draw_mouse;
     if (desktop_src_->open(name, {}) < 0) {
         LOG(ERROR) << fmt::format("[RECORDER] failed to open the desktop capturer: {}", name);
         desktop_src_ = std::make_unique<DesktopCapturer>();
@@ -256,14 +268,11 @@ void ScreenRecorder::setup()
     auto [pix_fmt, hwaccel] =
         set_pix_fmt(desktop_src_, encoder_, avcodec_find_encoder_by_name(codec_name_.c_str()));
 
-    std::string quality_name = "crf"; // TODO: CRF / CQP
     if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
-        quality_name = "cq";
-        pix_fmt_     = pix_fmt;
+        pix_fmt_ = pix_fmt;
     }
 
     encoder_->vfmt.pix_fmt        = pix_fmt_;
-    encoder_->vfmt.framerate      = framerate_;
     encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     encoder_->afmt.channels       = config::recording::video::a::channels;
     encoder_->afmt.channel_layout = av_get_default_channel_layout(encoder_->afmt.channels);
@@ -283,9 +292,9 @@ void ScreenRecorder::setup()
         return;
     }
 
-    encoder_options_[quality_name] = std::to_string(config::recording::video::v::crf);
-    encoder_options_["vcodec"]     = codec_name_;
-    encoder_options_["acodec"]     = config::recording::video::a::codec;
+    encoder_options_["crf"]    = std::to_string(config::recording::video::v::crf);
+    encoder_options_["vcodec"] = codec_name_;
+    encoder_options_["acodec"] = config::recording::video::a::codec;
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
         LOG(INFO) << "open encoder failed";

@@ -103,7 +103,7 @@ int XshmCapturer::xfixes_draw_cursor(av::frame& frame) const
 int XshmCapturer::open(const std::string& name, std::map<std::string, std::string>)
 {
     int nb_screen{ -1 };
-    conn_ = ::xcb_connect(":1.0", &nb_screen);
+    conn_ = ::xcb_connect(name.c_str(), &nb_screen);
 
     if (const auto ret = ::xcb_connection_has_error(conn_); ret) {
         LOG(ERROR) << fmt::format("[    LINUX-X] cannot open dispaly {}, error {}", name, ret);
@@ -257,7 +257,5 @@ XshmCapturer::~XshmCapturer()
     stop();
     DLOG(INFO) << "[    LINUX-X] ~";
 }
-
-bool XshmCapturer::has(AVMediaType mt) const { return mt == AVMEDIA_TYPE_VIDEO; }
 
 #endif

@@ -49,7 +49,6 @@ private:
     // parameters
     AVPixelFormat                      pix_fmt_{ AV_PIX_FMT_YUV420P };
     std::string                        codec_name_{ "libx264" };
-    AVRational                         framerate_{ 30, 1 };
     std::string                        filters_{};
     std::map<std::string, std::string> encoder_options_{};
 

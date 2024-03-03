@@ -28,7 +28,7 @@ static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString
 };
 
 SettingWindow::SettingWindow(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint)
+    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint)
 {
     setMinimumSize(1080, 760);
     setContentsMargins({});
@@ -370,7 +370,7 @@ QWidget *SettingWindow::setupRecordWidget()
         form->addRow(tr("Rate Control"), ratectrl);
 
         const auto crf = new QSpinBox();
-        crf->setRange(15, 35);
+        crf->setRange(0, 51);
         crf->setContextMenuPolicy(Qt::NoContextMenu);
         crf->setValue(config::recording::video::v::crf);
         connect(crf, QOverload<int>::of(&QSpinBox::valueChanged),

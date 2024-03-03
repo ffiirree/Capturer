@@ -18,7 +18,7 @@
 #include <QVBoxLayout>
 
 ImageWindow::ImageWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent)
-    : FramelessWindow(parent, Qt::Tool | Qt::WindowTitleHint | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
     setWindowTitle("Image Window");
 

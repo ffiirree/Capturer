@@ -12,7 +12,7 @@
 #endif
 
 RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowStaysOnTopHint & ~Qt::WindowSystemMenuHint)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
     setAttribute(Qt::WA_ShowWithoutActivating);
 
@@ -20,7 +20,6 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
     layout->setSpacing(0);
     layout->setContentsMargins({});
     layout->setSizeConstraint(QLayout::SetFixedSize);
-    setLayout(layout);
 
     if (buttons & RecordingMenu::AUDIO) {
         // microphone button

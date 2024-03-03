@@ -18,7 +18,7 @@
 
 ## 下载 & 安装
 
-- `>= Windows 10 1803`
+- `>= Windows 10 2004`
 - `>= Ubuntu 20.04`
 
 > Not support Wayland on Linux
@@ -137,9 +137,9 @@ git submodule update --init --recursive
 
 - `C++` : `C++20`
 - `Qt` : `>= 5.15`
-- `CMake` : `>= 3.21`
+- `CMake` : `>= 3.27`
 - Windows
-  - `Windows` : `>= Windows 10 1803`
+  - `Windows` : `>= Windows 10 2004`
   - `Windows SDK` : `>= 10.0.22621.0`
   - `FFmpeg` : `>= 6.0`
 - Linux

@@ -1,6 +1,7 @@
 #ifndef CAPTURER_SCREENCAPTURER_H
 #define CAPTURER_SCREENCAPTURER_H
 
+#include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
 
 constexpr inline int CAPTURE_DESKTOP = 0x01;
@@ -23,7 +24,7 @@ public:
     // 4.
     bool     show_region{};
     // 5.
-    int      type{ CAPTURE_DESKTOP };
+    int      level{ CAPTURE_DESKTOP };
     uint64_t handle{}; // Windows: HMONITOR or HWND; Linux: X11 Window
 };
 

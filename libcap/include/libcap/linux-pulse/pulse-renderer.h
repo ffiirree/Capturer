@@ -1,6 +1,8 @@
 #ifndef CAPTURER_PULSE_RENDER_H
 #define CAPTURER_PULSE_RENDER_H
 
+#ifdef __linux__
+
 #include "libcap/audio-renderer.h"
 #include "libcap/devices.h"
 
@@ -59,5 +61,7 @@ private:
     std::atomic<int>  stream_retval_{};
     // @}
 };
+
+#endif
 
 #endif //! CAPTURER_PULSE_RENDER_H
