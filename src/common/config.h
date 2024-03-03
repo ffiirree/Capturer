@@ -37,6 +37,7 @@ namespace config
             inline SelectorStyle style{ 2, "#ffff5500", Qt::SolidLine, "#88000000" };
             inline bool          show_region{ true };
             inline bool          capture_mouse{ true };
+            inline bool          floating_menu{ true };
 
             inline QString mcf{ "mp4" };
             inline QString path{};
@@ -77,6 +78,7 @@ namespace config
             inline QString       path{};
             inline bool          show_region{ true };
             inline bool          capture_mouse{ true };
+            inline bool          floating_menu{ true };
 
             // options
             inline AVRational framerate{ 6, 1 };

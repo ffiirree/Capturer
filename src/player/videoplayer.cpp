@@ -532,8 +532,9 @@ void VideoPlayer::initContextMenu()
 
             const auto group = new QActionGroup(renders);
             group->addAction(renders->addAction("OpenGL"))->setCheckable(true);
+#ifdef _WIN32
             group->addAction(renders->addAction("D3D11"))->setCheckable(true);
-
+#endif
             group->actions()[0]->setChecked(true);
 
             video_menu->addMenu(renders);
@@ -563,7 +564,11 @@ void VideoPlayer::initContextMenu()
             const auto renders = new Menu(tr("Renderer"));
 
             const auto group = new QActionGroup(renders);
+#ifdef _WIN32
             group->addAction(renders->addAction("WASAPI"))->setCheckable(true);
+#else
+            group->addAction(renders->addAction("PulseAudio"))->setCheckable(true);
+#endif
             group->actions()[0]->setChecked(true);
 
             audio_menu->addMenu(renders);
@@ -586,8 +591,8 @@ void VideoPlayer::initContextMenu()
 
     menu_->addSeparator();
 
-    menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
-                     QKeySequence(Qt::CTRL | Qt::Key_I));
+    addAction(menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
+                               QKeySequence(Qt::CTRL + Qt::Key_I)));
 }
 
 void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)

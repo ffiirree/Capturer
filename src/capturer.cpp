@@ -111,8 +111,8 @@ void Capturer::SystemTrayInit()
 
     connect(tray_.data(), &QSystemTrayIcon::activated, this, &Capturer::TrayActivated);
     connect(tray_snip_, &QAction::triggered, sniper_.data(), &ScreenShoter::start);
-    connect(tray_record_video_, &QAction::triggered, recorder_.data(), &ScreenRecorder::start);
-    connect(tray_record_gif_, &QAction::triggered, gifcptr_.data(), &ScreenRecorder::start);
+    connect(tray_record_video_, &QAction::triggered, recorder_.data(), &ScreenRecorder::record);
+    connect(tray_record_gif_, &QAction::triggered, gifcptr_.data(), &ScreenRecorder::record);
     connect(tray_open_camera_, &QAction::triggered, this, &Capturer::ToggleCamera);
     connect(tray_settings_, &QAction::triggered, this, &Capturer::OpenSettingsDialog);
     connect(tray_exit_, &QAction::triggered, qApp, &QCoreApplication::exit);
@@ -188,11 +188,14 @@ void Capturer::OpenSettingsDialog()
 {
     if (settings_window_) {
         settings_window_->activateWindow();
+        settings_window_->raise();
         return;
     }
 
     settings_window_ = new SettingWindow();
     settings_window_->show();
+    settings_window_->move(primaryScreen()->geometry().center() -
+                           QPoint{ settings_window_->width() / 2, settings_window_->height() / 2 });
 }
 
 void Capturer::QuickLook()

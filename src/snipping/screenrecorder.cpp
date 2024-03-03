@@ -309,7 +309,9 @@ void ScreenRecorder::setup()
         return;
     }
 
-    menu_->start();
+    if ((rec_type_ == VIDEO && config::recording::video::floating_menu) ||
+        (rec_type_ == GIF && config::recording::gif::floating_menu))
+        menu_->start();
     timer_->start(50);
 }
 

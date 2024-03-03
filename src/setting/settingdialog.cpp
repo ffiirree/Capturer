@@ -33,7 +33,6 @@ SettingWindow::SettingWindow(QWidget *parent)
     setMinimumSize(1080, 760);
     setContentsMargins({});
 
-    setWindowModality(Qt::ApplicationModal);
     setAttribute(Qt::WA_DeleteOnClose);
 
     setWindowTitle(tr("Settings"));
@@ -280,6 +279,12 @@ QWidget *SettingWindow::setupRecordWidget()
         connect(region, &QCheckBox::toggled,
                 [](auto checked) { config::recording::video::show_region = checked; });
         form->addRow(tr("Show Region"), region);
+
+        const auto hmenu = new QCheckBox();
+        hmenu->setChecked(config::recording::video::floating_menu);
+        connect(hmenu, &QCheckBox::toggled,
+                [](auto checked) { config::recording::video::floating_menu = checked; });
+        form->addRow(tr("Floating Menu"), hmenu);
     }
 
     {
@@ -345,8 +350,8 @@ QWidget *SettingWindow::setupRecordWidget()
                 { QPoint{ 20, 1 }, "20" },
                 { QPoint{ 24, 1 }, "24 NTSC" },
                 { QPoint{ 25, 1 }, "25 PAL" },
-                { QPoint{ 30, 1 }, "30" },
                 { QPoint{ 30000, 1001 }, "29.97" },
+                { QPoint{ 30, 1 }, "30" },
                 { QPoint{ 48, 1 }, "48" },
                 { QPoint{ 50, 1 }, "50 PAL" },
                 { QPoint{ 60000, 1001 }, "59.94" },
@@ -475,6 +480,12 @@ QWidget *SettingWindow::setupGIFWidget()
         connect(region, &QCheckBox::toggled,
                 [](auto checked) { config::recording::gif::show_region = checked; });
         form->addRow(tr("Show Region"), region);
+
+        const auto hmenu = new QCheckBox();
+        hmenu->setChecked(config::recording::gif::floating_menu);
+        connect(hmenu, &QCheckBox::toggled,
+                [](auto checked) { config::recording::gif::floating_menu = checked; });
+        form->addRow(tr("Floating Menu"), hmenu);
     }
 
     {

@@ -335,6 +335,10 @@
         <source>Transparent Input</source>
         <translation>输入穿透</translation>
     </message>
+    <message>
+        <source>Floating Menu</source>
+        <translation>悬浮菜单</translation>
+    </message>
 </context>
 <context>
     <name>VideoPlayer</name>

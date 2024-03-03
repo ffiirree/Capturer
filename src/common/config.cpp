@@ -55,6 +55,7 @@ namespace config
 
                 JSON_GET(show_region, j["recording"]["video"], "show-region");
                 JSON_GET(capture_mouse, j["recording"]["video"], "capture-mouse");
+                JSON_GET(floating_menu, j["recording"]["video"], "floating-menu");
 
                 JSON_GET(mcf, j["recording"]["video"], "container-format");
                 JSON_GET(path, j["recording"]["video"], "save-path");
@@ -91,6 +92,7 @@ namespace config
                 JSON_GET(path, j["recording"]["gif"], "save-path");
                 JSON_GET(show_region, j["recording"]["gif"], "show-region");
                 JSON_GET(capture_mouse, j["recording"]["gif"], "captuer-mouse");
+                JSON_GET(floating_menu, j["recording"]["gif"], "floating-menu");
 
                 JSON_GET(framerate.num, j["recording"]["gif"], "framerate");
                 JSON_GET(colors, j["recording"]["gif"], "colors");
@@ -128,6 +130,7 @@ namespace config
 
         j["recording"]["video"]["show-region"]   = recording::video::show_region;
         j["recording"]["video"]["capture-mouse"] = recording::video::capture_mouse;
+        j["recording"]["video"]["floating-menu"] = recording::video::floating_menu;
 
         j["recording"]["video"]["container-format"] = recording::video::mcf;
         j["recording"]["video"]["save-path"]        = recording::video::path;
@@ -153,6 +156,7 @@ namespace config
         j["recording"]["gif"]["save-path"]     = recording::gif::path;
         j["recording"]["gif"]["show-region"]   = recording::gif::show_region;
         j["recording"]["gif"]["captuer-mouse"] = recording::gif::capture_mouse;
+        j["recording"]["gif"]["floating-menu"] = recording::gif::floating_menu;
 
         j["recording"]["gif"]["framerate"] = recording::gif::framerate.num;
         j["recording"]["gif"]["colors"]    = recording::gif::colors;
