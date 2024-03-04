@@ -28,7 +28,7 @@ static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString
 };
 
 SettingWindow::SettingWindow(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint)
+    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowTitleHint)
 {
     setMinimumSize(1080, 760);
     setContentsMargins({});

@@ -1,7 +1,8 @@
 #ifndef CAPTURER_RECORD_MENU_H
 #define CAPTURER_RECORD_MENU_H
 
-#include <framelesswindow.h>
+#include "framelesswindow.h"
+
 #include <QCheckBox>
 #include <QLabel>
 
@@ -25,7 +26,6 @@ signals:
     void resumed();
     void muted(int, bool);
     void stopped();
-    void opened(bool);
 
 public slots:
     void start();
@@ -39,15 +39,12 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
-    QCheckBox *mic_btn_{ nullptr };
-    QCheckBox *speaker_btn_{ nullptr };
-    QCheckBox *pause_btn_{ nullptr };
-    QCheckBox *close_btn_{ nullptr };
+    QCheckBox *mic_btn_{};
+    QCheckBox *speaker_btn_{};
+    QCheckBox *pause_btn_{};
+    QCheckBox *close_btn_{};
 
-    QLabel *time_label_{ nullptr };
-
-    QPoint begin_pos_{ 0, 0 };
-    bool   moving_{ false };
+    QLabel *time_label_{};
 };
 
 #endif //! CAPTURER_RECORD_MENU_H

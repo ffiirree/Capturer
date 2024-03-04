@@ -12,7 +12,7 @@
 #endif
 
 EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowStaysOnTopHint | Qt::ToolTip)
+    : FramelessWindow(parent, Qt::ToolTip | Qt::WindowStaysOnTopHint)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);

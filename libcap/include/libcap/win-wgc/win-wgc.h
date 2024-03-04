@@ -1,7 +1,7 @@
-#ifdef _WIN32
-
 #ifndef CAPTURER_WIN_WGC_H
 #define CAPTURER_WIN_WGC_H
+
+#ifdef _WIN32
 
 #include <d3d11.h>
 #include <windows.graphics.capture.h>
@@ -52,6 +52,6 @@ namespace wgc
     }
 } // namespace wgc
 
-#endif //! CAPTURER_WIN_WGC_H
-
 #endif
+
+#endif //! CAPTURER_WIN_WGC_H

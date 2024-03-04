@@ -14,7 +14,7 @@
 #include <windowsx.h>
 #endif
 
-FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags flags)
+FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
     : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint | flags)
 {
 #ifdef Q_OS_WIN
@@ -32,7 +32,8 @@ FramelessWindow::FramelessWindow(QWidget *parent, Qt::WindowFlags flags)
 
     // Window Styles: https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles
     auto style = ::GetWindowLong(hwnd, GWL_STYLE);
-    ::SetWindowLong(hwnd, GWL_STYLE, (style | WS_CAPTION | WS_THICKFRAME) & (~WS_SYSMENU));
+    if (windowFlags() & Qt::WindowTitleHint) style |= WS_CAPTION | WS_THICKFRAME;
+    ::SetWindowLong(hwnd, GWL_STYLE, style & ~WS_SYSMENU);
 
     ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
@@ -56,13 +57,13 @@ bool FramelessWindow::isSizeFixed() const
     return !minsize.isEmpty() && !maxsize.isEmpty() && (minsize == maxsize);
 }
 
-void FramelessWindow::maximize(bool state) { state ? showMaximized() : showNormal(); }
+void FramelessWindow::maximize(const bool state) { state ? showMaximized() : showNormal(); }
 
 void FramelessWindow::toggleMaximized() { !isMaximized() ? showMaximized() : showNormal(); }
 
-void FramelessWindow::minimize(bool state) { state ? showMinimized() : showNormal(); }
+void FramelessWindow::minimize(const bool state) { state ? showMinimized() : showNormal(); }
 
-void FramelessWindow::fullscreen(bool state) { state ? showFullScreen() : showNormal(); }
+void FramelessWindow::fullscreen(const bool state) { state ? showFullScreen() : showNormal(); }
 
 void FramelessWindow::toggleFullScreen() { isFullScreen() ? showNormal() : showFullScreen(); }
 

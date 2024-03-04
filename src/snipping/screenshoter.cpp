@@ -13,7 +13,7 @@
 ScreenShoter::ScreenShoter(QWidget *parent)
     : QGraphicsView(parent)
 {
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint);
 #ifdef NDEBUG
     setWindowFlag(Qt::WindowStaysOnTopHint, true);
 #endif
@@ -180,10 +180,11 @@ QBrush ScreenShoter::mosaicBrush()
 void ScreenShoter::updateCursor(ResizerLocation location)
 {
     if (menu_->graph() & canvas::eraser) {
-        setCursor(QCursor{ cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }, Qt::NoBrush) });
+        setCursor(
+            QCursor{ cursor::circle(menu_->pen().width(), { QColor{ 136, 136, 136 }, 3 }, Qt::NoBrush) });
     }
     else if (menu_->graph() & canvas::mosaic) {
-        setCursor(QCursor{ cursor::circle(menu_->pen().width(), { QColor("#888888"), 3 }) });
+        setCursor(QCursor{ cursor::circle(menu_->pen().width(), { QColor{ 136, 136, 136 }, 3 }) });
     }
     else {
         setCursor(getCursorByLocation(location, Qt::CrossCursor));
@@ -407,7 +408,9 @@ void ScreenShoter::save()
         save_path_ = QFileInfo(filename).absolutePath();
 
         auto [pixmap, _] = snip();
-        pixmap.save(filename);
+        if (!pixmap.save(filename)) {
+            LOG(ERROR) << "failed to save the captured image.";
+        }
 
         emit saved(filename);
         exit();
@@ -466,7 +469,7 @@ void ScreenShoter::setStyle(const SelectorStyle& style)
 
 void ScreenShoter::registerShortcuts()
 {
-    connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this] {
+    connect(new QShortcut(Qt::CTRL + Qt::Key_S, this), &QShortcut::activated, [this] {
         if (any(selector_->status() & SelectorStatus::CAPTURED) ||
             any(selector_->status() & SelectorStatus::LOCKED)) {
             save();
@@ -487,13 +490,20 @@ void ScreenShoter::registerShortcuts()
     });
 
     connect(new QShortcut(Qt::Key_F5, this), &QShortcut::activated, [this] {
+        const auto menuv = menu_->isVisible();
+        const auto magnv = magnifier_->isVisible();
+        if (menuv) menu_->hide();
+        if (magnv) magnifier_->hide();
+
         hide();
-        magnifier_->hide();
 
         refresh(probe::graphics::virtual_screen_geometry());
 
-        magnifier_->show();
         show();
+
+        if (menuv) menu_->show();
+        if (magnv) magnifier_->show();
+
         activateWindow();
     });
 
@@ -530,7 +540,7 @@ void ScreenShoter::registerShortcuts()
         }
     });
 
-    connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this] {
+    connect(new QShortcut(Qt::CTRL + Qt::Key_C, this), &QShortcut::activated, [=, this] {
         if (selector_->status() < SelectorStatus::CAPTURED && magnifier_->isVisible()) {
             clipboard::push(magnifier_->color(), magnifier_->colorname());
             exit();

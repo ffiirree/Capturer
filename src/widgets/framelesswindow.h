@@ -13,7 +13,7 @@ class FramelessWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FramelessWindow(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+    explicit FramelessWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
 
     [[nodiscard]] bool isSizeFixed() const;
 

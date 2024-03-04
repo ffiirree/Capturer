@@ -1,5 +1,6 @@
 #include "editing-menu.h"
 
+#include "probe/graphics.h"
 #include "separator.h"
 
 #include <map>
@@ -14,8 +15,8 @@
 #include "platforms/window-effect.h"
 #endif
 
-EditingMenu::EditingMenu(QWidget *parent, uint32_t groups)
-    : FramelessWindow(parent, Qt::WindowStaysOnTopHint | Qt::ToolTip)
+EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
+    : FramelessWindow(parent, Qt::ToolTip | Qt::WindowStaysOnTopHint)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);
