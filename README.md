@@ -189,7 +189,7 @@ sudo apt install libv4l-dev v4l-utils
 sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
 ```
 
-> 若CMake 版本过低，请先安装更高版本的CMake(>=3.21), 参见下一小节
+> 若CMake 版本过低，请先安装更高版本的CMake(>=3.27), 参见下一小节
 
 ```bash
 cd Capturer && mkdir build && cd build
@@ -197,24 +197,29 @@ cd Capturer && mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j8
 
+# install
+sudo make install
+
 # package 'xx.deb'
 make package
 ```
 
 ### Install CMake from Source
 
-以CMake 3.26.1 为例
+以CMake 3.28.3 为例
 
 ```bash
-wget https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1.tar.gz
-tar -zxvf cmake-3.26.1.tar.gz
-cd cmake-3.26.1
+wget https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3.tar.gz
+tar -zxvf cmake-3.28.3.tar.gz
+cd cmake-3.28.3
 
 sudo apt install libssl-dev
 
 ./bootstrap
 make -j8
 sudo make install
+
+cmake --version
 ```
 
 ## FFmpeg代码示例
