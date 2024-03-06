@@ -21,8 +21,10 @@
 #include <QVBoxLayout>
 
 #ifdef _WIN32
+#include "libcap/win-mfvc/mfvc-capturer.h"
 #include "libcap/win-wasapi/wasapi-renderer.h"
 using AudioOutput = WasapiRenderer;
+using CameraInput = MFCameraCapturer;
 #elif __linux__
 #include "libcap/linux-pulse/pulse-renderer.h"
 #include "libcap/linux-v4l2/v4l2-capturer.h"
@@ -101,12 +103,11 @@ int VideoPlayer::open(const std::string& filename, std::map<std::string, std::st
     std::map<std::string, std::string> decoder_options;
     if (options.contains("format")) {
         decoder_options["format"] = options.at("format");
-        if (options.at("format") == "dshow" || options.at("format") == "v4l2") {
+        if (options.at("format") == "webcam") {
+            source_ = std::make_unique<CameraInput>();
+
             is_live_ = true;
             control_->setPlaybackMode(PlaybackMode::LIVE);
-#ifdef __linux__
-            source_ = std::make_unique<V4l2Capturer>();
-#endif
         }
     }
 

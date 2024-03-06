@@ -39,6 +39,10 @@ target_link_libraries(libcap
         $<$<PLATFORM_ID:Windows>:Shcore> 
         $<$<PLATFORM_ID:Windows>:DXGI>
         $<$<PLATFORM_ID:Windows>:D3D11>
+        $<$<PLATFORM_ID:Windows>:Mfplat>
+        $<$<PLATFORM_ID:Windows>:Mf>
+        $<$<PLATFORM_ID:Windows>:Mfreadwrite>
+        $<$<PLATFORM_ID:Windows>:Mfuuid>
         $<$<PLATFORM_ID:Linux>:Libv4l2::Libv4l2>
         $<$<PLATFORM_ID:Linux>:X11::X11>
         $<$<PLATFORM_ID:Linux>:X11::xcb>

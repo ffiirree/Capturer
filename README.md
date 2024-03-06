@@ -146,6 +146,14 @@ git submodule update --init --recursive
   - `FFmpeg` : `>= 4.2`
   - `Window System` : `X11`
 
+#### Video & Audio Capture Sources & Methods
+
+|        | Windows                        | Linux      |
+| :----: | ------------------------------ | ---------- |
+| Screen | Windows Graphics Capture       | XCB-XSHM   |
+| Audio  | Windows Audio Session API      | PulseAudio |
+| Camera | Media Foundation Video Capture | V4L2       |
+
 ### Windows
 
 #### Install FFmpeg

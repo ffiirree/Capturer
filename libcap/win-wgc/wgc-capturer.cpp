@@ -33,9 +33,10 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
 {
     // clang-format off
     switch (level) {
-    case CAPTURE_DESKTOP: return av::err_t::unsupported;
-    case CAPTURE_DISPLAY: item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(handle)); break;
-    case CAPTURE_WINDOW: item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(handle)); break;
+    case CAPTURE_DISPLAY:   item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(handle)); break;
+    case CAPTURE_WINDOW:    item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(handle)); break;
+    case CAPTURE_DESKTOP:
+    default:                return av::err_t::unsupported;
     }
     // clang-format on
 

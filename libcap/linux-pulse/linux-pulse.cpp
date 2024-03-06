@@ -202,7 +202,7 @@ namespace pulse
                                              .type = av::device_type_t::audio | av::device_type_t::source |
                                 (i->monitor_of_sink != PA_INVALID_INDEX ? av::device_type_t::monitor
                                                                                              : av::device_type_t::none),
-                                             .format = av::device_format_t::pulse,
+                                             .format = av::device_format_t::PulseAudio,
                                              .state  = static_cast<uint64_t>(i->state),
                     });
                 }
@@ -237,7 +237,7 @@ namespace pulse
                         .description = i->description,
                         .driver      = i->driver,
                         .type        = av::device_type_t::audio | av::device_type_t::sink,
-                        .format      = av::device_format_t::pulse,
+                        .format      = av::device_format_t::PulseAudio,
                         .state       = static_cast<uint64_t>(i->state),
                     });
                 }
@@ -277,7 +277,7 @@ namespace pulse
                                 (i->monitor_of_sink != PA_INVALID_INDEX ? av::device_type_t::monitor
                                                                                 : av::device_type_t::none);
 
-                    dev->format = av::device_format_t::pulse;
+                    dev->format = av::device_format_t::PulseAudio;
                     dev->state  = static_cast<uint64_t>(i->state);
                 }
 
@@ -342,7 +342,7 @@ namespace pulse
                     dev->description = i->description;
                     dev->driver      = i->driver;
                     dev->type        = av::device_type_t::audio | av::device_type_t::sink;
-                    dev->format      = av::device_format_t::pulse;
+                    dev->format      = av::device_format_t::PulseAudio;
                     dev->state       = static_cast<uint64_t>(i->state);
                 }
 

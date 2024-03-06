@@ -27,14 +27,12 @@ namespace av
     enum class device_format_t
     {
         unsupported = 0x00,
-        v4l2,
-        pulse,
-        dshow,
-        wasapi,
-        x11grab,
-        gdigrab,
-        wgcgrab,
-        ddagrab,
+        V4L2,
+        PulseAudio,
+        DirectShow,
+        WASAPI,
+        WindowsGraphicsCapture,
+        MediaFoundation
     };
 
     struct device_t
@@ -85,15 +83,13 @@ namespace av
     inline std::string to_string(const device_format_t fmt)
     {
         switch (fmt) {
-        case device_format_t::v4l2:    return "v4l2";
-        case device_format_t::pulse:   return "pulse";
-        case device_format_t::dshow:   return "dshow";
-        case device_format_t::wasapi:  return "wasapi";
-        case device_format_t::x11grab: return "x11grab";
-        case device_format_t::gdigrab: return "gdigrab";
-        case device_format_t::wgcgrab: return "wgcgrab";
-        case device_format_t::ddagrab: return "ddagrab";
-        default:                       return "unsupported";
+        case device_format_t::V4L2:                   return "V4L2";
+        case device_format_t::PulseAudio:             return "PulseAudio";
+        case device_format_t::DirectShow:             return "DirectShow";
+        case device_format_t::WASAPI:                 return "Windows Audio Session API";
+        case device_format_t::WindowsGraphicsCapture: return "Windows Graphics Capture";
+        case device_format_t::MediaFoundation:        return "Meida Foundation";
+        default:                                      return "unsupported";
         }
     }
 

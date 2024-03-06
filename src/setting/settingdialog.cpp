@@ -554,11 +554,7 @@ QWidget *SettingWindow::setupDevicesWidget()
     // cameras
     std::vector<std::pair<QVariant, QString>> cameras{};
     for (const auto& dev : av::cameras()) {
-#ifdef _WIN32
-        cameras.emplace_back(QString::fromUtf8(dev.name.c_str()), QString::fromUtf8(dev.name.c_str()));
-#else
         cameras.emplace_back(QString::fromUtf8(dev.id.c_str()), QString::fromUtf8(dev.name.c_str()));
-#endif
     }
 
     const auto page = new ScrollWidget();

@@ -209,6 +209,7 @@ public:
         std::lock_guard lock(mtx_);
 
         stopped_ = true;
+        buffer_  = {};
 
         nonempty_.notify_all();
         nonfull_.notify_all();

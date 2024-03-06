@@ -1,7 +1,6 @@
 #include "config.h"
 
 #include "json.h"
-#include "libcap/devices.h"
 #include "logging.h"
 
 #include <probe/system.h>
@@ -194,15 +193,6 @@ namespace config
 
         if (recording::gif::path.isEmpty())
             recording::gif::path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-
-        // cameras
-        if (const auto& cameras = av::cameras(); !cameras.empty()) {
-#ifdef _WIN32
-            devices::camera = cameras[0].name;
-#else
-            devices::camera = cameras[0].id;
-#endif
-        }
     }
 
     void save()

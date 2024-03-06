@@ -7,7 +7,7 @@
 #include "libcap/linux-pulse/linux-pulse.h"
 #include "libcap/linux-v4l2/linux-v4l2.h"
 #elif _WIN32
-#include "libcap/win-dshow/win-dshow.h"
+#include "libcap/win-mfvc/win-mfvc.h"
 #include "libcap/win-wasapi/win-wasapi.h"
 #endif
 
@@ -16,7 +16,7 @@ namespace av
     std::vector<device_t> cameras()
     {
 #if _WIN32
-        return dshow::video_devices();
+        return mfvc::video_devices();
 #elif __linux__
         return v4l2::device_list();
 #else

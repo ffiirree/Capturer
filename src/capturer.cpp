@@ -76,6 +76,11 @@ void Capturer::Init()
     const auto asink         = av::default_audio_sink();
     config::devices::speaker = asink.value_or(av::device_t{}).id;
 
+    // cameras
+    if (const auto& cameras = av::cameras(); !cameras.empty()) {
+        config::devices::camera = cameras[0].id;
+    }
+
     LOG(INFO) << "initialized.";
 }
 
@@ -174,12 +179,7 @@ void Capturer::ToggleCamera()
         return;
     }
 
-    auto& name = config::devices::camera;
-#ifdef _WIN32
-    if (camera_->open("video=" + name, { { "format", "dshow" }, { "filters", "hflip" } }) < 0) {
-#elif __linux__
-    if (camera_->open(name, { { "format", "v4l2" }, {} }) < 0) {
-#endif
+    if (camera_->open(config::devices::camera, { { "format", "webcam" }, { "filters", "hflip" } }) < 0) {
         LOG(ERROR) << "failed to open camera";
     }
 }

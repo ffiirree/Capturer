@@ -76,7 +76,7 @@ namespace v4l2
                 .id     = device_id,
                 .bus    = reinterpret_cast<char *>(v4l2_cap.bus_info),
                 .type   = av::device_type_t::video | av::device_type_t::source,
-                .format = av::device_format_t::v4l2,
+                .format = av::device_format_t::V4L2,
             });
         }
 

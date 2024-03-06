@@ -2,6 +2,7 @@
 #define CAPTURER_LOGGING_H
 
 #include <filesystem>
+#include <fmt/format.h>
 #include <glog/logging.h>
 #include <probe/thread.h>
 
@@ -84,5 +85,19 @@ private:
             [](const char *data, size_t size) { LOG(ERROR) << std::string(data, size); });
     }
 };
+
+#define NOTNULL(VAL) CHECK_NOTNULL(VAL)
+
+#define logd(FMT, ...) DLOG(INFO) << fmt::format(FMT, ##__VA_ARGS__)
+#define logi(FMT, ...) LOG(INFO) << fmt::format(FMT, ##__VA_ARGS__)
+#define logw(FMT, ...) LOG(WARNING) << fmt::format(FMT, ##__VA_ARGS__)
+#define loge(FMT, ...) LOG(ERROR) << fmt::format(FMT, ##__VA_ARGS__)
+#define logf(FMT, ...) LOG(FATAL) << fmt::format(FMT, ##__VA_ARGS__)
+
+#define logd_if(FMT, ...) DLOG_IF(INFO) << fmt::format(FMT, ##__VA_ARGS__)
+#define logi_if(FMT, ...) LOG_IF(INFO) << fmt::format(FMT, ##__VA_ARGS__)
+#define logw_if(FMT, ...) LOG_IF(WARNING) << fmt::format(FMT, ##__VA_ARGS__)
+#define loge_if(FMT, ...) LOG_IF(ERROR) << fmt::format(FMT, ##__VA_ARGS__)
+#define logf_if(FMT, ...) LOG_IF(FATAL) << fmt::format(FMT, ##__VA_ARGS__)
 
 #endif //! CAPTURER_LOGGING_H
