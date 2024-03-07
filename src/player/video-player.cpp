@@ -284,7 +284,7 @@ uint32_t VideoPlayer::audio_callback(uint8_t **ptr, const uint32_t request_frame
 
 int VideoPlayer::consume(const av::frame& frame, const AVMediaType type)
 {
-    if (source_->seeking()) return 0;
+    if (source_->seeking(type)) return 0;
 
     if (seeking_) {
         seeking_ = false;

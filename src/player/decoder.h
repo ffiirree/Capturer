@@ -55,7 +55,7 @@ public:
 
     void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel);
 
-    bool seeking() const;
+    bool seeking(AVMediaType) const;
 
     bool has(AVMediaType) const;
 

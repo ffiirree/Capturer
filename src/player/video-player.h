@@ -103,9 +103,9 @@ private:
     sonic_stream *sonic_stream_{}; // audio speed up / down
 
     std::atomic<bool>     seeking_{};
-    safe_queue<av::frame> aqueue_{ 4 };
+    safe_queue<av::frame> aqueue_{ 2 };
     std::atomic<bool>     adone_{};
-    safe_queue<av::frame> vqueue_{ 4 };
+    safe_queue<av::frame> vqueue_{ 2 };
     std::atomic<bool>     vdone_{};
 
     std::atomic<int> vstep_{ 0 };

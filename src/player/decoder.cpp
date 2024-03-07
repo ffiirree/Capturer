@@ -521,7 +521,10 @@ void Decoder::adecode_thread_fn()
     logi("[A] SEND NULL, EXITED");
 }
 
-bool Decoder::seeking() const { return (seek_pts_ != AV_NOPTS_VALUE) || vctx.dirty || actx.dirty; }
+bool Decoder::seeking(const AVMediaType type) const
+{
+    return (seek_pts_ != AV_NOPTS_VALUE) || ((type == AVMEDIA_TYPE_VIDEO) ? vctx.dirty : actx.dirty);
+}
 
 void Decoder::stop()
 {
