@@ -92,11 +92,7 @@ void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t b
     ::pa_stream_write(stream, buffer, bytes, nullptr, 0, PA_SEEK_RELATIVE);
 }
 
-void PulseAudioRenderer::pulse_stream_latency_callback(pa_stream *, void *)
-{
-    logd("[PULSE-AUDIO] latency updated");
-    pulse::signal(0);
-}
+void PulseAudioRenderer::pulse_stream_latency_callback(pa_stream *, void *) { pulse::signal(0); }
 
 void PulseAudioRenderer::pulse_stream_state_callback(pa_stream *stream, void *userdata)
 {

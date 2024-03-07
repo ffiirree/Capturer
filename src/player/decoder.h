@@ -55,8 +55,6 @@ public:
 
     void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel);
 
-    bool seek_request() const;
-
     bool seeking() const;
 
     bool has(AVMediaType) const;
@@ -82,7 +80,7 @@ public:
 private:
     int create_audio_graph();
     int create_video_graph();
-    int filter(DecodingContext& ctx, const av::frame& frame, AVMediaType type);
+    int filter_frame(DecodingContext& ctx, const av::frame& frame, AVMediaType type);
 
     void readpkt_thread_fn();
     void vdecode_thread_fn();
@@ -104,7 +102,7 @@ private:
     // seek, AV_TIME_BASE @{
     mutable std::shared_mutex seek_mtx_{};
     int64_t                   seek_min_{ std::numeric_limits<int64_t>::min() };
-    int64_t                   seek_pts_{ AV_NOPTS_VALUE };
+    std::atomic<int64_t>      seek_pts_{ AV_NOPTS_VALUE };
     int64_t                   seek_max_{ std::numeric_limits<int64_t>::max() };
     // @}
     std::atomic<int64_t>      trim_pts_{ 0 };

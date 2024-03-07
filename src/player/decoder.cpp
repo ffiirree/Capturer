@@ -189,8 +189,6 @@ int Decoder::create_video_graph()
         return -1;
     }
 
-    // logi("[    DECODER] filter graph \n{}\n", avfilter_graph_dump(vctx.graph, nullptr));
-
     return 0;
 }
 
@@ -215,8 +213,6 @@ int Decoder::create_audio_graph()
         loge("[    DECODER] [A] failed to configure the filter graph");
         return -1;
     }
-
-    // logi("[    DECODER] filter graph \n{}\n", avfilter_graph_dump(actx.graph, nullptr));
 
     return 0;
 }
@@ -276,11 +272,13 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
 {
     std::scoped_lock lock(seek_mtx_);
 
+    if (seek_pts_ != AV_NOPTS_VALUE) return;
+
     seek_pts_ = std::clamp<int64_t>(ts.count() / 1000, fmt_ctx_->start_time, fmt_ctx_->duration);
     seek_min_ = rel > 0s ? seek_pts_ - rel.count() / 1000 + 2 : std::numeric_limits<int64_t>::min();
     seek_max_ = rel < 0s ? seek_pts_ - rel.count() / 1000 - 2 : std::numeric_limits<int64_t>::max();
 
-    trim_pts_ = (seek_pts_ <= std::max<int64_t>(0, fmt_ctx_->start_time)) ? 0 : seek_pts_;
+    trim_pts_ = (seek_pts_ <= std::max<int64_t>(0, fmt_ctx_->start_time)) ? 0 : seek_pts_.load();
     logi("seek: {:.3%T}, {:.3%T} {:+}s ({:.3%T}, {:.3%T}) D: {:%T} - {:%T}",
          std::chrono::microseconds{ seek_pts_ }, std::chrono::microseconds{ trim_pts_ },
          rel.count() / 1000000000, std::chrono::microseconds{ seek_min_ },
@@ -314,7 +312,7 @@ void Decoder::readpkt_thread_fn()
 
     av::packet packet{};
     while (running_ && !eof_) {
-        if (seek_request()) {
+        if (seek_pts_ != AV_NOPTS_VALUE) {
             std::scoped_lock lock(seek_mtx_);
 
             if (avformat_seek_file(fmt_ctx_, -1, seek_min_, seek_pts_, seek_max_, 0) < 0) {
@@ -327,10 +325,10 @@ void Decoder::readpkt_thread_fn()
                 actx.done     = false;
             }
 
-            seek_pts_ = AV_NOPTS_VALUE;
-
             vctx.queue.start();
             actx.queue.start();
+
+            seek_pts_ = AV_NOPTS_VALUE;
         }
 
         // read
@@ -365,7 +363,7 @@ void Decoder::readpkt_thread_fn()
     logi("R-THREAD EXITED");
 }
 
-int Decoder::filter(DecodingContext& ctx, const av::frame& frame, const AVMediaType type)
+int Decoder::filter_frame(DecodingContext& ctx, const av::frame& frame, const AVMediaType type)
 {
     // send the frame to graph
     if (av_buffersrc_add_frame_flags(ctx.src, frame.get(), AV_BUFFERSRC_FLAG_PUSH) < 0) {
@@ -378,7 +376,7 @@ int Decoder::filter(DecodingContext& ctx, const av::frame& frame, const AVMediaT
     while (running_) {
         const int ret =
             av_buffersink_get_frame_flags(ctx.sink, ctx.frame.put(), AV_BUFFERSINK_FLAG_NO_REQUEST);
-        if (ret == AVERROR(EAGAIN) || seek_request()) {
+        if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) {
             return 0;
         }
 
@@ -423,26 +421,23 @@ void Decoder::vdecode_thread_fn()
         auto ret = avcodec_send_packet(vctx.codec, pkt.value().get());
         while (ret >= 0) {
             ret = avcodec_receive_frame(vctx.codec, frame.put());
-            if (ret == AVERROR(EAGAIN) || seek_request()) {
-                break;
-            }
-            else if (ret == AVERROR_EOF) {
-                logi("[V] VDECODING_EOF");
+            if (ret < 0) {
+                if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) break;
 
-                filter(vctx, nullptr, AVMEDIA_TYPE_VIDEO);
-                break;
-            }
-            else if (ret < 0) {
-                loge("[V] DECODING ERROR, ABORT");
+                if (ret == AVERROR_EOF) {
+                    filter_frame(vctx, nullptr, AVMEDIA_TYPE_VIDEO);
+                    logi("[V] DECODING EOF, SEND NULL");
+                    break;
+                }
 
                 running_ = false;
+                loge("[V] DECODING ERROR, ABORT");
                 break;
             }
 
             frame->pts = frame->best_effort_timestamp;
 
             if (frame->pts != AV_NOPTS_VALUE) {
-
                 const auto vpts = av::clock::us(frame->pts, vctx.stream->time_base).count();
                 if (!vctx.synced && !vctx.dirty) {
                     vctx.synced = true;
@@ -452,14 +447,13 @@ void Decoder::vdecode_thread_fn()
                 if (vpts >= trim_pts_) {
                     logd("[V] pts = {:>14d} - {:.3%T}", frame->pts,
                          av::clock::ms(frame->pts, vctx.stream->time_base));
-                    filter(vctx, frame, AVMEDIA_TYPE_VIDEO);
+                    filter_frame(vctx, frame, AVMEDIA_TYPE_VIDEO);
                 }
             }
         }
     }
 
     vctx.queue.wait_and_push(nullptr);
-
     logi("[V] SEND NULL, EXITED");
 }
 
@@ -483,19 +477,17 @@ void Decoder::adecode_thread_fn()
         auto ret = avcodec_send_packet(actx.codec, pkt.value().get());
         while (ret >= 0) {
             ret = avcodec_receive_frame(actx.codec, frame.put());
-            if (ret == AVERROR(EAGAIN) || seek_request()) {
-                break;
-            }
-            else if (ret == AVERROR_EOF) {
-                logi("[A] ADECODING_EOF");
+            if (ret < 0) {
+                if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) break;
 
-                filter(actx, nullptr, AVMEDIA_TYPE_AUDIO);
-                break;
-            }
-            else if (ret < 0) {
-                loge("[A] DECODING ERROR, ABORT");
+                if (ret == AVERROR_EOF) {
+                    filter_frame(actx, nullptr, AVMEDIA_TYPE_AUDIO);
+                    logi("[A] DECODING EOF, SEND NULL");
+                    break;
+                }
 
                 running_ = false;
+                loge("[A] DECODING ERROR, ABORT");
                 break;
             }
 
@@ -519,24 +511,17 @@ void Decoder::adecode_thread_fn()
                     logd("[A] pts = {:>14d} - {:.3%T}", frame->pts,
                          av::clock::ms(frame->pts, afi.time_base));
 
-                    filter(actx, frame, AVMEDIA_TYPE_AUDIO);
+                    filter_frame(actx, frame, AVMEDIA_TYPE_AUDIO);
                 }
             }
         }
     }
 
     actx.queue.wait_and_push(nullptr);
-
     logi("[A] SEND NULL, EXITED");
 }
 
-bool Decoder::seek_request() const
-{
-    std::shared_lock lock(seek_mtx_);
-    return seek_pts_ != AV_NOPTS_VALUE;
-}
-
-bool Decoder::seeking() const { return seek_request() || vctx.dirty || actx.dirty; }
+bool Decoder::seeking() const { return (seek_pts_ != AV_NOPTS_VALUE) || vctx.dirty || actx.dirty; }
 
 void Decoder::stop()
 {
