@@ -7,7 +7,7 @@
 #include "libcap/devices.h"
 #include "logging.h"
 #include "settingdialog.h"
-#include "videoplayer.h"
+#include "video-player.h"
 
 #include <QApplication>
 #include <QFileInfo>
@@ -172,7 +172,7 @@ void Capturer::ToggleCamera()
     }
 
     // open
-    camera_ = new VideoPlayer();
+    camera_ = new CameraPlayer();
 
     if (av::cameras().empty()) {
         LOG(WARNING) << "camera not found";
@@ -182,6 +182,7 @@ void Capturer::ToggleCamera()
     if (camera_->open(config::devices::camera, { { "format", "webcam" }, { "filters", "hflip" } }) < 0) {
         LOG(ERROR) << "failed to open camera";
     }
+    camera_->start();
 }
 
 void Capturer::OpenSettingsDialog()

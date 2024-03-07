@@ -235,6 +235,9 @@ void MFCameraCapturer::stop()
 MFCameraCapturer::~MFCameraCapturer()
 {
     stop();
+
+    avcodec_free_context(&vcodec_ctx_);
+
     logi("[   WIN-MFVC] ~");
 }
 

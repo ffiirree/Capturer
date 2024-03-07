@@ -1,12 +1,12 @@
 #ifndef CAPTURER_H
 #define CAPTURER_H
 
+#include "camera-player.h"
 #include "framelesswindow.h"
 #include "menu.h"
 #include "screenrecorder.h"
 #include "screenshoter.h"
 #include "settingdialog.h"
-#include "videoplayer.h"
 
 #include <memory>
 #include <QApplication>
@@ -77,11 +77,11 @@ private:
     QScopedPointer<ScreenShoter>   sniper_{};
     QScopedPointer<ScreenRecorder> recorder_{};
     QScopedPointer<ScreenRecorder> gifcptr_{};
-    QPointer<VideoPlayer>          camera_{};
+    QPointer<CameraPlayer>         camera_{};
 
     std::list<QPointer<FramelessWindow>> previews_{};
 };
 
-inline Capturer *App() { return static_cast<Capturer *>(qApp); }
+inline Capturer *App() { return dynamic_cast<Capturer *>(qApp); }
 
 #endif // CAPTURER_H

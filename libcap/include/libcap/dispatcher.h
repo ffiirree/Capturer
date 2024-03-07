@@ -21,7 +21,7 @@ struct DispatchContext
     std::unordered_map<Producer<av::frame> *, AVFilterContext *> srcs{};
     AVFilterContext                                             *sink{};
 
-    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 120 };
+    safe_queue<std::pair<av::frame, Producer<av::frame> *>> queue{ 4 };
 
     AVFilterGraph    *graph{};
     AVHWDeviceType    hwaccel{ AV_HWDEVICE_TYPE_NONE };
@@ -30,7 +30,6 @@ struct DispatchContext
 
     std::atomic<bool> enabled{};
     std::atomic<bool> running{};
-    std::atomic<bool> seeking{};
 
     std::jthread thread;
 };
@@ -54,8 +53,6 @@ public:
     void                     pause();
     void                     resume();
     std::chrono::nanoseconds paused_time();
-
-    void seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel);
 
     void stop();
 
@@ -93,10 +90,6 @@ private:
     Consumer<av::frame>            *consumer_{};
 
     std::atomic<bool> ready_{};
-
-    // check we have enough frames for each media type
-    std::mutex              notenough_mtx_{};
-    std::condition_variable notenough_{};
 
     DispatchContext vctx_{};
     DispatchContext actx_{};

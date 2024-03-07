@@ -18,6 +18,8 @@ public:
 
     virtual ~Producer() = default;
 
+    virtual std::string name() const { return "Unknown"; };
+
     [[nodiscard]] virtual int open(const std::string& name, std::map<std::string, std::string> options) = 0;
 
     [[nodiscard]] virtual bool ready() const { return ready_; }
@@ -26,16 +28,12 @@ public:
 
     [[nodiscard]] virtual bool running() const { return running_; }
 
-    virtual void seek(const std::chrono::nanoseconds&, const std::chrono::nanoseconds&) {}
-
     virtual void stop() { running_ = false; }
 
     [[nodiscard]] virtual bool eof() { return eof_ != 0; }
 
     //
     virtual void enable(AVMediaType, bool) {}
-
-    virtual int switch_stream(int) { return av::err_t::unsupported; }
 
     [[nodiscard]] virtual bool has(AVMediaType) const = 0;
 
@@ -55,11 +53,6 @@ public:
     // supported formats
     [[nodiscard]] virtual std::vector<av::vformat_t> video_formats() const { return {}; }
     [[nodiscard]] virtual std::vector<av::aformat_t> audio_formats() const { return {}; }
-
-    [[nodiscard]] virtual std::vector<std::map<std::string, std::string>> properties(AVMediaType) const
-    {
-        return {};
-    }
 
     // current format
     av::aformat_t afmt{};

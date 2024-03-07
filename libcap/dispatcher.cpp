@@ -98,12 +98,6 @@ int Dispatcher::add_input(Producer<av::frame> *producer)
     if (producer->has(AVMEDIA_TYPE_VIDEO)) vctx_.enabled = true;
 
     producer->onarrived = [=, this](const av::frame& frame, auto type) {
-        std::unique_lock lock(notenough_mtx_);
-        notenough_.wait(lock, [this] {
-            return (actx_.enabled && (actx_.queue.stopped() || actx_.queue.size() < 2)) ||
-                   (vctx_.enabled && (vctx_.queue.stopped() || vctx_.queue.size() < 2));
-        });
-
         switch (type) {
         case AVMEDIA_TYPE_AUDIO: actx_.queue.wait_and_push({ frame, producer }); break;
         case AVMEDIA_TYPE_VIDEO: vctx_.queue.wait_and_push({ frame, producer }); break;
@@ -160,7 +154,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
     // 1. alloc filter graph
     if (ctx.graph) avfilter_graph_free(&ctx.graph);
     if (ctx.graph = avfilter_graph_alloc(); !ctx.graph) {
-        LOG(ERROR) << fmt::format("[DISPATCHER] [{}] failed to create filter graph.", av::to_char(type));
+        loge("[DISPATCHER] [{}] failed to create filter graph.", av::to_char(type));
         return -1;
     }
 
@@ -176,7 +170,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
         if (type == AVMEDIA_TYPE_AUDIO) {
             if (avfilter_graph_create_filter(&src_ctx, avfilter_get_by_name("abuffer"), "audio-source",
                                              args.c_str(), nullptr, ctx.graph) < 0) {
-                LOG(ERROR) << "[DISPATCHER] [A] failed to create 'abuffer'.";
+                loge("[DISPATCHER] [A] failed to create 'abuffer'.");
                 return -1;
             }
             ctx.srcs[producer] = src_ctx;
@@ -186,7 +180,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
         if (type == AVMEDIA_TYPE_VIDEO) {
             if (avfilter_graph_create_filter(&src_ctx, avfilter_get_by_name("buffer"), "video-source",
                                              args.c_str(), nullptr, ctx.graph) < 0) {
-                LOG(ERROR) << "[DISPATCHER] [V] failed to create 'buffer'.";
+                loge("[DISPATCHER] [V] failed to create 'buffer'.");
                 return -1;
             }
             ctx.srcs[producer] = src_ctx;
@@ -207,7 +201,7 @@ int Dispatcher::create_filter_graph(AVMediaType type)
     if (ctx.graph_desc.empty()) {
         // 1 input & 1 output
         if (avfilter_link(src_ctxs[0], 0, ctx.sink, 0) < 0) {
-            LOG(ERROR) << fmt::format("[DISPATCHER] [{}] failed to link filter graph", av::to_char(type));
+            loge("[DISPATCHER] [{}] failed to link filter graph", av::to_char(type));
             return -1;
         }
     }
@@ -292,18 +286,12 @@ int Dispatcher::start()
 
     if (vctx_.enabled) {
         vctx_.running = true;
-        vctx_.thread  = std::jthread([this] {
-            probe::thread::set_name("DISPATCH-V");
-            dispatch_fn(AVMEDIA_TYPE_VIDEO);
-        });
+        vctx_.thread  = std::jthread([this] { dispatch_fn(AVMEDIA_TYPE_VIDEO); });
     }
 
     if (actx_.enabled) {
         actx_.running = true;
-        actx_.thread  = std::jthread([this] {
-            probe::thread::set_name("DISPATCH-A");
-            dispatch_fn(AVMEDIA_TYPE_AUDIO);
-        });
+        actx_.thread  = std::jthread([this] { dispatch_fn(AVMEDIA_TYPE_AUDIO); });
     }
 
     return 0;
@@ -329,30 +317,26 @@ bool Dispatcher::is_valid_pts(const std::chrono::nanoseconds& pts)
 
 int Dispatcher::dispatch_fn(const AVMediaType mt)
 {
-    LOG(INFO) << fmt::format("[{}] STARTED", av::to_char(mt));
-    defer(LOG(INFO) << fmt::format("[{}] EXITED", av::to_char(mt)));
+    probe::thread::set_name(fmt::format("DISPATCH-{}", av::to_char(mt)));
 
-    av::frame frame{};
+    logi("[{}] STARTED", av::to_char(mt));
+    defer(logi("[{}] EXITED", av::to_char(mt)));
 
     auto& ctx = (mt == AVMEDIA_TYPE_AUDIO) ? actx_ : vctx_;
 
+    av::frame frame{};
     while (ctx.running) {
-        if (ctx.seeking || ctx.dirty) {
+        if (ctx.dirty) {
             if (create_filter_graph(mt) < 0) {
                 ctx.running = false;
                 return -1;
             }
 
-            if (ctx.seeking) ctx.queue.start();
-
-            ctx.seeking = false;
-            ctx.dirty   = false;
+            ctx.dirty = false;
         }
 
         auto has_next = ctx.queue.wait_and_pop();
         if (!has_next) continue;
-
-        notenough_.notify_all();
 
         frame         = has_next.value().first;
         auto producer = has_next.value().second;
@@ -363,8 +347,8 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
         if (frame) {
             if (producer->is_realtime()) {
                 if (!is_valid_pts(av::clock::ns(frame->pts, tb))) {
-                    LOG(WARNING) << fmt::format("[{}] drop {:.6%T} !in [{:.6%T}, {:.6%T})", av::to_char(mt),
-                                                av::clock::ns(frame->pts, tb), resumed_pts_, paused_pts_);
+                    logw("[{}] drop {:.6%T} !in [{:.6%T}, {:.6%T})", av::to_char(mt),
+                         av::clock::ns(frame->pts, tb), resumed_pts_, paused_pts_);
                     continue;
                 }
                 frame->pts -= av_rescale_q(start_time_.count(), OS_TIME_BASE_Q, tb);
@@ -382,7 +366,7 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
         }
 
         // output streams
-        while (ctx.running && !ctx.seeking) {
+        while (ctx.running) {
             const int ret =
                 av_buffersink_get_frame_flags(ctx.sink, frame.put(), AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret == AVERROR(EAGAIN)) {
@@ -391,7 +375,7 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
             else if (ret == AVERROR_EOF) {
                 LOG(INFO) << fmt::format("[{}] DISPATCH EOF", av::to_char(mt));
 
-                if (!ctx.seeking) consumer_->consume(nullptr, mt);
+                consumer_->consume(nullptr, mt);
                 break;
             }
             else if (ret < 0) {
@@ -401,44 +385,13 @@ int Dispatcher::dispatch_fn(const AVMediaType mt)
                 break;
             }
 
-            if (!ctx.seeking) consumer_->consume(frame, mt);
+            consumer_->consume(frame, mt);
         }
     }
 
     consumer_->consume(nullptr, mt);
 
     return 0;
-}
-
-void Dispatcher::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel)
-{
-    for (auto& producer : producers_) {
-        producer->seek(ts, rel);
-    }
-
-    actx_.seeking = true;
-    vctx_.seeking = true;
-
-    // drain & skip the waited frame @{
-    actx_.queue.stop();
-    vctx_.queue.stop();
-
-    actx_.queue.drain();
-    vctx_.queue.drain();
-
-    notenough_.notify_all();
-
-    // @}
-
-    if ((actx_.enabled && !actx_.running) || (vctx_.enabled && !vctx_.running)) {
-        actx_.running = false;
-        vctx_.running = false;
-
-        if (vctx_.thread.joinable()) vctx_.thread.join();
-        if (actx_.thread.joinable()) actx_.thread.join();
-
-        start();
-    }
 }
 
 void Dispatcher::pause()
@@ -479,8 +432,6 @@ void Dispatcher::stop()
     // must be called before calling producer->stop()
     actx_.queue.stop();
     vctx_.queue.stop();
-
-    notenough_.notify_all();
 
     // producers
     for (auto& producer : producers_) {

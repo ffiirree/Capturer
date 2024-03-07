@@ -2,6 +2,13 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
+    <name>CameraPlayer</name>
+    <message>
+        <source>Close</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
     <name>Capturer</name>
     <message>
         <source>Screenshot</source>
