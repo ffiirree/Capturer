@@ -27,7 +27,7 @@ namespace v4l2
         DIR *v4l2_dir = ::opendir(dir);
 
         if (nullptr == v4l2_dir) {
-            LOG(ERROR) << "[       V4L2] failed to open dir '" << dir << "'";
+            loge("[       V4L2] failed to open dir '{}'", dir);
             return {};
         }
         defer(::closedir(v4l2_dir));
@@ -41,18 +41,18 @@ namespace v4l2
             if (dentry->d_type == DT_DIR) continue;
 
             std::string device_id = "/dev/" + std::string(dentry->d_name);
-            DLOG(INFO) << "[       V4L2] check " << device_id;
+            logd("[       V4L2] check: {}", device_id);
 
             int fd = -1;
             if ((fd = ::v4l2_open(device_id.c_str(), O_RDWR /* required */ | O_NONBLOCK)) == -1) {
-                DLOG(INFO) << "[       V4L2] cannot open camera " << device_id;
+                logd("[       V4L2] cannot open camera: {}", device_id);
                 continue;
             }
             defer(::v4l2_close(fd));
 
             v4l2_capability v4l2_cap{};
             if (::v4l2_ioctl(fd, VIDIOC_QUERYCAP, &v4l2_cap) == -1) {
-                DLOG(INFO) << "[       V4L2] failed to query capabilities for " << device_id;
+                logd("[       V4L2] failed to query capabilities for: {}", device_id);
                 continue;
             }
 #ifndef V4L2_CAP_DEVICE_CAPS
@@ -63,13 +63,13 @@ namespace v4l2
 #endif
 
             if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
-                DLOG(INFO) << "[       V4L2] " << device_id << " seems to not support video capture";
+                logd("[       V4L2] {} seems to not support video capture", device_id);
                 continue;
             }
 
-            DLOG(INFO) << fmt::format("[       V4L2] found device '{} - {}' at {}",
-                                      reinterpret_cast<const char *>(v4l2_cap.card),
-                                      reinterpret_cast<const char *>(v4l2_cap.bus_info), device_id);
+            logd("[       V4L2] found device '{} - {}' at {}",
+                 reinterpret_cast<const char *>(v4l2_cap.card),
+                 reinterpret_cast<const char *>(v4l2_cap.bus_info), device_id);
 
             list.push_back(av::device_t{
                 .name   = reinterpret_cast<char *>(v4l2_cap.card),
@@ -139,8 +139,8 @@ namespace v4l2
 
             v4l2_input input{};
             while (::v4l2_ioctl(fd, VIDIOC_ENUMINPUT, &input) == 0) {
-                DLOG(INFO) << fmt::format("[ V4L2-INPUT] {}: found input '{}' (Index {})", fd,
-                                          reinterpret_cast<const char *>(input.name), input.index);
+                logd("[ V4L2-INPUT] {}: found input '{}' (Index {})", fd,
+                     reinterpret_cast<const char *>(input.name), input.index);
                 list.push_back(input);
                 input.index++;
             }
@@ -154,8 +154,7 @@ namespace v4l2
 
             v4l2_standard std{};
             while (::v4l2_ioctl(fd, VIDIOC_ENUMSTD, &std) == 0) {
-                DLOG(INFO) << fmt::format("[   V4L2-STD] fd {} : {}, {}", fd,
-                                          reinterpret_cast<const char *>(std.name), std.id);
+                logd("[   V4L2-STD] fd {} : {}, {}", fd, reinterpret_cast<const char *>(std.name), std.id);
                 list.push_back(std);
                 std.index++;
             }
@@ -174,7 +173,7 @@ namespace v4l2
                 std::string pix_fmt = reinterpret_cast<const char *>(fmt.description);
                 if (fmt.flags & V4L2_FMT_FLAG_EMULATED) pix_fmt += " (Emulated)";
 
-                DLOG(INFO) << fmt::format("[V4L2-PIXFMT] {}: found {}", fd, pix_fmt);
+                logd("[V4L2-PIXFMT] {}: found {}", fd, pix_fmt);
 
                 list.push_back(fmt);
                 fmt.index++;
@@ -196,8 +195,7 @@ namespace v4l2
             case V4L2_FRMSIZE_TYPE_DISCRETE:
                 while (::v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) == 0) {
 
-                    DLOG(INFO) << fmt::format("[  V4L2-SIZE] {}: {} x {}", fd, frmsize.discrete.width,
-                                              frmsize.discrete.height);
+                    logd("[  V4L2-SIZE] {}: {} x {}", fd, frmsize.discrete.width, frmsize.discrete.height);
 
                     list.push_back(frmsize);
                     frmsize.index++;
@@ -205,7 +203,7 @@ namespace v4l2
 
                 break;
 
-            default: LOG(ERROR) << "unsupported"; break;
+            default: loge("unsupported"); break;
             }
 
             return list;
@@ -226,14 +224,14 @@ namespace v4l2
             switch (frmival.type) {
             case V4L2_FRMIVAL_TYPE_DISCRETE:
                 while (v4l2_ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0) {
-                    DLOG(INFO) << fmt::format("[   V4L2-FPS] \t\t{}/{}", frmival.discrete.denominator,
-                                              frmival.discrete.numerator);
+                    logd("[   V4L2-FPS] \t\t{}/{}", frmival.discrete.denominator,
+                         frmival.discrete.numerator);
                     list.push_back(frmival);
                     frmival.index++;
                 }
                 break;
 
-            default: LOG(ERROR) << "unsupported"; break;
+            default: loge("unsupported"); break;
             }
             return list;
         }

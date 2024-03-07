@@ -37,7 +37,7 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
 
     source_ = std::make_unique<CameraInput>();
     if (source_->open(device_id, {}) != 0) {
-        LOG(ERROR) << "[    CAMERA] failed to open video decoder";
+        loge("[    CAMERA] failed to open video decoder");
         return -1;
     }
 
@@ -50,7 +50,7 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
     vfmt.pix_fmt = texture_->isSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureGLWidget::pix_fmts()[0];
 
     if (texture_->setFormat(vfmt) < 0) {
-        LOG(ERROR) << "[    CAMERA] unsupported video format: " << av::to_string(vfmt);
+        loge("[    CAMERA] unsupported video format: {}", av::to_string(vfmt));
         return -1;
     }
 
@@ -65,7 +65,7 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
 int CameraPlayer::start()
 {
     if (!ready_ || running_ || source_->start() < 0) {
-        LOG(ERROR) << "[     CAMERA] already running or not ready";
+        loge("[     CAMERA] already running or not ready");
         return -1;
     }
 

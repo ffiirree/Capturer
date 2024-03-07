@@ -36,20 +36,20 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
     case CAPTURE_DISPLAY:   item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(handle)); break;
     case CAPTURE_WINDOW:    item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(handle)); break;
     case CAPTURE_DESKTOP:
-    default:                return av::err_t::unsupported;
+    default:                return av::UNSUPPORTED;
     }
     // clang-format on
-
     if (!item_) {
-        LOG(ERROR) << "[     WGC] can not create capture item";
+        loge("[     WGC] can not create capture item");
         return -1;
     }
+
     onclosed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
 
     // @{ IDirect3DDevice: FFmpeg -> D3D11 -> DXGI -> WinRT
     hwctx_ = av::hwaccel::get_context(AV_HWDEVICE_TYPE_D3D11VA);
     if (!hwctx_) {
-        LOG(ERROR) << "[     WGC] can not create the FFmpeg d3d11device.";
+        loge("[     WGC] can not create the FFmpeg d3d11device.");
         return -1;
     }
 
@@ -65,7 +65,7 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
     winrt::com_ptr<::IInspectable> inspectable{};
     const auto                     dxgi_device = device_.as<IDXGIDevice>();
     if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()))) {
-        LOG(ERROR) << "[       WGC] CreateDirect3D11DeviceFromDXGIDevice failed.";
+        loge("[       WGC] CreateDirect3D11DeviceFromDXGIDevice failed.");
         return -1;
     }
     // winrt d3d11device
@@ -123,7 +123,7 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
 int WindowsGraphicsCapturer::start()
 {
     if (!ready_ || running_) {
-        LOG(ERROR) << "[       WGC] not ready or already running.";
+        loge("[       WGC] not ready or already running.");
         return -1;
     }
 
@@ -245,8 +245,8 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
         .CPUAccessFlags = 0,
         .MiscFlags      = 0,
     };
-    if (FAILED(device_->CreateTexture2D(&target_desc, 0, target_.put()))) {
-        LOG(INFO) << "[       WGC] failed to create render target texture.";
+    if (FAILED(device_->CreateTexture2D(&target_desc, nullptr, target_.put()))) {
+        logi("[       WGC] failed to create render target texture.");
         return -1;
     }
 
@@ -258,7 +258,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
     if (FAILED(device_->CreateRenderTargetView(reinterpret_cast<ID3D11Resource *>(target_.get()), &rtv_desc,
                                                rtv_.put()))) {
-        LOG(INFO) << "[       WGC] failed to create render target view.";
+        logi("[       WGC] failed to create render target view.");
         return -1;
     }
 
@@ -270,10 +270,7 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
-    if (const auto frames_ctx_ref = hwctx_->frames_ctx_alloc(); !frames_ctx_ref) {
-        LOG(ERROR) << "[       WGC] av_hwframe_ctx_alloc";
-        return -1;
-    }
+    if (const auto frames_ctx_ref = hwctx_->frames_ctx_alloc(); !frames_ctx_ref) return av::NOMEM;
 
     const auto frames_ctx = hwctx_->frames_ctx();
 
@@ -283,7 +280,7 @@ int WindowsGraphicsCapturer::InitializeHWFramesContext()
     frames_ctx->sw_format = AV_PIX_FMT_BGRA;
 
     if (hwctx_->frames_ctx_init() < 0) {
-        LOG(ERROR) << "[       WGC] av_hwframe_ctx_init";
+        loge("[       WGC] av_hwframe_ctx_init");
         return -1;
     }
 
@@ -315,7 +312,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     av::frame frame{};
     // allocate texture for hardware frame
     if (av_hwframe_get_buffer(hwctx_->frames_ctx_buf(), frame.put(), 0) < 0) {
-        LOG(ERROR) << "[       WGC] failed to alloc a hardware frame.";
+        loge("[       WGC] failed to alloc a hardware frame.");
         return;
     }
 
@@ -411,8 +408,8 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     // transfer frame to CPU if needed
     av::hwaccel::transfer_frame(frame.get(), vfmt.pix_fmt);
 
-    DLOG(INFO) << fmt::format("[V] pts = {:>14d}, size = {:>4d}x{:>4d}, ts = {:.3%T}", frame->pts,
-                              frame->width, frame->height, std::chrono::nanoseconds{ frame->pts });
+    logd("[V] size = {:>4d}x{:>4d}, ts = {:.3%T}", frame->width, frame->height,
+         std::chrono::nanoseconds{ frame->pts });
 
     onarrived(frame, AVMEDIA_TYPE_VIDEO);
 }
@@ -423,7 +420,7 @@ void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
     // the captured window is closed
     eof_ = 0x01;
 
-    LOG(INFO) << "[       WGC] window is closed.";
+    logw("[       WGC] capture item is closed.");
 }
 
 // Process captured frames
@@ -437,10 +434,12 @@ void WindowsGraphicsCapturer::stop()
     onclosed_.revoke();
     frame_pool_.Close();
     session_.Close();
-
-    LOG(INFO) << "[       WGC] STOPPED";
 }
 
-WindowsGraphicsCapturer::~WindowsGraphicsCapturer() { stop(); }
+WindowsGraphicsCapturer::~WindowsGraphicsCapturer()
+{
+    stop();
+    logi("[       WGC] ~");
+}
 
 #endif

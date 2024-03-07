@@ -47,7 +47,7 @@ int XshmCapturer::xfixes_draw_cursor(av::frame& frame) const
 {
     const auto ci = xcb_xfixes_get_cursor_image_reply(conn_, ::xcb_xfixes_get_cursor_image(conn_), nullptr);
     if (!ci) {
-        LOG(ERROR) << "[ XCB-XFIXES] failed to get cursor image";
+        loge("[ XCB-XFIXES] failed to get cursor image");
         return -1;
     }
     defer(free(ci));
@@ -106,7 +106,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
     conn_ = ::xcb_connect(name.c_str(), &nb_screen);
 
     if (const auto ret = ::xcb_connection_has_error(conn_); ret) {
-        LOG(ERROR) << fmt::format("[    LINUX-X] cannot open dispaly {}, error {}", name, ret);
+        loge("[ LINUX-XSHM] cannot open dispaly {}, error {}", name, ret);
         return -1;
     }
 
@@ -121,7 +121,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
     }
 
     if (!screen_) {
-        LOG(ERROR) << fmt::format("[    LINUX-X] the screen {} does not exist", nb_screen);
+        loge("[ LINUX-XSHM] the screen {} does not exist", nb_screen);
         return -1;
     }
 
@@ -130,7 +130,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
     const auto geo = ::xcb_get_geometry_reply(conn_, ::xcb_get_geometry(conn_, wid_), nullptr);
     defer(::free(geo));
     if (!geo) {
-        LOG(ERROR) << fmt::format("[    LINUX-X] cannot find the window 0x{:08X}", wid_);
+        loge("[ LINUX-XSHM] cannot find the window 0x{:08X}", wid_);
         return -1;
     }
 
@@ -148,7 +148,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
     vfmt.pix_fmt = x::from_xcb_pixmap_format(conn_, geo->depth);
 
     if (vfmt.pix_fmt == AV_PIX_FMT_NONE || vfmt.width <= 0 || vfmt.height <= 0) {
-        LOG(INFO) << "[    LINUX-X] invalid pixel format";
+        logi("[ LINUX-XSHM] invalid pixel format");
         return -1;
     }
     bpp_ = av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(vfmt.pix_fmt));
@@ -158,7 +158,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
 
     xshm_pool_ = av_buffer_pool_init2(frame_size_, conn_, xshm_alloc, nullptr);
     if (!xshm_pool_) {
-        LOG(ERROR) << fmt::format("[    LINUX-X] failed to init buffer pool");
+        loge("[ LINUX-XSHM] failed to init buffer pool");
         return -1;
     }
 
@@ -168,21 +168,21 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
         nullptr);
 
     if (!xfixes_version) {
-        LOG(ERROR) << fmt::format("[    LINUX-X] failed to query xfixes version");
+        loge("[ LINUX-XSHM] failed to query xfixes version");
         return -1;
     }
     ::free(xfixes_version);
 
     ready_ = true;
 
-    LOG(INFO) << "[    LINUX-X] " << av::to_string(vfmt);
+    logi("[ LINUX-XSHM] {}", av::to_string(vfmt));
     return 0;
 }
 
 int XshmCapturer::start()
 {
     if (running_ || !ready_) {
-        LOG(WARNING) << "not ready or already running";
+        logw("[ LINUX-XSHM] not ready or already running");
         return -1;
     }
 
@@ -211,7 +211,7 @@ int XshmCapturer::start()
             ::xcb_flush(conn_);
 
             if (!img) {
-                LOG(ERROR) << "cannot get the image data";
+                loge("cannot get the image data");
                 av_buffer_unref(&buf);
 
                 running_ = false;
@@ -228,8 +228,8 @@ int XshmCapturer::start()
 
             if (draw_cursor && bpp_ >= 24) xfixes_draw_cursor(frame);
 
-            DLOG(INFO) << fmt::format("[V] pts = {:>14d}, size = {:>4d}x{:>4d}, ts = {:.3%T}", frame->pts,
-                                       frame->width, frame->height, std::chrono::nanoseconds{ frame->pts });
+            logd("[V] size = {:>4d}x{:>4d}, ts = {:.3%T}", frame->width, frame->height,
+                  std::chrono::nanoseconds{ frame->pts });
             onarrived(frame, AVMEDIA_TYPE_VIDEO);
         }
     });
@@ -249,13 +249,13 @@ void XshmCapturer::stop()
         ::xcb_disconnect(conn_);
     }
 
-    DLOG(INFO) << "[    LINUX-X] STOPPED";
+    logi("[ LINUX-XSHM] STOPPED");
 }
 
 XshmCapturer::~XshmCapturer()
 {
     stop();
-    DLOG(INFO) << "[    LINUX-X] ~";
+    logi("[ LINUX-XSHM] ~");
 }
 
 #endif

@@ -23,24 +23,24 @@ int main(int argc, char *argv[])
 
     config::load();
 
-    LOG(INFO) << "Capturer               " << CAPTURER_VERSION;
-    LOG(INFO) << " -- Qt               : " << qVersion();
-    LOG(INFO) << " -- Operating System : " << probe::system::name() << " ("
-              << probe::to_string(probe::system::version()) << ")";
-    LOG(INFO) << " -- Kernel           : " << probe::system::kernel::name() << " "
-              << probe::to_string(probe::system::kernel::version());
-    LOG(INFO) << " -- CPU              : " << probe::cpu::info().name;
-    LOG(INFO) << " -- Architecture     : " << probe::to_string(probe::cpu::architecture());
-    LOG(INFO) << " -- Virtual Screen   : " << probe::to_string(probe::graphics::virtual_screen_geometry());
+    logi("Capturer               {}", CAPTURER_VERSION);
+    logi(" -- Qt               : {}", qVersion());
+    logi(" -- Operating System : {} ({})", probe::system::name(),
+         probe::to_string(probe::system::version()));
+    logi(" -- Kernel           : {} {}", probe::system::kernel::name(),
+         probe::to_string(probe::system::kernel::version()));
+    logi(" -- CPU              : {}", probe::cpu::info().name);
+    logi(" -- Architecture     : {}", probe::to_string(probe::cpu::architecture()));
+    logi(" -- Virtual Screen   : {}", probe::to_string(probe::graphics::virtual_screen_geometry()));
     for (const auto& display : probe::graphics::displays()) {
-        LOG(INFO) << fmt::format(" --   {:>14} : ", display.id) << probe::to_string(display.geometry);
+        logi(" --   {:>14} : {}", display.id, probe::to_string(display.geometry));
     }
-    LOG(INFO) << " -- Windowing System : " << probe::to_string(probe::system::windowing_system());
-    LOG(INFO) << " -- Desktop ENV      : " << probe::to_string(probe::system::desktop_environment()) << " ("
-              << probe::to_string(probe::system::desktop_environment_version()) << ")";
-    LOG(INFO) << " -- Language         : " << config::language.toStdString();
-    LOG(INFO) << " -- Config File      : " << config::filepath.toStdString();
-    LOG(INFO);
+    logi(" -- Windowing System : {}", probe::to_string(probe::system::windowing_system()));
+    logi(" -- Desktop ENV      : {} ({})", probe::to_string(probe::system::desktop_environment()),
+         probe::to_string(probe::system::desktop_environment_version()));
+    logi(" -- Language         : {}", config::language.toStdString());
+    logi(" -- Config File      : {}", config::filepath.toStdString());
+    logi("");
 
     Capturer app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);

@@ -330,7 +330,7 @@ void TextureD3D11Widget::present(const av::frame& frame)
 {
     if (!frame || !frame->data[0] || frame->width <= 0 || frame->height <= 0 ||
         frame->format == AV_PIX_FMT_NONE) {
-        LOG(WARNING) << "invalid frame.";
+        logw("invalid frame.");
         return;
     }
 

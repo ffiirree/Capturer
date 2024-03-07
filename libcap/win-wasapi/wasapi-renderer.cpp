@@ -6,7 +6,6 @@
 #include "libcap/win-wasapi/win-wasapi.h"
 #include "logging.h"
 
-#include <fmt/format.h>
 #include <probe/defer.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
@@ -37,12 +36,12 @@ int WasapiRenderer::open(const std::string&, RenderFlags flags)
 
     // events
     if (STOP_EVENT.attach(::CreateEvent(nullptr, true, false, nullptr)); !STOP_EVENT) {
-        LOG(ERROR) << "[  WASAPI-R] failed to create STOP_EVENT.";
+        loge("[   WASAPI-R] failed to create STOP_EVENT.");
         return -1;
     }
 
     if (SWITCH_EVENT.attach(::CreateEvent(nullptr, false, false, nullptr)); !SWITCH_EVENT) {
-        LOG(ERROR) << "[  WASAPI-R] failed to create SWITCH_EVENT.";
+        loge("[   WASAPI-R] failed to create SWITCH_EVENT.");
         return -1;
     }
 
@@ -67,7 +66,7 @@ void WasapiRenderer::InitializeWaveFormat(WAVEFORMATEX *wfex)
         .time_base      = { 1, static_cast<int>(wfex->nSamplesPerSec) },
     };
 
-    LOG(INFO) << fmt::format("[  WASAPI-R] [{:>10}] {}", devinfo_.name, av::to_string(format_));
+    logi("[   WASAPI-R] [{:>10}] {}", devinfo_.name, av::to_string(format_));
 }
 
 HRESULT WasapiRenderer::InitializeAudioEngine()
@@ -79,7 +78,7 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
 
     // event
     if (REQUEST_EVENT.attach(::CreateEvent(nullptr, false, false, nullptr)); !REQUEST_EVENT) {
-        LOG(ERROR) << "[  WASAPI-R] failed to create REQUEST_EVENT.";
+        loge("[   WASAPI-R] failed to create REQUEST_EVENT.");
         return -1;
     }
 
@@ -100,7 +99,7 @@ HRESULT WasapiRenderer::InitializeStreamSwitch()
 {
     if (SWITCH_COMPLETE_EVENT.attach(::CreateEvent(nullptr, true, false, nullptr));
         !SWITCH_COMPLETE_EVENT) {
-        LOG(ERROR) << "[  WASAPI-R] failed to create SWITCH_COMPLETE_EVENT.";
+        loge("[   WASAPI-R] failed to create SWITCH_COMPLETE_EVENT.");
         return E_UNEXPECTED;
     }
 
@@ -114,7 +113,7 @@ HRESULT WasapiRenderer::InitializeStreamSwitch()
 int WasapiRenderer::start()
 {
     if (!ready_ || running_) {
-        LOG(ERROR) << "[  WASAPI-R] not ready or running.";
+        loge("[   WASAPI-R] not ready or running.");
         return -1;
     }
 
@@ -132,7 +131,7 @@ int WasapiRenderer::start()
     thread_ = std::jthread([this]() {
         probe::thread::set_name("WASAPI-R-" + devinfo_.id);
 
-        DLOG(INFO) << "[A] WASAPI RENDER THREAD STARTED";
+        logi("[A] WASAPI RENDER THREAD STARTED");
 
         const HANDLE events[] = { STOP_EVENT.get(), REQUEST_EVENT.get(), SWITCH_EVENT.get() };
         while (running_) {
@@ -144,7 +143,7 @@ int WasapiRenderer::start()
 
             case WAIT_OBJECT_0 + 1: // REQUEST_EVENT
                 if (FAILED(RequestEventHandler(av::clock::ns())))
-                    LOG(ERROR) << "failed to write data to the renderer buffer";
+                    loge("failed to write data to the renderer buffer");
                 break;
 
             case WAIT_OBJECT_0 + 2: // SWITCH_EVENT
@@ -155,7 +154,7 @@ int WasapiRenderer::start()
             }
         }
 
-        DLOG(INFO) << "[A] WASAPI RENDER THREAD EXITED";
+        logi("[A] WASAPI RENDER THREAD EXITED");
     });
 
     return 0;
@@ -278,7 +277,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
     // real audio application implementing stream switching would re-format their
     // pipeline to deliver the new format).
     if (WaitForSingleObject(SWITCH_COMPLETE_EVENT.get(), 500) == WAIT_TIMEOUT) {
-        LOG(ERROR) << "Stream switch timeout - aborting...";
+        loge("Stream switch timeout - aborting...");
         ::SetEvent(STOP_EVENT.get());
         return E_UNEXPECTED;
     }
@@ -296,7 +295,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
     defer(CoTaskMemFree(wfex));
 
     if (std::memcmp(wfex, wfex_, sizeof(WAVEFORMATEX) + wfex->cbSize) != 0) {
-        LOG(ERROR) << "WAVE FORMAT ERROR";
+        loge("WAVE FORMAT ERROR");
         return E_UNEXPECTED;
     }
 
@@ -371,7 +370,7 @@ int WasapiRenderer::stop()
 
     if (thread_.joinable()) thread_.join();
 
-    LOG(INFO) << "[A] [  RENDERER] STOPPED";
+    logi("[A] [  RENDERER] STOPPED");
 
     return 0;
 }
@@ -384,7 +383,7 @@ WasapiRenderer::~WasapiRenderer()
 
     InterlockedDecrement(&refs);
 
-    LOG(INFO) << "[A] [  RENDERER] ~";
+    logi("[A] [  RENDERER] ~");
 }
 
 HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)

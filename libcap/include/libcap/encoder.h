@@ -12,7 +12,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-class Encoder : public Consumer<av::frame>
+class Encoder final : public Consumer<av::frame>
 {
 public:
     enum

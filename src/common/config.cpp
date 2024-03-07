@@ -25,6 +25,7 @@ namespace config
             JSON_GET(hotkeys::screenshot, j["hotkeys"], "screenshot");
             JSON_GET(hotkeys::preview, j["hotkeys"], "preview");
             JSON_GET(hotkeys::toggle_previews, j["hotkeys"], "toggle-previews");
+            JSON_GET(hotkeys::quick_look, j["hotkeys"], "quick-look");
             JSON_GET(hotkeys::record_video, j["hotkeys"], "record-video");
             JSON_GET(hotkeys::record_gif, j["hotkeys"], "record-gif");
             JSON_GET(hotkeys::transparent_input, j["hotkeys"], "transparent-input");
@@ -111,6 +112,7 @@ namespace config
         j["hotkeys"]["screenshot"]        = hotkeys::screenshot;
         j["hotkeys"]["preview"]           = hotkeys::preview;
         j["hotkeys"]["toggle-previews"]   = hotkeys::toggle_previews;
+        j["hotkeys"]["quick-look"]        = hotkeys::quick_look;
         j["hotkeys"]["record-video"]      = hotkeys::record_video;
         j["hotkeys"]["record-gif"]        = hotkeys::record_gif;
         j["hotkeys"]["transparent-input"] = hotkeys::transparent_input;
@@ -304,7 +306,7 @@ namespace config
         const std::string autorun_file = autorun_dir + "/capturer.desktop";
 
         if (!std::filesystem::exists(desktop_file)) {
-            LOG(WARNING) << "failed to set `autorun` since the '" << desktop_file << "' does not exists.";
+            logw("failed to set `autorun` since the '{}' does not exists.", desktop_file);
             state = false;
         }
 

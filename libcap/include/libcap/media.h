@@ -25,12 +25,25 @@ namespace av
         vfr,
     };
 
-    enum err_t : int
+    enum status_t : int
     {
-        SUCCESS     = 0,
-        FAILURE     = -1,
-        unsupported = -2,
-        nullpointer = -3,
+        OK = 0,
+
+        // Negative Error Codes
+        AGAIN       = -EAGAIN, // AVERROR(AGAIN)
+        NOMEM       = -ENOMEM, // AVERROR(NOMEM)
+        DENIED      = -EACCES,
+        BAD_ADDRESS = -EFAULT,
+        INVALID     = -EINVAL,
+        ALREADY     = -EALREADY,
+        UNSUPPORTED = -ENOTSUP,
+
+        // Custom
+        NULLPTR     = -1002,
+        NOT_FOUND   = -1003,
+        TIMEOUT     = -1005,
+        END_OF_FILE = -1007,
+        STOPPED     = -1008,
     };
 
     // video format options
@@ -67,6 +80,35 @@ namespace av
 
         AVRational time_base{ 1, OS_TIME_BASE };
     };
+
+    inline std::string to_string(const status_t code)
+    {
+        switch (code) {
+        case OK:          return "OK";
+
+        case AGAIN:       return "Resource Temporarily Unavailable";
+        case NOMEM:       return "Cannot Allocate Memory";
+        case DENIED:      return "Permission Denied";
+        case BAD_ADDRESS: return "Bad Address";
+        case INVALID:     return "Invalid Argument";
+        case ALREADY:     return "Already Running";
+        case UNSUPPORTED: return "Not Supported";
+
+        // Custom
+        case NULLPTR:     return "Null Pointer ";
+        case NOT_FOUND:   return "Not Found";
+        case TIMEOUT:     return "Timeout";
+        case END_OF_FILE: return "End of File";
+        case STOPPED:     return "Stopped";
+        default:          return "Unknown";
+        }
+    }
+
+    inline std::string ff_errstr(const int code)
+    {
+        char str[AV_ERROR_MAX_STRING_SIZE]{ 0 };
+        return av_make_error_string(str, AV_ERROR_MAX_STRING_SIZE, code);
+    }
 
     // convert <T> to string
 #if LIBAVUTIL_VERSION_MAJOR >= 57

@@ -464,7 +464,7 @@ bool TextureGLWidget::UpdateTextureParams()
     default: break;
     }
 
-    LOG(ERROR) << "unsuppored pixel format: " << av::to_string(format_.pix_fmt);
+    loge("unsuppored pixel format: {}", av::to_string(format_.pix_fmt));
     return false;
 }
 
@@ -595,7 +595,7 @@ void TextureGLWidget::present(const av::frame& frame)
 {
     if (!frame || !frame->data[0] || frame->width <= 0 || frame->height <= 0 ||
         frame->format == AV_PIX_FMT_NONE) {
-        LOG(WARNING) << "invalid frame.";
+        logw("invalid frame.");
         return;
     }
 

@@ -409,7 +409,7 @@ void ScreenShoter::save()
 
         auto [pixmap, _] = snip();
         if (!pixmap.save(filename)) {
-            LOG(ERROR) << "failed to save the captured image.";
+            loge("failed to save the captured image.");
         }
 
         emit saved(filename);

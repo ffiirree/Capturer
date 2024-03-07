@@ -110,7 +110,7 @@ int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, s
         // decoder
         auto codec = avcodec_find_decoder(codec_id);
         if (vcodec_ctx_ = avcodec_alloc_context3(codec); !vcodec_ctx_) {
-            LOG(ERROR) << "[   WIN-MFVC] failed to alloc decoder context";
+            loge("[   WIN-MFVC] failed to alloc decoder context");
             return -1;
         }
 
@@ -128,7 +128,7 @@ int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, s
         }
 
         if (avcodec_open2(vcodec_ctx_, codec, nullptr) < 0) {
-            LOG(ERROR) << "[   WIN-MFVC] can not open the decoder";
+            loge("[   WIN-MFVC] can not open the decoder");
             return -1;
         }
 
@@ -149,13 +149,13 @@ int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, s
 
             if (vfmt.pix_fmt == AV_PIX_FMT_NONE) {
                 ready_ = false;
-                LOG(ERROR) << "[   WIN-MFVC] failed to probe the pixel format";
+                loge("[   WIN-MFVC] failed to probe the pixel format");
                 return -1;
             }
         }
     }
     catch (const winrt::hresult_error& e) {
-        LOG(ERROR) << "[   WIN-MFVC] " << probe::util::to_utf8(e.message().c_str());
+        loge("[   WIN-MFVC] {}", probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 
@@ -168,13 +168,13 @@ int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, s
 int MFCameraCapturer::start()
 {
     if (!ready_ || running_) {
-        LOG(WARNING) << "[   WIN-MFVC] already running or not ready";
+        logw("[   WIN-MFVC] already running or not ready");
         return -1;
     }
 
     if (FAILED(reader_->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, nullptr, nullptr, nullptr,
                                    nullptr))) {
-        LOG(ERROR) << "[   WIN-MFVC] failed to start asynchronous mode";
+        loge("[   WIN-MFVC] failed to start asynchronous mode");
         return -1;
     }
 

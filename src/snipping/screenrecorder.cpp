@@ -229,13 +229,13 @@ void ScreenRecorder::setup()
         desktop_src_->handle = selector_->prey().handle;
         selector_->hide();
         break;
-    default: LOG(ERROR) << "unsuppored mode"; return;
+    default: loge("unsuppored mode"); return;
     }
 #endif
 
     // video source
     if (desktop_src_->open(name, {}) < 0) {
-        LOG(ERROR) << fmt::format("[RECORDER] failed to open the desktop capturer: {}", name);
+        loge("[RECORDER] failed to open the desktop capturer: {}", name);
         desktop_src_ = std::make_unique<DesktopCapturer>();
         stop();
         return;
@@ -287,7 +287,7 @@ void ScreenRecorder::setup()
     // TODO: the amix may not be closed with duration=longest
     const auto afilters = nb_ainputs > 1 ? fmt::format("amix=inputs={}:duration=first", nb_ainputs) : "";
     if (dispatcher_->initialize(filters_, afilters) < 0) {
-        LOG(INFO) << "create filters failed";
+        loge("create filters failed");
         stop();
         return;
     }
@@ -297,14 +297,14 @@ void ScreenRecorder::setup()
     encoder_options_["acodec"] = config::recording::video::a::codec;
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
-        LOG(INFO) << "open encoder failed";
+        loge("open encoder failed");
         stop();
         return;
     }
 
     // start
     if (dispatcher_->start()) {
-        LOG(WARNING) << "RECORDING!! Please exit first.";
+        logw("RECORDING!! Please exit first.");
         stop();
         return;
     }

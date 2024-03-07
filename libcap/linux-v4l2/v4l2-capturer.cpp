@@ -21,26 +21,26 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     name_ = device_id;
 
     if (fd_ = ::v4l2_open(device_id.c_str(), O_RDWR | O_NONBLOCK); fd_ == -1) {
-        LOG(ERROR) << "[       V4L2] failed to open the device: " << device_id;
+        loge("[       V4L2] failed to open the device: {}", device_id);
         return -1;
     }
 
     if (::v4l2_ioctl(fd_, VIDIOC_G_INPUT, &input_) < 0) {
-        LOG(ERROR) << "[       V4L2] unable to get input : " << input_;
+        loge("[       V4L2] unable to get input : {}", input_);
         return -1;
     }
 
     v4l2_input in{};
     in.index = input_;
     if (::v4l2_ioctl(fd_, VIDIOC_ENUMINPUT, &in) < 0) {
-        LOG(ERROR) << "[       V4L2] failed to get input capabilities";
+        loge("[       V4L2] failed to get input capabilities");
         return -1;
     }
     caps_ = in.capabilities;
 
     if (caps_ & V4L2_IN_CAP_STD) {
         if (::v4l2_ioctl(fd_, VIDIOC_G_STD, &standard_) < 0) {
-            LOG(ERROR) << "[       V4L2] failed to get input standard";
+            loge("[       V4L2] failed to get input standard");
 
             return -1;
         }
@@ -52,7 +52,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
         timings.index = timing_;
         if (::v4l2_ioctl(fd_, VIDIOC_ENUM_DV_TIMINGS, &timings) >= 0) {
             if (::v4l2_ioctl(fd_, VIDIOC_S_DV_TIMINGS, &timings.timings) < 0) {
-                LOG(ERROR) << "[       V4L2] failed to set dv timings";
+                loge("[       V4L2] failed to set dv timings");
 
                 return -1;
             }
@@ -69,7 +69,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     // pixel format
     const auto& [codec_id, pix_fmt] = v4l2::to_ffmpeg_format(fmt.fmt.pix.pixelformat);
     if (codec_id == AV_CODEC_ID_NONE && pix_fmt == AV_PIX_FMT_NONE) {
-        LOG(ERROR) << "[       V4L2] unsupported pixel format";
+        loge("[       V4L2] unsupported pixel format");
 
         return -1;
     }
@@ -82,7 +82,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     v4l2_streamparm parm{};
     parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (::v4l2_ioctl(fd_, VIDIOC_G_PARM, &parm) < 0) {
-        LOG(ERROR) << "[       V4L2] failed to get stream paramters";
+        loge("[       V4L2] failed to get stream paramters");
         return -1;
     }
     vfmt.framerate = {
@@ -98,7 +98,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     req.memory = V4L2_MEMORY_MMAP;
 
     if (::v4l2_ioctl(fd_, VIDIOC_REQBUFS, &req) < 0 || req.count < 2) {
-        LOG(ERROR) << "[       V4L2] failed to request buffers";
+        loge("[       V4L2] failed to request buffers");
         return -1;
     }
 
@@ -108,13 +108,13 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
 
     for (buffer.index = 0; buffer.index < req.count; ++buffer.index) {
         if (::v4l2_ioctl(fd_, VIDIOC_QUERYBUF, &buffer) < 0) {
-            LOG(ERROR) << "[       V4L2] failed to query buffer";
+            loge("[       V4L2] failed to query buffer");
             return -1;
         }
         void *ptr =
             ::v4l2_mmap(nullptr, buffer.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, buffer.m.offset);
         if (ptr == MAP_FAILED) {
-            LOG(ERROR) << "[       V4L2] failed to mmap";
+            loge("[       V4L2] failed to mmap");
             return -1;
         }
         buf_mappings_.push_back({ buffer.length, ptr });
@@ -123,7 +123,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     // decoder
     auto codec = avcodec_find_decoder(codec_id);
     if (vcodec_ctx_ = avcodec_alloc_context3(codec); !vcodec_ctx_) {
-        LOG(ERROR) << "[       V4L2] failed to alloc decoder context";
+        loge("[       V4L2] failed to alloc decoder context");
         return -1;
     }
 
@@ -141,7 +141,7 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
     }
 
     if (avcodec_open2(vcodec_ctx_, codec, nullptr) < 0) {
-        LOG(ERROR) << "[       V4L2] can not open the decoder";
+        loge("[       V4L2] can not open the decoder");
         return -1;
     }
 
@@ -162,12 +162,12 @@ int V4l2Capturer::open(const std::string& device_id, std::map<std::string, std::
 
         if (vfmt.pix_fmt == AV_PIX_FMT_NONE) {
             ready_ = false;
-            LOG(ERROR) << "[       V4L2] failed to probe the pixel format";
+            loge("[       V4L2] failed to probe the pixel format");
             return -1;
         }
     }
 
-    DLOG(INFO) << fmt::format("[       V4L2] {}, {}", avcodec_get_name(codec_id), av::to_string(vfmt));
+    logi("[       V4L2] {}, {}", avcodec_get_name(codec_id), av::to_string(vfmt));
 
     return 0;
 }
@@ -180,14 +180,14 @@ int V4l2Capturer::v4l2_start_capture()
 
     for (qbuf.index = 0; qbuf.index < buf_mappings_.size(); ++qbuf.index) {
         if (::v4l2_ioctl(fd_, VIDIOC_QBUF, &qbuf) < 0) {
-            LOG(ERROR) << "[       V4L2] unable to queue buffer";
+            loge("[       V4L2] unable to queue buffer");
             return -1;
         }
     }
 
     constexpr v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (::v4l2_ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
-        LOG(ERROR) << "[       V4L2] failed to start stream";
+        loge("[       V4L2] failed to start stream");
         return -1;
     }
 
@@ -197,7 +197,7 @@ int V4l2Capturer::v4l2_start_capture()
 int V4l2Capturer::start()
 {
     if (!ready_ || running_) {
-        LOG(ERROR) << "[       V4L2] not ready or already running";
+        loge("[       V4L2] not ready or already running");
         return -1;
     }
 
@@ -221,14 +221,14 @@ int V4l2Capturer::start()
             if (ret < 0) {
                 if (errno == EINTR) continue;
 
-                LOG(ERROR) << name_ << ": select failed";
+                loge("{}: select failed", name_);
                 running_ = false;
             }
             else if (ret == 0) {
-                LOG(WARNING) << name_ << ": select timeout";
+                logw("{}: select timeout", name_);
 
                 if (v4l2_ioctl(fd_, VIDIOC_LOG_STATUS) < 0) {
-                    LOG(ERROR) << name_ << ": failed to log status";
+                    loge("{}: failed to log status", name_);
                 }
 
                 continue;
@@ -241,7 +241,7 @@ int V4l2Capturer::start()
                 if (errno == EAGAIN) {
                     continue;
                 }
-                LOG(ERROR) << name_ << ": failed to dequeue buffer";
+                loge("{}: failed to dequeue buffer", name_);
                 running_ = false;
                 continue;
             }
@@ -249,7 +249,7 @@ int V4l2Capturer::start()
 
             //
             if (av_new_packet(pkt.put(), static_cast<int>(buf.bytesused)) < 0) {
-                LOG(ERROR) << name_ << ": failed to allocate packet";
+                loge("{}: failed to allocate packet", name_);
                 running_ = false;
                 continue;
             }
@@ -273,7 +273,7 @@ int V4l2Capturer::video_decode(const av::packet& pkt)
         }
         else if (ret < 0) {
             running_ = false;
-            LOG(ERROR) << "[V] DECODING ERROR, ABORTING";
+            loge("[V] DECODING ERROR, ABORTING");
             break;
         }
 
@@ -291,7 +291,7 @@ void V4l2Capturer::stop()
 
     constexpr v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (::v4l2_ioctl(fd_, VIDIOC_STREAMOFF, &type) < 0) {
-        LOG(ERROR) << "[       V4L2] failed to stop stream";
+        loge("[       V4L2] failed to stop stream");
     }
 
     if (thread_.joinable()) thread_.join();

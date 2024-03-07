@@ -1,8 +1,9 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_OPENGL_H
 #define CAPTURER_TEXTURE_WIDGET_OPENGL_H
 
-#include <libcap/ffmpeg-wrapper.h>
-#include <libcap/media.h>
+#include "libcap/ffmpeg-wrapper.h"
+#include "libcap/media.h"
+
 #include <memory>
 #include <mutex>
 #include <QOpenGLBuffer>
@@ -22,7 +23,7 @@ public:
 
     void present(const av::frame& frame);
 
-    static std::vector<AVPixelFormat> pix_fmts() ;
+    static std::vector<AVPixelFormat> pix_fmts();
 
     bool isSupported(AVPixelFormat) const;
 

@@ -27,13 +27,13 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     };
 
     if (!::pa_sample_spec_valid(&spec)) {
-        LOG(ERROR) << "[PULSE-AUDIO] invalid pulse audio format";
+        loge("[PULSE-AUDIO] invalid pulse audio format");
         return -1;
     }
 
     stream_ = pulse::stream::create("PLAYER-AUDIO-RENDER", &spec, nullptr);
     if (!stream_) {
-        LOG(ERROR) << "[PULSE-AUDIO] can not create playback stream.";
+        loge("[PULSE-AUDIO] can not create playback stream.");
         return -1;
     }
 
@@ -56,7 +56,7 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
                                      PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
                                          PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_ADJUST_LATENCY,
                                      nullptr, nullptr) != 0) {
-        LOG(ERROR) << "[PULSE-AUDIO] failed to connect playback.";
+        loge("[PULSE-AUDIO] failed to connect playback.");
         return -1;
     }
 
@@ -67,7 +67,7 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
 
     ready_ = true;
 
-    LOG(INFO) << "[PULSE-AUDIO] opened";
+    logi("[PULSE-AUDIO] opened");
 
     return 0;
 }
@@ -94,7 +94,7 @@ void PulseAudioRenderer::pulse_stream_write_callback(pa_stream *stream, size_t b
 
 void PulseAudioRenderer::pulse_stream_latency_callback(pa_stream *, void *)
 {
-    // DLOG(INFO) << "[PULSE-AUDIO] latency updated";
+    logd("[PULSE-AUDIO] latency updated");
     pulse::signal(0);
 }
 
@@ -111,10 +111,10 @@ void PulseAudioRenderer::pulse_stream_state_callback(pa_stream *stream, void *us
         self->stream_ready_ = true;
         pulse::signal(0);
 
-        LOG(INFO) << "[PULSE-AUDIO] playback stream ready";
+        logi("[PULSE-AUDIO] playback stream ready");
         break;
 
-    case PA_STREAM_FAILED: LOG(ERROR) << "[PULSE-AUDIO] playback stream error"; break;
+    case PA_STREAM_FAILED: loge("[PULSE-AUDIO] playback stream error"); break;
 
     default:               break;
     }
@@ -135,7 +135,7 @@ int PulseAudioRenderer::start()
     ::pa_stream_set_underflow_callback(stream_, pulse_stream_underflow_callback, this);
     pulse::loop_unlock();
 
-    LOG(INFO) << "[PULSE-AUDIO] STARTED";
+    logi("[PULSE-AUDIO] STARTED");
     return 0;
 }
 
@@ -159,7 +159,7 @@ int PulseAudioRenderer::stop()
         pulse::loop_unlock();
     }
 
-    LOG(INFO) << "[PULSE-AUDIO] STOPPED";
+    logi("[PULSE-AUDIO] STOPPED");
 
     return 0;
 }
@@ -170,12 +170,12 @@ PulseAudioRenderer::~PulseAudioRenderer()
 
     pulse::unref();
 
-    LOG(INFO) << "[PULSE-AUDIO] ~";
+    logi("[PULSE-AUDIO] ~");
 }
 
 int PulseAudioRenderer::mute(bool muted)
 {
-    if (!stream_) return av::err_t::nullpointer;
+    if (!stream_) return av::NULLPTR;
 
     return pulse::stream::set_sink_mute(stream_, muted);
 }
@@ -185,7 +185,7 @@ bool PulseAudioRenderer::muted() const { return stream_ && pulse::stream::get_si
 // 0.0 ~ 1.0
 int PulseAudioRenderer::set_volume(const float value)
 {
-    if (!stream_) return av::err_t::nullpointer;
+    if (!stream_) return av::NULLPTR;
 
     pa_cvolume volume{};
     ::pa_cvolume_set(&volume, format_.channels, pa_sw_volume_from_linear(value));
@@ -194,21 +194,21 @@ int PulseAudioRenderer::set_volume(const float value)
 
 float PulseAudioRenderer::volume() const
 {
-    if (!stream_) return av::err_t::nullpointer;
+    if (!stream_) return av::NULLPTR;
 
     return pulse::stream::get_sink_volume(stream_);
 }
 
 int PulseAudioRenderer::pause()
 {
-    if (!stream_) return av::err_t::nullpointer;
+    if (!stream_) return av::NULLPTR;
 
     return !paused() ? pulse::stream::cork(stream_, true, pulse_stream_success_callback, this) : 0;
 }
 
 int PulseAudioRenderer::resume()
 {
-    if (!stream_) return av::err_t::nullpointer;
+    if (!stream_) return av::NULLPTR;
 
     return paused() ? pulse::stream::cork(stream_, false, pulse_stream_success_callback, this) : 0;
 }

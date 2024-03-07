@@ -93,7 +93,7 @@ void Selector::mousePressEvent(QMouseEvent *event)
             }
             break;
 
-        default: LOG(ERROR) << "error status"; break;
+        default: loge("error status"); break;
         }
     }
 }

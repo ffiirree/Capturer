@@ -317,6 +317,6 @@ std::optional<QPixmap> ImageWindow::render(const std::shared_ptr<QMimeData>& mim
     // 5. color
     if (mimedata->hasColor()) {}
 
-    LOG(WARNING) << "unsupported";
+    logw("unsupported");
     return std::nullopt;
 }

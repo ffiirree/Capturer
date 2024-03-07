@@ -18,7 +18,7 @@
 
 #define SET_HOTKEY(X, Y)                                                                                   \
     if (!X->setShortcut(Y, true)) {                                                                        \
-        LOG(WARNING) << "Failed to register hotkey : " << Y.toString().toStdString();                      \
+        logw("Failed to register hotkey : {}", Y.toString().toStdString());                                \
         error += tr("Failed to register hotkey : <%1>\n").arg(Y.toString());                               \
     }
 
@@ -81,7 +81,7 @@ void Capturer::Init()
         config::devices::camera = cameras[0].id;
     }
 
-    LOG(INFO) << "initialized.";
+    logi("initialized.");
 }
 
 void Capturer::SystemTrayInit()
@@ -139,6 +139,7 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
 
             preview = new VideoPlayer();
             dynamic_cast<VideoPlayer *>(preview)->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+            dynamic_cast<VideoPlayer *>(preview)->start();
 
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
         }
@@ -175,12 +176,13 @@ void Capturer::ToggleCamera()
     camera_ = new CameraPlayer();
 
     if (av::cameras().empty()) {
-        LOG(WARNING) << "camera not found";
+        logw("camera not found");
         return;
     }
 
     if (camera_->open(config::devices::camera, { { "format", "webcam" }, { "filters", "hflip" } }) < 0) {
-        LOG(ERROR) << "failed to open camera";
+        loge("failed to open camera");
+        return;
     }
     camera_->start();
 }

@@ -94,10 +94,10 @@ private:
 #define loge(FMT, ...) LOG(ERROR) << fmt::format(FMT, ##__VA_ARGS__)
 #define logf(FMT, ...) LOG(FATAL) << fmt::format(FMT, ##__VA_ARGS__)
 
-#define logd_if(FMT, ...) DLOG_IF(INFO) << fmt::format(FMT, ##__VA_ARGS__)
-#define logi_if(FMT, ...) LOG_IF(INFO) << fmt::format(FMT, ##__VA_ARGS__)
-#define logw_if(FMT, ...) LOG_IF(WARNING) << fmt::format(FMT, ##__VA_ARGS__)
-#define loge_if(FMT, ...) LOG_IF(ERROR) << fmt::format(FMT, ##__VA_ARGS__)
-#define logf_if(FMT, ...) LOG_IF(FATAL) << fmt::format(FMT, ##__VA_ARGS__)
+#define logd_if(C, FMT, ...) DLOG_IF(INFO, C) << fmt::format(FMT, ##__VA_ARGS__)
+#define logi_if(C, FMT, ...) LOG_IF(INFO, C) << fmt::format(FMT, ##__VA_ARGS__)
+#define logw_if(C, FMT, ...) LOG_IF(WARNING, C) << fmt::format(FMT, ##__VA_ARGS__)
+#define loge_if(C, FMT, ...) LOG_IF(ERROR, C) << fmt::format(FMT, ##__VA_ARGS__)
+#define logf_if(C, FMT, ...) LOG_IF(FATAL, C) << fmt::format(FMT, ##__VA_ARGS__)
 
 #endif //! CAPTURER_LOGGING_H

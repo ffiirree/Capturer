@@ -31,7 +31,7 @@ void WasapiCapturer::init_format(WAVEFORMATEX *wfex)
         .time_base      = { 1, OS_TIME_BASE },
     };
 
-    LOG(INFO) << fmt::format("[  WASAPI-C] [{:>10}] {}", device_.name, av::to_string(afmt));
+    logi("[  WASAPI-C] [{:>10}] {}", device_.name, av::to_string(afmt));
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
@@ -81,15 +81,9 @@ int WasapiCapturer::init_capturer(IMMDevice *device)
         capturer_audio_client_->GetService(winrt::guid_of<IAudioCaptureClient>(), capturer_.put_void()));
 
     // events
-    if (STOP_EVENT.attach(CreateEvent(nullptr, true, false, L"Stop")); !STOP_EVENT) {
-        LOG(ERROR) << "failed to create STOP_EVENT.";
-        return -1;
-    }
-
-    if (ARRIVED_EVENT.attach(CreateEvent(nullptr, false, false, L"Arrived")); !ARRIVED_EVENT) {
-        LOG(ERROR) << "failed to create ARRIVED_EVENT.";
-        return -1;
-    }
+    if (STOP_EVENT.attach(CreateEvent(nullptr, true, false, L"Stop")); !STOP_EVENT) return av::NOMEM;
+    if (ARRIVED_EVENT.attach(CreateEvent(nullptr, false, false, L"Arrived")); !ARRIVED_EVENT)
+        return av::NOMEM;
 
     RETURN_NEGV_IF_FAILED(capturer_audio_client_->SetEventHandle(ARRIVED_EVENT.get()));
 
@@ -129,12 +123,12 @@ int WasapiCapturer::init_silent_render(IMMDevice *device)
 int WasapiCapturer::start()
 {
     if (!ready_ || running_) {
-        LOG(ERROR) << "[  WASAPI-C] not ready or running.";
+        logw("[  WASAPI-C] not ready or running.");
         return -1;
     }
 
     if (FAILED(capturer_audio_client_->Start())) {
-        LOG(ERROR) << "[  WASAPI-C] failed to start audio client.";
+        loge("[  WASAPI-C] failed to start audio client.");
         return -1;
     }
 
@@ -164,7 +158,7 @@ int WasapiCapturer::start()
                 while (true) {
                     if (FAILED(capturer_->GetNextPacketSize(&packet_size))) {
                         running_ = false;
-                        LOG(ERROR) << "[A] failed to get the next packet size, exit";
+                        loge("[A] failed to get the next packet size, exit");
                         return;
                     }
 
@@ -173,7 +167,7 @@ int WasapiCapturer::start()
                     // Get the available data in the shared buffer.
                     if (FAILED(capturer_->GetBuffer(&data_ptr, &nb_samples, &flags, nullptr, &ts))) {
                         running_ = false;
-                        LOG(ERROR) << "[A] failed to get the buffer, exit";
+                        loge("[A] failed to get the buffer, exit");
                         return;
                     }
 
@@ -181,13 +175,13 @@ int WasapiCapturer::start()
 
                     if (FAILED(capturer_->ReleaseBuffer(nb_samples))) {
                         running_ = false;
-                        LOG(ERROR) << "[A] failed to release buffer, exit";
+                        loge("[A] failed to release buffer, exit");
                         return;
                     }
                 }
                 break;
 
-            default: LOG(ERROR) << "[A] unknown event."; break;
+            default: loge("[A] unknown event."); break;
             }
         } // !while(running_)
 
@@ -195,7 +189,7 @@ int WasapiCapturer::start()
 
         winrt::check_hresult(capturer_audio_client_->Stop());
 
-        DLOG(INFO) << "[A] THREAD EXITED";
+        logi("[A] THREAD EXITED");
     });
 
     return 0;
@@ -220,7 +214,7 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
                         afmt.channels, afmt.sample_fmt) < 0) {
-        LOG(ERROR) << "av_samples_copy";
+        loge("failed to copy packet data");
         return -1;
     }
 
@@ -228,8 +222,7 @@ int WasapiCapturer::process_received_data(BYTE *data_ptr, UINT32 nb_samples, UIN
         av_samples_set_silence(frame->data, 0, frame->nb_samples, afmt.channels,
                                static_cast<AVSampleFormat>(frame->format));
 
-    // DLOG(INFO) << fmt::format("[A]  frame = {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-    //                           frame_number_++, frame->pts, frame->nb_samples, muted_.load());
+    logd("[A] pts = {:>14d}, samples = {:>6d}", frame->pts, frame->nb_samples);
 
     onarrived(frame, AVMEDIA_TYPE_AUDIO);
 
@@ -247,14 +240,14 @@ void WasapiCapturer::stop()
 
     if (render_audio_client_) render_audio_client_->Stop();
 
-    LOG(INFO) << "[  WASAPI-C] STOPPED";
+    logi("[  WASAPI-C] STOPPED");
 }
 
 WasapiCapturer::~WasapiCapturer()
 {
     stop();
 
-    LOG(INFO) << "[  WASAPI-C] ~";
+    logi("[  WASAPI-C] ~");
 }
 
 #endif // _WIN32

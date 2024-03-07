@@ -31,7 +31,7 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
 
     if (afmt.sample_fmt == AV_SAMPLE_FMT_NONE || afmt.channel_layout == 0 ||
         !::pa_sample_spec_valid(&spec)) {
-        LOG(ERROR) << "[PULSE-AUDIO] invalid pulse audio format";
+        loge("[PULSE-AUDIO] invalid pulse audio format");
         return -1;
     }
 
@@ -39,7 +39,7 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
     {
         stream_ = pulse::stream::create("PLAYER-AUDIO-CAPTURER", &spec, nullptr);
         if (!stream_) {
-            LOG(ERROR) << "[PULSE-AUDIO] can not create playback stream.";
+            loge("[PULSE-AUDIO] can not create playback stream.");
             return -1;
         }
 
@@ -59,7 +59,7 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
         };
         if (::pa_stream_connect_record(stream_, name.c_str(), &buffer_attr, PA_STREAM_ADJUST_LATENCY) !=
             0) {
-            LOG(ERROR) << "[PULSE-AUDIO] failed to connect record.";
+            loge("[PULSE-AUDIO] failed to connect record.");
             return -1;
         }
     }
@@ -68,7 +68,7 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
     running_ = true;
     ready_   = true;
 
-    LOG(INFO) << fmt::format("[PULSE-AUDIO] {} opened", name);
+    logi("[PULSE-AUDIO] {} opened", name);
 
     return 0;
 }
@@ -82,14 +82,14 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     size_t      bytes  = 0;
 
     if (::pa_stream_peek(stream, &frames, &bytes) < 0) {
-        LOG(ERROR) << "[PULSE-AUDIO] failed to read frames";
+        loge("[PULSE-AUDIO] failed to read frames");
         return;
     }
 
     if (!bytes) return;
     if (!frames) {
         pa_stream_drop(stream);
-        LOG(ERROR) << "[PULSE-AUDIO] frames == nullptr";
+        loge("[PULSE-AUDIO] frames == nullptr");
         return;
     }
 
@@ -108,15 +108,14 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy(frame->data, (uint8_t *const *)&frames, 0, 0, frame->nb_samples,
                         self->afmt.channels, self->afmt.sample_fmt) < 0) {
-        LOG(ERROR) << "[PULSE-AUDIO] failed to copy frames";
+        loge("[PULSE-AUDIO] failed to copy frames");
         return;
     }
 
     if (self->muted_)
         av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels, self->afmt.sample_fmt);
 
-    DLOG(INFO) << fmt::format("[A] # {:>5d}, pts = {:>14d}, samples = {:>6d}, muted = {}",
-                              self->frame_number_++, frame->pts, frame->nb_samples, self->muted_.load());
+    logd("[A] pts = {:>14d}, samples = {:>6d}", frame->pts, frame->nb_samples);
 
     self->onarrived(frame, AVMEDIA_TYPE_AUDIO);
 

@@ -23,8 +23,8 @@ static void pulse_context_state_callback(pa_context *ctx, void *)
     case PA_CONTEXT_SETTING_NAME:
     default:                      break;
     case PA_CONTEXT_FAILED:
-    case PA_CONTEXT_TERMINATED:   DLOG(INFO) << "PA_CONTEXT_TERMINATED"; break;
-    case PA_CONTEXT_READY:        DLOG(INFO) << "PA_CONTEXT_READY"; break;
+    case PA_CONTEXT_TERMINATED:   logd("PA_CONTEXT_TERMINATED"); break;
+    case PA_CONTEXT_READY:        logd("PA_CONTEXT_READY"); break;
     }
 
     pulse::signal(0);
@@ -52,8 +52,8 @@ static void pulse_server_info_callback(pa_context *, const pa_server_info *i, vo
     info->default_sink_name   = i->default_sink_name;
     info->default_source_name = i->default_source_name;
 
-    DLOG(INFO) << fmt::format("Pulse server: {} ({}), default sink = {}, default source = {}", info->name,
-                              info->version, info->default_sink_name, info->default_source_name);
+    logd("Pulse server: {} ({}), default sink = {}, default source = {}", info->name, info->version,
+         info->default_sink_name, info->default_source_name);
 
     pulse::signal(0);
 }
@@ -189,10 +189,9 @@ namespace pulse
             pulse_ctx,
             [](auto, const pa_source_info *i, int eol, void *userdata) {
                 if (eol == 0) {
-                    DLOG(INFO) << fmt::format("Audio source: {} ({}), rate = {}, channels = {}, state = {}",
-                                                                   i->name, i->description, i->sample_spec.rate,
-                                                                   i->sample_spec.channels,
-                                                                   pulse_source_state_to_string(i->state));
+                    logd("[A] source: {} ({}), rate = {}, channels = {}, state = {}", i->name,
+                                              i->description, i->sample_spec.rate, i->sample_spec.channels,
+                                              pulse_source_state_to_string(i->state));
 
                     static_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
                                              .name        = i->description,
@@ -226,10 +225,9 @@ namespace pulse
             pulse_ctx,
             [](auto, const pa_sink_info *i, int eol, void *userdata) {
                 if (eol == 0) {
-                    DLOG(INFO) << fmt::format("Audio sink: {} ({}), rate = {}, channels = {}, state = {}",
-                                              i->name, i->description, i->sample_spec.rate,
-                                              i->sample_spec.channels,
-                                              pulse_source_state_to_string(i->state));
+                    logd("[A] sink: {} ({}), rate = {}, channels = {}, state = {}", i->name, i->description,
+                         i->sample_spec.rate, i->sample_spec.channels,
+                         pulse_source_state_to_string(i->state));
 
                     static_cast<std::vector<av::device_t> *>(userdata)->push_back(av::device_t{
                         .name        = i->description,
