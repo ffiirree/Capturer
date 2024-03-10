@@ -8,6 +8,7 @@
 
 #include <QCheckBox>
 #include <QFont>
+#include <QFontDatabase>
 #include <QPen>
 
 class EditingSubmenu final : public FramelessWindow
@@ -33,8 +34,7 @@ public:
     //
     void setFont(const QFont& font);
 
-    [[nodiscard]] QFont font() const { return font_; }
-
+    [[nodiscard]] QFont font() const;
     //
     [[nodiscard]] bool filled() const;
 
@@ -50,13 +50,15 @@ signals:
 private:
     WidthButton *width_btn_{};
     QCheckBox   *fill_btn_{};
-    ComboBox    *font_family_{};
-    ComboBox    *font_size_{};
-    ComboBox    *font_style_{};
-    ColorPanel  *color_panel_{};
+
+    QFontDatabase fonts_{};
+    ComboBox     *font_family_{};
+    ComboBox     *font_size_{};
+    ComboBox     *font_style_{};
+
+    ColorPanel *color_panel_{};
 
     QPen  pen_{ Qt::red, 3 };
-    QFont font_{};
     bool  fill_{};
 };
 

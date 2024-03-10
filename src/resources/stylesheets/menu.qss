@@ -86,6 +86,7 @@ EditingSubmenu QComboBox {
     font-size: 9pt;
     max-width: 10em;
     min-width: 3.5em;
+    margin: 0.35em 0.15em;
 }
 
 EditingSubmenu QCheckBox::indicator {

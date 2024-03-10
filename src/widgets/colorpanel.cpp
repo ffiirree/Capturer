@@ -83,18 +83,18 @@ ColorPanel::ColorPanel(QWidget *parent)
     : QWidget(parent)
 {
     auto layout = new QGridLayout();
-    layout->setContentsMargins(5, 3, 5, 3);
-    layout->setVerticalSpacing(1);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setVerticalSpacing(2);
     layout->setHorizontalSpacing(2);
 
     color_dialog_btn_ = new ColorDialogButton(Qt::red);
-    color_dialog_btn_->setFixedSize(29, 29);
+    color_dialog_btn_->setFixedSize(34, 34);
     layout->addWidget(color_dialog_btn_, 0, 0, 2, 2);
 
 #define ADD_COLOR(COLOR, X, Y)                                                                             \
     do {                                                                                                   \
         auto cbtn = new ColorButton(COLOR);                                                                \
-        cbtn->setFixedSize(14, 14);                                                                        \
+        cbtn->setFixedSize(16, 16);                                                                        \
         layout->addWidget(cbtn, X, Y);                                                                     \
         connect(cbtn, &ColorButton::clicked, [this](auto c) { setColor(c, false); });                      \
     } while (0)

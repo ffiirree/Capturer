@@ -3,7 +3,6 @@
 #include "separator.h"
 
 #include <QButtonGroup>
-#include <QFontDatabase>
 #include <QHBoxLayout>
 #include <QLineEdit>
 
@@ -59,8 +58,8 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
             layout->addWidget(new Separator());
         }
 
-        layout->setSpacing(3);
-        layout->setContentsMargins({ 5, 0, 0, 0 });
+        layout->setSpacing(0);
+        layout->setContentsMargins({});
 
         // foont
         font_family_ = new ComboBox(this);
@@ -70,39 +69,26 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->addWidget(font_style_);
         layout->addWidget(font_size_);
 
-        const QFontDatabase font_db;
-        font_.setFamily(font_.defaultFamily());
-        font_.setPointSizeF(16);
-
         // font family
-        font_family_->addItems(font_db.families());
-        font_family_->setCurrentText(font_.family());
-        connect(font_family_, &QComboBox::currentTextChanged, [=, this](const QString& family) {
-            font_.setFamily(family);
+        font_family_->addItems(fonts_.families());
+        connect(font_family_, &QComboBox::currentTextChanged, [this](const QString& family) {
             font_style_->clear();
-            font_style_->addItems(font_db.styles(family));
-            emit fontChanged(font_);
+            font_style_->addItems(fonts_.styles(family));
+            emit fontChanged(font());
         });
 
         // font style
-        font_style_->addItems(font_db.styles(font_.family()));
-        font_style_->setCurrentText(font_.styleName());
-        connect(font_style_, &QComboBox::currentTextChanged, [=, this](const QString& style) {
-            font_.setStyleName(style);
-            emit fontChanged(font_);
-        });
+        connect(font_style_, &QComboBox::currentTextChanged, [this] { emit fontChanged(font()); });
 
         // font size
         font_size_->setEditable(true);
-        font_size_->lineEdit()->setFocusPolicy(Qt::NoFocus);
-        foreach(const int& s, font_db.standardSizes()) {
+        foreach(const int& s, fonts_.standardSizes()) {
             font_size_->addItem(QString::number(s));
         }
-        font_size_->setCurrentText("16");
-        connect(font_size_, QOverload<int>::of(&QComboBox::currentIndexChanged), [=, this](auto) {
-            font_.setPointSizeF(font_size_->currentText().toFloat());
-            emit fontChanged(font_);
-        });
+        connect(font_size_, &QComboBox::currentTextChanged, [this] { emit fontChanged(font()); });
+
+        // default font
+        setFont(fonts_.font("微软雅黑", "Regular", 16)); // or application's default font
     }
 
     // pen: color
@@ -135,10 +121,18 @@ void EditingSubmenu::setPen(const QPen& pen, bool silence)
 
 void EditingSubmenu::setFont(const QFont& font)
 {
-    font_ = font;
     if (font_family_) font_family_->setCurrentText(font.family());
     if (font_size_) font_size_->setCurrentText(QString::number(font.pointSizeF(), 'f', 2));
     if (font_style_) font_style_->setCurrentText(font.styleName());
+}
+
+QFont EditingSubmenu::font() const
+{
+    if (!font_family_ || !font_style_ || !font_size_) return QFont{};
+
+    auto font = fonts_.font(font_family_->currentText(), font_style_->currentText(), 16);
+    font.setPointSizeF(font_size_->currentText().toFloat());
+    return font;
 }
 
 bool EditingSubmenu::filled() const { return fill_btn_ ? fill_btn_->isChecked() : false; }

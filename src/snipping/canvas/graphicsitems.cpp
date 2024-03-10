@@ -1012,6 +1012,11 @@ void GraphicsTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 void GraphicsTextItem::focusOutEvent(QFocusEvent *event)
 {
     setTextInteractionFlags(Qt::NoTextInteraction);
+
+    auto cursor = textCursor();
+    cursor.clearSelection();
+    setTextCursor(cursor);
+
     QGraphicsTextItem::focusOutEvent(event);
 }
 
