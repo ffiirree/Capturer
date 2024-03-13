@@ -126,7 +126,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
 
-    QPen pen_{ Qt::red, 3, Qt::SolidLine };
+    QPen pen_{ Qt::red, 6, Qt::SolidLine };
 };
 
 /// Line Item

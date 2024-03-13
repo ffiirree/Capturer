@@ -142,36 +142,12 @@ EditingMenu QCheckBox::indicator:unchecked:hover {
     background-color: #323232;
 }
 
-EditingSubmenu QCheckBox#width-btn[width="1"]::indicator {
-    image: url(:/icons/dot-1-light);
+EditingMenu WidthButton {
+    color: #e6e6e6;
 }
 
-EditingSubmenu QCheckBox#width-btn[width="2"]::indicator {
-    image: url(:/icons/dot-2-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="3"]::indicator {
-    image: url(:/icons/dot-3-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="4"]::indicator {
-    image: url(:/icons/dot-4-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="5"]::indicator {
-    image: url(:/icons/dot-5-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="6"]::indicator {
-    image: url(:/icons/dot-6-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="7"]::indicator {
-    image: url(:/icons/dot-7-light);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="8"]::indicator {
-    image: url(:/icons/dot-8-light);
+EditingMenu WidthButton:unchecked:hover {
+    background-color: #323232;
 }
 
 EditingSubmenu QCheckBox#fill-btn::indicator {

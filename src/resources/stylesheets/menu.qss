@@ -101,44 +101,13 @@ EditingSubmenu QCheckBox::indicator::checked {
     background-color: #409eff;
 }
 
-EditingSubmenu QCheckBox#width-btn::indicator {
-    image: url(:/icons/dot-2);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="1"]::indicator:checked {
-    image: url(:/icons/dot-1);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="2"]::indicator:checked {
-    image: url(:/icons/dot-2);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="3"]::indicator:checked {
-    image: url(:/icons/dot-3);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="4"]::indicator:checked {
-    image: url(:/icons/dot-4);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="5"]::indicator:checked {
-    image: url(:/icons/dot-5);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="6"]::indicator:checked {
-    image: url(:/icons/dot-6);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="7"]::indicator:checked {
-    image: url(:/icons/dot-7);
-}
-
-EditingSubmenu QCheckBox#width-btn[width="8"]::indicator:checked {
-    image: url(:/icons/dot-8);
-}
-
-EditingSubmenu QCheckBox#fill-btn::indicator:checked {
-    image: url(:/icons/fill);
+EditingSubmenu WidthButton::indicator:unchecked,
+EditingSubmenu WidthButton::indicator:unchecked:hover,
+EditingSubmenu WidthButton::indicator:unchecked:pressed,
+EditingSubmenu WidthButton::indicator:checked,
+EditingSubmenu WidthButton::indicator:checked:hover,
+EditingSubmenu WidthButton::indicator:checked:pressed {
+    image: none;
 }
 
 EditingSubmenu ColorButton {
@@ -146,7 +115,7 @@ EditingSubmenu ColorButton {
     border-radius: 0px;
 
     margin: 0.1em;
-    border: 0.1em solid #bfbfbf;
+    border: 2px solid #bfbfbf;
     padding: 0px;
 
     height: 0.6em;
@@ -154,18 +123,18 @@ EditingSubmenu ColorButton {
 }
 
 EditingSubmenu ColorButton:hover {
-    border: 0.1em solid #409eff;
+    border: 2px solid #409eff;
 }
 
 EditingSubmenu ColorButton#selected-color {
     margin: 0.3em;
-    border: 0.1em solid #bfbfbf;
+    border: 2px solid #bfbfbf;
     padding: 0px;
 
-    height: 1.2em;
-    width: 1.2em;
+    height: 1.3em;
+    width: 1.3em;
 }
 
 EditingSubmenu ColorButton#selected-color:hover {
-    border: 0.1em solid #409eff;
+    border: 2px solid #409eff;
 }

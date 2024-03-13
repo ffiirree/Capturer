@@ -58,7 +58,7 @@ private:
 
     ColorPanel *color_panel_{};
 
-    QPen  pen_{ Qt::red, 3 };
+    QPen  pen_{ Qt::red, 6 };
     bool  fill_{};
 };
 
