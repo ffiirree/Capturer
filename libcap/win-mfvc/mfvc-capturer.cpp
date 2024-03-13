@@ -32,8 +32,8 @@ private:
     std::function<void(IMFSample *)> callback_ = [](auto) {};
 };
 
-HRESULT ReaderCallback::OnReadSample(const HRESULT Status, DWORD StreamIndex, DWORD StreamFlags,
-                                     LONGLONG Timestamp, IMFSample *Sample)
+HRESULT ReaderCallback::OnReadSample(const HRESULT Status, DWORD /*StreamIndex*/, DWORD StreamFlags,
+                                     LONGLONG /*Timestamp*/, IMFSample *Sample)
 {
     if (FAILED(Status) || StreamFlags > 0 || !Sample) {
         callback_(nullptr);
@@ -172,8 +172,8 @@ int MFCameraCapturer::start()
         return -1;
     }
 
-    if (FAILED(reader_->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, nullptr, nullptr, nullptr,
-                                   nullptr))) {
+    if (FAILED(reader_->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM), 0, nullptr,
+                                   nullptr, nullptr, nullptr))) {
         loge("[   WIN-MFVC] failed to start asynchronous mode");
         return -1;
     }
@@ -204,7 +204,8 @@ void MFCameraCapturer::handler(IMFSample *Sample)
         }
         buffer->Unlock();
     }
-    reader_->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, nullptr, nullptr, nullptr, nullptr);
+    reader_->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM), 0, nullptr, nullptr,
+                        nullptr, nullptr);
 }
 
 int MFCameraCapturer::video_decode(const av::packet& pkt)
