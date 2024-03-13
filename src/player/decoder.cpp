@@ -351,8 +351,8 @@ void Decoder::readpkt_thread_fn()
 
         std::unique_lock lock(notenough_mtx_);
         notenough_.wait(lock, [this] {
-            return (vctx.index >= 0 && (vctx.queue.stopped() || vctx.queue.size() < 2)) ||
-                   (actx.index >= 0 && (actx.queue.stopped() || actx.queue.size() < 2));
+            return (vctx.index >= 0 && (vctx.queue.stopped() || vctx.queue.size() < 8)) ||
+                   (actx.index >= 0 && (actx.queue.stopped() || actx.queue.size() < 8));
         });
         lock.unlock();
 
