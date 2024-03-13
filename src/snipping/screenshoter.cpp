@@ -306,7 +306,7 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
 
         if ((event->modifiers() & Qt::CTRL) && canvas::has_color(menu_->graph())) {
             auto color = pen.color();
-            color.setAlpha(color.alpha() + delta * 5);
+            color.setAlpha(std::clamp<int>(color.alpha() + delta * 5, 0, 255));
             pen.setColor(color);
 
             menu_->setPen(pen, false);

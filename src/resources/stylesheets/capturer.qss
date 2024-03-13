@@ -105,7 +105,7 @@ QLineEdit {
 QSpinBox, QDoubleSpinBox {
     border-radius: 5px;
     height: 1.5em;
-    padding: 0 10px;
+    padding: 0 0.5em;
     margin: 1px 0px;
 }
 
@@ -294,7 +294,18 @@ QSlider::handle:horizontal:hover {
 QPushButton {
     height: 1.5em;
     border-radius: 5px;
-    padding: 0px 1em;
+    padding: 0px 0.5em;
+}
+
+ColorButton {
+    height: 1.5em;
+    border-radius: 5px;
+    padding: 0px;
+    border: 1px solid transparent;
+}
+
+ColorButton:hover {
+    border: 1px solid #A0A0A0;
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -319,13 +330,6 @@ QLabel#size_info {
     font-family: "Microsoft YaHei";
 
     padding: 0.35em 0.75em 0.35em 0.75em;
-}
-
-/*///////////////////////////////////////////////////////////////*/
-QColorDialog QPushButton {
-    height: 2em;
-    border-radius: 5px;
-    padding: 0px 1em;
 }
 
 /*///////////////////////////////////////////////////////////////*/

@@ -50,6 +50,8 @@ protected:
 #endif
 
 #ifdef Q_OS_WIN
+    int ResizeHandleHeight(HWND hWnd);
+
     bool nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result) override;
 #endif
 };

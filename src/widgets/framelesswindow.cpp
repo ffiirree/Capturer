@@ -14,6 +14,7 @@
 #include <windowsx.h>
 #endif
 
+// [microsoft/terminal](https://github.com/microsoft/terminal/blob/main/src/cascadia/WindowsTerminal/NonClientIslandWindow.cpp)
 FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
     : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint | flags)
 {
@@ -185,6 +186,13 @@ static bool IsFullscreen(HWND hwnd)
     return monitor && (monitor->rcMonitor == winrect);
 }
 
+int FramelessWindow::ResizeHandleHeight(HWND hWnd)
+{
+    const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hWnd));
+
+    return ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+}
+
 bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result)
 {
     if (!message || !result || !static_cast<MSG *>(message)->hwnd) return false;
@@ -195,34 +203,8 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
     if (!hwnd) return false;
 
     switch (wmsg->message) {
+    // https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-nccalcsize
     case WM_NCCALCSIZE: {
-        // https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-nccalcsize
-        // Parameters
-        // wParam
-        //
-        // If wParam is TRUE, it specifies that the application should indicate which part of the client
-        // area contains valid information. The system copies the valid information to the specified area
-        // within the new client area.
-        //
-        // If wParam is FALSE, the application does not need to indicate the valid part of the client area.
-        //
-        // lParam
-        //
-        // If wParam is TRUE, lParam points to an NCCALCSIZE_PARAMS structure that contains information an
-        // application can use to calculate the new size and position of the client rectangle.
-        //
-        // If wParam is FALSE, lParam points to a RECT structure. On entry, the structure contains the
-        // proposed window rectangle for the window. On exit, the structure should contain the screen
-        // coordinates of the corresponding window client area.
-        //
-        // Return value
-        //
-        // If the wParam parameter is FALSE, the application should return zero.
-        //
-        // If wParam is TRUE, the application should return zero or a combination of the following values.
-        //
-        // If wParam is TRUE and an application returns zero, the old client area is preserved and is
-        // aligned with the upper-left corner of the new client area.
         const auto rect = wmsg->wParam ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(wmsg->lParam))->rgrc[0]
                                        : reinterpret_cast<LPRECT>(wmsg->lParam);
 
@@ -244,10 +226,7 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
 
         // top frame
         if (maximized && !fullscreen) {
-            const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
-
-            rect->top += ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
-                         ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+            rect->top += ResizeHandleHeight(hwnd);
         }
 
         // autohide taskbar
@@ -284,13 +263,21 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
 
     case WM_NCHITTEST: {
         if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam); res != HTCLIENT) {
-            *result = static_cast<long>(res);
-            return true;
-        }
 
-        // CLIENT
-        if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
-            *result = HTCLIENT;
+            if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
+                switch (res) {
+                case HTBOTTOMRIGHT:
+                case HTRIGHT:
+                case HTTOPRIGHT:
+                case HTTOP:
+                case HTTOPLEFT:
+                case HTLEFT:
+                case HTBOTTOMLEFT:
+                case HTBOTTOM:      *result = HTCLIENT; return true;
+                }
+            }
+
+            *result = static_cast<long>(res);
             return true;
         }
 
@@ -299,11 +286,8 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         if (!::GetWindowRect(hwnd, &rect)) return false;
 
         const POINT pos{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) };
-        const auto  dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hwnd));
-        if (const auto frame = ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
-                               ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-            pos.y < rect.top + frame) {
-            *result = HTTOP;
+        if (!IsMaximized(hwnd) && (pos.y < rect.top + ResizeHandleHeight(hwnd))) {
+            *result = isSizeFixed() ? HTCAPTION : HTTOP;
             return true;
         }
 

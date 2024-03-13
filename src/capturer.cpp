@@ -133,7 +133,7 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
 
         if (mimedata->hasUrls() && mimedata->urls().size() == 1 && mimedata->urls()[0].isLocalFile() &&
             QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
-            QString("gif;mp4;mkv;m2ts;avi;wmv")
+            QString("gif;mp4;mkv;m2ts;mts;avi;wmv;ts;mov;flv")
                 .split(';')
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
 

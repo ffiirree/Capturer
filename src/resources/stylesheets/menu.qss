@@ -82,6 +82,14 @@ EditingMenu QCheckBox#ok-btn::indicator {
 }
 
 /*///////////////////////////////// Style Menu //////////////////////////////*/
+EditingSubmenu QCheckBox::indicator {
+    font-size: 9pt;
+
+    height: 1.5em;
+    width: 1.5em;
+    padding: 0.5em;
+}
+
 EditingSubmenu QComboBox {
     font-size: 9pt;
     max-width: 10em;
@@ -89,19 +97,11 @@ EditingSubmenu QComboBox {
     margin: 0.35em 0.15em;
 }
 
-EditingSubmenu QCheckBox::indicator {
-    font-size: 9pt;
-}
-
 EditingSubmenu QCheckBox::indicator::checked {
     background-color: #409eff;
 }
 
 EditingSubmenu QCheckBox#width-btn::indicator {
-    height: 1.5em;
-    width: 1.5em;
-    padding: 0.5em;
-
     image: url(:/icons/dot-2);
 }
 
@@ -137,18 +137,35 @@ EditingSubmenu QCheckBox#width-btn[width="8"]::indicator:checked {
     image: url(:/icons/dot-8);
 }
 
-EditingSubmenu QCheckBox#fill-btn::indicator {
-    height: 1.5em;
-    width: 1.5em;
-    padding: 0.5em;
-}
-
 EditingSubmenu QCheckBox#fill-btn::indicator:checked {
     image: url(:/icons/fill);
 }
 
-EditingSubmenu ColorPanel {
+EditingSubmenu ColorButton {
     font-size: 9pt;
-    padding: 0.5em;
-    background-color: blue;
+    border-radius: 0px;
+
+    margin: 0.1em;
+    border: 0.1em solid #bfbfbf;
+    padding: 0px;
+
+    height: 0.6em;
+    width: 0.6em;
+}
+
+EditingSubmenu ColorButton:hover {
+    border: 0.1em solid #409eff;
+}
+
+EditingSubmenu ColorButton#selected-color {
+    margin: 0.3em;
+    border: 0.1em solid #bfbfbf;
+    padding: 0px;
+
+    height: 1.2em;
+    width: 1.2em;
+}
+
+EditingSubmenu ColorButton#selected-color:hover {
+    border: 0.1em solid #409eff;
 }

@@ -39,9 +39,3 @@ SettingWindow QCheckBox#close-btn::indicator:hover {
 SettingWindow ShortcutInput:focus {
     color: #409eff;
 }
-
-ColorDialogButton {
-    height: 32px;
-    border-radius: 3px;
-    margin: 1px 0px;
-}

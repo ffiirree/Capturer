@@ -36,6 +36,13 @@
     </message>
 </context>
 <context>
+    <name>ColorDialogButton</name>
+    <message>
+        <source>Select Color</source>
+        <translation>选择颜色</translation>
+    </message>
+</context>
+<context>
     <name>EditingMenu</name>
     <message>
         <source>Open Image</source>
