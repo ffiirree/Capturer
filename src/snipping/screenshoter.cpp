@@ -155,7 +155,7 @@ void ScreenShoter::start()
 
 void ScreenShoter::refresh(const probe::geometry_t& geometry)
 {
-    // background
+    // TODO: 180ms (4K + 2K two monitors), speed up
     const auto background = QGuiApplication::primaryScreen()->grabWindow(
         probe::graphics::virtual_screen().handle, geometry.x, geometry.y, static_cast<int>(geometry.width),
         static_cast<int>(geometry.height));
@@ -402,7 +402,7 @@ void ScreenShoter::save()
         this, tr("Save Image"), config::snip::path + QDir::separator() + default_filename,
         "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 #elif __linux__
-    QString filename = save_path_ + QDir::separator() + default_filename;
+    QString filename = config::snip::path + QDir::separator() + default_filename;
 #endif
 
     if (!filename.isEmpty()) {
