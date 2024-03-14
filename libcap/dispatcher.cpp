@@ -298,7 +298,6 @@ Dispatcher::~Dispatcher()
 {
     stop();
 
-    // release fitergraphs
     avfilter_graph_free(&vctx_.graph);
     avfilter_graph_free(&actx_.graph);
 

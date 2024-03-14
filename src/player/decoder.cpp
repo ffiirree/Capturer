@@ -22,31 +22,30 @@ extern "C" {
 
 #define MIN_FRAMES 8
 
-AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts)
+static AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts)
 {
     auto pix_fmt = pix_fmts;
     for (; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++) {
-        const auto desc = av_pix_fmt_desc_get(*pix_fmt);
 
-        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) break;
+        if (const auto desc = av_pix_fmt_desc_get(*pix_fmt); !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
+            break;
 
-        const AVCodecHWConfig *config = nullptr;
         for (auto i = 0;; ++i) {
-            config = avcodec_get_hw_config(ctx->codec, i);
+            const auto config = avcodec_get_hw_config(ctx->codec, i);
+
             if (!config) break;
 
             if (!(config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX)) continue;
 
             if (config->pix_fmt == *pix_fmt) break;
         }
-        break;
     }
 
     logi("pixel format : {}", av_get_pix_fmt_name(*pix_fmt));
     return *pix_fmt;
 }
 
-static const AVCodec *choose_decoder(AVStream *stream, AVHWDeviceType hwaccel)
+static const AVCodec *choose_decoder(const AVStream *stream, const AVHWDeviceType hwaccel)
 {
     if (hwaccel != AV_HWDEVICE_TYPE_NONE) {
         void *idx = nullptr;
@@ -54,7 +53,7 @@ static const AVCodec *choose_decoder(AVStream *stream, AVHWDeviceType hwaccel)
             if (codec->id != stream->codecpar->codec_id || !av_codec_is_decoder(codec)) continue;
 
             for (int j = 0;; j++) {
-                auto config = avcodec_get_hw_config(codec, j);
+                const auto config = avcodec_get_hw_config(codec, j);
                 if (!config) break;
 
                 if (config->device_type == hwaccel) {
@@ -168,12 +167,8 @@ int Decoder::open(const std::string& name)
 
 int Decoder::create_video_graph()
 {
-    // 1. alloc filter graph
     if (vctx.graph) avfilter_graph_free(&vctx.graph);
-    if (vctx.graph = avfilter_graph_alloc(); !vctx.graph) {
-        loge("[    DECODER] [V] failed to create filter graph.");
-        return -1;
-    }
+    if (vctx.graph = avfilter_graph_alloc(); !vctx.graph) return av::NOMEM;
 
     if (av::graph::create_video_src(vctx.graph, &vctx.src, vfi) < 0) return -1;
     if (av::graph::create_video_sink(vctx.graph, &vctx.sink, vfo) < 0) return -1;
@@ -183,7 +178,6 @@ int Decoder::create_video_graph()
         return -1;
     }
 
-    // 5. configure
     if (avfilter_graph_config(vctx.graph, nullptr) < 0) {
         loge("[    DECODER] failed to configure the filter graph");
         return -1;
@@ -195,10 +189,7 @@ int Decoder::create_video_graph()
 int Decoder::create_audio_graph()
 {
     if (actx.graph) avfilter_graph_free(&actx.graph);
-    if (actx.graph = avfilter_graph_alloc(); !actx.graph) {
-        loge("[    DECODER] [A] failed to create filter graph.");
-        return -1;
-    }
+    if (actx.graph = avfilter_graph_alloc(); !actx.graph) return av::NOMEM;
 
     if (av::graph::create_audio_src(actx.graph, &actx.src, afi) < 0) return -1;
     if (av::graph::create_audio_sink(actx.graph, &actx.sink, afo) < 0) return -1;
@@ -208,7 +199,6 @@ int Decoder::create_audio_graph()
         return -1;
     }
 
-    // 5. configure
     if (avfilter_graph_config(actx.graph, nullptr) < 0) {
         loge("[    DECODER] [A] failed to configure the filter graph");
         return -1;
@@ -278,12 +268,10 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
     seek_min_ = rel > 0s ? seek_pts_ - rel.count() / 1000 + 2 : std::numeric_limits<int64_t>::min();
     seek_max_ = rel < 0s ? seek_pts_ - rel.count() / 1000 - 2 : std::numeric_limits<int64_t>::max();
 
-    trim_pts_ = (seek_pts_ <= std::max<int64_t>(0, fmt_ctx_->start_time)) ? 0 : seek_pts_.load();
-    logi("seek: {:.3%T}, {:.3%T} {:+}s ({:.3%T}, {:.3%T}) D: {:%T} - {:%T}",
-         std::chrono::microseconds{ seek_pts_ }, std::chrono::microseconds{ trim_pts_ },
-         rel.count() / 1000000000, std::chrono::microseconds{ seek_min_ },
-         std::chrono::microseconds{ seek_max_ }, std::chrono::microseconds{ fmt_ctx_->start_time },
-         std::chrono::microseconds{ fmt_ctx_->duration });
+    trim_pts_ = (seek_pts_ <= std::max<int64_t>(500, fmt_ctx_->start_time)) ? 0 : seek_pts_.load();
+    logi("seek: {:.3%T} {:+}s ({:.3%T}, {:.3%T}), trim: {:.3%T}", std::chrono::microseconds{ seek_pts_ },
+         av::clock::s(rel).count(), std::chrono::microseconds{ seek_min_ },
+         std::chrono::microseconds{ seek_max_ }, std::chrono::microseconds{ trim_pts_ });
 
     vctx.queue.stop();
     actx.queue.stop();
@@ -308,7 +296,6 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
 void Decoder::readpkt_thread_fn()
 {
     probe::thread::set_name("DEC-READ");
-    logi("STARTED");
 
     av::packet packet{};
     while (running_ && !eof_) {
@@ -333,26 +320,28 @@ void Decoder::readpkt_thread_fn()
 
         // read
         const int ret = av_read_frame(fmt_ctx_, packet.put());
-        if (ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) {
-            eof_ = true;
+        if (ret < 0) {
+            if (ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) {
+                eof_ = true;
 
-            vctx.queue.wait_and_push(nullptr);
-            actx.queue.wait_and_push(nullptr);
+                vctx.queue.wait_and_push(nullptr);
+                actx.queue.wait_and_push(nullptr);
 
-            logi("DRAINING");
+                logi("DRAINING");
+            }
 
-            continue;
-        }
-        else if (ret < 0) {
-            loge("FAILED TO READ PACKET, ABORT");
-            running_ = false;
+            if (fmt_ctx_->pb && fmt_ctx_->pb->error) {
+                loge("FAILED TO READ PACKET, ABORT");
+                running_ = false;
+            }
+
             continue;
         }
 
         std::unique_lock lock(notenough_mtx_);
         notenough_.wait(lock, [this] {
-            return (vctx.index >= 0 && (vctx.queue.stopped() || vctx.queue.size() < 8)) ||
-                   (actx.index >= 0 && (actx.queue.stopped() || actx.queue.size() < 8));
+            return (vctx.index >= 0 && (vctx.queue.stopped() || vctx.queue.size() < MIN_FRAMES)) ||
+                   (actx.index >= 0 && (actx.queue.stopped() || actx.queue.size() < MIN_FRAMES));
         });
         lock.unlock();
 
@@ -551,6 +540,9 @@ Decoder::~Decoder()
     avcodec_free_context(&actx.codec);
     avcodec_free_context(&sctx.codec);
     avformat_close_input(&fmt_ctx_);
+
+    avfilter_graph_free(&vctx.graph);
+    avfilter_graph_free(&actx.graph);
 
     logi("[    DECODER] ~");
 }
