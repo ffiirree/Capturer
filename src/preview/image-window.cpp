@@ -134,9 +134,8 @@ void ImageWindow::paste()
 
 void ImageWindow::open()
 {
-    const auto filename = QFileDialog::getOpenFileName(
-        this, tr("Open Image"), QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
-        "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
+    const auto filename = QFileDialog::getOpenFileName(this, tr("Open Image"), config::snip::path,
+                                                       "Image Files(*.png *.jpg *.jpeg *.bmp *.svg)");
     if (!filename.isEmpty()) {
         present(QPixmap(filename));
     }
@@ -147,13 +146,13 @@ void ImageWindow::saveAs()
     const QString default_filename =
         "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
 
-    const auto filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
-                                                       save_path_ + QDir::separator() + default_filename,
-                                                       "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+    const auto filename = QFileDialog::getSaveFileName(
+        this, tr("Save Image"), config::snip::path + QDir::separator() + default_filename,
+        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 
     if (!filename.isEmpty()) {
         const QFileInfo fileinfo(filename);
-        save_path_ = fileinfo.absoluteDir().path();
+        config::snip::path = fileinfo.absoluteDir().path();
 
         pixmap_.save(filename);
     }

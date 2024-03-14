@@ -36,17 +36,35 @@ Capturer::Capturer(int& argc, char **argv)
     transparent_input_ = new QHotkey(this);
 
     sniper_.reset(new ScreenShoter());
-    recorder_.reset(new ScreenRecorder(ScreenRecorder::VIDEO));
-    gifcptr_.reset(new ScreenRecorder(ScreenRecorder::GIF));
 
     connect(snip_hotkey_, &QHotkey::activated, sniper_.get(), &ScreenShoter::start);
     connect(preview_hotkey_, &QHotkey::activated, this, &Capturer::PreviewClipboard);
     connect(toggle_hotkey_, &QHotkey::activated, this, &Capturer::TogglePreviews);
-    connect(video_hotkey_, &QHotkey::activated, recorder_.get(), &ScreenRecorder::record);
-    connect(gif_hotkey_, &QHotkey::activated, gifcptr_.get(), &ScreenRecorder::record);
+    connect(video_hotkey_, &QHotkey::activated, this, &Capturer::RecordVideo);
+    connect(gif_hotkey_, &QHotkey::activated, this, &Capturer::RecordGIF);
     connect(quicklook_hotkey_, &QHotkey::activated, this, &Capturer::QuickLook);
     connect(transparent_input_, &QHotkey::activated, this, &Capturer::TransparentPreviewInput);
     connect(sniper_.get(), &ScreenShoter::pinData, this, &Capturer::PreviewMimeData);
+}
+
+void Capturer::RecordVideo()
+{
+    if (!recorder_) {
+        recorder_ = new ScreenRecorder(ScreenRecorder::VIDEO);
+        recorder_->setAttribute(Qt::WA_DeleteOnClose);
+        recorder_->setStyle(config::recording::video::style);
+    }
+    recorder_->record();
+}
+
+void Capturer::RecordGIF()
+{
+    if (!gifcptr_) {
+        gifcptr_ = new ScreenRecorder(ScreenRecorder::GIF);
+        gifcptr_->setAttribute(Qt::WA_DeleteOnClose);
+        gifcptr_->setStyle(config::recording::gif::style);
+    }
+    gifcptr_->record();
 }
 
 void Capturer::Init()
@@ -58,8 +76,6 @@ void Capturer::Init()
     UpdateHotkeys();
 
     UpdateScreenshotStyle();
-    UPdateVideoRecordingStyle();
-    UPdateGifRecordingStyle();
 
     SetTheme(config::definite_theme());
 
@@ -116,8 +132,8 @@ void Capturer::SystemTrayInit()
 
     connect(tray_.data(), &QSystemTrayIcon::activated, this, &Capturer::TrayActivated);
     connect(tray_snip_, &QAction::triggered, sniper_.data(), &ScreenShoter::start);
-    connect(tray_record_video_, &QAction::triggered, recorder_.data(), &ScreenRecorder::record);
-    connect(tray_record_gif_, &QAction::triggered, gifcptr_.data(), &ScreenRecorder::record);
+    connect(tray_record_video_, &QAction::triggered, this, &Capturer::RecordVideo);
+    connect(tray_record_gif_, &QAction::triggered, this, &Capturer::RecordGIF);
     connect(tray_open_camera_, &QAction::triggered, this, &Capturer::ToggleCamera);
     connect(tray_settings_, &QAction::triggered, this, &Capturer::OpenSettingsDialog);
     connect(tray_exit_, &QAction::triggered, qApp, &QCoreApplication::exit);
@@ -318,14 +334,4 @@ void Capturer::SetTheme(const QString& theme)
 void Capturer::UpdateScreenshotStyle()
 {
     if (sniper_) sniper_->setStyle(config::snip::style);
-}
-
-void Capturer::UPdateVideoRecordingStyle()
-{
-    if (recorder_) recorder_->setStyle(config::recording::video::style);
-}
-
-void Capturer::UPdateGifRecordingStyle()
-{
-    if (gifcptr_) gifcptr_->setStyle(config::recording::gif::style);
 }

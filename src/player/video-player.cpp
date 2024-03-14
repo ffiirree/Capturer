@@ -352,7 +352,7 @@ void VideoPlayer::seek(const std::chrono::nanoseconds ts, const std::chrono::nan
 
     source_->seek(ts, rel);
 
-    sonic_stream_drain(sonic_stream_);
+    if (sonic_stream_) sonic_stream_drain(sonic_stream_);
 
     // reset state
     seeking_   = true;
@@ -368,8 +368,9 @@ void VideoPlayer::finish()
 {
     logi("PLAYBACK EOF: [V] {}, [A] {}, VQ: {}, AQ: {}, feof: {}", vdone_.load(), adone_.load(),
          vqueue_.size(), aqueue_.size(), source_->eof());
-    if ((vdone_ && adone_) || (vqueue_.empty() && aqueue_.empty() &&
-                               sonic_stream_expected_samples(sonic_stream_) == 0 && source_->eof())) {
+    if ((vdone_ && adone_) ||
+        (vqueue_.empty() && aqueue_.empty() &&
+         (!sonic_stream_ || sonic_stream_expected_samples(sonic_stream_) == 0) && source_->eof())) {
         logi("[    PLAYER] {} is finished", filename_);
         if (!is_live_) {
             pause();
@@ -412,7 +413,7 @@ VideoPlayer::~VideoPlayer()
 
 void VideoPlayer::setSpeed(const float speed)
 {
-    sonic_stream_set_speed(sonic_stream_, speed);
+    if (sonic_stream_) sonic_stream_set_speed(sonic_stream_, speed);
     timeline_.set_speed({ static_cast<intmax_t>(speed * 1000000), 1000000 });
 }
 

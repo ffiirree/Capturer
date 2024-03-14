@@ -1,6 +1,7 @@
 #include "screenshoter.h"
 
 #include "clipboard.h"
+#include "config.h"
 #include "logging.h"
 
 #include <QApplication>
@@ -155,15 +156,15 @@ void ScreenShoter::start()
 void ScreenShoter::refresh(const probe::geometry_t& geometry)
 {
     // background
-    background_ = QGuiApplication::primaryScreen()->grabWindow(
+    const auto background = QGuiApplication::primaryScreen()->grabWindow(
         probe::graphics::virtual_screen().handle, geometry.x, geometry.y, static_cast<int>(geometry.width),
         static_cast<int>(geometry.height));
 
-    setBackgroundBrush(background_);
+    setBackgroundBrush(background);
     setCacheMode(QGraphicsView::CacheBackground);
 
     //
-    magnifier_->setGrabPixmap(background_);
+    magnifier_->setGrabPixmap(background);
 }
 
 QBrush ScreenShoter::mosaicBrush()
@@ -397,15 +398,15 @@ void ScreenShoter::save()
         "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz") + ".png";
 
 #ifdef _WIN32
-    QString filename = QFileDialog::getSaveFileName(this, tr("Save Image"),
-                                                    save_path_ + QDir::separator() + default_filename,
-                                                    "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
+    QString filename = QFileDialog::getSaveFileName(
+        this, tr("Save Image"), config::snip::path + QDir::separator() + default_filename,
+        "PNG(*.png);;JPEG(*.jpg *.jpeg);;BMP(*.bmp)");
 #elif __linux__
     QString filename = save_path_ + QDir::separator() + default_filename;
 #endif
 
     if (!filename.isEmpty()) {
-        save_path_ = QFileInfo(filename).absolutePath();
+        config::snip::path = QFileInfo(filename).absolutePath();
 
         auto [pixmap, _] = snip();
         if (!pixmap.save(filename)) {
@@ -452,6 +453,8 @@ void ScreenShoter::exit()
     scene_->clear();
 
     counter_ = 0;
+
+    setBackgroundBrush(Qt::NoBrush);
 
     QWidget::close();
 }

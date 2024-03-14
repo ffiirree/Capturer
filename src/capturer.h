@@ -46,8 +46,9 @@ public slots:
     void SetTheme(const QString& theme);
 
     void UpdateScreenshotStyle();
-    void UPdateVideoRecordingStyle();
-    void UPdateGifRecordingStyle();
+
+    void RecordVideo();
+    void RecordGIF();
 
 private:
     void SystemTrayInit();
@@ -74,10 +75,10 @@ private:
     QPointer<QHotkey> transparent_input_{}; // for preview window
     QPointer<QHotkey> toggle_hotkey_{};     // toggle previews
 
-    QScopedPointer<ScreenShoter>   sniper_{};
-    QScopedPointer<ScreenRecorder> recorder_{};
-    QScopedPointer<ScreenRecorder> gifcptr_{};
-    QPointer<CameraPlayer>         camera_{};
+    QScopedPointer<ScreenShoter> sniper_{};
+    QPointer<ScreenRecorder>     recorder_{};
+    QPointer<ScreenRecorder>     gifcptr_{};
+    QPointer<CameraPlayer>       camera_{};
 
     std::list<QPointer<FramelessWindow>> previews_{};
 };

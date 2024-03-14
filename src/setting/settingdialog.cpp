@@ -253,25 +253,20 @@ QWidget *SettingWindow::setupRecordWidget()
         bwidth->setValue(style.border_width);
         connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
                 [&](auto w) { style.border_width = w; });
-        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
-                [] { App()->UPdateVideoRecordingStyle(); });
         form->addRow(LABEL(tr("Border Width"), 175), bwidth);
 
         const auto bcolor = new ColorDialogButton(style.border_color);
         connect(bcolor, &ColorDialogButton::changed, [&](auto c) { style.border_color = c; });
-        connect(bcolor, &ColorDialogButton::changed, [] { App()->UPdateVideoRecordingStyle(); });
         form->addRow(tr("Border Color"), bcolor);
 
         const auto bstyle = new ComboBox();
         bstyle->add(PENSTYLES)
             .onselected([&](auto value) { style.border_style = static_cast<Qt::PenStyle>(value.toInt()); })
             .select(static_cast<int>(style.border_style));
-        connect(bstyle, &ComboBox::selected, [] { App()->UPdateVideoRecordingStyle(); });
         form->addRow(tr("Border Style"), bstyle);
 
         const auto mcolor = new ColorDialogButton(style.mask_color);
         connect(mcolor, &ColorDialogButton::changed, [&](auto&& c) { style.mask_color = c; });
-        connect(mcolor, &ColorDialogButton::changed, [] { App()->UPdateVideoRecordingStyle(); });
         form->addRow(tr("Mask Color"), mcolor);
 
         const auto region = new QCheckBox();
@@ -454,25 +449,20 @@ QWidget *SettingWindow::setupGIFWidget()
         bwidth->setValue(style.border_width);
         connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
                 [&](int width) { style.border_width = width; });
-        connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
-                []() { App()->UPdateGifRecordingStyle(); });
         form->addRow(LABEL(tr("Border Width"), 175), bwidth);
 
         const auto bcolor = new ColorDialogButton(style.border_color);
         connect(bcolor, &ColorDialogButton::changed, [&](auto&& c) { style.border_color = c; });
-        connect(bcolor, &ColorDialogButton::changed, []() { App()->UPdateGifRecordingStyle(); });
         form->addRow(tr("Border Color"), bcolor);
 
         const auto bstyle = new ComboBox();
         bstyle->add(PENSTYLES);
         bstyle->onselected([&](auto s) { style.border_style = static_cast<Qt::PenStyle>(s.toInt()); });
-        bstyle->onselected([]() { App()->UPdateGifRecordingStyle(); });
         bstyle->select(static_cast<int>(style.border_style));
         form->addRow(tr("Border Style"), bstyle);
 
         const auto mcolor = new ColorDialogButton(style.mask_color);
         connect(mcolor, &ColorDialogButton::changed, [&](auto&& c) { style.mask_color = c; });
-        connect(mcolor, &ColorDialogButton::changed, []() { App()->UPdateGifRecordingStyle(); });
         form->addRow(tr("Mask Color"), mcolor);
 
         const auto region = new QCheckBox();

@@ -41,8 +41,10 @@ QCheckBox {
 }
 
 QCheckBox::indicator {
-    height: 1.75em;
-    width: 1.75em;
+    font-size: 9pt;
+    
+    height: 1.5em;
+    width: 1.5em;
 }
 
 QCheckBox::indicator:checked {

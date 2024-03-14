@@ -4,15 +4,6 @@ SettingWindow QListWidget {
 
 SettingWindow QCheckBox#close-btn::indicator {
     font-size: 8pt;
-
-    height: 1em;
-    width: 1em;
-
-    padding: 0.95em 1.3em 0.95em 1.3em;
-}
-
-SettingWindow QCheckBox#close-btn::indicator {
-    font-size: 8pt;
     height: 1em;
     width: 1em;
 

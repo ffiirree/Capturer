@@ -54,8 +54,6 @@ private:
     QAction *zoom_action_{ nullptr };
     QAction *opacity_action_{ nullptr };
 
-    QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
-
     // data
     std::shared_ptr<QMimeData> data_{};
     QPixmap                    pixmap_{};

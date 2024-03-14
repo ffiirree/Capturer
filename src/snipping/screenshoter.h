@@ -76,11 +76,7 @@ private:
     std::vector<hunter::prey_t> history_{};
     size_t                      history_idx_{ 0 };
 
-    QString save_path_{ QStandardPaths::writableLocation(QStandardPaths::PicturesLocation) };
-
     QUndoStack *undo_stack_{};
-
-    QPixmap background_{};
 };
 
 #endif //! CAPTURER_SCREEN_SHOTER_H
