@@ -1,8 +1,14 @@
 #ifndef CAPTURER_LINUX_V4L2_CAPTURER_H
 #define CAPTURER_LINUX_V4L2_CAPTURER_H
 
+#ifdef __linux__
+
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 
 class V4l2Capturer final : public Producer<av::frame>
 {
@@ -50,5 +56,7 @@ private:
 
     std::vector<v4l2_buffer_mapping> buf_mappings_{};
 };
+
+#endif
 
 #endif //! CAPTURER_LINUX_V4L2_CAPTURER_H

@@ -101,7 +101,7 @@ namespace av::hwaccel
         if (!ctx) return -1;
 
         for (unsigned i = 0; i < graph->nb_filters; ++i) {
-            graph->filters[i]->hw_device_ctx = ctx->device_ctx_ref();
+            graph->filters[i]->hw_device_ctx = av_buffer_ref(ctx->device_ctx.get());
         }
 
         return 0;
@@ -111,10 +111,10 @@ namespace av::hwaccel
     {
         if (!sink || !sink->hw_device_ctx) return -1;
 
-        auto device_ctx = find_context(hwtype);
+        auto ctx        = find_context(hwtype);
         auto frames_ctx = av_buffersink_get_hw_frames_ctx(sink);
-        if (device_ctx && frames_ctx) {
-            device_ctx->frames_ctx_ref(frames_ctx);
+        if (ctx && frames_ctx) {
+            ctx->frames_ctx = frames_ctx; // ref
             return 0;
         }
         return -1;
@@ -124,10 +124,10 @@ namespace av::hwaccel
     {
         if (!codec_ctx || !is_supported(type)) return -1;
 
-        auto device_ctx = get_context(type);
-        if (device_ctx && device_ctx->device_ctx() && device_ctx->frames_ctx()) {
-            codec_ctx->hw_frames_ctx = device_ctx->frames_ctx_ref(); // ref
-            codec_ctx->hw_device_ctx = device_ctx->device_ctx_ref(); // ref
+        auto ctx = get_context(type);
+        if (ctx && ctx->device_ctx && ctx->frames_ctx) {
+            codec_ctx->hw_frames_ctx = av_buffer_ref(ctx->frames_ctx.get());
+            codec_ctx->hw_device_ctx = av_buffer_ref(ctx->device_ctx.get());
             return 0;
         }
 

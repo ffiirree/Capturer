@@ -20,8 +20,6 @@ class TextureD3D11Widget final : public QWidget
 public:
     explicit TextureD3D11Widget(QWidget *parent = nullptr);
 
-    ~TextureD3D11Widget() override;
-
     void present(const av::frame& frame);
 
     std::vector<AVPixelFormat> pix_fmts() const;

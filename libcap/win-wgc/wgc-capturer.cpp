@@ -7,15 +7,18 @@
 #include "ResizingVertexShader.h"
 
 #include <fmt/chrono.h>
-#include <fmt/format.h>
 
 extern "C" {
 #include <libavutil/hwcontext_d3d11va.h>
 }
 
-using namespace winrt::Windows::Graphics::Capture;
-using namespace winrt::Windows::Graphics::DirectX;
-using namespace winrt::Windows::Graphics::DirectX::Direct3D11;
+namespace winrt
+{
+    using namespace winrt::Windows::Foundation;
+    using namespace winrt::Windows::Graphics::Capture;
+    using namespace winrt::Windows::Graphics::DirectX;
+    using namespace winrt::Windows::Graphics::DirectX::Direct3D11;
+} // namespace winrt
 
 // clang-format off
 // triangle strip: {0, 1, 2}, {1, 3, 2}
@@ -31,60 +34,45 @@ static constexpr FLOAT black[4]{ 0.0, 0.0, 0.0, 0.0 };
 
 int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std::string>)
 {
-    // clang-format off
-    switch (level) {
-    case CAPTURE_DISPLAY:   item_ = wgc::create_capture_item_for_monitor(reinterpret_cast<HMONITOR>(handle)); break;
-    case CAPTURE_WINDOW:    item_ = wgc::create_capture_item_for_window(reinterpret_cast<HWND>(handle)); break;
-    case CAPTURE_DESKTOP:
-    default:                return av::UNSUPPORTED;
+    try {
+        // @{ IDirect3DDevice: FFmpeg -> D3D11 -> DXGI -> WinRT
+        hwctx_ = av::hwaccel::get_context(AV_HWDEVICE_TYPE_D3D11VA);
+        winrt::check_pointer(hwctx_.get());
+
+        // D3D11Device & ImmediateContext
+        context_.copy_from(hwctx_->native_context<AVD3D11VADeviceContext>());
+        device_.copy_from(hwctx_->native_device<AVD3D11VADeviceContext>());
+
+        winrt_device_ = wgc::CreateDirect3DDevice(device_);
+        // @}
+
+        switch (level) {
+        case CAPTURE_DISPLAY: item_ = wgc::CreateCaptureItem(reinterpret_cast<HMONITOR>(handle)); break;
+        case CAPTURE_WINDOW:  item_ = wgc::CreateCaptureItem(reinterpret_cast<HWND>(handle)); break;
+        case CAPTURE_DESKTOP:
+        default:              return av::UNSUPPORTED;
+        }
+
+        onclosed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
+
+        // create framepool
+        frame_pool_ = winrt::Direct3D11CaptureFramePool::CreateFreeThreaded(
+            winrt_device_, winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, item_.Size());
+
+        // callback
+        onarrived_ = frame_pool_.FrameArrived(winrt::auto_revoke,
+                                              { this, &WindowsGraphicsCapturer::OnFrameArrived });
+
+        session_ = frame_pool_.CreateCaptureSession(item_);
+
+        // cursor & border
+        if (wgc::IsCursoToggleSupported()) session_.IsCursorCaptureEnabled(draw_cursor);
+        if (wgc::IsBorderToggleSupported()) session_.IsBorderRequired(show_region);
     }
-    // clang-format on
-    if (!item_) {
-        loge("[     WGC] can not create capture item");
+    catch (const winrt::hresult_error& e) {
+        loge("[        WGC] {}", probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
-
-    onclosed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
-
-    // @{ IDirect3DDevice: FFmpeg -> D3D11 -> DXGI -> WinRT
-    hwctx_ = av::hwaccel::get_context(AV_HWDEVICE_TYPE_D3D11VA);
-    if (!hwctx_) {
-        loge("[     WGC] can not create the FFmpeg d3d11device.");
-        return -1;
-    }
-
-    // D3D11Device & ImmediateContext
-    device_.attach(hwctx_->native_device<AVD3D11VADeviceContext, ID3D11Device>()); // do not take ownership
-    device_->GetImmediateContext(context_.put());
-
-    // If you're using C++/WinRT, then to move back and forth between IDirect3DDevice and IDXGIDevice, use
-    // the IDirect3DDxgiInterfaceAccess::GetInterface and CreateDirect3D11DeviceFromDXGIDevice functions.
-    //
-    // This represents an IDXGIDevice, and can be used to interop between Windows Runtime components that
-    // need to exchange IDXGIDevice references.
-    winrt::com_ptr<::IInspectable> inspectable{};
-    const auto                     dxgi_device = device_.as<IDXGIDevice>();
-    if (FAILED(::CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.get(), inspectable.put()))) {
-        loge("[       WGC] CreateDirect3D11DeviceFromDXGIDevice failed.");
-        return -1;
-    }
-    // winrt d3d11device
-    winrt_device_ = inspectable.as<winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice>();
-    // @}
-
-    // create framepool
-    frame_pool_ = Direct3D11CaptureFramePool::CreateFreeThreaded(
-        winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, item_.Size());
-
-    // callback
-    onarrived_ =
-        frame_pool_.FrameArrived(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnFrameArrived });
-
-    session_ = frame_pool_.CreateCaptureSession(item_);
-
-    // cursor & border
-    if (wgc::is_cursor_toggle_supported()) session_.IsCursorCaptureEnabled(draw_cursor);
-    if (wgc::is_border_toggle_supported()) session_.IsBorderRequired(show_region);
 
     //
     left = box_.left = std::max<int>(0, left);
@@ -270,9 +258,9 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
-    if (const auto frames_ctx_ref = hwctx_->frames_ctx_alloc(); !frames_ctx_ref) return av::NOMEM;
+    if (hwctx_->frames_ctx_alloc(); !hwctx_->frames_ctx) return av::NOMEM;
 
-    const auto frames_ctx = hwctx_->frames_ctx();
+    const auto frames_ctx = hwctx_->frames_ctx.data();
 
     frames_ctx->format    = AV_PIX_FMT_D3D11;
     frames_ctx->height    = vfmt.height;
@@ -287,15 +275,15 @@ int WindowsGraphicsCapturer::InitializeHWFramesContext()
     return 0;
 }
 
-void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& sender,
-                                             const winrt::Windows::Foundation::IInspectable&)
+void WindowsGraphicsCapturer::OnFrameArrived(const winrt::Direct3D11CaptureFramePool& sender,
+                                             const winrt::IInspectable&)
 {
     std::lock_guard lock(mtx_);
 
     if (!running_) return;
 
     const auto d3d11frame    = sender.TryGetNextFrame();
-    const auto frame_texture = wgc::get_interface_from<::ID3D11Texture2D>(d3d11frame.Surface());
+    const auto frame_texture = wgc::GetInterfaceFrom<::ID3D11Texture2D>(d3d11frame.Surface());
 
     // surface size
     D3D11_TEXTURE2D_DESC tex_desc{};
@@ -305,13 +293,13 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     if (level == CAPTURE_WINDOW && d3d11frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
                                                                    static_cast<int32_t>(tex_desc.Height),
                                                                    static_cast<int32_t>(tex_desc.Width) }) {
-        frame_pool_.Recreate(winrt_device_, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
+        frame_pool_.Recreate(winrt_device_, winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
                              d3d11frame.ContentSize());
     }
 
     av::frame frame{};
     // allocate texture for hardware frame
-    if (av_hwframe_get_buffer(hwctx_->frames_ctx_buf(), frame.put(), 0) < 0) {
+    if (av_hwframe_get_buffer(hwctx_->frames_ctx.get(), frame.put(), 0) < 0) {
         loge("[       WGC] failed to alloc a hardware frame.");
         return;
     }
@@ -414,8 +402,7 @@ void WindowsGraphicsCapturer::OnFrameArrived(const Direct3D11CaptureFramePool& s
     onarrived(frame, AVMEDIA_TYPE_VIDEO);
 }
 
-void WindowsGraphicsCapturer::OnClosed(const GraphicsCaptureItem&,
-                                       const winrt::Windows::Foundation::IInspectable&)
+void WindowsGraphicsCapturer::OnClosed(const winrt::GraphicsCaptureItem&, const winrt::IInspectable&)
 {
     // the captured window is closed
     eof_ = 0x01;
@@ -432,13 +419,22 @@ void WindowsGraphicsCapturer::stop()
 
     onarrived_.revoke();
     onclosed_.revoke();
-    frame_pool_.Close();
-    session_.Close();
+
+    if (frame_pool_) {
+        frame_pool_.Close();
+        frame_pool_ = nullptr;
+    }
+
+    if (session_) {
+        session_.Close();
+        session_ = nullptr;
+    }
 }
 
 WindowsGraphicsCapturer::~WindowsGraphicsCapturer()
 {
     stop();
+
     logi("[       WGC] ~");
 }
 

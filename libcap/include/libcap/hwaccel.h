@@ -1,6 +1,8 @@
 #ifndef CAPTURER_HWACCEL_H
 #define CAPTURER_HWACCEL_H
 
+#include "ffmpeg-wrapper.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,70 +17,37 @@ namespace av::hwaccel
 {
     struct context_t
     {
-        AVHWDeviceType type{ AV_HWDEVICE_TYPE_NONE };
-
         context_t(AVHWDeviceType dt, AVBufferRef *ctx)
-            : type(dt), device_ctx_(ctx)
+            : type(dt), device_ctx(ctx)
         {}
 
-        context_t(const context_t&)            = delete;
-        context_t& operator=(const context_t&) = delete;
-        context_t(context_t&&)                 = delete;
-        context_t& operator=(context_t&&)      = delete;
+        AVHWDeviceType type{ AV_HWDEVICE_TYPE_NONE };
 
-        ~context_t()
+        av::buffer<AVHWDeviceContext> device_ctx{};
+        av::buffer<AVHWFramesContext> frames_ctx{};
+
+        //
+        template<typename T> T *hwctx() const
         {
-            if (!device_ctx_) av_buffer_unref(&device_ctx_);
-            if (!frames_ctx_) av_buffer_unref(&frames_ctx_);
+            return device_ctx.data() ? static_cast<T *>(device_ctx.data()->hwctx) : nullptr;
         }
 
-        // device context
-        [[nodiscard]] AVBufferRef *device_ctx_ref() const { return av_buffer_ref(device_ctx_); }
-
-        [[nodiscard]] AVHWDeviceContext *device_ctx() const
+        template<typename AVCTX> auto native_context() -> decltype(hwctx<AVCTX>()->device_context) const
         {
-            return device_ctx_ ? reinterpret_cast<AVHWDeviceContext *>(device_ctx_->data) : nullptr;
+            return hwctx<AVCTX>() ? hwctx<AVCTX>()->device_context : nullptr;
         }
 
-        template<typename T> T *native_device_ctx() const
+        template<typename AVCTX> auto native_device() -> decltype(hwctx<AVCTX>()->device) const
         {
-            return device_ctx() ? static_cast<T *>(device_ctx()->hwctx) : nullptr;
+            return hwctx<AVCTX>() ? hwctx<AVCTX>()->device : nullptr;
         }
 
-        template<typename T1, typename T2> T2 *native_device() const
+        void frames_ctx_alloc()
         {
-            return native_device_ctx<T1>() ? reinterpret_cast<T2 *>(native_device_ctx<T1>()->device)
-                                           : nullptr;
+            if (!frames_ctx) frames_ctx.attach(av_hwframe_ctx_alloc(device_ctx.get()));
         }
 
-        // frames context
-        void frames_ctx_ref(AVBufferRef *ctx)
-        {
-            if (frames_ctx_) av_buffer_unref(&frames_ctx_);
-
-            frames_ctx_ = av_buffer_ref(ctx);
-        }
-
-        auto frames_ctx_alloc()
-        {
-            frames_ctx_ = av_hwframe_ctx_alloc(device_ctx_);
-            return frames_ctx_;
-        }
-
-        int frames_ctx_init() { return av_hwframe_ctx_init(frames_ctx_); }
-
-        [[nodiscard]] AVBufferRef *frames_ctx_ref() const { return av_buffer_ref(frames_ctx_); }
-
-        [[nodiscard]] AVBufferRef *frames_ctx_buf() const { return frames_ctx_; }
-
-        [[nodiscard]] AVHWFramesContext *frames_ctx() const
-        {
-            return frames_ctx_ ? reinterpret_cast<AVHWFramesContext *>(frames_ctx_->data) : nullptr;
-        }
-
-    private:
-        AVBufferRef *device_ctx_{};
-        AVBufferRef *frames_ctx_{};
+        int frames_ctx_init() { return av_hwframe_ctx_init(frames_ctx.get()); }
     };
 
     std::shared_ptr<context_t> find_context(AVHWDeviceType hwtype);

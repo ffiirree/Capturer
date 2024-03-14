@@ -61,7 +61,7 @@ RecordingMenu::RecordingMenu(bool mm, bool sm, uint8_t buttons, QWidget *parent)
 
 #ifdef _WIN32
     // exclude the recording menu
-    wgc::exclude(reinterpret_cast<HWND>(winId()));
+    wgc::ExcludeWindow(reinterpret_cast<HWND>(winId()));
 #endif
 }
 

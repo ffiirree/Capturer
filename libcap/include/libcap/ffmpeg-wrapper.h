@@ -4,10 +4,17 @@
 #include <utility>
 
 extern "C" {
-#include <libavcodec/avcodec.h>
 #include <libavcodec/packet.h>
 #include <libavutil/frame.h>
 }
+
+namespace av
+{
+    struct take_ownership_t
+    {};
+
+    inline constexpr take_ownership_t take_ownership{};
+} // namespace av
 
 namespace av
 {
@@ -32,8 +39,6 @@ namespace av
         inline void free(AVPacket **packet) { av_packet_free(packet); }
 
         inline void free(AVFrame **frame) { av_frame_free(frame); }
-
-        inline void free(AVCodecContext **avctx) { avcodec_free_context(avctx); }
     } // namespace ffmpeg
 
     template<typename T>
@@ -133,5 +138,88 @@ namespace av
 
     using frame  = ptr<AVFrame>;
     using packet = ptr<AVPacket>;
+} // namespace av
+
+namespace av
+{
+    template<typename T> struct buffer
+    {
+        buffer(std::nullptr_t = nullptr) noexcept {}
+
+        buffer(AVBufferRef *ptr) noexcept
+            : ptr_(av_buffer_ref(ptr))
+        {}
+
+        buffer(AVBufferRef *ptr, take_ownership_t) noexcept
+            : ptr_(ptr)
+        {}
+
+        buffer(const buffer& other) noexcept
+            : ptr_(av_buffer_ref(other.ptr_))
+        {}
+
+        buffer(buffer&& other) noexcept
+            : ptr_(std::exchange(other.ptr_, {}))
+        {}
+
+        ~buffer() { release_ref(); }
+
+        buffer& operator=(const buffer& other) noexcept
+        {
+            if (ptr_ != other.ptr_) {
+                release_ref();
+                ptr_ = av_buffer_ref(other.ptr_);
+            }
+            return *this;
+        }
+
+        buffer& operator=(buffer&& other) noexcept
+        {
+            if (this != &other) {
+                release_ref();
+                ptr_ = std::exchange(other.ptr_, {});
+            }
+            return *this;
+        }
+
+        buffer& operator=(AVBufferRef *ptr)
+        {
+            if (ptr_ != ptr) {
+                release_ref();
+                ptr_ = av_buffer_ref(ptr);
+            }
+            return *this;
+        }
+
+        explicit operator bool() const noexcept { return ptr_ != nullptr; }
+
+        auto operator->() const noexcept { return ptr_; }
+
+        AVBufferRef& operator*() const noexcept { return *ptr_; }
+
+        void attach(AVBufferRef *ptr) noexcept
+        {
+            if (ptr_ != ptr) {
+                release_ref();
+                ptr_ = ptr;
+            }
+        }
+
+        AVBufferRef *detach() noexcept { return std::exchange(ptr_, {}); }
+
+        AVBufferRef *get() const noexcept { return ptr_; }
+
+        T *data() const noexcept { return ptr_ ? reinterpret_cast<T *>(ptr_->data) : nullptr; }
+
+    private:
+        void release_ref() noexcept
+        {
+            if (ptr_) {
+                av_buffer_unref(&ptr_);
+            }
+        }
+
+        AVBufferRef *ptr_{};
+    };
 } // namespace av
 #endif //! CAPTURER_FFMPEG_WRAPPER_H

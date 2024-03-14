@@ -43,8 +43,6 @@ TextureD3D11Widget::TextureD3D11Widget(QWidget *parent)
         this, &TextureD3D11Widget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
-TextureD3D11Widget::~TextureD3D11Widget() { device_.detach(); }
-
 std::vector<AVPixelFormat> TextureD3D11Widget::pix_fmts() const
 {
     // clang-format off
@@ -114,8 +112,8 @@ void TextureD3D11Widget::initializeD3D11()
     auto hwctx = av::hwaccel::find_context(AV_HWDEVICE_TYPE_D3D11VA);
     winrt::check_bool(hwctx);
 
-    device_.attach(hwctx->native_device<AVD3D11VADeviceContext, ID3D11Device>()); // do not take ownership
-    device_->GetImmediateContext(context_.put());
+    device_.copy_from(hwctx->native_device<AVD3D11VADeviceContext>());
+    context_.copy_from(hwctx->native_context<AVD3D11VADeviceContext>());
 
     DXGI_SWAP_CHAIN_DESC swap_desc{
         .BufferDesc =

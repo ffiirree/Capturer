@@ -100,7 +100,7 @@ int Decoder::open(const std::string& name)
         if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE) {
             const auto hwctx          = av::hwaccel::get_context(vfi.hwaccel);
             vctx.codec->opaque        = &vfi;
-            vctx.codec->hw_device_ctx = hwctx->device_ctx_ref();
+            vctx.codec->hw_device_ctx = av_buffer_ref(hwctx->device_ctx.get());
             vctx.codec->get_format    = get_hw_format;
             if (!vctx.codec->hw_device_ctx) {
                 loge("[    DECODER] [V] can not create hardware device");

@@ -10,6 +10,10 @@
 #include <mfreadwrite.h>
 #include <winrt/base.h>
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
 // https://learn.microsoft.com/en-us/windows/win32/medfound/audio-video-capture
 // https://learn.microsoft.com/en-us/windows/win32/medfound/using-the-source-reader-in-asynchronous-mode
 class MFCameraCapturer final : public Producer<av::frame>
