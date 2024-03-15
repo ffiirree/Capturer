@@ -389,20 +389,20 @@ void Selector::registerShortcuts()
 
     // resize
     // expand 1 pixel
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Up,    this), &QShortcut::activated, [this] { margins(-1, 0, 0, 0); });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Down,  this), &QShortcut::activated, [this] { margins(0, 0, +1, 0); });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Left,  this), &QShortcut::activated, [this] { margins(0, 0, 0, -1); });
-    connect(new QShortcut(Qt::CTRL + Qt::Key_Right, this), &QShortcut::activated, [this] { margins(0, +1, 0, 0); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Up,    this), &QShortcut::activated, [this] { margins(-1, 0, 0, 0); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Down,  this), &QShortcut::activated, [this] { margins(0, 0, +1, 0); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Left,  this), &QShortcut::activated, [this] { margins(0, 0, 0, -1); });
+    connect(new QShortcut(Qt::CTRL | Qt::Key_Right, this), &QShortcut::activated, [this] { margins(0, +1, 0, 0); });
 
     // shrink 1 pixel
-    connect(new QShortcut(Qt::SHIFT + Qt::Key_Up,   this), &QShortcut::activated, [this] { margins(+1, 0, 0, 0); });
-    connect(new QShortcut(Qt::SHIFT + Qt::Key_Down, this), &QShortcut::activated, [this] { margins(0, 0, -1, 0); });
-    connect(new QShortcut(Qt::SHIFT + Qt::Key_Left, this), &QShortcut::activated, [this] { margins(0, 0, 0, +1); });
-    connect(new QShortcut(Qt::SHIFT + Qt::Key_Right,this), &QShortcut::activated, [this] { margins(0, -1, 0, 0); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Up,   this), &QShortcut::activated, [this] { margins(+1, 0, 0, 0); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Down, this), &QShortcut::activated, [this] { margins(0, 0, -1, 0); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Left, this), &QShortcut::activated, [this] { margins(0, 0, 0, +1); });
+    connect(new QShortcut(Qt::SHIFT | Qt::Key_Right,this), &QShortcut::activated, [this] { margins(0, -1, 0, 0); });
     // clang-format on
 
     // fullscreen
-    connect(new QShortcut(Qt::CTRL + Qt::Key_A, this), &QShortcut::activated, [this] {
+    connect(new QShortcut(Qt::CTRL | Qt::Key_A, this), &QShortcut::activated, [this] {
         if (status_ <= SelectorStatus::CAPTURED &&
             ((prey_.type != hunter::prey_type_t::desktop) ||
              (prey_.type != hunter::prey_type_t::display && scope_ == scope_t::display))) {

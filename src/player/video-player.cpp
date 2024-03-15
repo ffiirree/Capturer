@@ -90,7 +90,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     initContextMenu();
 }
 
-int VideoPlayer::open(const std::string& filename, std::map<std::string, std::string>)
+int VideoPlayer::open(const std::string& filename)
 {
     filename_ = filename;
     const QFileInfo file(QString::fromStdString(filename_));
@@ -257,11 +257,8 @@ uint32_t VideoPlayer::audio_callback(uint8_t **ptr, const uint32_t request_frame
 
             // update audio clock pts
             if (frame.value()->pts >= 0)
-                audio_pts_ = av::clock::ns(frame.value()->pts, source_->afo.time_base);
-
-            if (audio_pts_.load() != av::clock::nopts)
                 audio_pts_ =
-                    audio_pts_.load() + av::clock::ns(frame.value()->nb_samples, source_->afo.time_base);
+                    av::clock::ns(frame.value()->pts + frame.value()->nb_samples, source_->afo.time_base);
 
             sonic_stream_write(sonic_stream_, frame.value()->data[0], frame.value()->nb_samples);
         }
@@ -529,7 +526,7 @@ void VideoPlayer::initContextMenu()
     menu_->addSeparator();
 
     addAction(menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
-                               QKeySequence(Qt::CTRL + Qt::Key_I)));
+                               QKeySequence(Qt::CTRL | Qt::Key_I)));
 }
 
 void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)

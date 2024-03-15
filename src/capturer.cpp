@@ -154,7 +154,7 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
                 .contains(QFileInfo(mimedata->urls()[0].fileName()).suffix(), Qt::CaseInsensitive)) {
 
             preview = new VideoPlayer();
-            dynamic_cast<VideoPlayer *>(preview)->open(mimedata->urls()[0].toLocalFile().toStdString(), {});
+            dynamic_cast<VideoPlayer *>(preview)->open(mimedata->urls()[0].toLocalFile().toStdString());
             dynamic_cast<VideoPlayer *>(preview)->start();
 
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");

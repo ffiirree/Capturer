@@ -23,7 +23,7 @@ public:
     ~VideoPlayer() override;
 
     // open the file & playback
-    int open(const std::string& filename, std::map<std::string, std::string> options);
+    int open(const std::string& filename);
 
     int start();
 

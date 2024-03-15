@@ -77,24 +77,41 @@ void FramelessWindow::toggleTransparentInput()
 
 void FramelessWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (!isFullScreen() && event->button() == Qt::LeftButton) {
+    if (dragmove_ && !isFullScreen() && event->button() == Qt::LeftButton) {
+        dragmove_status_ = 1;
+        return;
+    }
+
+    QWidget::mousePressEvent(event);
+}
+
+void FramelessWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (dragmove_status_ == 1) {
+        dragmove_status_ = 2;
         windowHandle()->startSystemMove();
         return;
     }
 
-    return QWidget::mousePressEvent(event);
+    QWidget::mouseMoveEvent(event);
+}
+
+void FramelessWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    dragmove_status_ = 0;
+    QWidget::mouseReleaseEvent(event);
 }
 
 void FramelessWindow::closeEvent(QCloseEvent *event)
 {
     emit closed();
-    return QWidget::closeEvent(event);
+    QWidget::closeEvent(event);
 }
 
 void FramelessWindow::hideEvent(QHideEvent *event)
 {
     emit hidden();
-    return QWidget::hideEvent(event);
+    QWidget::hideEvent(event);
 }
 
 void FramelessWindow::changeEvent(QEvent *event)
@@ -109,7 +126,7 @@ void FramelessWindow::changeEvent(QEvent *event)
 }
 
 #ifdef Q_OS_LINUX
-void FramelessWindow::updateCursor(Qt::Edges edges)
+void FramelessWindow::updateCursor(const Qt::Edges edges)
 {
     switch (edges) {
     case Qt::LeftEdge:
@@ -130,7 +147,7 @@ bool FramelessWindow::event(QEvent *event)
     switch (event->type()) {
     case QEvent::MouseButtonPress:
         if (edges_) {
-            window()->windowHandle()->startSystemResize(edges_);
+            windowHandle()->startSystemResize(edges_);
             return true;
         }
         break;
@@ -186,7 +203,7 @@ static bool IsFullscreen(HWND hwnd)
     return monitor && (monitor->rcMonitor == winrect);
 }
 
-int FramelessWindow::ResizeHandleHeight(HWND hWnd)
+static int ResizeHandleHeight(HWND hWnd)
 {
     const auto dpi = probe::graphics::retrieve_dpi_for_window(reinterpret_cast<uint64_t>(hWnd));
 
@@ -274,6 +291,7 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
                 case HTLEFT:
                 case HTBOTTOMLEFT:
                 case HTBOTTOM:      *result = HTCLIENT; return true;
+                default:            break;
                 }
             }
 
@@ -285,9 +303,9 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         RECT rect{};
         if (!::GetWindowRect(hwnd, &rect)) return false;
 
-        const POINT pos{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) };
-        if (!IsMaximized(hwnd) && (pos.y < rect.top + ResizeHandleHeight(hwnd))) {
-            *result = isSizeFixed() ? HTCAPTION : HTTOP;
+        if (!IsMaximized(hwnd) && !IsFullscreen(hwnd) &&
+            (GET_Y_LPARAM(wmsg->lParam) < rect.top + ResizeHandleHeight(hwnd))) {
+            *result = isSizeFixed() ? HTCLIENT : HTTOP;
             return true;
         }
 

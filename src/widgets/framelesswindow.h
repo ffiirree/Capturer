@@ -36,12 +36,17 @@ signals:
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
     void closeEvent(QCloseEvent *) override;
     void hideEvent(QHideEvent *event) override;
     void changeEvent(QEvent *) override;
 
     bool transparent_input_{};
+
+    bool dragmove_{ true };
+    int  dragmove_status_{};
 
 #ifdef Q_OS_LINUX
     Qt::Edges edges_{};
@@ -50,8 +55,6 @@ protected:
 #endif
 
 #ifdef Q_OS_WIN
-    int ResizeHandleHeight(HWND hWnd);
-
     bool nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result) override;
 #endif
 };

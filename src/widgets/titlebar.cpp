@@ -3,7 +3,6 @@
 #include <fmt/format.h>
 #include <QCheckBox>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QMouseEvent>
 #include <QShortcut>
 #include <QStyle>
@@ -106,11 +105,31 @@ TitleBar::TitleBar(FramelessWindow *parent)
     connect(window_, &QWidget::windowTitleChanged, icon, &QCheckBox::setText);
 }
 
-void TitleBar::mousePressEvent(QMouseEvent *)
+void TitleBar::mousePressEvent(QMouseEvent *event)
 {
-    if (!window()->isFullScreen()) {
-        window()->windowHandle()->startSystemMove();
+    if (!window_->isFullScreen() && event->button() == Qt::LeftButton) {
+        dragmove_status_ = 1;
+        return;
     }
+
+    QWidget::mousePressEvent(event);
 }
 
-void TitleBar::mouseDoubleClickEvent(QMouseEvent *) { window()->toggleMaximized(); }
+void TitleBar::mouseMoveEvent(QMouseEvent *event)
+{
+    if (dragmove_status_ == 1) {
+        dragmove_status_ = 2;
+        window_->windowHandle()->startSystemMove();
+        return;
+    }
+
+    QWidget::mouseMoveEvent(event);
+}
+
+void TitleBar::mouseReleaseEvent(QMouseEvent *event)
+{
+    dragmove_status_ = 0;
+    QWidget::mouseReleaseEvent(event);
+}
+
+void TitleBar::mouseDoubleClickEvent(QMouseEvent *) { window_->toggleMaximized(); }

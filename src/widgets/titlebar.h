@@ -9,16 +9,18 @@ class TitleBar : public QWidget
 public:
     explicit TitleBar(FramelessWindow *parent);
 
-    [[nodiscard]] FramelessWindow *window() const { return window_; }
-
     void setHideOnFullScreen(bool value = true) { hide_on_fullscreen_ = value; }
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
     FramelessWindow *window_{};
     bool             hide_on_fullscreen_{ true };
+    int              dragmove_status_{};
 };
 #endif //! CAPTURER_TITLE_BAR_H
