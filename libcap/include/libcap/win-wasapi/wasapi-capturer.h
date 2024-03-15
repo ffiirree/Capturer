@@ -34,13 +34,14 @@ public:
     std::vector<av::aformat_t> audio_formats() const override { return { afmt }; }
 
 private:
-    void init_format(WAVEFORMATEX *);
+    void InitWaveFormat(WAVEFORMATEX *);
 
-    int init_capturer(IMMDevice *);
-    // play a silent to fix silent loopback
-    int init_silent_render(IMMDevice *);
+    void InitCapturer(IMMDevice *);
 
-    int process_received_data(BYTE *, UINT32, UINT64);
+    // play a silent audio to fix silent loopback
+    void InitSlientRenderer(IMMDevice *);
+
+    int ProcessReceivedData(BYTE *, UINT32, UINT64) const;
 
     std::jthread thread_{};
 
