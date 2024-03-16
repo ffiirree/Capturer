@@ -52,7 +52,6 @@ void Selector::start(const probe::graphics::window_filter_t flags)
 
         box_.range(probe::graphics::virtual_screen_geometry());
 
-        // FIXME: 35ms -> 1ms, speed up
         hunter::ready(flags);
         select(hunter::hunt(QCursor::pos()));
         info_->show();

@@ -81,12 +81,12 @@ namespace hunter
         return scoped;
     }
 
-    void ready(window_filter_t flags)
+    void ready(const window_filter_t flags)
     {
         __scope = flags;
         __preys.clear();
 
-        std::ranges::for_each(probe::graphics::windows(flags),
+        std::ranges::for_each(probe::graphics::windows(flags, false),
                               [&](const auto& win) { __preys.emplace_back(prey_t::from(win)); });
 
         std::ranges::for_each(probe::graphics::displays(),
@@ -111,7 +111,7 @@ namespace hunter
         __preys.clear();
     }
 
-    std::string to_string(prey_type_t type)
+    std::string to_string(const prey_type_t type)
     {
         switch (type) {
         case prey_type_t::rectangle: return "rectangle";
