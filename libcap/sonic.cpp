@@ -534,13 +534,9 @@ static void overlapAdd(int nb_samples, int nb_channels, short *out, short *ramp_
         short *d = ramp_down + i;
 
         for (int t = 0; t < nb_samples; t++) {
-#ifdef SONIC_USE_SIN
             const double ratio = std::sin(t * std::numbers::pi / (2 * nb_samples));
             *o                 = static_cast<short>(
                 std::clamp<long>(std::lround((*d) * (1.0f - ratio) + (*u) * ratio), -32767, 32767));
-#else
-            *o = ((*d) * (nb_samples - t) + (*u) * t) / nb_samples;
-#endif
 
             o += nb_channels;
             d += nb_channels;
@@ -681,7 +677,7 @@ static int adjustRate(sonic_stream *stream, float rate, int originalNumOutputSam
 }
 
 /* Skip over a pitch period.  Return the number of output samples. */
-static int skipPitchPeriod(sonic_stream *stream, short *data, float speed, int period)
+static int skipPitchPeriod(sonic_stream *stream, short *data, const float speed, const int period)
 {
     const int nb_channels = stream->nb_channels;
 
@@ -701,7 +697,7 @@ static int skipPitchPeriod(sonic_stream *stream, short *data, float speed, int p
 }
 
 /* Insert a pitch period, and determine how much input to copy directly. */
-static int insertPitchPeriod(sonic_stream *stream, short *data, float speed, int period)
+static int insertPitchPeriod(sonic_stream *stream, short *data, const float speed, const int period)
 {
     const int nb_channels = stream->nb_channels;
     const int new_samples = speed <= 0.5f ? static_cast<int>(period * speed / (1.0f - speed)) : period;
@@ -739,7 +735,7 @@ static int copyUnmodifiedSamples(sonic_stream *stream, short *samples, float spe
 
 /* Resample as many pitch periods as we have buffered on the input.
    Return 0 if we fail to resize an input or output buffer. */
-static int changeSpeed(sonic_stream *stream, float speed)
+static int changeSpeed(sonic_stream *stream, const float speed)
 {
     int nb_samples = stream->input_nb_samples;
 
@@ -829,7 +825,7 @@ static int processStreamInput(sonic_stream *stream)
 }
 
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot allocate the stream. */
-sonic_stream *sonic_stream_create(int sample_fmt, int sample_rate, int nb_channels)
+sonic_stream *sonic_stream_create(const int sample_fmt, const int sample_rate, const int nb_channels)
 {
     if (sample_fmt != 0 && sample_fmt != 1 && sample_fmt != 3) return nullptr;
 
@@ -855,17 +851,6 @@ void sonic_stream_destroy(sonic_stream *stream)
     free(stream);
 }
 
-/* Simple wrapper around sonicWriteFloatToStream that does the unsigned char to float conversion for you. */
-int sonic_stream_write_u8(sonic_stream *stream, const unsigned char *data, int nb_samples)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    if (!addUnsignedCharSamplesToInputBuffer(stream, data, nb_samples)) {
-        return 0;
-    }
-    return processStreamInput(stream);
-}
-
 int sonic_stream_write(sonic_stream *stream, const void *data, int nb_samples)
 {
     std::scoped_lock lock(stream->mtx);
@@ -882,21 +867,9 @@ int sonic_stream_write(sonic_stream *stream, const void *data, int nb_samples)
     return processStreamInput(stream);
 }
 
-int sonic_stream_read(sonic_stream *stream, void *data, int nb_samples)
-{
-    // clang-format off
-    switch (stream->sample_fmt) {
-    case 0 /* AV_SAMPLE_FMT_U8  */: return sonic_stream_read_u8(stream, static_cast<unsigned char *>(data), nb_samples);
-    case 1 /* AV_SAMPLE_FMT_S16 */: return sonic_stream_read_s16(stream, static_cast<short *>(data), nb_samples);
-    case 3 /* AV_SAMPLE_FMT_FLT */: return sonic_stream_read_f32(stream, static_cast<float *>(data), nb_samples);
-    default:                        return 0;
-    }
-    // clang-format on
-}
-
 /* Read unsigned char data out of the stream.  Sometimes no data will be available, and zero is returned,
  * which is not an error condition. */
-int sonic_stream_read_u8(sonic_stream *stream, unsigned char *data, int maxSamples)
+static int sonic_stream_read_u8(sonic_stream *stream, unsigned char *data, int maxSamples)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -915,7 +888,7 @@ int sonic_stream_read_u8(sonic_stream *stream, unsigned char *data, int maxSampl
     short *buffer = stream->output_buffer;
     int    count  = numSamples * stream->nb_channels;
     while (count--) {
-        *data++ = (char)((*buffer++) >> 8) + 128;
+        *data++ = static_cast<char>((*buffer++) >> 8) + 128;
     }
 
     if (remaining_samples > 0) {
@@ -928,20 +901,9 @@ int sonic_stream_read_u8(sonic_stream *stream, unsigned char *data, int maxSampl
     return numSamples;
 }
 
-/* Simple wrapper around sonicWriteFloatToStream that does the short to float conversion for you. */
-int sonic_stream_write_s16(sonic_stream *stream, const short *data, int nb_samples)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    if (!addShortSamplesToInputBuffer(stream, data, nb_samples)) {
-        return 0;
-    }
-    return processStreamInput(stream);
-}
-
 /* Read short data out of the stream.  Sometimes no data will be available, and zero is returned, which is
  * not an error condition. */
-int sonic_stream_read_s16(sonic_stream *stream, short *samples, int maxSamples)
+static int sonic_stream_read_s16(sonic_stream *stream, short *samples, int maxSamples)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -966,17 +928,6 @@ int sonic_stream_read_s16(sonic_stream *stream, short *samples, int maxSamples)
     stream->output_nb_samples = remainingSamples;
 
     return numSamples;
-}
-
-/* Write floating point data to the input buffer and process it. */
-int sonic_stream_write_f32(sonic_stream *stream, const float *data, int nb_samples)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    if (!addFloatSamplesToInputBuffer(stream, data, nb_samples)) {
-        return 0;
-    }
-    return processStreamInput(stream);
 }
 
 /* Read data out of the stream.  Sometimes no data will be available, and zero is returned, which is not an
@@ -1010,6 +961,18 @@ int sonic_stream_read_f32(sonic_stream *stream, float *data, int maxSamples)
     stream->output_nb_samples = remainingSamples;
 
     return numSamples;
+}
+
+int sonic_stream_read(sonic_stream *stream, void *data, int nb_samples)
+{
+    // clang-format off
+    switch (stream->sample_fmt) {
+    case 0 /* AV_SAMPLE_FMT_U8  */: return sonic_stream_read_u8(stream, static_cast<unsigned char *>(data), nb_samples);
+    case 1 /* AV_SAMPLE_FMT_S16 */: return sonic_stream_read_s16(stream, static_cast<short *>(data), nb_samples);
+    case 3 /* AV_SAMPLE_FMT_FLT */: return sonic_stream_read_f32(stream, static_cast<float *>(data), nb_samples);
+    default:                        return 0;
+    }
+    // clang-format on
 }
 
 /* Force the sonic stream to generate output using whatever data it currently has.  No extra delay will be
@@ -1064,7 +1027,7 @@ int sonic_stream_drain(sonic_stream *stream)
 }
 
 /* Return the number of expected output samples */
-int sonic_stream_expected_samples(sonic_stream *stream)
+int sonic_stream_expected_samples(const sonic_stream *stream)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -1077,59 +1040,18 @@ int sonic_stream_expected_samples(sonic_stream *stream)
 }
 
 /* Return the number of samples in the output buffer */
-int sonic_stream_available_samples(sonic_stream *stream)
+int sonic_stream_available_samples(const sonic_stream *stream)
 {
     std::scoped_lock lock(stream->mtx);
 
     return stream->output_nb_samples;
 }
 
-int sonic_stream_remaining_samples(sonic_stream *stream)
+int sonic_stream_remaining_samples(const sonic_stream *stream)
 {
     std::scoped_lock lock(stream->mtx);
 
     return stream->input_nb_samples;
-}
-
-/* Get the sample rate of the stream. */
-int sonic_stream_get_sample_rate(const sonic_stream *stream)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    return stream->sample_rate;
-}
-
-/* Set the sample rate of the stream.  This will cause samples buffered in the stream to be lost. */
-void sonic_stream_set_sample_rate(sonic_stream *stream, int sample_rate)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    freeStreamBuffers(stream);
-    allocateStreamBuffers(stream, sample_rate, stream->nb_channels);
-}
-
-int sonic_stream_get_sample_fmt(const sonic_stream *stream)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    return stream->sample_fmt;
-}
-
-/* Get the number of channels. */
-int sonic_stream_get_nb_channels(const sonic_stream *stream)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    return stream->nb_channels;
-}
-
-/* Set the num channels of the stream.  This will cause samples buffered in the stream to be lost. */
-void sonic_stream_set_nb_channels(sonic_stream *stream, int numChannels)
-{
-    std::scoped_lock lock(stream->mtx);
-
-    freeStreamBuffers(stream);
-    allocateStreamBuffers(stream, stream->sample_rate, numChannels);
 }
 
 /* Get the speed of the stream. */
@@ -1141,7 +1063,7 @@ float sonic_stream_get_speed(const sonic_stream *stream)
 }
 
 /* Set the speed of the stream. */
-void sonic_stream_set_speed(sonic_stream *stream, float speed)
+void sonic_stream_set_speed(sonic_stream *stream, const float speed)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -1157,7 +1079,7 @@ float sonic_stream_get_pitch(const sonic_stream *stream)
 }
 
 /* Set the pitch of the stream. */
-void sonic_stream_set_pitch(sonic_stream *stream, float pitch)
+void sonic_stream_set_pitch(sonic_stream *stream, const float pitch)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -1173,7 +1095,7 @@ float sonic_stream_get_rate(const sonic_stream *stream)
 }
 
 /* Set the playback rate of the stream. This scales pitch and speed at the same time. */
-void sonic_stream_set_rate(sonic_stream *stream, float rate)
+void sonic_stream_set_rate(sonic_stream *stream, const float rate)
 {
     std::scoped_lock lock(stream->mtx);
 
@@ -1192,9 +1114,32 @@ int sonic_stream_get_quality(const sonic_stream *stream)
 }
 
 /* Set the "quality".  Default 0 is virtually as good as 1, but very much faster. */
-void sonic_stream_set_quality(sonic_stream *stream, int quality)
+void sonic_stream_set_quality(sonic_stream *stream, const int quality)
 {
     std::scoped_lock lock(stream->mtx);
 
     stream->quality = quality;
+}
+
+/* Get the sample rate of the stream. */
+int sonic_stream_get_sample_rate(const sonic_stream *stream)
+{
+    std::scoped_lock lock(stream->mtx);
+
+    return stream->sample_rate;
+}
+
+int sonic_stream_get_sample_fmt(const sonic_stream *stream)
+{
+    std::scoped_lock lock(stream->mtx);
+
+    return stream->sample_fmt;
+}
+
+/* Get the number of channels. */
+int sonic_stream_get_nb_channels(const sonic_stream *stream)
+{
+    std::scoped_lock lock(stream->mtx);
+
+    return stream->nb_channels;
 }

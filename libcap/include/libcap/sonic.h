@@ -48,10 +48,6 @@
  * used.
  */
 
-/* Uncomment this to use sin-wav based overlap add which in theory can improve
-   sound quality slightly, at the expense of lots of floating point math. */
-#define SONIC_USE_SIN
-
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
 #ifndef SONIC_MIN_PITCH
@@ -67,15 +63,13 @@
 
 struct sonic_stream;
 
-/* For all of the following functions, nb_channels is multiplied by numSamples
-   to determine the actual number of values read or returned. */
-
 /**
  * Create a sonic stream.
  *
+ * @param sample_fmt    AV_SAMPLE_FMT_U8, AV_SAMPLE_FMT_S16 or AV_SAMPLE_FMT_FLT
  * @param sample_rate
  * @param nb_channels   1 for mono, and 2 for stereo
- * @return              Return NULL only if we are out of memory and cannot allocate the stream.
+ * @return              return nullptr only if we are out of memory and cannot allocate the stream.
  */
 sonic_stream *sonic_stream_create(int sample_fmt, int sample_rate, int nb_channels);
 
@@ -87,7 +81,6 @@ void sonic_stream_destroy(sonic_stream *stream);
 /**
  * Use this to write data to be speed up or down into the stream.
  *
- * @date    AV_SAMPLE_FMT_U8, AV_SAMPLE_FMT_S16 or AV_SAMPLE_FMT_FLT
  * @return  Return 0 if memory realloc failed, otherwise 1
  */
 int sonic_stream_write(sonic_stream *stream, const void *data, int nb_samples);
@@ -95,30 +88,9 @@ int sonic_stream_write(sonic_stream *stream, const void *data, int nb_samples);
 /**
  * Use this to read data out of the stream.
  *
- * @attention Sometimes no data will be available, and zero is returned, which is not an error condition.
+ * @return number of samples actually read
  */
 int sonic_stream_read(sonic_stream *stream, void *data, int nb_samples);
-
-/**
- * Use this to read 8-bit unsigned data out of the stream.
- *
- * @attention Sometimes no data will be available, and zero is returned, which is not an error condition.
- */
-int sonic_stream_read_u8(sonic_stream *stream, unsigned char *data, int maxSamples);
-
-/**
- * Use this to read 16-bit data out of the stream.
- *
- * @attention Sometimes no data will be available, and zero is returned, which is not an error condition.
- */
-int sonic_stream_read_s16(sonic_stream *stream, short *samples, int maxSamples);
-
-/**
- * Use this to read floating point data out of the stream.
- *
- * @attention Sometimes no data will be available, and zero is returned, which is not an error condition.
- */
-int sonic_stream_read_f32(sonic_stream *stream, float *data, int maxSamples);
 
 /**
  * Force the sonic stream to generate output using whatever data it currently has.
@@ -131,13 +103,13 @@ int sonic_stream_flush(sonic_stream *stream);
 int sonic_stream_drain(sonic_stream *stream);
 
 /* Return the number of expected output samples */
-int sonic_stream_expected_samples(sonic_stream *stream);
+int sonic_stream_expected_samples(const sonic_stream *stream);
 
 /* Return the number of samples in the output buffer */
-int sonic_stream_available_samples(sonic_stream *stream);
+int sonic_stream_available_samples(const sonic_stream *stream);
 
 /* Return the number of samples in the input buffer */
-int sonic_stream_remaining_samples(sonic_stream *stream);
+int sonic_stream_remaining_samples(const sonic_stream *stream);
 
 /* Get the speed of the stream. */
 float sonic_stream_get_speed(const sonic_stream *stream);
@@ -170,24 +142,10 @@ void sonic_stream_set_quality(sonic_stream *stream, int quality);
 /* Get the sample rate of the stream. */
 int sonic_stream_get_sample_rate(const sonic_stream *stream);
 
-/**
- * Set the sample rate of the stream.
- *
- * @attention This will drop any samples that have not been read.
- */
-void sonic_stream_set_sample_rate(sonic_stream *stream, int sample_rate);
-
 /* Get the sample format of the stream. */
 int sonic_stream_get_sample_fmt(const sonic_stream *stream);
 
 /* Get the number of channels. */
 int sonic_stream_get_nb_channels(const sonic_stream *stream);
-
-/**
- * Set the number of channels.
- *
- * @attention This will drop any samples that have not been read.
- */
-void sonic_stream_set_nb_channels(sonic_stream *stream, int nb_channels);
 
 #endif //! CAPTURER_SONIC_H
