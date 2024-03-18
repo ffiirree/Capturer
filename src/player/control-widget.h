@@ -15,6 +15,8 @@ enum class PlaybackMode
     ANIMATED_IMAGE = 0x20,
 };
 
+class TitleBar;
+
 class ControlWidget final : public QWidget
 {
     Q_OBJECT
@@ -45,6 +47,7 @@ signals:
     void validDruation(bool);
 
 private:
+    TitleBar  *title_bar_{};
     QWidget   *control_bar_{};
     Slider    *time_slider_{};
     ComboBox  *speed_box_{};

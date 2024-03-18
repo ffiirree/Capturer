@@ -18,10 +18,10 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
     // title bar
     {
-        const auto title_bar = new TitleBar(parent);
-        title_bar->setObjectName("title-bar");
-        title_bar->setHideOnFullScreen(false);
-        layout->addWidget(title_bar);
+        title_bar_ = parent->titlebar();
+        title_bar_->setObjectName("title-bar");
+        title_bar_->setHideOnFullScreen(false);
+        layout->addWidget(title_bar_);
     }
 
     layout->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
@@ -133,7 +133,8 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
 bool ControlWidget::hideable() const
 {
-    return !control_bar_->geometry().contains(mapFromGlobal(QCursor::pos())) &&
+    const auto pos = mapFromGlobal(QCursor::pos());
+    return !title_bar_->geometry().contains(pos) && !control_bar_->geometry().contains(pos) &&
            !speed_box_->view()->isVisible();
 }
 

@@ -3,6 +3,11 @@
 
 #include "framelesswindow.h"
 
+#include <QPointer>
+
+class QAbstractButton;
+class QLabel;
+
 class TitleBar : public QWidget
 {
     Q_OBJECT
@@ -11,16 +16,23 @@ public:
 
     void setHideOnFullScreen(bool value = true) { hide_on_fullscreen_ = value; }
 
-protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
+    [[nodiscard]] bool isInSystemButtons(const QPoint& pos) const;
 
+protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     FramelessWindow *window_{};
     bool             hide_on_fullscreen_{ true };
-    int              dragmove_status_{};
+
+    QPointer<QAbstractButton> icon_btn_{};
+    QPointer<QLabel>          title_label_{};
+    QPointer<QAbstractButton> pin_btn_{};
+    QPointer<QAbstractButton> min_btn_{};
+    QPointer<QAbstractButton> max_btn_{};
+    QPointer<QAbstractButton> full_btn_{};
+    QPointer<QAbstractButton> close_btn_{};
 };
 #endif //! CAPTURER_TITLE_BAR_H

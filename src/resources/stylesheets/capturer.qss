@@ -366,21 +366,24 @@ NavigationBar QCheckBox::indicator {
 }
 
 /*///////////////////////////////////////////////////////////////*/
-TitleBar QCheckBox#icon-title {
+TitleBar QPushButton#icon {
+    font-size: 8pt;
+
+    width: 3em;
+
+    border: none;
+    padding: 0px;
+    border-radius: 0px;
+
+    background-color: transparent;
+
+    qproperty-iconSize: 26px;
+}
+
+TitleBar QLabel#title {
     font-size: 10pt;
 }
 
-TitleBar QCheckBox#icon-title::indicator {
-    font-size: 8pt;
-    height: 1.5em;
-    width: 1.5em;
-
-    padding: 0.75em 1em;
-
-    image: url(:/icons/capturer);
-}
-
-/* buttons */
 TitleBar QCheckBox::indicator {
     font-size: 8pt;
     height: 1em;

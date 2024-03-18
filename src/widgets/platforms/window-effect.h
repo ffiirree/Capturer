@@ -4,7 +4,6 @@
 #if _WIN32
 
 #include <dwmapi.h>
-#include <probe/library.h>
 
 enum WINDOWCOMPOSITIONATTRIB : DWORD
 {

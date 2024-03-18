@@ -8,24 +8,22 @@ ControlWidget TitleBar {
     background-color: rgba(25, 25, 25, 175);
 }
 
-ControlWidget QCheckBox#icon-title {
+ControlWidget TitleBar QPushButton#icon {
+    width: 0px;
+}
+
+ControlWidget TitleBar QLabel#title {
     font-size: 10pt;
     color: white;
     padding-left: 0.75em;
     min-width: 8em;
 }
 
-ControlWidget TitleBar QCheckBox#icon-title::indicator {
-    width: 0px;
-    height: 0px;
-    padding: 0px;
-}
-
 ControlWidget QCheckBox#pin-btn:hover,
 ControlWidget QCheckBox#min-btn:hover,
 ControlWidget QCheckBox#max-btn:hover,
 ControlWidget QCheckBox#full-btn:hover {
-    background: rgba(0, 0, 0, 75);
+    background: rgba(0, 0, 0, 100);
 }
 
 ControlWidget TitleBar QCheckBox#pin-btn::indicator:unchecked  {
@@ -75,7 +73,7 @@ QWidget#control-bar QCheckBox::indicator {
 }
 
 QWidget#control-bar QCheckBox::indicator:hover {
-    background-color: rgba(0, 0, 0, 75);
+    background-color: rgba(0, 0, 0, 100);
 }
 
 /* pause button */
@@ -129,7 +127,7 @@ QWidget#control-bar ComboBox#speed-box::down-arrow {
 
 QWidget#control-bar ComboBox#speed-box:hover {
     color: white;
-    background-color: rgba(0, 0, 0, 50);
+    background-color: rgba(0, 0, 0, 100);
 }
 
 

@@ -2,6 +2,7 @@
 
 #if _WIN32
 
+#include <probe/library.h>
 #include <probe/system.h>
 #include <QWidget>
 #include <Winuser.h>

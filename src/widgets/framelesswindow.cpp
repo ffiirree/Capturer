@@ -2,6 +2,7 @@
 
 #include "logging.h"
 #include "platforms/window-effect.h"
+#include "titlebar.h"
 
 #include <QMouseEvent>
 #include <QStyle>
@@ -57,15 +58,12 @@ bool FramelessWindow::isSizeFixed() const
     return !minsize.isEmpty() && !maxsize.isEmpty() && (minsize == maxsize);
 }
 
-void FramelessWindow::maximize(const bool state) { state ? showMaximized() : showNormal(); }
+TitleBar *FramelessWindow::titlebar()
+{
+    if (!titlebar_) titlebar_ = new TitleBar(this);
 
-void FramelessWindow::toggleMaximized() { !isMaximized() ? showMaximized() : showNormal(); }
-
-void FramelessWindow::minimize(const bool state) { state ? showMinimized() : showNormal(); }
-
-void FramelessWindow::fullscreen(const bool state) { state ? showFullScreen() : showNormal(); }
-
-void FramelessWindow::toggleFullScreen() { isFullScreen() ? showNormal() : showFullScreen(); }
+    return titlebar_;
+}
 
 void FramelessWindow::toggleTransparentInput()
 {
@@ -111,17 +109,6 @@ void FramelessWindow::hideEvent(QHideEvent *event)
 {
     emit hidden();
     QWidget::hideEvent(event);
-}
-
-void FramelessWindow::changeEvent(QEvent *event)
-{
-    if (event->type() == QEvent::WindowStateChange) {
-        if (windowState() == Qt::WindowNoState) emit normalized();
-        if (windowState() & Qt::WindowMinimized) emit minimized();
-        if (windowState() & Qt::WindowMaximized) emit maximized();
-        if (windowState() & Qt::WindowFullScreen) emit fullscreened();
-    }
-    QWidget::changeEvent(event);
 }
 
 #ifdef Q_OS_LINUX
@@ -298,6 +285,14 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
             case HTBOTTOMLEFT:
             case HTBOTTOMRIGHT: res = HTCLIENT; break;
             default:            break;
+            }
+        }
+
+        if (res == HTCLIENT && titlebar_ && titlebar_->isVisible()) {
+            if (const auto pos = mapFromGlobal({ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
+                titlebar_->geometry().contains(pos) && !titlebar_->isInSystemButtons(pos)) {
+                *result = HTCAPTION;
+                return true;
             }
         }
 
