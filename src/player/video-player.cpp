@@ -30,8 +30,8 @@ using AudioOutput = PulseAudioRenderer;
 #endif
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
-                                  Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint |
+                                  Qt::WindowStaysOnTopHint)
 {
     setAttribute(Qt::WA_DeleteOnClose);
 

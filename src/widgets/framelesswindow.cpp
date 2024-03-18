@@ -16,7 +16,7 @@
 
 // [microsoft/terminal](https://github.com/microsoft/terminal/blob/main/src/cascadia/WindowsTerminal/NonClientIslandWindow.cpp)
 FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowCloseButtonHint | flags)
+    : QWidget(parent, Qt::Window | Qt::WindowCloseButtonHint | flags)
 {
 #ifdef Q_OS_WIN
     setAttribute(Qt::WA_DontCreateNativeAncestors);
@@ -32,9 +32,7 @@ FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
     ::DwmExtendFrameIntoClientArea(hwnd, &margins);
 
     // Window Styles: https://learn.microsoft.com/en-us/windows/win32/winmsg/window-styles
-    auto style = ::GetWindowLong(hwnd, GWL_STYLE);
-    if (windowFlags() & Qt::WindowTitleHint) style |= WS_CAPTION | WS_THICKFRAME;
-    ::SetWindowLong(hwnd, GWL_STYLE, style & ~WS_SYSMENU);
+    ::SetWindowLong(hwnd, GWL_STYLE, ::GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
     ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
@@ -42,6 +40,7 @@ FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
 #endif
 
 #ifdef Q_OS_LINUX
+    setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_Hover, true);
 #endif
 }
@@ -279,37 +278,31 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
     }
 
     case WM_NCHITTEST: {
-        if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam); res != HTCLIENT) {
-
-            if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
-                switch (res) {
-                case HTBOTTOMRIGHT:
-                case HTRIGHT:
-                case HTTOPRIGHT:
-                case HTTOP:
-                case HTTOPLEFT:
-                case HTLEFT:
-                case HTBOTTOMLEFT:
-                case HTBOTTOM:      *result = HTCLIENT; return true;
-                default:            break;
-                }
+        LRESULT res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam);
+        if (res == HTCLIENT) {
+            RECT rect{};
+            if (::GetWindowRect(hwnd, &rect) &&
+                GET_Y_LPARAM(wmsg->lParam) < rect.top + ResizeHandleHeight(hwnd)) {
+                res = HTTOP;
             }
-
-            *result = static_cast<long>(res);
-            return true;
         }
 
-        // TOP
-        RECT rect{};
-        if (!::GetWindowRect(hwnd, &rect)) return false;
-
-        if (!IsMaximized(hwnd) && !IsFullscreen(hwnd) &&
-            (GET_Y_LPARAM(wmsg->lParam) < rect.top + ResizeHandleHeight(hwnd))) {
-            *result = isSizeFixed() ? HTCLIENT : HTTOP;
-            return true;
+        if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
+            switch (res) {
+            case HTTOP:
+            case HTRIGHT:
+            case HTLEFT:
+            case HTBOTTOM:
+            case HTTOPLEFT:
+            case HTTOPRIGHT:
+            case HTBOTTOMLEFT:
+            case HTBOTTOMRIGHT: res = HTCLIENT; break;
+            default:            break;
+            }
         }
 
-        break;
+        *result = static_cast<long>(res);
+        return true;
     }
 
     default: break;

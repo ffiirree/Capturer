@@ -133,7 +133,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
 bool ControlWidget::hideable() const
 {
-    return !time_slider_->isSliderDown() && !volume_slider_->isSliderDown() &&
+    return !control_bar_->geometry().contains(mapFromGlobal(QCursor::pos())) &&
            !speed_box_->view()->isVisible();
 }
 
