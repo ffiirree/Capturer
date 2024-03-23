@@ -35,12 +35,9 @@ TextureD3D11Widget::TextureD3D11Widget(QWidget *parent)
     setAttribute(Qt::WA_TransparentForMouseEvents);
 
     setAttribute(Qt::WA_PaintOnScreen);
-    setAttribute(Qt::WA_DontCreateNativeAncestors);
     setAttribute(Qt::WA_NativeWindow);
-    setAttribute(Qt::WA_NoSystemBackground);
 
-    connect(
-        this, &TextureD3D11Widget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
+    connect(this, &TextureD3D11Widget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 std::vector<AVPixelFormat> TextureD3D11Widget::pix_fmts() const
@@ -52,7 +49,7 @@ std::vector<AVPixelFormat> TextureD3D11Widget::pix_fmts() const
     // clang-format on
 }
 
-bool TextureD3D11Widget::isSupported(AVPixelFormat pix_fmt) const
+bool TextureD3D11Widget::isSupported(const AVPixelFormat pix_fmt) const
 {
     for (const auto& fmt : pix_fmts()) {
         if (fmt == pix_fmt) return true;
@@ -82,7 +79,7 @@ AVRational TextureD3D11Widget::DAR() const
 {
     if (!format_.width || !format_.height) return { 0, 0 };
 
-    auto       sar = SAR();
+    const auto sar = SAR();
     AVRational dar{};
     av_reduce(&dar.num, &dar.den, static_cast<int64_t>(format_.width) * sar.num,
               static_cast<int64_t>(format_.height) * sar.den, 1024 * 1024);
@@ -97,19 +94,10 @@ void TextureD3D11Widget::showEvent(QShowEvent *event)
     QWidget::showEvent(event);
 }
 
-void TextureD3D11Widget::paintEvent(QPaintEvent *) { paintD3D11(); }
-
-void TextureD3D11Widget::resizeEvent(QResizeEvent *event)
-{
-    if (context_) resizeD3D11(width(), height());
-
-    QWidget::resizeEvent(event);
-}
-
 void TextureD3D11Widget::initializeD3D11()
 {
     // 0. DXGI Swap Chain
-    auto hwctx = av::hwaccel::find_context(AV_HWDEVICE_TYPE_D3D11VA);
+    const auto hwctx = av::hwaccel::find_context(AV_HWDEVICE_TYPE_D3D11VA);
     winrt::check_bool(hwctx);
 
     device_.copy_from(hwctx->native_device<AVD3D11VADeviceContext>());
@@ -140,23 +128,23 @@ void TextureD3D11Widget::initializeD3D11()
 
     // 1. Input-Assembler State
     // 1.1 vertex buffer
-    D3D11_BUFFER_DESC vbd{
+    constexpr D3D11_BUFFER_DESC vbd{
         .ByteWidth           = sizeof(vertices),
         .BindFlags           = D3D11_BIND_VERTEX_BUFFER,
         .StructureByteStride = sizeof(float) * 5,
     };
-    D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
+    constexpr D3D11_SUBRESOURCE_DATA vsd{ .pSysMem = vertices };
     winrt::check_hresult(device_->CreateBuffer(&vbd, &vsd, vertex_buffer_.put()));
 
-    ID3D11Buffer *vertex_buffers[] = { vertex_buffer_.get() };
-    UINT          strides[1]       = { sizeof(float) * 5 };
-    UINT          offsets[1]       = { 0 };
+    ID3D11Buffer  *vertex_buffers[] = { vertex_buffer_.get() };
+    constexpr UINT strides[1]       = { sizeof(float) * 5 };
+    constexpr UINT offsets[1]       = { 0 };
     context_->IASetVertexBuffers(0, 1, vertex_buffers, strides, offsets);
 
     // 1.2 index buffer : optional
 
     // 1.3 input layout
-    D3D11_INPUT_ELEMENT_DESC layout[] = {
+    constexpr D3D11_INPUT_ELEMENT_DESC layout[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
@@ -169,13 +157,13 @@ void TextureD3D11Widget::initializeD3D11()
     // 2. Vertex Shader Stage
     proj_ = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
 
-    D3D11_BUFFER_DESC cbd = {
+    constexpr D3D11_BUFFER_DESC cbd = {
         .ByteWidth      = sizeof(proj_),
         .Usage          = D3D11_USAGE_DYNAMIC,
         .BindFlags      = D3D11_BIND_CONSTANT_BUFFER,
         .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
     };
-    D3D11_SUBRESOURCE_DATA csd = { .pSysMem = &proj_ };
+    const D3D11_SUBRESOURCE_DATA csd = { .pSysMem = &proj_ };
     winrt::check_hresult(device_->CreateBuffer(&cbd, &csd, proj_buffer_.put()));
 
     ID3D11Buffer *cbs[] = { proj_buffer_.get() };
@@ -183,7 +171,7 @@ void TextureD3D11Widget::initializeD3D11()
 
     winrt::check_hresult(
         device_->CreateVertexShader(g_vs_main, sizeof(g_vs_main), nullptr, vertex_shader_.put()));
-    context_->VSSetShader(vertex_shader_.get(), 0, 0);
+    context_->VSSetShader(vertex_shader_.get(), nullptr, 0);
 
     // 3. Tesselation Stages
 
@@ -200,34 +188,34 @@ void TextureD3D11Widget::initializeD3D11()
     ID3D11ShaderResourceView *srvs[] = { srv0_.get(), srv1_.get() };
     context_->PSSetShaderResources(0, static_cast<UINT>(std::size(srvs)), srvs);
 
-    D3D11_SAMPLER_DESC sampler_desc{
+    constexpr D3D11_SAMPLER_DESC sampler_desc{
         .Filter        = D3D11_FILTER_ANISOTROPIC,
         .AddressU      = D3D11_TEXTURE_ADDRESS_WRAP,
         .AddressV      = D3D11_TEXTURE_ADDRESS_WRAP,
         .AddressW      = D3D11_TEXTURE_ADDRESS_WRAP,
         .MaxAnisotropy = 16,
     };
-    device_->CreateSamplerState(&sampler_desc, sampler_.put());
+    winrt::check_hresult(device_->CreateSamplerState(&sampler_desc, sampler_.put()));
     ID3D11SamplerState *samplers[] = { sampler_.get() };
     context_->PSSetSamplers(0, 1, samplers);
 
     winrt::check_hresult(
         device_->CreatePixelShader(g_ps_main, sizeof(g_ps_main), nullptr, pixel_shader_.put()));
-    context_->PSSetShader(pixel_shader_.get(), 0, 0);
+    context_->PSSetShader(pixel_shader_.get(), nullptr, 0);
 
     // 8. Output-Merger Stage
     SetupRenderTargets();
 }
 
-void TextureD3D11Widget::UpdateViewport(int w, int h)
+void TextureD3D11Widget::UpdateViewport(const int w, const int h)
 {
     viewport_ = {
-        .TopLeftX = 0,
-        .TopLeftY = 0,
+        .TopLeftX = 0.0f,
+        .TopLeftY = 0.0f,
         .Width    = static_cast<FLOAT>(w),
         .Height   = static_cast<FLOAT>(h),
-        .MinDepth = 0.0f,
-        .MaxDepth = 1.0f,
+        .MinDepth = D3D11_MIN_DEPTH,
+        .MaxDepth = D3D11_MAX_DEPTH,
     };
     context_->RSSetViewports(1, &viewport_);
 }
@@ -246,7 +234,7 @@ void TextureD3D11Widget::CreateTextureAndShaderResourceViews()
         .CPUAccessFlags = 0,
         .MiscFlags      = D3D11_RESOURCE_MISC_SHARED,
     };
-    device_->CreateTexture2D(&td, nullptr, texture_.put());
+    winrt::check_hresult(device_->CreateTexture2D(&td, nullptr, texture_.put()));
 
     // Y
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd0 = CD3D11_SHADER_RESOURCE_VIEW_DESC{
@@ -254,7 +242,7 @@ void TextureD3D11Widget::CreateTextureAndShaderResourceViews()
         D3D11_SRV_DIMENSION_TEXTURE2D,
         DXGI_FORMAT_R8_UNORM,
     };
-    device_->CreateShaderResourceView(texture_.get(), &srvd0, srv0_.put());
+    winrt::check_hresult(device_->CreateShaderResourceView(texture_.get(), &srvd0, srv0_.put()));
 
     // UV
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd1 = CD3D11_SHADER_RESOURCE_VIEW_DESC{
@@ -262,7 +250,7 @@ void TextureD3D11Widget::CreateTextureAndShaderResourceViews()
         D3D11_SRV_DIMENSION_TEXTURE2D,
         DXGI_FORMAT_R8G8_UNORM,
     };
-    device_->CreateShaderResourceView(texture_.get(), &srvd1, srv1_.put());
+    winrt::check_hresult(device_->CreateShaderResourceView(texture_.get(), &srvd1, srv1_.put()));
 }
 
 void TextureD3D11Widget::SetupRenderTargets()
@@ -270,42 +258,19 @@ void TextureD3D11Widget::SetupRenderTargets()
     context_->OMSetRenderTargets(0, nullptr, nullptr);
     rtv_ = {};
 
+    winrt::check_hresult(swap_chain_->ResizeBuffers(2, width(), height(), DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+
     winrt::com_ptr<ID3D11Texture2D> bbuffer{};
     winrt::check_hresult(swap_chain_->GetBuffer(0, winrt::guid_of<ID3D11Texture2D>(), bbuffer.put_void()));
 
-    CD3D11_RENDER_TARGET_VIEW_DESC rtvd(D3D11_RTV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R8G8B8A8_UNORM);
+    const CD3D11_RENDER_TARGET_VIEW_DESC rtvd(D3D11_RTV_DIMENSION_TEXTURE2D, DXGI_FORMAT_R8G8B8A8_UNORM);
     winrt::check_hresult(device_->CreateRenderTargetView(bbuffer.get(), &rtvd, rtv_.put()));
 
     ID3D11RenderTargetView *rtvs[] = { rtv_.get() };
     context_->OMSetRenderTargets(1, rtvs, nullptr);
 }
 
-void TextureD3D11Widget::resizeD3D11(int w, int h)
-{
-    UpdateViewport(w, h);
-
-    //
-    SetupRenderTargets();
-
-    // keep aspect ratio
-    proj_ = DirectX::XMMatrixScaling(1, 1, 1);
-    if (auto dar = DAR(); dar.num && dar.den) {
-        auto size = QSizeF(dar.num, dar.den).scaled(w, h, Qt::KeepAspectRatio);
-        proj_     = DirectX::XMMatrixScaling(size.width() / w, size.height() / h, 1);
-    }
-
-    D3D11_MAPPED_SUBRESOURCE mapped{};
-    context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-    memcpy(mapped.pData, &proj_, sizeof(proj_));
-    context_->Unmap(proj_buffer_.get(), 0);
-
-    ID3D11Buffer *cbs[] = { proj_buffer_.get() };
-    context_->VSSetConstantBuffers(0, 1, cbs);
-
-    repaint();
-}
-
-void TextureD3D11Widget::paintD3D11()
+void TextureD3D11Widget::paintEvent(QPaintEvent *)
 {
     context_->ClearRenderTargetView(rtv_.get(), black);
 
@@ -316,12 +281,39 @@ void TextureD3D11Widget::paintD3D11()
         std::lock_guard lock(mtx_);
         context_->CopySubresourceRegion(texture_.get(), 0, 0, 0, 0,
                                         reinterpret_cast<::ID3D11Texture2D *>(frame_->data[0]),
-                                        reinterpret_cast<intptr_t>(frame_->data[1]), 0);
+                                        reinterpret_cast<intptr_t>(frame_->data[1]), nullptr);
     }
 
     context_->Draw(4, 0);
 
-    swap_chain_->Present(1, 0);
+    winrt::check_hresult(swap_chain_->Present(1, 0));
+}
+
+void TextureD3D11Widget::resizeEvent(QResizeEvent *event)
+{
+    if (context_) {
+        UpdateViewport(width(), height());
+
+        //
+        SetupRenderTargets();
+
+        // keep aspect ratio
+        proj_ = DirectX::XMMatrixScaling(1.0f, 1.0f, 1.0f);
+        if (const auto& dar = DAR(); dar.num && dar.den) {
+            const auto size = QSizeF(dar.num, dar.den).scaled(width(), height(), Qt::KeepAspectRatio);
+            proj_           = DirectX::XMMatrixScaling(size.width() / width(), size.height() / height(), 1);
+        }
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        winrt::check_hresult(context_->Map(proj_buffer_.get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+        memcpy(mapped.pData, &proj_, sizeof(proj_));
+        context_->Unmap(proj_buffer_.get(), 0);
+
+        ID3D11Buffer *cbs[] = { proj_buffer_.get() };
+        context_->VSSetConstantBuffers(0, 1, cbs);
+    }
+
+    QWidget::resizeEvent(event);
 }
 
 void TextureD3D11Widget::present(const av::frame& frame)

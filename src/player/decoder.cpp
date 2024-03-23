@@ -24,14 +24,17 @@ extern "C" {
 
 static AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix_fmts)
 {
+    const auto vfmt = static_cast<av::vformat_t *>(ctx->opaque);
+
     auto pix_fmt = pix_fmts;
     for (; *pix_fmt != AV_PIX_FMT_NONE; pix_fmt++) {
 
         if (const auto desc = av_pix_fmt_desc_get(*pix_fmt); !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
+        const AVCodecHWConfig *config;
         for (auto i = 0;; ++i) {
-            const auto config = avcodec_get_hw_config(ctx->codec, i);
+            config = avcodec_get_hw_config(ctx->codec, i);
 
             if (!config) break;
 
@@ -39,6 +42,8 @@ static AVPixelFormat get_hw_format(AVCodecContext *ctx, const AVPixelFormat *pix
 
             if (config->pix_fmt == *pix_fmt) break;
         }
+
+        if (config && config->device_type == vfmt->hwaccel) break;
     }
 
     logi("pixel format : {}", av_get_pix_fmt_name(*pix_fmt));
@@ -57,7 +62,7 @@ static const AVCodec *choose_decoder(const AVStream *stream, const AVHWDeviceTyp
                 if (!config) break;
 
                 if (config->device_type == hwaccel) {
-                    logi("[   DECODER] [{}] select decoder '{}' because of requested hwaccel method '{}'",
+                    logi("[    DECODER] [{}] select decoder '{}' because of requested hwaccel method '{}'",
                          av::to_char(stream->codecpar->codec_type), codec->name,
                          av_hwdevice_get_type_name(hwaccel));
                     return codec;
@@ -118,7 +123,7 @@ int Decoder::open(const std::string& name)
         vfi = {
             .width     = vctx.codec->width,
             .height    = vctx.codec->height,
-            .pix_fmt   = vctx.codec->pix_fmt,
+            .pix_fmt   = vfi.hwaccel ? vfi.pix_fmt : vctx.codec->pix_fmt,
             .framerate = av_guess_frame_rate(fmt_ctx_, vctx.stream, nullptr),
             .sample_aspect_ratio = vctx.codec->sample_aspect_ratio,
             .time_base           = vctx.stream->time_base,
@@ -131,8 +136,7 @@ int Decoder::open(const std::string& name)
             .hwaccel         = vfi.hwaccel,
         };
 
-        logi("[    DECODER] [V] [{:>6}] {}({})", decoder->name, av::to_string(vfi),
-             av::to_string(vfi.color));
+        logi("[    DECODER] [V] [{}] {}({})", decoder->name, av::to_string(vfi), av::to_string(vfi.color));
     }
 
     // audio stream

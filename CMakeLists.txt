@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(capturer VERSION 1.6.0 LANGUAGES C CXX)
+project(capturer VERSION 1.6.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

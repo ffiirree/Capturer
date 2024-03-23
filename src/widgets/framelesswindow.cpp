@@ -289,7 +289,7 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         }
 
         if (res == HTCLIENT && titlebar_ && titlebar_->isVisible()) {
-            if (const auto pos = mapFromGlobal({ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
+            if (const auto pos = mapFromGlobal(QPoint{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
                 titlebar_->geometry().contains(pos) && !titlebar_->isInSystemButtons(pos)) {
                 *result = HTCAPTION;
                 return true;

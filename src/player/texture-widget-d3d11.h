@@ -46,8 +46,6 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
     void initializeD3D11();
-    void resizeD3D11(int w, int h);
-    void paintD3D11();
 
 private:
     void UpdateViewport(int w, int h);
