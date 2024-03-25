@@ -43,6 +43,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 
     // control bar
     control_ = new ControlWidget(this);
+
     // clang-format off
     connect(control_,   &ControlWidget::pause,          this, &VideoPlayer::pause);
     connect(control_,   &ControlWidget::resume,         this, &VideoPlayer::resume);
@@ -70,11 +71,11 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 
     timer_ = new QTimer(this);
     timer_->setSingleShot(true);
-    timer_->start(2500ms);
+    timer_->start(2000ms);
     connect(timer_, &QTimer::timeout, [this] {
-        if (control_->isVisible() && control_->hideable()) {
+        if (control_->hideable()) {
             setCursor(Qt::BlankCursor);
-            control_->hide();
+            if (control_->isVisible()) control_->hide();
         }
     });
 
@@ -421,12 +422,13 @@ void VideoPlayer::setVolume(const int volume) { control_->setVolume(std::clamp<i
 bool VideoPlayer::event(QEvent *event)
 {
     if (event->type() == QEvent::HoverMove) {
-        timer_->start(2500ms);
+        timer_->start(2000ms);
 
-        if (control_ && !control_->isVisible()) {
-            setCursor(Qt::ArrowCursor);
-            control_->show();
-        }
+        setCursor(Qt::ArrowCursor);
+        if (!control_->isVisible() && !control_->hideable()) control_->show();
+    }
+    else if (event->type() == QEvent::Show) {
+        control_->hide();
     }
 
     return FramelessWindow::event(event);

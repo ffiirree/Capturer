@@ -274,7 +274,9 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
             }
         }
 
-        if (IsFullscreen(hwnd) || IsMaximized(hwnd) || isSizeFixed()) {
+        const auto fullscreen = IsFullscreen(hwnd);
+
+        if (fullscreen || IsMaximized(hwnd) || isSizeFixed()) {
             switch (res) {
             case HTTOP:
             case HTRIGHT:
@@ -288,7 +290,7 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
             }
         }
 
-        if (res == HTCLIENT && titlebar_ && titlebar_->isVisible()) {
+        if (!fullscreen && res == HTCLIENT && titlebar_ && titlebar_->isVisible()) {
             if (const auto pos = mapFromGlobal(QPoint{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
                 titlebar_->geometry().contains(pos) && !titlebar_->isInSystemButtons(pos)) {
                 *result = HTCAPTION;
