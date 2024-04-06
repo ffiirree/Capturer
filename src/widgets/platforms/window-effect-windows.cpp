@@ -5,7 +5,9 @@
 #include <probe/library.h>
 #include <probe/system.h>
 #include <QWidget>
-#include <Winuser.h>
+#include <winuser.h>
+
+#define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
 
 namespace windows::dwm
 {
@@ -111,14 +113,10 @@ namespace windows::dwm
             &mode, sizeof(mode));
     }
 
+    // https://github.com/ysc3839/win32-darkmode/blob/master/win32-darkmode/DarkMode.h
     HRESULT update_theme(HWND hwnd, BOOL dark)
     {
-        const auto SetWindowCompositionAttribute =
-            static_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
-                probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
-
-        WINDOWCOMPOSITIONATTRIBDATA wcad{ WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
-        SetWindowCompositionAttribute(hwnd, &wcad);
+        ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &dark, sizeof(dark));
 
         return ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
     }

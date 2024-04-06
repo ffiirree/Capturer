@@ -12,22 +12,19 @@
 #include <dwmapi.h>
 #include <optional>
 #include <probe/graphics.h>
+#include <probe/system.h>
 #include <windowsx.h>
 #endif
 
 // [microsoft/terminal](https://github.com/microsoft/terminal/blob/main/src/cascadia/WindowsTerminal/NonClientIslandWindow.cpp)
 FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
-    : QWidget(parent, Qt::Window | Qt::WindowCloseButtonHint | flags)
+    : QWidget(parent, Qt::WindowCloseButtonHint | flags)
 {
 #ifdef Q_OS_WIN
     setAttribute(Qt::WA_DontCreateNativeAncestors);
     setAttribute(Qt::WA_NativeWindow);
 
     const auto hwnd = reinterpret_cast<HWND>(winId());
-
-    // shadow
-    constexpr DWMNCRENDERINGPOLICY ncrp = DWMNCRP_ENABLED;
-    ::DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, &ncrp, sizeof(DWMNCRENDERINGPOLICY));
 
     constexpr MARGINS margins = { -1, -1, -1, -1 };
     ::DwmExtendFrameIntoClientArea(hwnd, &margins);
@@ -214,13 +211,15 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         const LONG original_top = rect->top;
         // apply the default frame for standard window frame (the resizable frame border and the frame
         // shadow) including the left, bottom and right edges.
-        if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCCALCSIZE, wmsg->wParam, wmsg->lParam);
-            (res != HTERROR) && (res != HTNOWHERE)) {
-            *result = static_cast<long>(res);
-            return true;
+        if (probe::system::version() >= probe::WIN_11) {
+            if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCCALCSIZE, wmsg->wParam, wmsg->lParam);
+                (res != HTERROR) && (res != HTNOWHERE)) {
+                *result = static_cast<long>(res);
+                return true;
+            }
         }
         // re-apply the original top for removing the top frame entirely
-        rect->top = original_top;
+        rect->top               = original_top;
 
         //
         const auto monitor    = MonitorInfoFromWindow(hwnd);
@@ -230,6 +229,11 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         // top frame
         if (maximized && !fullscreen) {
             rect->top += ResizeHandleHeight(hwnd);
+            if (probe::system::version() < probe::WIN_11) {
+                rect->left   += ResizeHandleHeight(hwnd);
+                rect->right  -= ResizeHandleHeight(hwnd);
+                rect->bottom -= ResizeHandleHeight(hwnd);
+            }
         }
 
         // autohide taskbar
@@ -265,12 +269,44 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
     }
 
     case WM_NCHITTEST: {
-        LRESULT res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam);
-        if (res == HTCLIENT) {
+        LRESULT res = HTCLIENT;
+        if (probe::system::version() >= probe::WIN_11) {
+            res = ::DefWindowProcW(hwnd, WM_NCHITTEST, 0, wmsg->lParam);
+            if (res == HTCLIENT) {
+                RECT rect{};
+                if (::GetWindowRect(hwnd, &rect) &&
+                    GET_Y_LPARAM(wmsg->lParam) < rect.top + ResizeHandleHeight(hwnd)) {
+                    res = HTTOP;
+                }
+            }
+        }
+        else {
+            const auto x = GET_X_LPARAM(wmsg->lParam), y = GET_Y_LPARAM(wmsg->lParam);
+            const auto thickness = ResizeHandleHeight(hwnd);
+
             RECT rect{};
-            if (::GetWindowRect(hwnd, &rect) &&
-                GET_Y_LPARAM(wmsg->lParam) < rect.top + ResizeHandleHeight(hwnd)) {
-                res = HTTOP;
+            if (::GetWindowRect(hwnd, &rect)) {
+                const auto le = x > rect.left && x < (rect.left + thickness);
+                const auto re = x > (rect.right - thickness) && x < rect.right;
+                const auto te = y > rect.top && y < (rect.top + thickness);
+                const auto be = y > (rect.bottom - thickness) && y < rect.bottom;
+
+                if (le && te)
+                    res = HTTOPLEFT;
+                else if (le && be)
+                    res = HTBOTTOMLEFT;
+                else if (re && te)
+                    res = HTTOPRIGHT;
+                else if (re && be)
+                    res = HTBOTTOMRIGHT;
+                else if (re)
+                    res = HTRIGHT;
+                else if (te)
+                    res = HTTOP;
+                else if (le)
+                    res = HTLEFT;
+                else if (be)
+                    res = HTBOTTOM;
             }
         }
 
@@ -291,7 +327,8 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         }
 
         if (!fullscreen && res == HTCLIENT && titlebar_ && titlebar_->isVisible()) {
-            if (const auto pos = mapFromGlobal(QPoint{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
+            if (const auto pos =
+                    mapFromGlobal(QPoint{ GET_X_LPARAM(wmsg->lParam), GET_Y_LPARAM(wmsg->lParam) });
                 titlebar_->geometry().contains(pos) && !titlebar_->isInSystemButtons(pos)) {
                 *result = HTCAPTION;
                 return true;
@@ -307,5 +344,6 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
 
     return QWidget::nativeEvent(eventType, message, result);
 }
+
 #endif
 

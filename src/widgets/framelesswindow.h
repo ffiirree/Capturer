@@ -20,7 +20,7 @@ public:
 
     [[nodiscard]] bool isSizeFixed() const;
 
-    TitleBar * titlebar();
+    TitleBar *titlebar();
 
 public slots:
     void toggleTransparentInput();
