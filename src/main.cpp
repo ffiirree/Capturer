@@ -47,12 +47,13 @@ int main(int argc, char *argv[])
     Capturer app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
-    QTranslator translator;
 #ifdef __linux__
-    translator.load("/usr/local/etc/capturer/translations/capturer_" + config::language);
+    const auto filename = "/usr/local/etc/capturer/translations/capturer_" + config::language;
 #else
-    translator.load("translations/capturer_" + config::language);
+    const auto filename = "translations/capturer_" + config::language;
 #endif
+    QTranslator translator;
+    loge_if(translator.load(filename), "failed to load language files");
     Capturer::installTranslator(&translator);
 
     app.Init();

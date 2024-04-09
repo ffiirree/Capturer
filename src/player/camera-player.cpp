@@ -27,7 +27,7 @@ CameraPlayer::CameraPlayer(QWidget *parent)
 
     const auto layout = new QHBoxLayout(this);
     layout->setContentsMargins({});
-    texture_ = new TextureGLWidget();
+    texture_ = new TextureWidget();
     layout->addWidget(texture_);
 }
 
@@ -47,12 +47,7 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
 
     // sink video format
     vfmt         = source_->vfmt;
-    vfmt.pix_fmt = texture_->isSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureGLWidget::pix_fmts()[0];
-
-    if (texture_->setFormat(vfmt) < 0) {
-        loge("[    CAMERA] unsupported video format: {}", av::to_string(vfmt));
-        return -1;
-    }
+    vfmt.pix_fmt = TextureWidget::IsSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureWidget::PixelFormats()[0];
 
     ready_ = true;
 

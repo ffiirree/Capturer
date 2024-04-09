@@ -18,7 +18,11 @@
 
 // [microsoft/terminal](https://github.com/microsoft/terminal/blob/main/src/cascadia/WindowsTerminal/NonClientIslandWindow.cpp)
 FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
+#ifdef Q_OS_WIN
     : QWidget(parent, Qt::WindowCloseButtonHint | flags)
+#else
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowCloseButtonHint | flags)
+#endif
 {
 #ifdef Q_OS_WIN
     setAttribute(Qt::WA_DontCreateNativeAncestors);
@@ -35,10 +39,11 @@ FramelessWindow::FramelessWindow(QWidget *parent, const Qt::WindowFlags flags)
     ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER |
                        SWP_FRAMECHANGED);
+
+    windows::dwm::blur_behind(hwnd, true);
 #endif
 
 #ifdef Q_OS_LINUX
-    setWindowFlags(windowFlags() | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_Hover, true);
 #endif
 }
@@ -208,18 +213,18 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         const auto rect = wmsg->wParam ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(wmsg->lParam))->rgrc[0]
                                        : reinterpret_cast<LPRECT>(wmsg->lParam);
 
-        const LONG original_top = rect->top;
-        // apply the default frame for standard window frame (the resizable frame border and the frame
-        // shadow) including the left, bottom and right edges.
         if (probe::system::version() >= probe::WIN_11) {
+            const LONG original_top = rect->top;
+            // apply the default frame for standard window frame (the resizable frame border and the frame
+            // shadow) including the left, bottom and right edges.
             if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCCALCSIZE, wmsg->wParam, wmsg->lParam);
                 (res != HTERROR) && (res != HTNOWHERE)) {
                 *result = static_cast<long>(res);
                 return true;
             }
+            // re-apply the original top for removing the top frame entirely
+            rect->top = original_top;
         }
-        // re-apply the original top for removing the top frame entirely
-        rect->top               = original_top;
 
         //
         const auto monitor    = MonitorInfoFromWindow(hwnd);

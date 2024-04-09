@@ -62,7 +62,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     // audio sink
     audio_renderer_ = std::make_unique<AudioOutput>();
     // video sink
-    texture_        = new TextureGLWidget();
+    texture_        = new TextureWidget();
 
     stacked_layout->addWidget(texture_);
 
@@ -137,13 +137,9 @@ int VideoPlayer::open(const std::string& filename)
     if (source_->has(AVMEDIA_TYPE_VIDEO)) {
         video_enabled_       = true;
         source_->vfo         = source_->vfi;
-        source_->vfo.pix_fmt = texture_->isSupported(source_->vfo.pix_fmt) ? source_->vfo.pix_fmt
-                                                                           : TextureGLWidget::pix_fmts()[0];
-
-        if (texture_->setFormat(source_->vfo) < 0) {
-            loge("[    PLAYER] unsupported video format: {}", av::to_string(source_->vfo));
-            return -1;
-        }
+        source_->vfo.pix_fmt = TextureWidget::IsSupported(source_->vfo.pix_fmt)
+                                   ? source_->vfo.pix_fmt
+                                   : TextureWidget::PixelFormats()[0];
     }
     ready_ = true;
 
@@ -527,8 +523,8 @@ void VideoPlayer::initContextMenu()
 
     menu_->addSeparator();
 
-    addAction(menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
-                               QKeySequence(Qt::CTRL | Qt::Key_I)));
+    addAction(menu_->addAction(tr("Properties"), QKeySequence(Qt::CTRL | Qt::Key_I), this,
+                               &VideoPlayer::showProperties));
 }
 
 void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)

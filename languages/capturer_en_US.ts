@@ -129,7 +129,11 @@
     </message>
     <message>
         <source>Transparent Input</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Transparent</source>
+        <translation></translation>
     </message>
 </context>
 <context>

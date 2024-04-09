@@ -34,7 +34,7 @@
 下载后安装：
 
 ```bash
-sudo dpkg -i capturer-1.4.1-ubuntu_xx.04-amd64.deb
+sudo dpkg -i capturer-1.6.1-ubuntu_xx.04-amd64.deb
 sudo apt install -f
 ```
 
@@ -136,7 +136,7 @@ git submodule update --init --recursive
 ### Development Environment
 
 - `C++` : `C++20`
-- `Qt` : `>= 5.15`
+- `Qt` : `>= 6.7`
 - `CMake` : `>= 3.27`
 - Windows
   - `Windows` : `>= Windows 10 2004`
@@ -156,9 +156,8 @@ git submodule update --init --recursive
 
 ### Windows
 
-#### Install FFmpeg
-
-从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
+- `FFmpeg`: 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
+- `libass`: [ShiftMediaProject/libass](https://github.com/ShiftMediaProject/libass/releases)下载并添加到环境变量中
 
 #### 编译
 

@@ -8,8 +8,7 @@
 #include "libcap/sonic.h"
 #include "libcap/timeline.h"
 #include "menu.h"
-#include "texture-widget-d3d11.h"
-#include "texture-widget-opengl.h"
+#include "texture-widget.h"
 
 #include <QTimer>
 
@@ -73,8 +72,8 @@ private:
     std::string filename_{};
 
     // UI
-    ControlWidget   *control_{};
-    TextureGLWidget *texture_{};
+    ControlWidget *control_{};
+    TextureWidget *texture_{};
 
     QTimer *timer_{};
 

@@ -168,10 +168,6 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
 
         preview->setAttribute(Qt::WA_DeleteOnClose);
         preview->show();
-        if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
-            const auto screen = screenAt(QCursor::pos()) ? screenAt(QCursor::pos()) : primaryScreen();
-            preview->move(screen->geometry().center() - preview->rect().center());
-        }
         previews_.push_back(preview);
 
         connect(preview, &FramelessWindow::closed, [this] {

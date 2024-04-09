@@ -4,7 +4,6 @@
 #include "separator.h"
 
 #include <map>
-#include <QBrush>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QMoveEvent>
@@ -16,7 +15,7 @@
 #endif
 
 EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
-    : FramelessWindow(parent, Qt::ToolTip | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);

@@ -131,6 +131,10 @@
         <source>Transparent Input</source>
         <translation>输入穿透</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>透明</translation>
+    </message>
 </context>
 <context>
     <name>ScreenShoter</name>

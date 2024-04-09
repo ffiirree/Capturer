@@ -3,12 +3,11 @@
 
 #include "framelesswindow.h"
 #include "menu.h"
-#include "menu/editing-menu.h"
-#include "texture-widget.h"
 
 #include <any>
 #include <memory>
 #include <optional>
+#include <QMimeData>
 #include <QStandardPaths>
 
 class ImageWindow final : public FramelessWindow
@@ -38,26 +37,29 @@ private:
     void contextMenuEvent(QContextMenuEvent *) override;
     void dropEvent(QDropEvent *) override;
     void dragEnterEvent(QDragEnterEvent *) override;
+    void paintEvent(QPaintEvent *event) override;
 
     void closeEvent(QCloseEvent *) override;
 
     void registerShortcuts();
     void initContextMenu();
 
-    bool  thumbnail_{ false };
+    QPoint original_pos_{};
+
     qreal scale_{ 1.0 };
     qreal opacity_{ 1.0 };
 
     QSize THUMBNAIL_SIZE_{ 125, 125 };
 
-    QMenu   *context_menu_{ nullptr };
-    QAction *zoom_action_{ nullptr };
-    QAction *opacity_action_{ nullptr };
+    QMenu   *context_menu_{};
+    QAction *zoom_action_{};
+    QAction *opacity_action_{};
 
     // data
     std::shared_ptr<QMimeData> data_{};
     QPixmap                    pixmap_{};
-    TextureWidget             *texture_{};
+    QPixmap                    thumbnail_{};
+    QPoint                     thumbnail_pos_{};
 };
 
 #endif //! CAPTURER_IMAGE_WINDOW_H
