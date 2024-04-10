@@ -7,8 +7,8 @@
 // clang-format off
 // normalized device coordinates
 static constexpr float vertices[] = {
-  // vertex coordinate: [-1.0, 1.0]       / texture coordinate: [0.0, 1.0]
-  //  x      y     z                       / x     y
+  // vertex coordinate: [-1.0, 1.0]    / texture coordinate: [0.0, 1.0]
+  //  x      y     z                   / x     y
     -1.0f, -1.0f,  /* bottom left  */  0.0f, 1.0f, /* top    left  */
     +1.0f, -1.0f,  /* bottom right */  1.0f, 1.0f, /* top    right */
     -1.0f, +1.0f,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
@@ -19,8 +19,6 @@ static constexpr float vertices[] = {
 static QShader GetShaderByPixelFormat(const AVPixelFormat pix_fmt)
 {
     std::string name = fmt::format(":/src/resources/shaders/{}.frag.qsb", av::to_string(pix_fmt));
-
-    logd("[    TEXTURE] {}", name);
 
     QFile f(QString::fromStdString(name));
     return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
@@ -171,7 +169,8 @@ void TextureWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
     if (config_dirty_) {
         config_dirty_ = false;
 
-        logd("[    TEXTURE] update textures : {}", av::to_string(fmt_.pix_fmt));
+        logd("[    TEXTURE] update textures : {}({}, {})", av::to_string(fmt_.pix_fmt),
+             av::to_string(fmt_.color.space), av::to_string(fmt_.color.range));
 
         for (auto i = 0; i < params.size(); ++i) {
             planes_[i].reset(rhi_->newTexture(
@@ -295,7 +294,6 @@ void TextureWidget::present(const av::frame& frame)
 {
     if (!frame || !frame->data[0] || frame->width <= 0 || frame->height <= 0 ||
         frame->format == AV_PIX_FMT_NONE) {
-        logw("invalid frame.");
         return;
     }
 

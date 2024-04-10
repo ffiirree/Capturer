@@ -1,12 +1,11 @@
 #include "decoder.h"
 
+#include "libcap/filter.h"
 #include "libcap/hwaccel.h"
 #include "logging.h"
 
 #include <filesystem>
 #include <fmt/chrono.h>
-#include <fmt/ranges.h>
-#include <libcap/filter.h>
 #include <probe/defer.h>
 #include <probe/thread.h>
 #include <probe/util.h>
@@ -74,6 +73,40 @@ static const AVCodec *choose_decoder(const AVStream *stream, const AVHWDeviceTyp
     return avcodec_find_decoder(stream->codecpar->codec_id);
 }
 
+static void ass_log(int level, const char *fmt, va_list args, void *)
+{
+    char buffer[1024]{};
+    vsnprintf(buffer, 1024, fmt, args);
+    logd("[ASS] -- {} -- {}", level, buffer);
+}
+
+static const char *const font_mimetypes[] = {
+    "font/ttf",
+    "font/otf",
+    "font/sfnt",
+    "font/woff",
+    "font/woff2",
+    "application/font-sfnt",
+    "application/font-woff",
+    "application/x-truetype-font",
+    "application/vnd.ms-opentype",
+    "application/x-font-ttf",
+    nullptr,
+};
+
+static bool attachment_is_font(AVStream *st)
+{
+    if (const auto tag = av_dict_get(st->metadata, "mimetype", nullptr, AV_DICT_MATCH_CASE); tag) {
+        for (int n = 0; font_mimetypes[n]; n++) {
+            if (std::string{ font_mimetypes[n] } == probe::util::tolower(tag->value) == 0) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 int Decoder::open(const std::string& name)
 {
     if (avformat_open_input(&fmt_ctx_, name.c_str(), nullptr, nullptr) < 0) {
@@ -89,6 +122,8 @@ int Decoder::open(const std::string& name)
     // find video & audio streams
     vctx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
     actx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    sctx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_SUBTITLE, -1,
+                                     actx.index >= 0 ? actx.index : vctx.index, nullptr, 0);
     if (vctx.index < 0 && actx.index < 0) {
         loge("[    DECODER] not found any stream");
         return -1;
@@ -136,7 +171,8 @@ int Decoder::open(const std::string& name)
             .hwaccel         = vfi.hwaccel,
         };
 
-        logi("[    DECODER] [V] [{}] {}({})", decoder->name, av::to_string(vfi), av::to_string(vfi.color));
+        logi("[    DECODER] [V] [{:>6}] {}({})", decoder->name, av::to_string(vfi),
+             av::to_string(vfi.color));
     }
 
     // audio stream
@@ -161,6 +197,66 @@ int Decoder::open(const std::string& name)
         actx.next_pts = av_rescale_q(actx.stream->start_time, actx.stream->time_base, afi.time_base);
 
         logi("[    DECODER] [A] [{:>6}] {}", decoder->name, av::to_string(afi));
+    }
+
+    if (sctx.index >= 0) {
+        sctx.stream  = fmt_ctx_->streams[sctx.index];
+        auto decoder = avcodec_find_decoder(sctx.stream->codecpar->codec_id);
+        if (sctx.codec = avcodec_alloc_context3(decoder); !sctx.codec) return -1;
+        if (avcodec_parameters_to_context(sctx.codec, sctx.stream->codecpar) < 0) return -1;
+        if (avcodec_open2(sctx.codec, decoder, nullptr) < 0) {
+            loge("[    DECODER] [A] can not open the subtitle decoder");
+            return -1;
+        }
+
+        // libass
+        ass_.library = ass_library_init();
+        if (!ass_.library) {
+            loge("[    DECODER] [S] failed to init libass");
+            return -1;
+        }
+        ass_set_message_cb(ass_.library, ass_log, &ass_);
+
+        ass_set_fonts_dir(ass_.library, nullptr);
+        ass_set_extract_fonts(ass_.library, 1);
+
+        ass_.renderer = ass_renderer_init(ass_.library);
+        if (!ass_.renderer) {
+            loge("could not initialize libass renderer");
+            return AVERROR(EINVAL);
+        }
+
+        ass_.track = ass_new_track(ass_.library);
+        if (!ass_.track) {
+            loge("could not create a libass track");
+            return AVERROR(EINVAL);
+        }
+
+        // load attached fonts
+        for (int i = 0; i < fmt_ctx_->nb_streams; ++i) {
+            const auto stream = fmt_ctx_->streams[i];
+            if (stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
+                if (const auto tag = av_dict_get(stream->metadata, "filename", nullptr, AV_DICT_MATCH_CASE);
+                    tag) {
+                    logd("Loading attached font: {}", tag->value);
+                    ass_add_font(ass_.library, tag->value,
+                                 reinterpret_cast<const char *>(stream->codecpar->extradata),
+                                 stream->codecpar->extradata_size);
+                }
+                else {
+                    logw("font attachment has no filename, ignored");
+                }
+            }
+        }
+
+        ass_set_fonts(ass_.renderer, nullptr, nullptr, 1, nullptr, 1);
+
+        if (sctx.codec->subtitle_header) {
+            ass_process_codec_private(ass_.track, reinterpret_cast<char *>(sctx.codec->subtitle_header),
+                                      sctx.codec->subtitle_header_size);
+        }
+
+        logi("[    DECODER] [S] [{:>6}] {}", decoder->name, sctx.stream->start_time);
     }
 
     ready_ = true;
@@ -234,9 +330,10 @@ std::chrono::nanoseconds Decoder::duration() const
 bool Decoder::eof(const AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO: return vctx.index < 0 || vctx.done;
-    case AVMEDIA_TYPE_AUDIO: return actx.index < 0 || vctx.done;
-    default:                 return true;
+    case AVMEDIA_TYPE_VIDEO:    return vctx.index < 0 || vctx.done;
+    case AVMEDIA_TYPE_AUDIO:    return actx.index < 0 || actx.done;
+    case AVMEDIA_TYPE_SUBTITLE: return sctx.index < 0 || sctx.done;
+    default:                    return true;
     }
 }
 
@@ -258,6 +355,7 @@ int Decoder::start()
 
     if (vctx.index >= 0) vctx.thread = std::jthread([this] { vdecode_thread_fn(); });
     if (actx.index >= 0) actx.thread = std::jthread([this] { adecode_thread_fn(); });
+    if (sctx.index >= 0) sctx.thread = std::jthread([this] { sdecode_thread_fn(); });
 
     return 0;
 }
@@ -292,6 +390,7 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
         if (rthread_.joinable()) rthread_.join();
         if (vctx.thread.joinable()) vctx.thread.join();
         if (actx.thread.joinable()) actx.thread.join();
+        if (sctx.thread.joinable()) sctx.thread.join();
 
         start();
     }
@@ -314,10 +413,12 @@ void Decoder::readpkt_thread_fn()
                 eof_          = false;
                 vctx.done     = false;
                 actx.done     = false;
+                sctx.done     = false;
             }
 
             vctx.queue.start();
             actx.queue.start();
+            sctx.queue.start();
 
             seek_pts_ = AV_NOPTS_VALUE;
         }
@@ -330,6 +431,7 @@ void Decoder::readpkt_thread_fn()
 
                 vctx.queue.wait_and_push(nullptr);
                 actx.queue.wait_and_push(nullptr);
+                sctx.queue.wait_and_push(nullptr);
 
                 logi("DRAINING");
             }
@@ -351,6 +453,7 @@ void Decoder::readpkt_thread_fn()
 
         if (packet->stream_index == vctx.index) vctx.queue.wait_and_push(packet);
         if (packet->stream_index == actx.index) actx.queue.wait_and_push(packet);
+        if (packet->stream_index == sctx.index) sctx.queue.wait_and_push(packet);
     }
 
     logi("R-THREAD EXITED");
@@ -514,6 +617,44 @@ void Decoder::adecode_thread_fn()
     logi("[A] SEND NULL, EXITED");
 }
 
+void Decoder::sdecode_thread_fn()
+{
+    probe::thread::set_name("DEC-SUBTITLE");
+    logd("STARTED");
+
+    AVSubtitle subtitle;
+    while (running_ && !sctx.done) {
+        const auto& pkt = sctx.queue.wait_and_pop();
+        notenough_.notify_all();
+        if (!pkt.has_value()) continue;
+
+        int got = 0;
+        if (avcodec_decode_subtitle2(sctx.codec, &subtitle, &got, pkt.value().get()) >= 0) {
+            if (got) {
+                logd("[S] start = {:%T}, end = {:%T}",
+                     std::chrono::milliseconds{ subtitle.start_display_time },
+                     std::chrono::milliseconds{ subtitle.end_display_time });
+
+                const int64_t start_time = av_rescale_q(subtitle.pts, AV_TIME_BASE_Q, av_make_q(1, 1000));
+                const int64_t duration   = subtitle.end_display_time;
+
+                for (int i = 0; i < subtitle.num_rects; ++i) {
+                    const auto line = subtitle.rects[i]->ass;
+                    if (!line) break;
+                    ass_process_chunk(ass_.track, line, strlen(line), start_time, duration);
+                }
+
+                //                ASS_Image *image = ass_render_frame(ass_.renderer, ass_.track,
+                //                                                    time_ms, &detect_change);
+                avsubtitle_free(&subtitle);
+            }
+        }
+        else {
+            loge("[S] error");
+        }
+    }
+}
+
 bool Decoder::seeking(const AVMediaType type) const
 {
     return (seek_pts_ != AV_NOPTS_VALUE) || ((type == AVMEDIA_TYPE_VIDEO) ? vctx.dirty : actx.dirty);
@@ -547,6 +688,10 @@ Decoder::~Decoder()
 
     avfilter_graph_free(&vctx.graph);
     avfilter_graph_free(&actx.graph);
+
+    if (ass_.track) ass_free_track(ass_.track);
+    if (ass_.renderer) ass_renderer_done(ass_.renderer);
+    if (ass_.library) ass_library_done(ass_.library);
 
     logi("[    DECODER] ~");
 }

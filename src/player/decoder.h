@@ -5,6 +5,7 @@
 #include "libcap/producer.h"
 #include "libcap/queue.h"
 
+#include <ass/ass.h>
 #include <shared_mutex>
 
 extern "C" {
@@ -35,6 +36,15 @@ struct DecodingContext
 
     std::atomic<bool>      synced{ true }; // after seeking
     safe_queue<av::packet> queue{ 240 };
+};
+
+struct AssContext
+{
+    std::string filename{};
+
+    ASS_Library  *library{};
+    ASS_Renderer *renderer{};
+    ASS_Track    *track{};
 };
 
 class Decoder
@@ -85,12 +95,15 @@ private:
     void readpkt_thread_fn();
     void vdecode_thread_fn();
     void adecode_thread_fn();
+    void sdecode_thread_fn();
 
     AVFormatContext  *fmt_ctx_{};
     std::atomic<bool> ready_{};
     std::atomic<bool> running_{};
     std::atomic<bool> eof_{};     // end of file
     std::jthread      rthread_{}; // read thread
+
+    AssContext ass_{};
 
     // read @{
     std::mutex              notenough_mtx_{};
