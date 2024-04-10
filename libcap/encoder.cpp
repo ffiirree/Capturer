@@ -121,7 +121,7 @@ int Encoder::new_video_stream(const std::string& codec_name)
 
     if (vstream_idx_ >= 0) {
         logi(
-            "[   ENCODER] [V] >>> [{}], video_size = {}x{}, pix_fmt = {}, frame_rate = {}, tbc = {}, tbn = {}, hwaccel = {}",
+            "[   ENCODER] [V] >>> [{}], video_size={}x{}:pix_fmt={}:frame_rate={}, tbc={}, tbn={}, hwaccel={}",
             codec_name, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt), vfmt.framerate,
             vcodec_ctx_->time_base, fmt_ctx_->streams[vstream_idx_]->time_base,
             av::to_string(vfmt.hwaccel));
@@ -177,11 +177,9 @@ int Encoder::new_auido_stream(const std::string& codec_name)
         std::make_unique<safe_audio_fifo>(afmt.sample_fmt, afmt.channels, acodec_ctx_->frame_size * 4);
 
     if (astream_idx_ >= 0) {
-        logi(
-            "[   ENCODER] [A] >>> [{}], sample_rate = {}, channels = {}, sample_fmt = {}, tbc = {}, tbn = {}",
-            codec_name, acodec_ctx_->sample_rate, acodec_ctx_->channels,
-            av::to_string(acodec_ctx_->sample_fmt), acodec_ctx_->time_base,
-            fmt_ctx_->streams[astream_idx_]->time_base);
+        logi("[   ENCODER] [A] >>> [{}], sample_rate={}:sample_fmt={}:channels={}:tbc={}:tbn={}",
+             codec_name, acodec_ctx_->sample_rate, av::to_string(acodec_ctx_->sample_fmt),
+             acodec_ctx_->channels, acodec_ctx_->time_base, fmt_ctx_->streams[astream_idx_]->time_base);
     }
 
     return 0;

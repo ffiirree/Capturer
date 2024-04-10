@@ -50,14 +50,15 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
         case CAPTURE_DISPLAY: item_ = wgc::CreateCaptureItem(reinterpret_cast<HMONITOR>(handle)); break;
         case CAPTURE_WINDOW:  item_ = wgc::CreateCaptureItem(reinterpret_cast<HWND>(handle)); break;
         case CAPTURE_DESKTOP:
-        default:              return av::UNSUPPORTED;
+        default:              loge("[        WGC] unsupported"); return av::UNSUPPORTED;
         }
 
         onclosed_ = item_.Closed(winrt::auto_revoke, { this, &WindowsGraphicsCapturer::OnClosed });
 
         // create framepool
+        size_       = item_.Size();
         frame_pool_ = winrt::Direct3D11CaptureFramePool::CreateFreeThreaded(
-            winrt_device_, winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, item_.Size());
+            winrt_device_, winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size_);
 
         // callback
         onarrived_ = frame_pool_.FrameArrived(winrt::auto_revoke,
@@ -258,16 +259,8 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
-    if (hwctx_->frames_ctx_alloc(); !hwctx_->frames_ctx) return av::NOMEM;
-
-    const auto frames_ctx = hwctx_->frames_ctx.data();
-
-    frames_ctx->format    = AV_PIX_FMT_D3D11;
-    frames_ctx->height    = vfmt.height;
-    frames_ctx->width     = vfmt.width;
-    frames_ctx->sw_format = AV_PIX_FMT_BGRA;
-
-    if (hwctx_->frames_ctx_init() < 0) {
+    if (hwctx_->frames_ctx_realloc(); !hwctx_->frames_ctx) return av::NOMEM;
+    if (hwctx_->frames_ctx_init(AV_PIX_FMT_D3D11, vfmt.width, vfmt.height, AV_PIX_FMT_BGRA) < 0) {
         loge("[       WGC] av_hwframe_ctx_init");
         return -1;
     }
@@ -290,9 +283,8 @@ void WindowsGraphicsCapturer::OnFrameArrived(const winrt::Direct3D11CaptureFrame
     frame_texture->GetDesc(&tex_desc);
 
     // Window Capture Mode: resize the frame pool to frame size
-    if (level == CAPTURE_WINDOW && d3d11frame.ContentSize() != winrt::Windows::Graphics::SizeInt32{
-                                                                   static_cast<int32_t>(tex_desc.Height),
-                                                                   static_cast<int32_t>(tex_desc.Width) }) {
+    if (d3d11frame.ContentSize() != size_) {
+        size_ = d3d11frame.ContentSize();
         frame_pool_.Recreate(winrt_device_, winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2,
                              d3d11frame.ContentSize());
     }

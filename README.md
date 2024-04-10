@@ -106,7 +106,7 @@ sudo apt install -f
 |          Drag & Drop          | 拖拽图片到贴图上，则打开并显示拖拽图片                                                                         |
 |             `ESC`             | 关闭贴图窗口                                                                                                   |
 | `W / A / S / D` or  `↑ ← ↓ →` | 逐像素移动窗口                                                                                                 |
-|           `LButton`           | 菜单                                                                                                           |
+|           `RButton`           | 菜单                                                                                                           |
 
 ### 录屏
 
