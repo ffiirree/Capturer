@@ -42,12 +42,17 @@ namespace av::hwaccel
             return hwctx<AVCTX>() ? hwctx<AVCTX>()->device : nullptr;
         }
 
-        void frames_ctx_alloc()
-        {
-            if (!frames_ctx) frames_ctx.attach(av_hwframe_ctx_alloc(device_ctx.get()));
-        }
+        void frames_ctx_realloc() { frames_ctx.attach(av_hwframe_ctx_alloc(device_ctx.get())); }
 
-        int frames_ctx_init() { return av_hwframe_ctx_init(frames_ctx.get()); }
+        int frames_ctx_init(AVPixelFormat hwfmt, int w, int h, AVPixelFormat swfmt)
+        {
+            frames_ctx.data()->format    = hwfmt;
+            frames_ctx.data()->width     = w;
+            frames_ctx.data()->height    = h;
+            frames_ctx.data()->sw_format = swfmt;
+            
+            return av_hwframe_ctx_init(frames_ctx.get());
+        }
     };
 
     std::shared_ptr<context_t> find_context(AVHWDeviceType hwtype);

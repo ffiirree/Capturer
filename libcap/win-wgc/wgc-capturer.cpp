@@ -259,16 +259,8 @@ int WindowsGraphicsCapturer::InitalizeResizingResources()
 
 int WindowsGraphicsCapturer::InitializeHWFramesContext()
 {
-    if (hwctx_->frames_ctx_alloc(); !hwctx_->frames_ctx) return av::NOMEM;
-
-    const auto frames_ctx = hwctx_->frames_ctx.data();
-
-    frames_ctx->format    = AV_PIX_FMT_D3D11;
-    frames_ctx->height    = vfmt.height;
-    frames_ctx->width     = vfmt.width;
-    frames_ctx->sw_format = AV_PIX_FMT_BGRA;
-
-    if (hwctx_->frames_ctx_init() < 0) {
+    if (hwctx_->frames_ctx_realloc(); !hwctx_->frames_ctx) return av::NOMEM;
+    if (hwctx_->frames_ctx_init(AV_PIX_FMT_D3D11, vfmt.width, vfmt.height, AV_PIX_FMT_BGRA) < 0) {
         loge("[       WGC] av_hwframe_ctx_init");
         return -1;
     }
