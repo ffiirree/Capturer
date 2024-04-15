@@ -77,7 +77,7 @@ static void ass_log(int level, const char *fmt, va_list args, void *)
 {
     char buffer[1024]{};
     vsnprintf(buffer, 1024, fmt, args);
-    logd("[ASS] -- {} -- {}", level, buffer);
+    logd_if(level < 7, "[ASS] L{} -- {}", level, buffer);
 }
 
 static const char *const font_mimetypes[] = {
@@ -120,28 +120,27 @@ int Decoder::open(const std::string& name)
     }
 
     // find video & audio streams
-    vctx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
-    actx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-    sctx.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_SUBTITLE, -1,
-                                     actx.index >= 0 ? actx.index : vctx.index, nullptr, 0);
-    if (vctx.index < 0 && actx.index < 0) {
+    vctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    actx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    sctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_SUBTITLE, -1, -1, nullptr, 0);
+    if (vctx_.index < 0 && actx_.index < 0) {
         loge("[    DECODER] not found any stream");
         return -1;
     }
 
     // video stream
-    if (vctx.index >= 0) {
-        vctx.stream  = fmt_ctx_->streams[vctx.index];
-        auto decoder = choose_decoder(vctx.stream, vfi.hwaccel);
-        if (vctx.codec = avcodec_alloc_context3(decoder); !vctx.codec) return -1;
-        if (avcodec_parameters_to_context(vctx.codec, vctx.stream->codecpar) < 0) return -1;
+    if (vctx_.index >= 0) {
+        vctx_.stream = fmt_ctx_->streams[vctx_.index];
+        auto decoder = choose_decoder(vctx_.stream, vfi.hwaccel);
+        if (vctx_.codec = avcodec_alloc_context3(decoder); !vctx_.codec) return -1;
+        if (avcodec_parameters_to_context(vctx_.codec, vctx_.stream->codecpar) < 0) return -1;
 
         if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-            const auto hwctx          = av::hwaccel::get_context(vfi.hwaccel);
-            vctx.codec->opaque        = &vfi;
-            vctx.codec->hw_device_ctx = av_buffer_ref(hwctx->device_ctx.get());
-            vctx.codec->get_format    = get_hw_format;
-            if (!vctx.codec->hw_device_ctx) {
+            const auto hwctx           = av::hwaccel::get_context(vfi.hwaccel);
+            vctx_.codec->opaque        = &vfi;
+            vctx_.codec->hw_device_ctx = av_buffer_ref(hwctx->device_ctx.get());
+            vctx_.codec->get_format    = get_hw_format;
+            if (!vctx_.codec->hw_device_ctx) {
                 loge("[    DECODER] [V] can not create hardware device");
             }
         }
@@ -150,23 +149,23 @@ int Decoder::open(const std::string& name)
         AVDictionary *decoder_options = nullptr;
         defer(av_dict_free(&decoder_options));
         av_dict_set(&decoder_options, "threads", "auto", 0);
-        if (avcodec_open2(vctx.codec, decoder, &decoder_options) < 0) {
+        if (avcodec_open2(vctx_.codec, decoder, &decoder_options) < 0) {
             loge("[    DECODER] [V] can not open the video decoder");
             return -1;
         }
 
         vfi = {
-            .width     = vctx.codec->width,
-            .height    = vctx.codec->height,
-            .pix_fmt   = vfi.hwaccel ? vfi.pix_fmt : vctx.codec->pix_fmt,
-            .framerate = av_guess_frame_rate(fmt_ctx_, vctx.stream, nullptr),
-            .sample_aspect_ratio = vctx.codec->sample_aspect_ratio,
-            .time_base           = vctx.stream->time_base,
+            .width     = vctx_.codec->width,
+            .height    = vctx_.codec->height,
+            .pix_fmt   = vfi.hwaccel ? vfi.pix_fmt : vctx_.codec->pix_fmt,
+            .framerate = av_guess_frame_rate(fmt_ctx_, vctx_.stream, nullptr),
+            .sample_aspect_ratio = vctx_.codec->sample_aspect_ratio,
+            .time_base           = vctx_.stream->time_base,
             .color               = {
-                .space      = vctx.codec->colorspace,
-                .range      = vctx.codec->color_range,
-                .primaries  = vctx.codec->color_primaries,
-                .transfer   = vctx.codec->color_trc,
+                .space      = vctx_.codec->colorspace,
+                .range      = vctx_.codec->color_range,
+                .primaries  = vctx_.codec->color_primaries,
+                .transfer   = vctx_.codec->color_trc,
             },
             .hwaccel         = vfi.hwaccel,
         };
@@ -176,61 +175,61 @@ int Decoder::open(const std::string& name)
     }
 
     // audio stream
-    if (actx.index >= 0) {
-        actx.stream  = fmt_ctx_->streams[actx.index];
-        auto decoder = avcodec_find_decoder(actx.stream->codecpar->codec_id);
-        if (actx.codec = avcodec_alloc_context3(decoder); !actx.codec) return -1;
-        if (avcodec_parameters_to_context(actx.codec, actx.stream->codecpar) < 0) return -1;
-        if (avcodec_open2(actx.codec, decoder, nullptr) < 0) {
+    if (actx_.index >= 0) {
+        actx_.stream = fmt_ctx_->streams[actx_.index];
+        auto decoder = avcodec_find_decoder(actx_.stream->codecpar->codec_id);
+        if (actx_.codec = avcodec_alloc_context3(decoder); !actx_.codec) return -1;
+        if (avcodec_parameters_to_context(actx_.codec, actx_.stream->codecpar) < 0) return -1;
+        if (avcodec_open2(actx_.codec, decoder, nullptr) < 0) {
             loge("[    DECODER] [A] can not open the audio decoder");
             return -1;
         }
 
         afi = {
-            .sample_rate    = actx.codec->sample_rate,
-            .sample_fmt     = actx.codec->sample_fmt,
-            .channels       = actx.codec->channels,
-            .channel_layout = actx.codec->channel_layout,
-            .time_base      = { 1, actx.codec->sample_rate },
+            .sample_rate    = actx_.codec->sample_rate,
+            .sample_fmt     = actx_.codec->sample_fmt,
+            .channels       = actx_.codec->channels,
+            .channel_layout = actx_.codec->channel_layout,
+            .time_base      = { 1, actx_.codec->sample_rate },
         };
 
-        actx.next_pts = av_rescale_q(actx.stream->start_time, actx.stream->time_base, afi.time_base);
+        actx_.next_pts = av_rescale_q(actx_.stream->start_time, actx_.stream->time_base, afi.time_base);
 
         logi("[    DECODER] [A] [{:>6}] {}", decoder->name, av::to_string(afi));
     }
 
-    if (sctx.index >= 0) {
-        sctx.stream  = fmt_ctx_->streams[sctx.index];
-        auto decoder = avcodec_find_decoder(sctx.stream->codecpar->codec_id);
-        if (sctx.codec = avcodec_alloc_context3(decoder); !sctx.codec) return -1;
-        if (avcodec_parameters_to_context(sctx.codec, sctx.stream->codecpar) < 0) return -1;
-        if (avcodec_open2(sctx.codec, decoder, nullptr) < 0) {
+    if (sctx_.index >= 0) {
+        sctx_.stream = fmt_ctx_->streams[sctx_.index];
+        auto decoder = avcodec_find_decoder(sctx_.stream->codecpar->codec_id);
+        if (sctx_.codec = avcodec_alloc_context3(decoder); !sctx_.codec) return -1;
+        if (avcodec_parameters_to_context(sctx_.codec, sctx_.stream->codecpar) < 0) return -1;
+
+        sctx_.codec->pkt_timebase = sctx_.stream->time_base;
+
+        if (avcodec_open2(sctx_.codec, decoder, nullptr) < 0) {
             loge("[    DECODER] [A] can not open the subtitle decoder");
             return -1;
         }
 
-        // libass
-        ass_.library = ass_library_init();
-        if (!ass_.library) {
+        ass_library_ = ass_library_init();
+        if (!ass_library_) {
             loge("[    DECODER] [S] failed to init libass");
             return -1;
         }
-        ass_set_message_cb(ass_.library, ass_log, &ass_);
+        ass_set_message_cb(ass_library_, ass_log, nullptr);
 
-        ass_set_fonts_dir(ass_.library, nullptr);
-        ass_set_extract_fonts(ass_.library, 1);
+        ass_set_fonts_dir(ass_library_, nullptr);
+        ass_set_extract_fonts(ass_library_, 1);
 
-        ass_.renderer = ass_renderer_init(ass_.library);
-        if (!ass_.renderer) {
-            loge("could not initialize libass renderer");
+        ass_renderer_ = ass_renderer_init(ass_library_);
+        ass_track_    = ass_new_track(ass_library_);
+        if (!ass_renderer_ || !ass_track_) {
+            loge("[    DECODER] [S] could not create libass renderer or track");
             return AVERROR(EINVAL);
         }
 
-        ass_.track = ass_new_track(ass_.library);
-        if (!ass_.track) {
-            loge("could not create a libass track");
-            return AVERROR(EINVAL);
-        }
+        ass_set_frame_size(ass_renderer_, vfi.width, vfi.height);
+        ass_set_storage_size(ass_renderer_, vfi.width, vfi.height);
 
         // load attached fonts
         for (int i = 0; i < fmt_ctx_->nb_streams; ++i) {
@@ -238,25 +237,25 @@ int Decoder::open(const std::string& name)
             if (stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
                 if (const auto tag = av_dict_get(stream->metadata, "filename", nullptr, AV_DICT_MATCH_CASE);
                     tag) {
-                    logd("Loading attached font: {}", tag->value);
-                    ass_add_font(ass_.library, tag->value,
+                    logd("[    DECODER] [S] loading attached font: {}", tag->value);
+                    ass_add_font(ass_library_, tag->value,
                                  reinterpret_cast<const char *>(stream->codecpar->extradata),
                                  stream->codecpar->extradata_size);
                 }
                 else {
-                    logw("font attachment has no filename, ignored");
+                    logw("[    DECODER] [S] font attachment has no filename, ignored");
                 }
             }
         }
 
-        ass_set_fonts(ass_.renderer, nullptr, nullptr, 1, nullptr, 1);
+        ass_set_fonts(ass_renderer_, nullptr, nullptr, 1, nullptr, 1);
 
-        if (sctx.codec->subtitle_header) {
-            ass_process_codec_private(ass_.track, reinterpret_cast<char *>(sctx.codec->subtitle_header),
-                                      sctx.codec->subtitle_header_size);
+        if (sctx_.codec->subtitle_header) {
+            ass_process_codec_private(ass_track_, reinterpret_cast<char *>(sctx_.codec->subtitle_header),
+                                      sctx_.codec->subtitle_header_size);
         }
 
-        logi("[    DECODER] [S] [{:>6}] {}", decoder->name, sctx.stream->start_time);
+        logi("[    DECODER] [S] [{:>6}] start_time={}", decoder->name, sctx_.stream->start_time);
     }
 
     ready_ = true;
@@ -267,18 +266,18 @@ int Decoder::open(const std::string& name)
 
 int Decoder::create_video_graph()
 {
-    if (vctx.graph) avfilter_graph_free(&vctx.graph);
-    if (vctx.graph = avfilter_graph_alloc(); !vctx.graph) return av::NOMEM;
+    if (vctx_.graph) avfilter_graph_free(&vctx_.graph);
+    if (vctx_.graph = avfilter_graph_alloc(); !vctx_.graph) return av::NOMEM;
 
-    if (av::graph::create_video_src(vctx.graph, &vctx.src, vfi) < 0) return -1;
-    if (av::graph::create_video_sink(vctx.graph, &vctx.sink, vfo) < 0) return -1;
+    if (av::graph::create_video_src(vctx_.graph, &vctx_.src, vfi) < 0) return -1;
+    if (av::graph::create_video_sink(vctx_.graph, &vctx_.sink, vfo) < 0) return -1;
 
-    if (avfilter_link(vctx.src, 0, vctx.sink, 0) < 0) {
+    if (avfilter_link(vctx_.src, 0, vctx_.sink, 0) < 0) {
         loge("[    DECODER] [V] failed to link filter graph");
         return -1;
     }
 
-    if (avfilter_graph_config(vctx.graph, nullptr) < 0) {
+    if (avfilter_graph_config(vctx_.graph, nullptr) < 0) {
         loge("[    DECODER] failed to configure the filter graph");
         return -1;
     }
@@ -288,18 +287,18 @@ int Decoder::create_video_graph()
 
 int Decoder::create_audio_graph()
 {
-    if (actx.graph) avfilter_graph_free(&actx.graph);
-    if (actx.graph = avfilter_graph_alloc(); !actx.graph) return av::NOMEM;
+    if (actx_.graph) avfilter_graph_free(&actx_.graph);
+    if (actx_.graph = avfilter_graph_alloc(); !actx_.graph) return av::NOMEM;
 
-    if (av::graph::create_audio_src(actx.graph, &actx.src, afi) < 0) return -1;
-    if (av::graph::create_audio_sink(actx.graph, &actx.sink, afo) < 0) return -1;
+    if (av::graph::create_audio_src(actx_.graph, &actx_.src, afi) < 0) return -1;
+    if (av::graph::create_audio_sink(actx_.graph, &actx_.sink, afo) < 0) return -1;
 
-    if (avfilter_link(actx.src, 0, actx.sink, 0) < 0) {
+    if (avfilter_link(actx_.src, 0, actx_.sink, 0) < 0) {
         loge("[    DECODER] [A] failed to link filter graph");
         return -1;
     }
 
-    if (avfilter_graph_config(actx.graph, nullptr) < 0) {
+    if (avfilter_graph_config(actx_.graph, nullptr) < 0) {
         loge("[    DECODER] [A] failed to configure the filter graph");
         return -1;
     }
@@ -310,9 +309,9 @@ int Decoder::create_audio_graph()
 bool Decoder::has(const AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO:    return vctx.index >= 0;
-    case AVMEDIA_TYPE_AUDIO:    return actx.index >= 0;
-    case AVMEDIA_TYPE_SUBTITLE: return sctx.index >= 0;
+    case AVMEDIA_TYPE_VIDEO:    return vctx_.index >= 0;
+    case AVMEDIA_TYPE_AUDIO:    return actx_.index >= 0;
+    case AVMEDIA_TYPE_SUBTITLE: return sctx_.index >= 0;
     default:                    return false;
     }
 }
@@ -330,9 +329,9 @@ std::chrono::nanoseconds Decoder::duration() const
 bool Decoder::eof(const AVMediaType type) const
 {
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO:    return vctx.index < 0 || vctx.done;
-    case AVMEDIA_TYPE_AUDIO:    return actx.index < 0 || actx.done;
-    case AVMEDIA_TYPE_SUBTITLE: return sctx.index < 0 || sctx.done;
+    case AVMEDIA_TYPE_VIDEO:    return vctx_.index < 0 || vctx_.done;
+    case AVMEDIA_TYPE_AUDIO:    return actx_.index < 0 || actx_.done;
+    case AVMEDIA_TYPE_SUBTITLE: return sctx_.index < 0 || sctx_.done;
     default:                    return true;
     }
 }
@@ -346,16 +345,17 @@ int Decoder::start()
         return -1;
     }
 
-    eof_      = false;
-    vctx.done = false;
-    actx.done = false;
-    running_  = true;
+    eof_       = false;
+    vctx_.done = false;
+    actx_.done = false;
+    sctx_.done = false;
+    running_   = true;
 
     rthread_ = std::jthread([this] { readpkt_thread_fn(); });
 
-    if (vctx.index >= 0) vctx.thread = std::jthread([this] { vdecode_thread_fn(); });
-    if (actx.index >= 0) actx.thread = std::jthread([this] { adecode_thread_fn(); });
-    if (sctx.index >= 0) sctx.thread = std::jthread([this] { sdecode_thread_fn(); });
+    if (vctx_.index >= 0) vctx_.thread = std::jthread([this] { vdecode_thread_fn(); });
+    if (actx_.index >= 0) actx_.thread = std::jthread([this] { adecode_thread_fn(); });
+    if (sctx_.index >= 0) sctx_.thread = std::jthread([this] { sdecode_thread_fn(); });
 
     return 0;
 }
@@ -375,22 +375,26 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
          av::clock::s(rel).count(), std::chrono::microseconds{ seek_min_ },
          std::chrono::microseconds{ seek_max_ }, std::chrono::microseconds{ trim_pts_ });
 
-    vctx.queue.stop();
-    actx.queue.stop();
+    vctx_.queue.stop();
+    actx_.queue.stop();
+    sctx_.queue.stop();
 
     notenough_.notify_all();
 
-    vctx.dirty = actx.dirty = true;
-    vctx.synced = actx.synced = false;
+    vctx_.dirty = true;
+    actx_.dirty = true;
+    sctx_.dirty = true;
+
+    vctx_.synced = actx_.synced = false;
 
     // restart if needed
-    if (!running_ || eof_ || vctx.done || actx.done) {
+    if (!running_ || eof_ || vctx_.done || actx_.done) {
         running_ = false;
 
         if (rthread_.joinable()) rthread_.join();
-        if (vctx.thread.joinable()) vctx.thread.join();
-        if (actx.thread.joinable()) actx.thread.join();
-        if (sctx.thread.joinable()) sctx.thread.join();
+        if (vctx_.thread.joinable()) vctx_.thread.join();
+        if (actx_.thread.joinable()) actx_.thread.join();
+        if (sctx_.thread.joinable()) sctx_.thread.join();
 
         start();
     }
@@ -409,16 +413,16 @@ void Decoder::readpkt_thread_fn()
                 loge("failed to seek");
             }
             else {
-                actx.next_pts = AV_NOPTS_VALUE;
-                eof_          = false;
-                vctx.done     = false;
-                actx.done     = false;
-                sctx.done     = false;
+                actx_.next_pts = AV_NOPTS_VALUE;
+                eof_           = false;
+                vctx_.done     = false;
+                actx_.done     = false;
+                sctx_.done     = false;
             }
 
-            vctx.queue.start();
-            actx.queue.start();
-            sctx.queue.start();
+            vctx_.queue.start();
+            actx_.queue.start();
+            sctx_.queue.start();
 
             seek_pts_ = AV_NOPTS_VALUE;
         }
@@ -429,9 +433,8 @@ void Decoder::readpkt_thread_fn()
             if (ret == AVERROR_EOF || avio_feof(fmt_ctx_->pb)) {
                 eof_ = true;
 
-                vctx.queue.wait_and_push(nullptr);
-                actx.queue.wait_and_push(nullptr);
-                sctx.queue.wait_and_push(nullptr);
+                vctx_.queue.wait_and_push(nullptr);
+                actx_.queue.wait_and_push(nullptr);
 
                 logi("DRAINING");
             }
@@ -446,14 +449,14 @@ void Decoder::readpkt_thread_fn()
 
         std::unique_lock lock(notenough_mtx_);
         notenough_.wait(lock, [this] {
-            return (vctx.index >= 0 && (vctx.queue.stopped() || vctx.queue.size() < MIN_FRAMES)) ||
-                   (actx.index >= 0 && (actx.queue.stopped() || actx.queue.size() < MIN_FRAMES));
+            return (vctx_.index >= 0 && (vctx_.queue.stopped() || vctx_.queue.size() < MIN_FRAMES)) ||
+                   (actx_.index >= 0 && (actx_.queue.stopped() || actx_.queue.size() < MIN_FRAMES));
         });
         lock.unlock();
 
-        if (packet->stream_index == vctx.index) vctx.queue.wait_and_push(packet);
-        if (packet->stream_index == actx.index) actx.queue.wait_and_push(packet);
-        if (packet->stream_index == sctx.index) sctx.queue.wait_and_push(packet);
+        if (packet->stream_index == vctx_.index) vctx_.queue.wait_and_push(packet);
+        if (packet->stream_index == actx_.index) actx_.queue.wait_and_push(packet);
+        if (packet->stream_index == sctx_.index) sctx_.queue.wait_and_push(packet);
     }
 
     logi("R-THREAD EXITED");
@@ -502,26 +505,26 @@ void Decoder::vdecode_thread_fn()
     logi("STARTED");
 
     av::frame frame{};
-    while (running_ && !vctx.done) {
-        const auto& pkt = vctx.queue.wait_and_pop();
+    while (running_ && !vctx_.done) {
+        const auto& pkt = vctx_.queue.wait_and_pop();
         notenough_.notify_all();
         if (!pkt.has_value()) continue;
 
-        if (vctx.dirty) {
-            avcodec_flush_buffers(vctx.codec);
+        if (vctx_.dirty) {
+            avcodec_flush_buffers(vctx_.codec);
             create_video_graph();
-            vctx.dirty = false;
+            vctx_.dirty = false;
         }
 
         // video decoding
-        auto ret = avcodec_send_packet(vctx.codec, pkt.value().get());
+        auto ret = avcodec_send_packet(vctx_.codec, pkt.value().get());
         while (ret >= 0) {
-            ret = avcodec_receive_frame(vctx.codec, frame.put());
+            ret = avcodec_receive_frame(vctx_.codec, frame.put());
             if (ret < 0) {
                 if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) break;
 
                 if (ret == AVERROR_EOF) {
-                    filter_frame(vctx, nullptr, AVMEDIA_TYPE_VIDEO);
+                    filter_frame(vctx_, nullptr, AVMEDIA_TYPE_VIDEO);
                     logi("[V] DECODING EOF, SEND NULL");
                     break;
                 }
@@ -534,22 +537,20 @@ void Decoder::vdecode_thread_fn()
             frame->pts = frame->best_effort_timestamp;
 
             if (frame->pts != AV_NOPTS_VALUE) {
-                const auto vpts = av::clock::us(frame->pts, vctx.stream->time_base).count();
-                if (!vctx.synced && !vctx.dirty) {
-                    vctx.synced = true;
-                    trim_pts_   = std::max<int64_t>(trim_pts_, vpts);
+                const auto vpts = av::clock::us(frame->pts, vctx_.stream->time_base).count();
+                if (!vctx_.synced && !vctx_.dirty) {
+                    vctx_.synced = true;
+                    trim_pts_    = std::max<int64_t>(trim_pts_, vpts);
                 }
 
                 if (vpts >= trim_pts_) {
-                    logd("[V] pts = {:>14d} - {:.3%T}", frame->pts,
-                         av::clock::ms(frame->pts, vctx.stream->time_base));
-                    filter_frame(vctx, frame, AVMEDIA_TYPE_VIDEO);
+                    filter_frame(vctx_, frame, AVMEDIA_TYPE_VIDEO);
                 }
             }
         }
     }
 
-    vctx.queue.wait_and_push(nullptr);
+    vctx_.queue.wait_and_push(nullptr);
     logi("[V] SEND NULL, EXITED");
 }
 
@@ -559,25 +560,25 @@ void Decoder::adecode_thread_fn()
     logd("STARTED");
 
     av::frame frame{};
-    while (running_ && !actx.done) {
-        const auto& pkt = actx.queue.wait_and_pop();
+    while (running_ && !actx_.done) {
+        const auto& pkt = actx_.queue.wait_and_pop();
         notenough_.notify_all();
         if (!pkt.has_value()) continue;
 
-        if (actx.dirty) {
-            avcodec_flush_buffers(actx.codec);
+        if (actx_.dirty) {
+            avcodec_flush_buffers(actx_.codec);
             create_audio_graph();
-            actx.dirty = false;
+            actx_.dirty = false;
         }
 
-        auto ret = avcodec_send_packet(actx.codec, pkt.value().get());
+        auto ret = avcodec_send_packet(actx_.codec, pkt.value().get());
         while (ret >= 0) {
-            ret = avcodec_receive_frame(actx.codec, frame.put());
+            ret = avcodec_receive_frame(actx_.codec, frame.put());
             if (ret < 0) {
                 if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) break;
 
                 if (ret == AVERROR_EOF) {
-                    filter_frame(actx, nullptr, AVMEDIA_TYPE_AUDIO);
+                    filter_frame(actx_, nullptr, AVMEDIA_TYPE_AUDIO);
                     logi("[A] DECODING EOF, SEND NULL");
                     break;
                 }
@@ -588,76 +589,94 @@ void Decoder::adecode_thread_fn()
             }
 
             if (frame->pts != AV_NOPTS_VALUE) {
-                frame->pts = av_rescale_q(frame->pts, actx.stream->time_base, afi.time_base);
+                frame->pts = av_rescale_q(frame->pts, actx_.stream->time_base, afi.time_base);
             }
-            else if (actx.next_pts != AV_NOPTS_VALUE) {
-                frame->pts = actx.next_pts;
+            else if (actx_.next_pts != AV_NOPTS_VALUE) {
+                frame->pts = actx_.next_pts;
             }
 
             if (frame->pts != AV_NOPTS_VALUE) {
-                actx.next_pts = frame->pts + frame->nb_samples;
+                actx_.next_pts = frame->pts + frame->nb_samples;
 
                 const auto apts = av::clock::us(frame->pts, afi.time_base).count();
-                if (!actx.synced && !actx.dirty) {
-                    actx.synced = true;
-                    trim_pts_   = std::max<int64_t>(trim_pts_, apts);
+                if (!actx_.synced && !actx_.dirty) {
+                    actx_.synced = true;
+                    trim_pts_    = std::max<int64_t>(trim_pts_, apts);
                 }
 
                 if (apts >= trim_pts_) {
-                    logd("[A] pts = {:>14d} - {:.3%T}", frame->pts,
-                         av::clock::ms(frame->pts, afi.time_base));
-
-                    filter_frame(actx, frame, AVMEDIA_TYPE_AUDIO);
+                    filter_frame(actx_, frame, AVMEDIA_TYPE_AUDIO);
                 }
             }
         }
     }
 
-    actx.queue.wait_and_push(nullptr);
+    actx_.queue.wait_and_push(nullptr);
     logi("[A] SEND NULL, EXITED");
 }
 
 void Decoder::sdecode_thread_fn()
 {
     probe::thread::set_name("DEC-SUBTITLE");
-    logd("STARTED");
 
-    AVSubtitle subtitle;
-    while (running_ && !sctx.done) {
-        const auto& pkt = sctx.queue.wait_and_pop();
-        notenough_.notify_all();
+    while (running_ && !sctx_.done) {
+        const auto& pkt = sctx_.queue.wait_and_pop();
         if (!pkt.has_value()) continue;
 
-        int got = 0;
-        if (avcodec_decode_subtitle2(sctx.codec, &subtitle, &got, pkt.value().get()) >= 0) {
-            if (got) {
-                logd("[S] start = {:%T}, end = {:%T}",
-                     std::chrono::milliseconds{ subtitle.start_display_time },
-                     std::chrono::milliseconds{ subtitle.end_display_time });
+        if (sctx_.dirty) {
+            avcodec_flush_buffers(sctx_.codec);
+            ass_flush_events(ass_track_);
+            sctx_.dirty = false;
+        }
 
-                const int64_t start_time = av_rescale_q(subtitle.pts, AV_TIME_BASE_Q, av_make_q(1, 1000));
-                const int64_t duration   = subtitle.end_display_time;
+        AVSubtitle subtitle{};
+        int        got = 0;
+        if (avcodec_decode_subtitle2(sctx_.codec, &subtitle, &got, pkt.value().get()) >= 0) {
+            if (got) {
+                const auto    pts      = subtitle.pts / 1000;
+                const int64_t duration = subtitle.end_display_time;
+
+                logd("[S] pts = {:.3%T}, duration = {:%S}", std::chrono::milliseconds{ pts },
+                     std::chrono::milliseconds{ duration });
 
                 for (int i = 0; i < subtitle.num_rects; ++i) {
                     const auto line = subtitle.rects[i]->ass;
                     if (!line) break;
-                    ass_process_chunk(ass_.track, line, strlen(line), start_time, duration);
-                }
 
-                //                ASS_Image *image = ass_render_frame(ass_.renderer, ass_.track,
-                //                                                    time_ms, &detect_change);
-                avsubtitle_free(&subtitle);
+                    ass_process_chunk(ass_track_, line, static_cast<int>(strlen(line)), pts, duration);
+                }
             }
         }
         else {
             loge("[S] error");
         }
+        avsubtitle_free(&subtitle);
     }
+}
+
+std::pair<int, ASS_Image *> Decoder::subtitle(const std::chrono::milliseconds& now)
+{
+    if (sctx_.index < 0) return { 0, nullptr };
+
+    int        changed = 0;
+    ASS_Image *image   = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
+    logd_if(changed != 0 || image != nullptr, "[        ASS] changed {}, image: {}", changed,
+            (void *)image);
+
+    return { changed, image };
+}
+
+void Decoder::set_ass_render_size(int w, int h)
+{
+    if (!ass_renderer_) return;
+
+    ass_set_frame_size(ass_renderer_, w, h);
+    ass_set_storage_size(ass_renderer_, w, h);
 }
 
 bool Decoder::seeking(const AVMediaType type) const
 {
-    return (seek_pts_ != AV_NOPTS_VALUE) || ((type == AVMEDIA_TYPE_VIDEO) ? vctx.dirty : actx.dirty);
+    return (seek_pts_ != AV_NOPTS_VALUE) || ((type == AVMEDIA_TYPE_VIDEO) ? vctx_.dirty : actx_.dirty);
 }
 
 void Decoder::stop()
@@ -665,14 +684,16 @@ void Decoder::stop()
     running_ = false;
     ready_   = false;
 
-    vctx.queue.stop();
-    actx.queue.stop();
+    vctx_.queue.stop();
+    actx_.queue.stop();
+    sctx_.queue.stop();
 
     notenough_.notify_all();
 
     if (rthread_.joinable()) rthread_.join();
-    if (vctx.thread.joinable()) vctx.thread.join();
-    if (actx.thread.joinable()) actx.thread.join();
+    if (vctx_.thread.joinable()) vctx_.thread.join();
+    if (actx_.thread.joinable()) actx_.thread.join();
+    if (sctx_.thread.joinable()) sctx_.thread.join();
 
     logi("[    DECODER] STOPPED");
 }
@@ -681,19 +702,26 @@ Decoder::~Decoder()
 {
     stop();
 
-    avcodec_free_context(&vctx.codec);
-    avcodec_free_context(&actx.codec);
-    avcodec_free_context(&sctx.codec);
+    avcodec_free_context(&vctx_.codec);
+    avcodec_free_context(&actx_.codec);
+    avcodec_free_context(&sctx_.codec);
     avformat_close_input(&fmt_ctx_);
 
-    avfilter_graph_free(&vctx.graph);
-    avfilter_graph_free(&actx.graph);
-
-    if (ass_.track) ass_free_track(ass_.track);
-    if (ass_.renderer) ass_renderer_done(ass_.renderer);
-    if (ass_.library) ass_library_done(ass_.library);
+    avfilter_graph_free(&vctx_.graph);
+    avfilter_graph_free(&actx_.graph);
 
     logi("[    DECODER] ~");
+}
+
+std::vector<AVStream *> Decoder::streams(AVMediaType type)
+{
+    std::vector<AVStream *> list{};
+    for (auto i = 0; i < fmt_ctx_->nb_streams; ++i) {
+        if (fmt_ctx_->streams[i]->codecpar->codec_type == type) {
+            list.push_back(fmt_ctx_->streams[i]);
+        }
+    }
+    return list;
 }
 
 std::vector<std::map<std::string, std::string>> Decoder::properties(const AVMediaType mt) const

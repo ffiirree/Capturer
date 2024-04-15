@@ -38,15 +38,6 @@ struct DecodingContext
     safe_queue<av::packet> queue{ 240 };
 };
 
-struct AssContext
-{
-    std::string filename{};
-
-    ASS_Library  *library{};
-    ASS_Renderer *renderer{};
-    ASS_Track    *track{};
-};
-
 class Decoder
 {
 public:
@@ -87,6 +78,12 @@ public:
 
     std::function<void(const av::frame&, AVMediaType)> onarrived = [](auto, auto) {};
 
+    std::pair<int, ASS_Image *> subtitle(const std::chrono::milliseconds& now);
+
+    std::vector<AVStream *> streams(AVMediaType type);
+
+    void set_ass_render_size(int w, int h);
+
 private:
     int create_audio_graph();
     int create_video_graph();
@@ -100,17 +97,22 @@ private:
     AVFormatContext  *fmt_ctx_{};
     std::atomic<bool> ready_{};
     std::atomic<bool> running_{};
-    std::atomic<bool> eof_{};     // end of file
-    std::jthread      rthread_{}; // read thread
 
-    AssContext ass_{};
-
-    // read @{
+    // read thread @{
+    std::jthread            rthread_{};
+    std::atomic<bool>       eof_{};
     std::mutex              notenough_mtx_{};
     std::condition_variable notenough_{};
     //@}
 
-    DecodingContext actx{}, vctx{}, sctx{};
+    DecodingContext actx_{};
+    DecodingContext vctx_{};
+    DecodingContext sctx_{};
+
+    // libass
+    ASS_Library  *ass_library_{};
+    ASS_Renderer *ass_renderer_{};
+    ASS_Track    *ass_track_{};
 
     // seek, AV_TIME_BASE @{
     mutable std::shared_mutex seek_mtx_{};

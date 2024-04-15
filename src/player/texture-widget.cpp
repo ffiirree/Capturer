@@ -3,26 +3,19 @@
 #include "logging.h"
 
 #include <QFile>
+#include <utility>
 
 // clang-format off
 // normalized device coordinates
 static constexpr float vertices[] = {
   // vertex coordinate: [-1.0, 1.0]    / texture coordinate: [0.0, 1.0]
-  //  x      y     z                   / x     y
+  //  x      y                         / x     y
     -1.0f, -1.0f,  /* bottom left  */  0.0f, 1.0f, /* top    left  */
     +1.0f, -1.0f,  /* bottom right */  1.0f, 1.0f, /* top    right */
     -1.0f, +1.0f,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
     +1.0f, +1.0f,  /* top    right */  1.0f, 0.0f, /* bottom right */
 };
 // clang-format on
-
-static QShader GetShaderByPixelFormat(const AVPixelFormat pix_fmt)
-{
-    std::string name = fmt::format(":/src/resources/shaders/{}.frag.qsb", av::to_string(pix_fmt));
-
-    QFile f(QString::fromStdString(name));
-    return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
-}
 
 static QShader GetShaderByName(const QString& name)
 {
@@ -130,7 +123,8 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
 TextureWidget::TextureWidget(QWidget *parent)
     : QRhiWidget(parent)
 {
-    connect(this, &TextureWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
+    connect(
+        this, &TextureWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 std::vector<AVPixelFormat> TextureWidget::PixelFormats()
@@ -166,8 +160,8 @@ void TextureWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
 {
     auto params = GetTextureParams(fmt_.pix_fmt);
 
-    if (config_dirty_) {
-        config_dirty_ = false;
+    if (format_changed_) {
+        format_changed_ = false;
 
         logd("[    TEXTURE] update textures : {}({}, {})", av::to_string(fmt_.pix_fmt),
              av::to_string(fmt_.color.space), av::to_string(fmt_.color.range));
@@ -189,7 +183,7 @@ void TextureWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
         srb_->setBindings(bindings, bindings + params.size() + 1);
         srb_->create();
 
-        SetupPipeline(pipeline_.get(), srb_.get(), fmt_.pix_fmt);
+        SetupPipeline(pipeline_.get(), srb_.get(), av::to_string(fmt_.pix_fmt).c_str());
     }
 
     for (auto i = 0; i < params.size(); ++i) {
@@ -204,12 +198,14 @@ void TextureWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
 }
 
 void TextureWidget::SetupPipeline(QRhiGraphicsPipeline *pipeline, QRhiShaderResourceBindings *bindings,
-                                  AVPixelFormat pix_fmt)
+                                  const QString& frag)
 {
+    const auto name = QString(":/src/resources/shaders/") + frag + ".frag.qsb";
+
     pipeline->setTopology(QRhiGraphicsPipeline::TriangleStrip);
     pipeline->setShaderStages({
         { QRhiShaderStage::Vertex, GetShaderByName(":/src/resources/shaders/vertex.vert.qsb") },
-        { QRhiShaderStage::Fragment, GetShaderByPixelFormat(pix_fmt) },
+        { QRhiShaderStage::Fragment, GetShaderByName(name) },
     });
 
     QRhiVertexInputLayout layout{};
@@ -235,7 +231,7 @@ void TextureWidget::initialize(QRhiCommandBuffer *cb)
         vbuf_.reset(rhi_->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
         vbuf_->create();
 
-        ubuf_.reset(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 128));
+        ubuf_.reset(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 64 + 64 + 16));
         ubuf_->create();
 
         sampler_.reset(rhi_->newSampler(QRhiSampler::Linear, QRhiSampler::Linear, QRhiSampler::None,
@@ -244,12 +240,6 @@ void TextureWidget::initialize(QRhiCommandBuffer *cb)
 
         srb_.reset(rhi_->newShaderResourceBindings());
         pipeline_.reset(rhi_->newGraphicsPipeline());
-
-        // subtitle
-        sub_pipeline_.reset(rhi_->newGraphicsPipeline());
-        QRhiGraphicsPipeline::TargetBlend blend{ .enable = true };
-        sub_pipeline_->setTargetBlends({ blend });
-        sub_pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
 
         auto rub = rhi_->nextResourceUpdateBatch();
         rub->uploadStaticBuffer(vbuf_.get(), vertices);
@@ -277,15 +267,41 @@ void TextureWidget::render(QRhiCommandBuffer *cb)
     rub->updateDynamicBuffer(ubuf_.get(), 0, 64, mvp_.constData());
     rub->updateDynamicBuffer(ubuf_.get(), 64, 64,
                              GetColorMatrix(fmt_.color.space, fmt_.color.range).constData());
+    for (auto& item : items_) {
+        rub->updateDynamicBuffer(item.ubuf.get(), 0, 64, mvp_.constData());
+    }
+
+    {
+        std::lock_guard lock(sub_mtx_);
+        if (sub_rub_) {
+            rub->merge(sub_rub_);
+            sub_rub_->release();
+            sub_rub_ = nullptr;
+        }
+    }
 
     cb->beginPass(renderTarget(), bg, { 1.0f, 0 }, rub);
+
+    // frame
     cb->setGraphicsPipeline(pipeline_.get());
     cb->setViewport(QRhiViewport(0, 0, static_cast<float>(sz.width()), static_cast<float>(sz.height())));
-    cb->setShaderResources();
-
+    cb->setShaderResources(srb_.get());
     const QRhiCommandBuffer::VertexInput vbb{ vbuf_.get(), 0 };
     cb->setVertexInput(0, 1, &vbb);
     cb->draw(4);
+
+    {
+        std::lock_guard lock(sub_mtx_);
+
+        for (auto& item : items_) {
+            cb->setGraphicsPipeline(sub_pipeline_.get());
+            cb->setShaderResources(item.srb.get());
+
+            const QRhiCommandBuffer::VertexInput svbb{ item.vbuf.get(), 0 };
+            cb->setVertexInput(0, 1, &svbb);
+            cb->draw(4);
+        }
+    }
 
     cb->endPass();
 }
@@ -316,8 +332,97 @@ void TextureWidget::present(const av::frame& frame)
             frame_->color_trc,
         };
 
-        config_dirty_ = true;
+        format_changed_ = true;
     }
 
     emit arrived();
+}
+
+#define GET_R(C) static_cast<uint8_t>(((C) >> 24))
+#define GET_G(C) static_cast<uint8_t>(((C) >> 16) & 0x00ff)
+#define GET_B(C) static_cast<uint8_t>(((C) >> 8) & 0x00ff)
+#define GET_A(C) static_cast<uint8_t>((C) & 0x00ff)
+
+void TextureWidget::present(ASS_Image *subtitles, int changed)
+{
+    if (!changed) return;
+
+    std::lock_guard lock(sub_mtx_);
+    items_.clear();
+
+    if (!subtitles) return;
+
+    if (sub_rub_) {
+        sub_rub_->release();
+        sub_rub_ = nullptr;
+    }
+    sub_rub_ = rhi_->nextResourceUpdateBatch();
+
+    for (auto subtitle = subtitles; subtitle; subtitle = subtitle->next) {
+        RenderItem item{};
+        item.vbuf.reset(rhi_->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
+        item.vbuf->create();
+
+        const float x = subtitle->dst_x / static_cast<float>(fmt_.width);
+        const float y = subtitle->dst_y / static_cast<float>(fmt_.height);
+        const float w = subtitle->w / static_cast<float>(fmt_.width);
+        const float h = subtitle->h / static_cast<float>(fmt_.height);
+
+        const float x1 = 2 * x - 1.0f;
+        const float y1 = 1.0f - 2 * y;
+        const float x2 = 2 * (x + w) - 1.0f;
+        const float y2 = 1.0f - 2 * (y + h);
+
+        // clang-format off
+        float vs[] = {
+            x1, y2,  /* bottom left  */  0.0f, 1.0f, /* top    left  */
+            x2, y2,  /* bottom right */  1.0f, 1.0f, /* top    right */
+            x1, y1,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
+            x2, y1,  /* top    right */  1.0f, 0.0f, /* bottom right */
+        };
+        // clang-format on
+        sub_rub_->uploadStaticBuffer(item.vbuf.get(), vs);
+
+        item.ubuf.reset(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 64 + 64 + 16));
+        item.ubuf->create();
+
+        auto  r        = GET_R(subtitle->color);
+        auto  g        = GET_G(subtitle->color);
+        auto  b        = GET_B(subtitle->color);
+        auto  opacity  = 0xff - GET_A(subtitle->color);
+        float color[4] = { r / 255.0f, g / 255.0f, b / 255.0f, opacity / 255.0f };
+        sub_rub_->updateDynamicBuffer(item.ubuf.get(), 128, 16, color);
+
+        item.tex.reset(rhi_->newTexture(QRhiTexture::R8, { subtitle->w, subtitle->h }));
+        item.tex->create();
+        QRhiTextureSubresourceUploadDescription desc{};
+        desc.setData(QByteArray::fromRawData(reinterpret_cast<const char *>(subtitle->bitmap),
+                                             subtitle->w * subtitle->h));
+        desc.setDataStride(subtitle->stride);
+        sub_rub_->uploadTexture(item.tex.get(), QRhiTextureUploadDescription{ { 0, 0, desc } });
+
+        item.srb.reset(rhi_->newShaderResourceBindings());
+        QRhiShaderResourceBinding bindings[2];
+        bindings[0] = QRhiShaderResourceBinding::uniformBuffer(
+            0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+            item.ubuf.get());
+        bindings[1] = QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage,
+                                                                item.tex.get(), sampler_.get());
+        item.srb->setBindings(bindings, bindings + 2);
+        item.srb->create();
+
+        if (!sub_pipeline_) {
+            sub_pipeline_.reset(rhi_->newGraphicsPipeline());
+            QRhiGraphicsPipeline::TargetBlend blend{
+                .enable   = true,
+                .srcColor = QRhiGraphicsPipeline::SrcAlpha,
+                .dstColor = QRhiGraphicsPipeline::OneMinusSrcAlpha,
+            };
+            sub_pipeline_->setTargetBlends({ blend });
+            sub_pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
+
+            SetupPipeline(sub_pipeline_.get(), item.srb.get(), "ass");
+        }
+        items_.push_back(std::move(item));
+    }
 }

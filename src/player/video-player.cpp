@@ -141,10 +141,11 @@ int VideoPlayer::open(const std::string& filename)
                                    ? source_->vfo.pix_fmt
                                    : TextureWidget::PixelFormats()[0];
     }
-    ready_ = true;
 
     // title
     setWindowTitle(file.isFile() ? file.fileName() : file.filePath());
+
+    ready_ = true;
 
     return 0;
 }
@@ -213,6 +214,11 @@ void VideoPlayer::video_thread_fn()
         const auto has_next = vqueue_.wait_and_pop();
         if (!has_next) continue;
 
+        // subtitle
+        const auto [changed, sub] = source_->subtitle(timeline_.ms());
+        texture_->present(sub, changed);
+
+        // video frame
         const av::frame& frame = has_next.value();
         texture_->present(frame);
 
@@ -222,7 +228,7 @@ void VideoPlayer::video_thread_fn()
 
             if (diff < 5ms) continue;
 
-            logd("[V] {:.3%T} ~ {:.3%T} -> {:.3%S}", pts, timeline_.time(), diff);
+            //            logd("[V] {:.3%T} ~ {:.3%T} -> {:.3%S}", pts, timeline_.time(), diff);
 
             std::this_thread::sleep_for(diff);
         }
@@ -548,14 +554,17 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
     }
 
     ssmenu_->clear();
-    for (auto& p : source_->properties(AVMEDIA_TYPE_SUBTITLE)) {
+    for (auto& stream : source_->streams(AVMEDIA_TYPE_SUBTITLE)) {
+
+        auto properties = av::to_map(stream->metadata);
+
         std::vector<std::string> title{};
         std::vector<std::string> attrs{};
 
-        if (p.contains("Codec")) attrs.push_back(p["Codec"]);
+        attrs.push_back(probe::util::toupper(avcodec_get_name(stream->codecpar->codec_id)));
 
-        if (p.contains("language")) title.push_back(p["language"]);
-        if (p.contains("title")) title.push_back(p["title"]);
+        if (properties.contains("language")) title.push_back(properties["language"]);
+        if (properties.contains("title")) title.push_back(properties["title"]);
 
         std::string name = fmt::format("{} - {}", fmt::join(attrs, ", "), fmt::join(title, ", "));
         ssgroup_->addAction(ssmenu_->addAction(name.c_str()))->setCheckable(true);

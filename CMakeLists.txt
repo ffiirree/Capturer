@@ -107,6 +107,7 @@ qt_add_shaders(${PROJECT_NAME} "exampleapp_shaders"
         "src/resources/shaders/nv21.frag"
         "src/resources/shaders/yuv420p10le.frag"
         "src/resources/shaders/yuyv422.frag"
+        "src/resources/shaders/ass.frag"
 )
 
 target_compile_options(${PROJECT_NAME}
