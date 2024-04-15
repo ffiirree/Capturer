@@ -84,7 +84,13 @@ public:
 
     void set_ass_render_size(int w, int h);
 
+    int select(AVMediaType type, int index);
+
 private:
+    int open_video_stream(int index);
+    int open_audio_stream(int index);
+    int open_subtitle_stream(int index);
+
     int create_audio_graph();
     int create_video_graph();
     int filter_frame(DecodingContext& ctx, const av::frame& frame, AVMediaType type);
@@ -110,9 +116,15 @@ private:
     DecodingContext sctx_{};
 
     // libass
-    ASS_Library  *ass_library_{};
-    ASS_Renderer *ass_renderer_{};
-    ASS_Track    *ass_track_{};
+    mutable std::shared_mutex ass_mtx_{};
+    ASS_Library              *ass_library_{};
+    ASS_Renderer             *ass_renderer_{};
+    ASS_Track                *ass_track_{};
+
+    // switch stream
+    mutable std::shared_mutex selected_mtx_{};
+    AVMediaType               selected_type_{ AVMEDIA_TYPE_UNKNOWN };
+    int                       selected_index_{ -1 };
 
     // seek, AV_TIME_BASE @{
     mutable std::shared_mutex seek_mtx_{};

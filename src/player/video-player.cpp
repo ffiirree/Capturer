@@ -567,7 +567,13 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
         if (properties.contains("title")) title.push_back(properties["title"]);
 
         std::string name = fmt::format("{} - {}", fmt::join(attrs, ", "), fmt::join(title, ", "));
-        ssgroup_->addAction(ssmenu_->addAction(name.c_str()))->setCheckable(true);
+        ssgroup_
+            ->addAction(ssmenu_->addAction(name.c_str(),
+                                           [=, this] {
+                                               if (source_)
+                                                   source_->select(AVMEDIA_TYPE_SUBTITLE, stream->index);
+                                           }))
+            ->setCheckable(true);
     }
 
     menu_->exec(event->globalPos());

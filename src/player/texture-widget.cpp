@@ -15,70 +15,72 @@ static constexpr float vertices[] = {
     -1.0f, +1.0f,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
     +1.0f, +1.0f,  /* top    right */  1.0f, 0.0f, /* bottom right */
 };
+
+static QMatrix4x4 BT601_FULL_CM {
+    1.0000f,  0.0000f,  1.77200f, -0.88600f,
+    1.0000f, -0.1646f, -0.57135f,  0.36795f,
+    1.0000f,  1.4200f,  0.00000f, -0.71000f,
+    0.0000f,  0.0000f,  0.00000f,  1.00000f
+};
+
+static QMatrix4x4 BT601_TV_CM {
+    1.164f,  0.000f,  1.596f, -0.8708f,
+    1.164f, -0.392f, -0.813f,  0.5296f,
+    1.164f,  2.017f,  0.000f, -1.0810f,
+    0.000f,  0.000f,  0.000f,  1.0000f
+};
+
+static QMatrix4x4 BT709_FULL_CM {
+    1.0000f,  0.000000f,  1.57480f,  -0.790488f,
+    1.0000f, -0.187324f, -0.468124f,  0.329010f,
+    1.0000f,  1.855600f,  0.00000f,  -0.931439f,
+    0.0000f,  0.000000f,  0.00000f,   1.000000f
+};
+
+static QMatrix4x4 BT709_TV_CM {
+    1.1644f,  0.0000f,  1.7927f, -0.9729f,
+    1.1644f, -0.2132f, -0.5329f,  0.3015f,
+    1.1644f,  2.1124f,  0.0000f, -1.1334f,
+    0.0000f,  0.0000f,  0.0000f,  1.0000f
+};
+
+static QMatrix4x4 BT2020_FULL_CM {
+    1.0000f,  0.0000f,  1.4746f, -0.7402f,
+    1.0000f, -0.1646f, -0.5714f,  0.3694f,
+    1.0000f,  1.8814f,  0.0000f, -0.9445f,
+    0.0000f,  0.0000f,  0.0000f,  1.0000f
+};
+
+static QMatrix4x4 BT2020_TV_CM {
+    1.1644f,  0.000f,   1.6787f, -0.9157f,
+    1.1644f, -0.1874f, -0.6504f,  0.3475f,
+    1.1644f,  2.1418f,  0.0000f, -1.1483f,
+    0.0000f,  0.0000f,  0.0000f,  1.0000f
+};
+
+static QMatrix4x4 IDENTITY_CM {
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f
+};
 // clang-format on
+
+static QMatrix4x4 GetColorMatrix(AVColorSpace space, AVColorRange range)
+{
+    switch (space) {
+    case AVCOL_SPC_BT470BG:     return (range == AVCOL_RANGE_JPEG) ? BT601_FULL_CM : BT601_TV_CM;
+    case AVCOL_SPC_BT709:
+    case AVCOL_SPC_UNSPECIFIED: return (range == AVCOL_RANGE_JPEG) ? BT709_FULL_CM : BT709_TV_CM;
+    case AVCOL_SPC_BT2020_NCL:  return (range == AVCOL_RANGE_JPEG) ? BT2020_FULL_CM : BT2020_TV_CM;
+    default:                    loge("unsupported colorspace: {}", av::to_string(space)); return IDENTITY_CM;
+    }
+}
 
 static QShader GetShaderByName(const QString& name)
 {
     QFile f(name);
     return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
-}
-
-static QMatrix4x4 GetColorMatrix(AVColorSpace space, AVColorRange range)
-{
-    // clang-format off
-    switch (space) {
-    case AVCOL_SPC_RGB:
-        return QMatrix4x4{
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f
-        };
-    case AVCOL_SPC_BT470BG:
-        return (range == AVCOL_RANGE_MPEG)
-                   ? QMatrix4x4{
-                         1.164f,  0.000f,  1.596f, -0.8708f,
-                         1.164f, -0.392f, -0.813f,  0.5296f,
-                         1.164f,  2.017f,  0.000f, -1.0810f,
-                         0.000f,  0.000f,  0.000f,  1.0000f
-                     }
-                   : QMatrix4x4{
-                         1.0000f,  0.0000f,  1.77200f, -0.88600f,
-                         1.0000f, -0.1646f, -0.57135f,  0.36795f,
-                         1.0000f,  1.4200f,  0.00000f, -0.71000f,
-                         0.0000f,  0.0000f,  0.00000f,  1.00000f
-                     };
-    case AVCOL_SPC_BT2020_NCL:
-        return (range == AVCOL_RANGE_MPEG)
-                   ? QMatrix4x4{
-                         1.1644f,  0.000f,   1.6787f, -0.9157f,
-                         1.1644f, -0.1874f, -0.6504f,  0.3475f,
-                         1.1644f,  2.1418f,  0.0000f, -1.1483f,
-                         0.0000f,  0.0000f,  0.0000f,  1.0000f
-                     }
-                   : QMatrix4x4{
-                         1.0000f,  0.0000f,  1.4746f, -0.7402f,
-                         1.0000f, -0.1646f, -0.5714f,  0.3694f,
-                         1.0000f,  1.8814f,  0.0000f, -0.9445f,
-                         0.0000f,  0.0000f,  0.0000f,  1.0000f
-                     };
-    case AVCOL_SPC_BT709:
-    default:
-        return (range == AVCOL_RANGE_MPEG)
-                   ? QMatrix4x4{
-                         1.1644f,  0.0000f,  1.7927f, -0.9729f,
-                         1.1644f, -0.2132f, -0.5329f,  0.3015f,
-                         1.1644f,  2.1124f,  0.0000f, -1.1334f,
-                         0.0000f,  0.0000f,  0.0000f,  1.0000f
-                     }
-                   : QMatrix4x4{
-                         1.0000f,  0.000000f,  1.57480f,  -0.790488f,
-                         1.0000f, -0.187324f, -0.468124f,  0.329010f,
-                         1.0000f,  1.855600f,  0.00000f,  -0.931439f,
-                         0.0000f,  0.000000f,  0.00000f,   1.000000f
-                     };
-    }
-    // clang-format on
 }
 
 static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
@@ -363,10 +365,10 @@ void TextureWidget::present(ASS_Image *subtitles, int changed)
         item.vbuf.reset(rhi_->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
         item.vbuf->create();
 
-        const float x = subtitle->dst_x / static_cast<float>(fmt_.width);
-        const float y = subtitle->dst_y / static_cast<float>(fmt_.height);
-        const float w = subtitle->w / static_cast<float>(fmt_.width);
-        const float h = subtitle->h / static_cast<float>(fmt_.height);
+        const float x = static_cast<float>(subtitle->dst_x) / static_cast<float>(fmt_.width);
+        const float y = static_cast<float>(subtitle->dst_y) / static_cast<float>(fmt_.height);
+        const float w = static_cast<float>(subtitle->w) / static_cast<float>(fmt_.width);
+        const float h = static_cast<float>(subtitle->h) / static_cast<float>(fmt_.height);
 
         const float x1 = 2 * x - 1.0f;
         const float y1 = 1.0f - 2 * y;
