@@ -91,6 +91,9 @@ private:
     int open_audio_stream(int index);
     int open_subtitle_stream(int index);
 
+    int ass_init();
+    int ass_create_track();
+
     int create_audio_graph();
     int create_video_graph();
     int filter_frame(DecodingContext& ctx, const av::frame& frame, AVMediaType type);

@@ -459,6 +459,15 @@ void VideoPlayer::mouseDoubleClickEvent(QMouseEvent *event)
     FramelessWindow::mouseDoubleClickEvent(event);
 }
 
+void VideoPlayer::resizeEvent(QResizeEvent *event)
+{
+    if (source_ && texture_) {
+        const auto sz = texture_->framePixelSize();
+        source_->set_ass_render_size(sz.width(), sz.height());
+    }
+    FramelessWindow::resizeEvent(event);
+}
+
 void VideoPlayer::initContextMenu()
 {
     menu_ = new Menu(this);
@@ -510,7 +519,6 @@ void VideoPlayer::initContextMenu()
         ssgroup_ = new QActionGroup(this);
         subtitles_menu->addMenu(ssmenu_);
         subtitles_menu->addAction(tr("Add Subtitles"));
-        subtitles_menu->addAction(tr("Show/Hide Subtitles"))->setCheckable(true);
         menu_->addMenu(subtitles_menu);
     }
 

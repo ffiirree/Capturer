@@ -77,7 +77,11 @@ static void ass_log(int level, const char *fmt, va_list args, void *)
 {
     char buffer[1024]{};
     vsnprintf(buffer, 1024, fmt, args);
-    logd_if(level < 7, "[ASS] L{} -- {}", level, buffer);
+
+    logf_if(level == 0, "[  LIBASS-L{}] {}", level, buffer);
+    loge_if(level == 1, "[  LIBASS-L{}] {}", level, buffer);
+    logw_if(level == 2 || level == 3, "[  LIBASS-L{}] {}", level, buffer);
+    logd_if(level > 3 && level < 7, "[  LIBASS-L{}] {}", level, buffer);
 }
 
 static const char *const font_mimetypes[] = {
@@ -121,11 +125,13 @@ int Decoder::open(const std::string& name)
 
     if (open_video_stream(-1) < 0) return -1;
     if (open_audio_stream(-1) < 0) return -1;
-    if (open_subtitle_stream(-1) < 0) return -1;
     if (vctx_.index < 0 && actx_.index < 0) {
         loge("[    DECODER] not found any stream");
         return -1;
     }
+
+    // TODO: DVD_SUBTITLE -> graphics subtitle formats
+    if (open_subtitle_stream(-1) < 0 || ass_init() < 0) return -1;
 
     ready_ = true;
 
@@ -232,51 +238,72 @@ int Decoder::open_subtitle_stream(int index)
             return -1;
         }
 
-        ass_library_ = ass_library_init();
-        if (!ass_library_) {
-            loge("[    DECODER] [S] failed to init libass");
-            return -1;
-        }
-        ass_set_message_cb(ass_library_, ass_log, nullptr);
+        logi("[    DECODER] [S] [{:>6}] start_time={}", decoder->name, sctx_.stream->start_time);
+    }
 
-        ass_set_fonts_dir(ass_library_, nullptr);
-        ass_set_extract_fonts(ass_library_, 1);
+    return 0;
+}
 
-        ass_renderer_ = ass_renderer_init(ass_library_);
-        ass_track_    = ass_new_track(ass_library_);
-        if (!ass_renderer_ || !ass_track_) {
-            loge("[    DECODER] [S] could not create libass renderer or track");
-            return AVERROR(EINVAL);
-        }
+int Decoder::ass_init()
+{
+    ass_library_ = ass_library_init();
+    if (!ass_library_) {
+        loge("[    DECODER] [S] failed to init libass");
+        return -1;
+    }
+    ass_set_message_cb(ass_library_, ass_log, nullptr);
 
-        ass_set_frame_size(ass_renderer_, vfi.width, vfi.height);
-        ass_set_storage_size(ass_renderer_, vfi.width, vfi.height);
+    ass_set_fonts_dir(ass_library_, nullptr);
+    ass_set_extract_fonts(ass_library_, 1);
 
-        // load attached fonts
-        for (int i = 0; i < fmt_ctx_->nb_streams; ++i) {
-            const auto stream = fmt_ctx_->streams[i];
-            if (stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
-                if (const auto tag = av_dict_get(stream->metadata, "filename", nullptr, AV_DICT_MATCH_CASE);
-                    tag) {
-                    logd("[    DECODER] [S] loading attached font: {}", tag->value);
-                    ass_add_font(ass_library_, tag->value,
-                                 reinterpret_cast<const char *>(stream->codecpar->extradata),
-                                 stream->codecpar->extradata_size);
-                }
-                else {
-                    logw("[    DECODER] [S] font attachment has no filename, ignored");
-                }
+    ass_renderer_ = ass_renderer_init(ass_library_);
+    if (!ass_renderer_) {
+        loge("[    DECODER] [S] could not create libass renderer");
+        return AVERROR(EINVAL);
+    }
+
+    ass_set_frame_size(ass_renderer_, vfi.width, vfi.height);
+    ass_set_storage_size(ass_renderer_, vfi.width, vfi.height);
+
+    // load attached fonts
+    for (int i = 0; i < fmt_ctx_->nb_streams; ++i) {
+        const auto stream = fmt_ctx_->streams[i];
+        if (stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
+            if (const auto tag = av_dict_get(stream->metadata, "filename", nullptr, AV_DICT_MATCH_CASE);
+                tag) {
+                logd("[    DECODER] [S] loading attached font: {}", tag->value);
+                ass_add_font(ass_library_, tag->value,
+                             reinterpret_cast<const char *>(stream->codecpar->extradata),
+                             stream->codecpar->extradata_size);
+            }
+            else {
+                logw("[    DECODER] [S] font attachment has no filename, ignored");
             }
         }
+    }
 
-        ass_set_fonts(ass_renderer_, nullptr, nullptr, 1, nullptr, 1);
+    ass_set_fonts(ass_renderer_, nullptr, nullptr, 1, nullptr, 1);
 
+    return ass_create_track();
+}
+
+int Decoder::ass_create_track()
+{
+    if (ass_track_) {
+        ass_free_track(ass_track_);
+        ass_track_ = nullptr;
+    }
+
+    if (sctx_.index >= 0) {
+        ass_track_ = ass_new_track(ass_library_);
+        if (!ass_track_) {
+            loge("[    DECODER] [S] could not create libass track");
+            return AVERROR(EINVAL);
+        }
         if (sctx_.codec->subtitle_header) {
             ass_process_codec_private(ass_track_, reinterpret_cast<char *>(sctx_.codec->subtitle_header),
                                       sctx_.codec->subtitle_header_size);
         }
-
-        logi("[    DECODER] [S] [{:>6}] start_time={}", decoder->name, sctx_.stream->start_time);
     }
 
     return 0;
@@ -485,22 +512,10 @@ void Decoder::readpkt_thread_fn()
 
                 avcodec_free_context(&sctx_.codec);
 
-                if (ass_renderer_) {
-                    ass_renderer_done(ass_renderer_);
-                    ass_renderer_ = nullptr;
-                }
-                if (ass_track_) {
-                    ass_free_track(ass_track_);
-                    ass_track_ = nullptr;
-                }
-                if (ass_library_) {
-                    ass_library_done(ass_library_);
-                    ass_library_ = nullptr;
-                }
-
-                if (open_subtitle_stream(selected_index_) < 0) {
+                if (open_subtitle_stream(selected_index_) < 0 || ass_create_track() < 0) {
                     loge("failed to switch subtitle stream to {}", selected_index_);
                 }
+
                 break;
             }
             default: break;
@@ -722,15 +737,13 @@ void Decoder::sdecode_thread_fn()
             if (got) {
                 const auto    pts      = subtitle.pts / 1000;
                 const int64_t duration = subtitle.end_display_time;
-
-                logd("[S] pts = {:.3%T}, duration = {:%S}", std::chrono::milliseconds{ pts },
-                     std::chrono::milliseconds{ duration });
-
+                
                 for (int i = 0; i < subtitle.num_rects; ++i) {
-                    const auto line = subtitle.rects[i]->ass;
-                    if (!line) break;
-
-                    ass_process_chunk(ass_track_, line, static_cast<int>(strlen(line)), pts, duration);
+                    const auto rect = subtitle.rects[i];
+                    if (rect->type == SUBTITLE_ASS && rect->ass != nullptr && ass_track_) {
+                        const auto length = static_cast<int>(strlen(rect->ass));
+                        ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
+                    }
                 }
             }
         }
@@ -755,6 +768,8 @@ std::pair<int, ASS_Image *> Decoder::subtitle(const std::chrono::milliseconds& n
 
 void Decoder::set_ass_render_size(int w, int h)
 {
+    std::shared_lock lock(ass_mtx_);
+
     if (!ass_renderer_) return;
 
     ass_set_frame_size(ass_renderer_, w, h);

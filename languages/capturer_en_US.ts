@@ -397,10 +397,6 @@
         <translation></translation>
     </message>
     <message>
-        <source>Show/Hide Subtitles</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Properties</source>
         <translation></translation>
     </message>

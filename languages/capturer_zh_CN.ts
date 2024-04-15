@@ -397,10 +397,6 @@
         <translation>添加字幕</translation>
     </message>
     <message>
-        <source>Show/Hide Subtitles</source>
-        <translation>显示/隐藏字幕</translation>
-    </message>
-    <message>
         <source>Properties</source>
         <translation>属性</translation>
     </message>

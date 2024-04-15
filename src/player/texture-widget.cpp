@@ -273,13 +273,12 @@ void TextureWidget::render(QRhiCommandBuffer *cb)
         rub->updateDynamicBuffer(item.ubuf.get(), 0, 64, mvp_.constData());
     }
 
-    {
-        std::lock_guard lock(sub_mtx_);
-        if (sub_rub_) {
-            rub->merge(sub_rub_);
-            sub_rub_->release();
-            sub_rub_ = nullptr;
-        }
+    std::lock_guard lock(sub_mtx_);
+
+    if (sub_rub_) {
+        rub->merge(sub_rub_);
+        sub_rub_->release();
+        sub_rub_ = nullptr;
     }
 
     cb->beginPass(renderTarget(), bg, { 1.0f, 0 }, rub);
@@ -292,17 +291,13 @@ void TextureWidget::render(QRhiCommandBuffer *cb)
     cb->setVertexInput(0, 1, &vbb);
     cb->draw(4);
 
-    {
-        std::lock_guard lock(sub_mtx_);
+    for (auto& item : items_) {
+        cb->setGraphicsPipeline(sub_pipeline_.get());
+        cb->setShaderResources(item.srb.get());
 
-        for (auto& item : items_) {
-            cb->setGraphicsPipeline(sub_pipeline_.get());
-            cb->setShaderResources(item.srb.get());
-
-            const QRhiCommandBuffer::VertexInput svbb{ item.vbuf.get(), 0 };
-            cb->setVertexInput(0, 1, &svbb);
-            cb->draw(4);
-        }
+        const QRhiCommandBuffer::VertexInput svbb{ item.vbuf.get(), 0 };
+        cb->setVertexInput(0, 1, &svbb);
+        cb->draw(4);
     }
 
     cb->endPass();
@@ -365,10 +360,12 @@ void TextureWidget::present(ASS_Image *subtitles, int changed)
         item.vbuf.reset(rhi_->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
         item.vbuf->create();
 
-        const float x = static_cast<float>(subtitle->dst_x) / static_cast<float>(fmt_.width);
-        const float y = static_cast<float>(subtitle->dst_y) / static_cast<float>(fmt_.height);
-        const float w = static_cast<float>(subtitle->w) / static_cast<float>(fmt_.width);
-        const float h = static_cast<float>(subtitle->h) / static_cast<float>(fmt_.height);
+        const auto sz = framePixelSize();
+
+        const float x = static_cast<float>(subtitle->dst_x) / static_cast<float>(sz.width());
+        const float y = static_cast<float>(subtitle->dst_y) / static_cast<float>(sz.height());
+        const float w = static_cast<float>(subtitle->w) / static_cast<float>(sz.width());
+        const float h = static_cast<float>(subtitle->h) / static_cast<float>(sz.height());
 
         const float x1 = 2 * x - 1.0f;
         const float y1 = 1.0f - 2 * y;

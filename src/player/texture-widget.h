@@ -29,6 +29,14 @@ public:
     void initialize(QRhiCommandBuffer *cb) override;
     void render(QRhiCommandBuffer *cb) override;
 
+    QSize pixelSize() const { return (rhi_ && renderTarget()) ? renderTarget()->pixelSize() : QSize{}; }
+
+    QSize framePixelSize() const
+    {
+        const auto sz = QSize{ fmt_.width, fmt_.height };
+        return (rhi_ && renderTarget()) ? sz.scaled(renderTarget()->pixelSize(), Qt::KeepAspectRatio) : sz;
+    }
+
 public:
     void present(const av::frame& frame);
 
