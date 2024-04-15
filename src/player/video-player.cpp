@@ -51,6 +51,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });
+    connect(control_,   &ControlWidget::subtitlesEnabled,   [this](auto en) { subtitles_enabled_ = en; if(!en) texture_->present(nullptr, 2); });
     connect(this,       &VideoPlayer::timeChanged,      control_, &ControlWidget::setTime, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::videoFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::audioFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
@@ -215,8 +216,10 @@ void VideoPlayer::video_thread_fn()
         if (!has_next) continue;
 
         // subtitle
-        const auto [changed, sub] = source_->subtitle(timeline_.ms());
-        texture_->present(sub, changed);
+        if (subtitles_enabled_) {
+            const auto [changed, sub] = source_->subtitle(timeline_.ms());
+            texture_->present(sub, changed);
+        }
 
         // video frame
         const av::frame& frame = has_next.value();
@@ -463,22 +466,6 @@ void VideoPlayer::initContextMenu()
     // video menu
     {
         const auto video_menu = new Menu(tr("Video"), this);
-
-        // video renderers
-        {
-            const auto renders = new Menu(tr("Renderer"), this);
-
-            const auto group = new QActionGroup(renders);
-            group->addAction(renders->addAction("OpenGL"))->setCheckable(true);
-#ifdef _WIN32
-            group->addAction(renders->addAction("D3D11"))->setCheckable(true);
-#endif
-            group->actions()[0]->setChecked(true);
-
-            video_menu->addMenu(renders);
-        }
-
-        video_menu->addSeparator();
 
         video_menu->addAction(tr("Rotate +90"));
         video_menu->addAction(tr("Rotate -90"));

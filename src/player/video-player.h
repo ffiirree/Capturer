@@ -107,6 +107,8 @@ private:
     safe_queue<av::frame> vqueue_{ 2 };
     std::atomic<bool>     vdone_{};
 
+    std::atomic<bool> subtitles_enabled_{ true };
+
     std::atomic<int> vstep_{ 0 };
     std::atomic<int> astep_{ 0 };
 

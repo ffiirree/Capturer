@@ -127,6 +127,9 @@
         <file alias="subtitles">resources/icons/subtitles.png</file>
         <file alias="subtitles-light">resources/icons/subtitles-light.png</file>
         <file alias="subtitles-dark">resources/icons/subtitles-dark.png</file>
+        <file alias="subtitles-off">resources/icons/subtitles-off.png</file>
+        <file alias="subtitles-off-light">resources/icons/subtitles-off-light.png</file>
+        <file alias="subtitles-off-dark">resources/icons/subtitles-off-dark.png</file>
         <file alias="arrow-right">resources/icons/arrow-right.png</file>
         <file alias="arrow-right-light">resources/icons/arrow-right-light.png</file>
         <file alias="arrow-right-dark">resources/icons/arrow-right-dark.png</file>
