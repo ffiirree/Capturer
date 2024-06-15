@@ -19,6 +19,17 @@ int main(int argc, char *argv[])
     ::setvbuf(stdout, nullptr, _IONBF, 0);
 #endif
 
+    // OpenGL 3.3, core-profile mode
+    QSurfaceFormat format{};
+    format.setMajorVersion(3);
+    format.setMinorVersion(3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+#ifdef QT_DEBUG
+    format.setOption(QSurfaceFormat::DebugContext);
+#endif
+    QSurfaceFormat::setDefaultFormat(format);
+
+    // glog
     Logger::init(argv[0]);
 
     probe::thread::set_name("capturer-main");

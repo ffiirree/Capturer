@@ -4,7 +4,6 @@
 #include "framelesswindow.h"
 #include "libcap/producer.h"
 #include "libcap/queue.h"
-#include "texture-widget-d3d11.h"
 #include "texture-widget-opengl.h"
 
 class CameraPlayer final : public FramelessWindow

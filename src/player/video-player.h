@@ -8,7 +8,6 @@
 #include "libcap/sonic.h"
 #include "libcap/timeline.h"
 #include "menu.h"
-#include "texture-widget-d3d11.h"
 #include "texture-widget-opengl.h"
 
 #include <QTimer>

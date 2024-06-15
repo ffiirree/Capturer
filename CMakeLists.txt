@@ -80,11 +80,9 @@ if (WIN32)
     # Build HLSL shaders
     add_custom_target(shaders)
 
-    set(HLSL_SHADER_FILES src/resources/d3d11/ConvertVertexShader.hlsl src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ConvertPixelShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
+    set(HLSL_SHADER_FILES src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
 
-    set_source_files_properties(src/resources/d3d11/ConvertVertexShader.hlsl    PROPERTIES ShaderType "vs")
     set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/ConvertPixelShader.hlsl     PROPERTIES ShaderType "ps")
     set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
 
     set_source_files_properties(${HLSL_SHADER_FILES}                            PROPERTIES ShaderModel "5_0")
