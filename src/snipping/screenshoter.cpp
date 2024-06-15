@@ -114,7 +114,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             status == SelectorStatus::RESIZING)
             magnifier_->show();
         else
-            magnifier_->close();
+            magnifier_->hide();
     });
 
     selector_->installEventFilter(this);
