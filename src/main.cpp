@@ -19,10 +19,10 @@ int main(int argc, char *argv[])
     ::setvbuf(stdout, nullptr, _IONBF, 0);
 #endif
 
-    // OpenGL 3.3, core-profile mode
+    // OpenGL 4.1, core-profile mode
     QSurfaceFormat format{};
-    format.setMajorVersion(3);
-    format.setMinorVersion(3);
+    format.setMajorVersion(4);
+    format.setMinorVersion(1);
     format.setProfile(QSurfaceFormat::CoreProfile);
 #ifdef QT_DEBUG
     format.setOption(QSurfaceFormat::DebugContext);
@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
 
     QTranslator translator;
 #ifdef __linux__
-    translator.load("/usr/local/etc/capturer/translations/capturer_" + config::language);
+    const auto translation = "/usr/local/etc/capturer/translations/capturer_" + config::language;
 #else
-    translator.load("translations/capturer_" + config::language);
+    const auto translation = "translations/capturer_" + config::language;
 #endif
+    loge_if(translator.load(translation), "failed to load {}", translation.toStdString());
+
     Capturer::installTranslator(&translator);
 
     app.Init();

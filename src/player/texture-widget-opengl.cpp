@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <map>
 #include <QCoreApplication>
+#include <QOpenGLDebugLogger>
 
 // clang-format off
 // normalized device coordinates
@@ -36,9 +37,16 @@ static const QString TEXTURE_VERTEX_SHADER = R"(
     }
 )";
 
+// EMPTY
+static const QString EMPTY_SHADER_CONSTANTS = R"(
+    #version 330 core
+)";
+
 // FULL: [0, 255]
 // TV  : Y [16, 235], Cb & Cr [16, 240]
-static const QString BT601_TV_SHADER_CONSTANTS = R"( 
+static const QString BT601_TV_SHADER_CONSTANTS = R"(
+    #version 330 core
+
     // BT.601 PAL, TV
 
     // range offset
@@ -53,6 +61,8 @@ static const QString BT601_TV_SHADER_CONSTANTS = R"(
 )";
 
 static const QString BT709_TV_SHADER_CONSTANTS = R"(
+    #version 330 core
+
     // BT.709 & sRGB, TV
 
     // range offset
@@ -67,6 +77,8 @@ static const QString BT709_TV_SHADER_CONSTANTS = R"(
 )";
 
 static const QString BT2020_TV_SHADER_CONSTANTS = R"(
+    #version 330 core
+
     // BT.2020, TV
 
     // range offset
@@ -81,20 +93,26 @@ static const QString BT2020_TV_SHADER_CONSTANTS = R"(
 )";
 
 static const QString TEX1_SHADER_PROLOGUE = R"(
-    varying vec2 texCoord;
+    out vec4 FragColor;
+    
+    in vec2 texCoord;
 
     uniform sampler2D tex0; // Y
 )";
 
 static const QString TEX2_SHADER_PROLOGUE = R"(
-    varying vec2 texCoord;
+    out vec4 FragColor;
+    
+    in vec2 texCoord;
 
     uniform sampler2D tex0; // Y
     uniform sampler2D tex1; // Y
 )";
 
 static const QString TEX3_SHADER_PROLOGUE = R"(
-    varying vec2 texCoord;
+    out vec4 FragColor;
+    
+    in vec2 texCoord;
 
     uniform sampler2D tex0; // Y
     uniform sampler2D tex1; // U
@@ -103,143 +121,143 @@ static const QString TEX3_SHADER_PROLOGUE = R"(
 
 // YUV
 static const QString YUV_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
         vec3 yuv;
 
-        yuv.x = texture2D(tex0, texCoord).r; // Y
-        yuv.y = texture2D(tex1, texCoord).r; // U
-        yuv.z = texture2D(tex2, texCoord).r; // V
+        yuv.x = texture(tex0, texCoord).r; // Y
+        yuv.y = texture(tex1, texCoord).r; // U
+        yuv.z = texture(tex2, texCoord).r; // V
 
-        gl_FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
     }
 )";
 
 // YUV 10LE
 static const QString YUV_10LE_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
         vec3 yuv0, yuv1, yuv;
 
-        yuv0.x = texture2D(tex0, texCoord).r; // Y
-        yuv1.x = texture2D(tex0, texCoord).a; // Y
-        yuv0.y = texture2D(tex1, texCoord).r; // U
-        yuv1.y = texture2D(tex1, texCoord).a; // U
-        yuv0.z = texture2D(tex2, texCoord).r; // V
-        yuv1.z = texture2D(tex2, texCoord).a; // V
+        yuv0.x = texture(tex0, texCoord).r; // Y
+        yuv1.x = texture(tex0, texCoord).a; // Y
+        yuv0.y = texture(tex1, texCoord).r; // U
+        yuv1.y = texture(tex1, texCoord).a; // U
+        yuv0.z = texture(tex2, texCoord).r; // V
+        yuv1.z = texture(tex2, texCoord).a; // V
 
         yuv = (yuv0 * 255.0 + yuv1 * 255.0 * 256.0) / (1023.0);
 
-        gl_FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
     }
 )";
 
 // YUYV422
 static const QString YUYV_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
         vec3 yuv;
 
-        yuv.x = texture2D(tex0, texCoord).r; // Y
-        yuv.y = texture2D(tex0, texCoord).g; // U
-        yuv.z = texture2D(tex0, texCoord).a; // V
+        yuv.x = texture(tex0, texCoord).r; // Y
+        yuv.y = texture(tex0, texCoord).g; // U
+        yuv.z = texture(tex0, texCoord).a; // V
 
-        gl_FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
     }
 )";
 
 // RGB
 static const QString RGB_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = vec4(texture2D(tex0, texCoord).rgb, 1.0);
+        FragColor = vec4(texture(tex0, texCoord).rgb, 1.0);
     }
 )";
 
 // BGR
 static const QString BGR_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = vec4(texture2D(tex0, texCoord).bgr, 1.0);
+        FragColor = vec4(texture(tex0, texCoord).bgr, 1.0);
     }
 )";
 
 // NV12
 static const QString NV12_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
         vec3 yuv;
 
-        yuv.x  = texture2D(tex0, texCoord).r;   // Y
-        yuv.yz = texture2D(tex1, texCoord).rg;  // U / V
+        yuv.x  = texture(tex0, texCoord).r;   // Y
+        yuv.yz = texture(tex1, texCoord).rg;  // U / V
 
-        gl_FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
     }
 )";
 
 // NV21
 static const QString NV21_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
         vec3 yuv;
 
-        yuv.x  = texture2D(tex0, texCoord).r;   // Y
-        yuv.yz = texture2D(tex1, texCoord).gr;  // U / V
+        yuv.x  = texture(tex0, texCoord).r;   // Y
+        yuv.yz = texture(tex1, texCoord).gr;  // U / V
 
-        gl_FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
     }
 )";
 
 // ARGB
 static const QString ARGB_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = texture2D(tex0, texCoord).gbar;
+        FragColor = texture(tex0, texCoord).gbar;
     }
 )";
 
 // RGBA
 static const QString RGBA_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = texture2D(tex0, texCoord);
+        FragColor = texture(tex0, texCoord);
     }
 )";
 
 // ABGR
 static const QString ABGR_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = texture2D(tex0, texCoord).abgr;
+        FragColor = texture(tex0, texCoord).abgr;
     }
 )";
 
 // BGRA
 static const QString BGRA_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = texture2D(tex0, texCoord).bgra;
+        FragColor = texture(tex0, texCoord).bgra;
     }
 )";
 
 // 0RGB
 static const QString XRGB_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = vec4(texture2D(tex0, texCoord).gba, 1.0);
+        FragColor = vec4(texture(tex0, texCoord).gba, 1.0);
     }
 )";
 
 // 0BGR
 static const QString XBGR_FRAGMENT_SHADER = R"(
-    void main(void)
+    void main()
     {
-        gl_FragColor = vec4(texture2D(tex0, texCoord).abg, 1.0);
+        FragColor = vec4(texture(tex0, texCoord).abg, 1.0);
     }
 )";
 
 static const std::map<AVColorSpace, QString> SHADER_CONSTANTS = {
-    { AVCOL_SPC_RGB, "" },                                // RGB
+    { AVCOL_SPC_RGB, EMPTY_SHADER_CONSTANTS },            // RGB
     { AVCOL_SPC_BT709, BT709_TV_SHADER_CONSTANTS },       // BT.709 & sRGB
     { AVCOL_SPC_UNSPECIFIED, BT709_TV_SHADER_CONSTANTS },
     { AVCOL_SPC_BT470BG, BT601_TV_SHADER_CONSTANTS },     // BT.601 PAL
@@ -296,18 +314,26 @@ TextureGLWidget::TextureGLWidget(QWidget *parent)
 {
     setAttribute(Qt::WA_TransparentForMouseEvents);
 
-    connect(
-        this, &TextureGLWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
+    connect(this, &TextureGLWidget::updateRequest, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
-TextureGLWidget ::~TextureGLWidget()
+TextureGLWidget ::~TextureGLWidget() { cleanup(); }
+
+void TextureGLWidget::cleanup()
 {
     makeCurrent();
 
-    vbo_.destroy();
     DeleteTextures();
 
+    delete program_;
+    program_ = nullptr;
+
+    glDeleteBuffers(1, &vbo_);
+    glDeleteBuffers(1, &vao_);
+
     doneCurrent();
+
+    disconnect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &TextureGLWidget::cleanup);
 }
 
 std::vector<AVPixelFormat> TextureGLWidget::pix_fmts()
@@ -395,41 +421,41 @@ bool TextureGLWidget::UpdateTextureParams()
 
     case AV_PIX_FMT_YUV420P:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 2, 2, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 2, 2, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 2, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 2, GL_RED, GL_UNSIGNED_BYTE, 1 },
         };
         return true;
 
     case AV_PIX_FMT_YUV422P:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 2, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 2, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
         };
         return true;
 
     case AV_PIX_FMT_YUV444P:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
         };
         return true;
 
     case AV_PIX_FMT_YUV410P:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 4, 4, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 4, 4, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 4, 4, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 4, 4, GL_RED, GL_UNSIGNED_BYTE, 1 },
         };
         return true;
 
     case AV_PIX_FMT_YUV411P:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 4, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
-            { 4, 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 4, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 4, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
         };
         return true;
 
@@ -464,7 +490,7 @@ bool TextureGLWidget::UpdateTextureParams()
     default: break;
     }
 
-    loge("unsuppored pixel format: {}", av::to_string(format_.pix_fmt));
+    loge("unsupported pixel format: {}", av::to_string(format_.pix_fmt));
     return false;
 }
 
@@ -473,7 +499,7 @@ void TextureGLWidget::CreateTextures()
     glGenTextures(static_cast<GLsizei>(tex_params_.size()), texture_);
 
     for (size_t idx = 0; idx < tex_params_.size(); ++idx) {
-        program_.setUniformValue(fmt::format("tex{}", idx).c_str(), static_cast<GLuint>(idx));
+        program_->setUniformValue(fmt::format("tex{}", idx).c_str(), static_cast<GLuint>(idx));
 
         glBindTexture(GL_TEXTURE_2D, texture_[idx]);
 
@@ -487,53 +513,53 @@ void TextureGLWidget::CreateTextures()
 
 void TextureGLWidget::DeleteTextures()
 {
-    if (QOpenGLFunctions::isInitialized(QOpenGLFunctions::d_ptr)) {
+    if (QOpenGLFunctions_3_3_Core::isInitialized()) {
         glDeleteTextures(3, texture_);
     }
 
     memset(texture_, 0, sizeof(texture_));
 }
 
-void TextureGLWidget::RemoveAllShaders() { program_.removeAllShaders(); }
-
-void TextureGLWidget::InitializeShaders()
-{
-    program_.addShaderFromSourceCode(QOpenGLShader::Vertex, TEXTURE_VERTEX_SHADER);
-    program_.addShaderFromSourceCode(QOpenGLShader::Fragment, GENERATOR_FRAGMENT_SHADER(format_));
-    program_.link();
-}
-
 void TextureGLWidget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#ifdef QT_DEBUG
+    debugger_ = new QOpenGLDebugLogger(this);
+    debugger_->initialize();
+    connect(debugger_, &QOpenGLDebugLogger::messageLogged,
+            [](auto&& err) { loge("[    QOpenGL] {}", err.message().toStdString()); });
+    debugger_->startLogging();
+#endif
+
     glDisable(GL_DEPTH_TEST);
 
+    // vertex array object
+    glGenVertexArrays(1, &vao_);
+    glBindVertexArray(vao_);
+
     // vertex buffer object
-    vbo_.create();
-    vbo_.bind();
-    vbo_.allocate(vertices, sizeof(vertices));
+    glGenBuffers(1, &vbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // shader program
-    InitializeShaders();
-    program_.bind();
-
-    // vertex & texture
-    program_.setAttributeBuffer(0, GL_FLOAT, 0, 3, 5 * sizeof(float));
-    program_.setAttributeBuffer(1, GL_FLOAT, 3 * sizeof(float), 2, 5 * sizeof(float));
-    program_.enableAttributeArray(0);
-    program_.enableAttributeArray(1);
+    program_ = new QOpenGLShaderProgram(this);
+    program_->addShaderFromSourceCode(QOpenGLShader::Vertex, TEXTURE_VERTEX_SHADER);
+    program_->addShaderFromSourceCode(QOpenGLShader::Fragment, GENERATOR_FRAGMENT_SHADER(format_));
+    program_->link();
+    program_->bind();
 
     // matrix
-    proj_id_ = program_.uniformLocation("ProjM");
+    proj_id_ = program_->uniformLocation("ProjM");
 
-    // create textures
-    UpdateTextureParams();
-    CreateTextures();
-
-    config_dirty_ = false;
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &TextureGLWidget::cleanup);
 }
 
 void TextureGLWidget::resizeGL(int w, int h)
@@ -546,9 +572,6 @@ void TextureGLWidget::resizeGL(int w, int h)
         auto size = QSizeF(dar.num, dar.den).scaled(w, h, Qt::KeepAspectRatio);
         proj_.scale(size.width() / w, size.height() / h);
     }
-    program_.setUniformValue(proj_id_, proj_);
-
-    repaint();
 }
 
 void TextureGLWidget::paintGL()
@@ -557,24 +580,31 @@ void TextureGLWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     std::lock_guard lock(mtx_);
-
     if (!frame_->data[0] || frame_->height <= 0 || frame_->width <= 0) return;
+
+    program_->bind();
 
     // reconfigure
     if (config_dirty_) {
-        UpdateTextureParams();
-
-        RemoveAllShaders();
-        InitializeShaders();
+        program_->removeAllShaders();
+        program_->addShaderFromSourceCode(QOpenGLShader::Vertex, TEXTURE_VERTEX_SHADER);
+        program_->addShaderFromSourceCode(QOpenGLShader::Fragment, GENERATOR_FRAGMENT_SHADER(format_));
+        program_->link();
 
         DeleteTextures();
+        UpdateTextureParams();
         CreateTextures();
+
+        proj_.setToIdentity();
+        if (auto dar = DAR(); dar.num && dar.den) {
+            auto size = QSizeF(dar.num, dar.den).scaled(width(), height(), Qt::KeepAspectRatio);
+            proj_.scale(size.width() / width(), size.height() / height());
+        }
 
         config_dirty_ = false;
     }
 
-    // TODO: fixme, show black screen after hiding the window
-    program_.setUniformValue(proj_id_, proj_);
+    program_->setUniformValue(proj_id_, proj_);
 
     // update textures
     for (size_t idx = 0; idx < tex_params_.size(); ++idx) {
@@ -588,6 +618,7 @@ void TextureGLWidget::paintGL()
                      frame_->data[idx]);
     }
 
+    glBindVertexArray(vao_);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -621,5 +652,5 @@ void TextureGLWidget::present(const av::frame& frame)
         config_dirty_ = true;
     }
 
-    emit arrived();
+    emit updateRequest();
 }

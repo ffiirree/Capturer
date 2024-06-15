@@ -7,13 +7,17 @@
 #include <memory>
 #include <mutex>
 #include <QOpenGLBuffer>
-#include <QOpenGLFunctions>
+#include <QOpenGLFunctions_3_3_Core>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <tuple>
 #include <vector>
 
-class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions
+#ifdef QT_DEBUG
+class QOpenGLDebugLogger;
+#endif
+
+class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
 public:
@@ -37,7 +41,7 @@ public:
     AVRational DAR() const;
 
 signals:
-    void arrived();
+    void updateRequest();
 
 protected:
     void initializeGL() override;
@@ -50,14 +54,14 @@ private:
     void CreateTextures();
     void DeleteTextures();
 
-    void RemoveAllShaders();
-    void InitializeShaders();
+    void cleanup();
 
     // shader program
-    QOpenGLShaderProgram program_{};
+    QOpenGLShaderProgram *program_{};
 
     // vertex buffer objectss
-    QOpenGLBuffer vbo_{ QOpenGLBuffer::VertexBuffer };
+    GLuint vao_{}; // vertex array object
+    GLuint vbo_{}; // vertex buffer object
 
     // YUV texture
     GLuint texture_[4]{};
@@ -77,6 +81,10 @@ private:
     std::mutex mtx_;
 
     std::atomic<bool> config_dirty_{ true };
+
+#ifdef QT_DEBUG
+    QOpenGLDebugLogger *debugger_{};
+#endif
 };
 
 #endif // !CAPTURER_TEXTURE_WIDGET_OPENGL_H
