@@ -527,8 +527,8 @@ void VideoPlayer::initContextMenu()
 
     menu_->addSeparator();
 
-    addAction(menu_->addAction(tr("Properties"), this, &VideoPlayer::showProperties,
-                               QKeySequence(Qt::CTRL | Qt::Key_I)));
+    addAction(menu_->addAction(tr("Properties"), QKeySequence(Qt::CTRL | Qt::Key_I), this,
+                               &VideoPlayer::showProperties));
 }
 
 void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)

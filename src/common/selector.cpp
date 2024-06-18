@@ -62,7 +62,7 @@ void Selector::start(const probe::graphics::window_filter_t flags)
 
 void Selector::mousePressEvent(QMouseEvent *event)
 {
-    auto pos = event->globalPos();
+    auto pos = event->globalPosition().toPoint();
 
     if (event->button() == Qt::LeftButton && status_ != SelectorStatus::LOCKED) {
         cursor_pos_ = box_.absolutePos(pos);
@@ -100,7 +100,7 @@ void Selector::mousePressEvent(QMouseEvent *event)
 
 void Selector::mouseMoveEvent(QMouseEvent *event)
 {
-    auto mouse_pos = event->globalPos();
+    auto mouse_pos = event->globalPosition().toPoint();
 
     switch (status_) {
     case SelectorStatus::PREY_SELECTING:

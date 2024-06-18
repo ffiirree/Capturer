@@ -163,21 +163,21 @@ void ImageWindow::initContextMenu()
 {
     context_menu_ = new Menu(this);
 
-    addAction(context_menu_->addAction(tr("Copy"),          [this] { clipboard::push(data_); },   QKeySequence::Copy));
-    addAction(context_menu_->addAction(tr("Paste"),         [this] { paste(); },                  QKeySequence::Paste));
+    addAction(context_menu_->addAction(tr("Copy"),  QKeySequence::Copy,     [this] { clipboard::push(data_); }));
+    addAction(context_menu_->addAction(tr("Paste"), QKeySequence::Paste,    [this] { paste(); }));
 
     context_menu_->addSeparator();
 
-    addAction(context_menu_->addAction(tr("Open Image..."), this, &ImageWindow::open,   QKeySequence::Open));
-    addAction(context_menu_->addAction(tr("Save As..."),    this, &ImageWindow::saveAs, QKeySequence::Save));
+    addAction(context_menu_->addAction(tr("Open Image..."), QKeySequence::Open, this, &ImageWindow::open));
+    addAction(context_menu_->addAction(tr("Save As..."),    QKeySequence::Save, this, &ImageWindow::saveAs));
 
     context_menu_->addSeparator();
 
-    addAction(context_menu_->addAction(tr("Grayscale"),     [this] { present(grayscale(pixmap_));  },                                 QKeySequence(Qt::Key_G)));
-    addAction(context_menu_->addAction(tr("Rotate +90"),    [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }, QKeySequence(Qt::Key_R)));
-    addAction(context_menu_->addAction(tr("Rotate -90"),    [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }, QKeySequence(Qt::CTRL | Qt::Key_R)));
-    addAction(context_menu_->addAction(tr("H Flip"),        [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); },     QKeySequence(Qt::Key_H)));
-    addAction(context_menu_->addAction(tr("V Flip"),        [this] { present(pixmap_.transformed(QTransform().scale(+1, -1))); },     QKeySequence(Qt::Key_V)));
+    addAction(context_menu_->addAction(tr("Grayscale"),     QKeySequence(Qt::Key_G),            [this] { present(grayscale(pixmap_)); }));
+    addAction(context_menu_->addAction(tr("Rotate +90"),    QKeySequence(Qt::Key_R),            [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }));
+    addAction(context_menu_->addAction(tr("Rotate -90"),    QKeySequence(Qt::CTRL | Qt::Key_R), [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }));
+    addAction(context_menu_->addAction(tr("H Flip"),        QKeySequence(Qt::Key_H),            [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); }));
+    addAction(context_menu_->addAction(tr("V Flip"),        QKeySequence(Qt::Key_V),            [this] { present(pixmap_.transformed(QTransform().scale(+1, -1))); }));
 
     context_menu_->addSeparator();
 
@@ -197,7 +197,7 @@ void ImageWindow::initContextMenu()
     context_menu_->addSeparator();
 
     context_menu_->addAction(tr("Recover"), [this] { preview(data_); });
-    context_menu_->addAction(tr("Close"),   this, &ImageWindow::close, QKeySequence(Qt::Key_Escape));
+    context_menu_->addAction(tr("Close"), QKeySequence(Qt::Key_Escape), this, &ImageWindow::close);
 }
 // clang-format on
 

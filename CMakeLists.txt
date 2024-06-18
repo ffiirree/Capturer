@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(capturer VERSION 1.6.1 LANGUAGES C CXX)
+project(capturer VERSION 1.6.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,15 +16,11 @@ endif ()
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/3rdparty/cmake-modules")
 
 # 3rdparty: QHotkey glog
-set(BUILD_SHARED_LIBS   OFF CACHE BOOL "Build static libraries")
-set(WITH_GFLAGS         OFF CACHE BOOL "Use gflags for google/glog")
-set(PROBE_BUILD_WITH_QT ON  CACHE BOOL "Build probe with Qt")
-set(JSON_BuildTests     OFF CACHE BOOL "Build nlohmann/json tests")
-
-# Qt 5 / 6
-if (NOT QT_DEFAULT_MAJOR_VERSION)
-    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "Qt major version to use (5 or 6), default: 5.")
-endif ()
+set(BUILD_SHARED_LIBS           OFF CACHE BOOL "Build static libraries")
+set(WITH_GFLAGS                 OFF CACHE BOOL "Use gflags for google/glog")
+set(PROBE_BUILD_WITH_QT         ON  CACHE BOOL "Build probe with Qt")
+set(JSON_BuildTests             OFF CACHE BOOL "Build nlohmann/json tests")
+set(QT_DEFAULT_MAJOR_VERSION    6   CACHE STRING "Qt major version to use (5 or 6), default: 6.")
 
 add_subdirectory(3rdparty/QHotkey   EXCLUDE_FROM_ALL)
 add_subdirectory(3rdparty/glog      EXCLUDE_FROM_ALL)
@@ -37,11 +33,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-if (${QT_DEFAULT_MAJOR_VERSION} EQUAL 5)
-    find_package(Qt5 5.15 COMPONENTS Core Gui Widgets LinguistTools REQUIRED)
-else ()
-    find_package(Qt6 6.5 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
-endif ()
+find_package(Qt6 6.7 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
 
 if (WIN32)
     # GUI/console
@@ -51,7 +43,7 @@ if (WIN32)
 elseif (UNIX AND NOT APPLE)
     find_package(FFmpeg 4.2 REQUIRED)
 
-    find_package(Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS X11Extras REQUIRED)
+    find_package(Qt6 COMPONENTS X11Extras REQUIRED)
 endif ()
 
 # #######################################################################################################################
@@ -62,12 +54,7 @@ configure_file(src/version.h.in ${PROJECT_BINARY_DIR}/version.h @ONLY)
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
-
-if (QT_DEFAULT_MAJOR_VERSION EQUAL 5)
-    qt5_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
-elseif (QT_DEFAULT_MAJOR_VERSION EQUAL 6)
-    qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
-endif ()
+qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}
@@ -113,15 +100,14 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         QHotkey::QHotkey
-        Qt${QT_DEFAULT_MAJOR_VERSION}::Core Qt${QT_DEFAULT_MAJOR_VERSION}::Gui Qt${QT_DEFAULT_MAJOR_VERSION}::Widgets
-        $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGL> $<$<EQUAL:${QT_DEFAULT_MAJOR_VERSION},6>:Qt6::OpenGLWidgets>
+        Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg
         probe::probe
         nlohmann_json::nlohmann_json
         libcap::libcap
-        $<$<PLATFORM_ID:Linux>:Qt${QT_DEFAULT_MAJOR_VERSION}::X11Extras>
+        $<$<PLATFORM_ID:Linux>:Qt6::X11Extras>
         $<$<PLATFORM_ID:Windows>:Winmm>
 )
 

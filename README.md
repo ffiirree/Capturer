@@ -136,7 +136,7 @@ git submodule update --init --recursive
 ### Development Environment
 
 - `C++` : `C++20`
-- `Qt` : `>= 5.15`
+- `Qt` : `6.7.x`
 - `CMake` : `>= 3.27`
 - Windows
   - `Windows` : `>= Windows 10 2004`
@@ -160,10 +160,7 @@ git submodule update --init --recursive
 
 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
 
-#### 编译
-
-- 方法一. 使用`Visual Studio 2022`打开(CMake工程)编译；
-- 方法二. 使用命令编译：
+#### 编译 (CMake)
 
 ```bash
 cd Capturer
@@ -180,8 +177,6 @@ sudo apt install build-essential cmake
 # ffmpeg: video / audio
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
-# Ubuntu 20.04 
-sudo apt install qt5-default libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 # Ubuntu 22.04
 sudo apt install qtbase5-dev libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
 # Arch Linux
