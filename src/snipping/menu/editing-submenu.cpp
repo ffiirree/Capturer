@@ -11,7 +11,7 @@
 #endif
 
 EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
-    : FramelessWindow(parent, Qt::ToolTip | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
     setCursor(Qt::ArrowCursor);
     setAttribute(Qt::WA_ShowWithoutActivating);

@@ -6,7 +6,6 @@
 #include "config.h"
 #include "libcap/devices.h"
 #include "libcap/hwaccel.h"
-#include "logging.h"
 #include "scrollwidget.h"
 #include "shortcutinput.h"
 #include "version.h"
@@ -115,7 +114,7 @@ QWidget *SettingWindow::setupGeneralWidget()
             { "zh_CN", "简体中文" },
         });
         language->select(config::language);
-        language->onselected([this](auto value) { config::language = value.toString(); });
+        language->onselected([](auto value) { config::language = value.toString(); });
         form->addRow(tr("Language"), language);
 
         //
@@ -130,7 +129,7 @@ QWidget *SettingWindow::setupGeneralWidget()
             { "dark", tr("Dark") },
             { "light", tr("Light") },
         });
-        theme->onselected([this](auto value) { config::set_theme(value.toString().toStdString()); });
+        theme->onselected([](auto value) { config::set_theme(value.toString().toStdString()); });
         theme->select(config::theme);
         form->addRow(tr("Theme"), theme);
     }
@@ -148,40 +147,39 @@ QWidget *SettingWindow::setupHotkeyWidget()
         const auto form = page->addForm(tr("Hotkeys"));
 
         const auto snip = new ShortcutInput(config::hotkeys::screenshot);
-        connect(snip, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::screenshot = ks; });
+        connect(snip, &ShortcutInput::changed, [](auto ks) { config::hotkeys::screenshot = ks; });
         connect(snip, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(LABEL(tr("Screenshot"), 175), snip);
 
         const auto preview = new ShortcutInput(config::hotkeys::preview);
-        connect(preview, &ShortcutInput::changed, [this](auto&& ks) { config::hotkeys::preview = ks; });
+        connect(preview, &ShortcutInput::changed, [](auto&& ks) { config::hotkeys::preview = ks; });
         connect(preview, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Preview Clipboard"), preview);
 
         const auto tp = new ShortcutInput(config::hotkeys::toggle_previews);
-        connect(tp, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::toggle_previews = ks; });
+        connect(tp, &ShortcutInput::changed, [](auto ks) { config::hotkeys::toggle_previews = ks; });
         connect(tp, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Toggle Previews"), tp);
 
 #if _WIN32
         const auto qlook = new ShortcutInput(config::hotkeys::quick_look);
-        connect(qlook, &ShortcutInput::changed, [this](auto&& ks) { config::hotkeys::quick_look = ks; });
+        connect(qlook, &ShortcutInput::changed, [](auto&& ks) { config::hotkeys::quick_look = ks; });
         connect(qlook, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Quick Look"), qlook);
 #endif
 
         const auto trans = new ShortcutInput(config::hotkeys::transparent_input);
-        connect(trans, &ShortcutInput::changed,
-                [this](auto ks) { config::hotkeys::transparent_input = ks; });
+        connect(trans, &ShortcutInput::changed, [](auto ks) { config::hotkeys::transparent_input = ks; });
         connect(trans, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Transparent Input"), trans);
 
         const auto rvideo = new ShortcutInput(config::hotkeys::record_video);
-        connect(rvideo, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::record_video = ks; });
+        connect(rvideo, &ShortcutInput::changed, [](auto ks) { config::hotkeys::record_video = ks; });
         connect(rvideo, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Video Recording"), rvideo);
 
         const auto rgif = new ShortcutInput(config::hotkeys::record_gif);
-        connect(rgif, &ShortcutInput::changed, [this](auto ks) { config::hotkeys::record_gif = ks; });
+        connect(rgif, &ShortcutInput::changed, [](auto ks) { config::hotkeys::record_gif = ks; });
         connect(rgif, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
         form->addRow(tr("Gif Recording"), rgif);
     }
@@ -233,7 +231,7 @@ QWidget *SettingWindow::setupSnipWidget()
         path->setContextMenuPolicy(Qt::NoContextMenu);
         path->setReadOnly(true);
         form->addRow(LABEL(tr("Save Path"), 175), path);
-    };
+    }
 
     page->addSpacer();
     return page;
@@ -292,7 +290,7 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto format = new ComboBox();
         format->add({ { "mp4", "MPEG-4 (.mp4)" }, { "mkv", "Matroska Video (.mkv)" } })
-            .onselected([this](auto value) { config::recording::video::mcf = value.toString(); })
+            .onselected([](auto value) { config::recording::video::mcf = value.toString(); })
             .select(config::recording::video::mcf);
         form->addRow(tr("Format"), format);
     }
@@ -303,7 +301,7 @@ QWidget *SettingWindow::setupRecordWidget()
         auto mouse = new QCheckBox();
         mouse->setChecked(config::recording::video::capture_mouse);
         connect(mouse, &QCheckBox::toggled,
-                [this](auto checked) { config::recording::video::capture_mouse = checked; });
+                [](auto checked) { config::recording::video::capture_mouse = checked; });
         form->addRow(LABEL(tr("Mouse"), 175), mouse);
 
         const auto mic_en = new QCheckBox();
@@ -334,7 +332,7 @@ QWidget *SettingWindow::setupRecordWidget()
             });
         }
         encoder->onselected(
-            [this](auto value) { config::recording::video::v::codec = value.toString().toStdString(); });
+            [](auto value) { config::recording::video::v::codec = value.toString().toStdString(); });
         encoder->select(QString::fromStdString(config::recording::video::v::codec));
         form->addRow(tr("Encoder"), encoder);
 
@@ -353,7 +351,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { QPoint{ 60, 1 }, "60" },
                 { QPoint{ 120, 1 }, "120" },
             })
-            .onselected([this](auto value) {
+            .onselected([](auto value) {
                 const auto fps                         = value.toPoint();
                 config::recording::video::v::framerate = { fps.x(), fps.y() };
             })
@@ -363,7 +361,7 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto ratectrl = new ComboBox();
         ratectrl->add("crf", "CRF")
-            .onselected([this](auto value) {
+            .onselected([](auto value) {
                 config::recording::video::v::rate_control = value.toString().toStdString();
             })
             .select(QString::fromStdString(config::recording::video::v::rate_control));
@@ -390,9 +388,8 @@ QWidget *SettingWindow::setupRecordWidget()
                 { "slower", "slower" },
                 { "veryslow", "veryslow" },
             })
-            .onselected([this](auto value) {
-                config::recording::video::v::preset = value.toString().toStdString();
-            })
+            .onselected(
+                [](auto value) { config::recording::video::v::preset = value.toString().toStdString(); })
             .select(QString::fromStdString(config::recording::video::v::preset));
         form->addRow(tr("Preset"), preset);
 
@@ -403,9 +400,8 @@ QWidget *SettingWindow::setupRecordWidget()
                 { "main", "main" },
                 { "high", "high" },
             })
-            .onselected([this](auto value) {
-                config::recording::video::v::profile = value.toString().toStdString();
-            })
+            .onselected(
+                [](auto value) { config::recording::video::v::profile = value.toString().toStdString(); })
             .select(QString::fromStdString(config::recording::video::v::profile));
         form->addRow(tr("Profile"), profile);
     }
@@ -416,19 +412,19 @@ QWidget *SettingWindow::setupRecordWidget()
         const auto codec = new ComboBox();
         codec->add("aac", "AAC / Advanced Audio Coding")
             .onselected(
-                [this](auto value) { config::recording::video::a::codec = value.toString().toStdString(); })
+                [](auto value) { config::recording::video::a::codec = value.toString().toStdString(); })
             .select(QString::fromStdString(config::recording::video::a::codec));
         form->addRow(LABEL(tr("Encoder"), 175), codec);
 
         const auto channels = new ComboBox();
         channels->add(2, "Stereo")
-            .onselected([this](auto value) { config::recording::video::a::channels = value.toInt(); })
+            .onselected([](auto value) { config::recording::video::a::channels = value.toInt(); })
             .select(config::recording::video::a::channels);
         form->addRow(tr("Channel Layout"), channels);
 
         const auto srate = new ComboBox();
         srate->add(48000, "48 kHz")
-            .onselected([this](auto r) { config::recording::video::a::sample_rate = r.toInt(); })
+            .onselected([](auto r) { config::recording::video::a::sample_rate = r.toInt(); })
             .select(config::recording::video::a::sample_rate);
         form->addRow(tr("Sample Rate"), srate);
     }
@@ -484,7 +480,7 @@ QWidget *SettingWindow::setupGIFWidget()
         auto mouse = new QCheckBox();
         mouse->setChecked(config::recording::gif::capture_mouse);
         connect(mouse, &QCheckBox::toggled,
-                [this](auto checked) { config::recording::gif::capture_mouse = checked; });
+                [](auto checked) { config::recording::gif::capture_mouse = checked; });
         form->addRow(LABEL(tr("Mouse"), 175), mouse);
     }
 

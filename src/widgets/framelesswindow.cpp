@@ -208,18 +208,18 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
         const auto rect = wmsg->wParam ? &(reinterpret_cast<LPNCCALCSIZE_PARAMS>(wmsg->lParam))->rgrc[0]
                                        : reinterpret_cast<LPRECT>(wmsg->lParam);
 
-        const LONG original_top = rect->top;
-        // apply the default frame for standard window frame (the resizable frame border and the frame
-        // shadow) including the left, bottom and right edges.
         if (probe::system::version() >= probe::WIN_11) {
+            const LONG original_top = rect->top;
+            // apply the default frame for standard window frame (the resizable frame border and the frame
+            // shadow) including the left, bottom and right edges.
             if (const LRESULT res = ::DefWindowProcW(hwnd, WM_NCCALCSIZE, wmsg->wParam, wmsg->lParam);
                 (res != HTERROR) && (res != HTNOWHERE)) {
                 *result = static_cast<long>(res);
                 return true;
             }
+            // re-apply the original top for removing the top frame entirely
+            rect->top = original_top;
         }
-        // re-apply the original top for removing the top frame entirely
-        rect->top               = original_top;
 
         //
         const auto monitor    = MonitorInfoFromWindow(hwnd);
