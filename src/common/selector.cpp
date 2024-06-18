@@ -251,7 +251,7 @@ void Selector::paintEvent(QPaintEvent *)
     const auto srect = selected();
 
     if (!mask_hidden_) {
-        // draw cross hair
+        // draw cross-hair
         if (crosshair_ && status_ < SelectorStatus::CAPTURED) {
             painter_.save();
 
@@ -282,6 +282,7 @@ void Selector::paintEvent(QPaintEvent *)
         // draw mask
         painter_.save();
 
+        painter_.setPen(mask_color_);
         painter_.setBrush(mask_color_);
         painter_.setClipping(true);
         painter_.setClipRegion(QRegion(painter_.window()).subtracted(QRegion(srect)));
@@ -308,7 +309,7 @@ void Selector::paintEvent(QPaintEvent *)
     }
     else {
         painter_.setPen(QPen(pen_.color(), 2));
-        painter_.drawRect(srect.adjusted(-1, -1, 1, 1));
+        painter_.drawRect(srect.adjusted(-1, -1, 1 + srect.width() % 2, 1 + srect.height() % 2));
     }
 
     painter_.end();
