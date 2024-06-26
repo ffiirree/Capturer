@@ -2,14 +2,20 @@
 
 #if __linux__
 
-#include <QtX11Extras/QX11Info>
+#include <QGuiApplication>
 #include <QWidget>
 #include <X11/extensions/shape.h>
 
+using namespace QNativeInterface;
+
 void TransparentInput(QWidget *win, const bool en)
 {
+    const auto x11app = qGuiApp->nativeInterface<QNativeInterface::QX11Application>();
+
+    if (!x11app) return;
+
     if (en) {
-        ::XShapeCombineRectangles(QX11Info::display(), win->winId(), ShapeInput, 0, 0, nullptr, 0, ShapeSet,
+        ::XShapeCombineRectangles(x11app->display(), win->winId(), ShapeInput, 0, 0, nullptr, 0, ShapeSet,
                                   YXBanded);
         return;
     }
@@ -22,7 +28,7 @@ void TransparentInput(QWidget *win, const bool en)
         .height = static_cast<unsigned short>(win->height()),
     };
 
-    ::XShapeCombineRectangles(QX11Info::display(), win->winId(), ShapeInput, 0, 0, &rect, 1, ShapeSet,
+    ::XShapeCombineRectangles(x11app->display(), win->winId(), ShapeInput, 0, 0, &rect, 1, ShapeSet,
                               YXBanded);
 
     win->activateWindow();

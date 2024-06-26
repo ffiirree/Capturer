@@ -177,11 +177,6 @@ sudo apt install build-essential cmake
 # ffmpeg: video / audio
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 
-# Ubuntu 22.04
-sudo apt install qtbase5-dev libqt5x11extras5-dev qttools5-dev qttools5-dev-tools
-# Arch Linux
-sudo pacman -S qt5-base qt5-tools
-
 # pulse: audio
 sudo apt install libpulse-dev
 
@@ -189,7 +184,7 @@ sudo apt install libpulse-dev
 sudo apt install libv4l-dev v4l-utils
 
 # x11 & xcb
-sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
+sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev libxcb-cursor0
 ```
 
 > 若CMake 版本过低，请先安装更高版本的CMake(>=3.27), 参见下一小节

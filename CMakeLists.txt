@@ -42,8 +42,6 @@ if (WIN32)
     find_package(FFmpeg 6 REQUIRED)
 elseif (UNIX AND NOT APPLE)
     find_package(FFmpeg 4.2 REQUIRED)
-
-    find_package(Qt6 COMPONENTS X11Extras REQUIRED)
 endif ()
 
 # #######################################################################################################################
@@ -108,7 +106,6 @@ target_link_libraries(${PROJECT_NAME}
         probe::probe
         nlohmann_json::nlohmann_json
         libcap::libcap
-        $<$<PLATFORM_ID:Linux>:Qt6::X11Extras>
         $<$<PLATFORM_ID:Windows>:Winmm>
 )
 
