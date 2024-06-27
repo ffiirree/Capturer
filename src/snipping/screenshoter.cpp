@@ -50,7 +50,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     });
 
     // TODO:
-    connect(menu_, &EditingMenu::scroll, [this]() {});
+    connect(menu_, &EditingMenu::scroll, []() {});
 
     connect(menu_, &EditingMenu::save, this, &ScreenShoter::save);
     connect(menu_, &EditingMenu::copy, this, &ScreenShoter::copy);
@@ -88,7 +88,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     });
 
     connect(menu_, &EditingMenu::imageArrived, [this](auto pixmap) {
-        GraphicsItemWrapper *item = new GraphicsPixmapItem(pixmap, scene()->sceneRect().center());
+        GraphicsItemWrapper *item = new GraphicsPixmapItem(pixmap, selector_->selected(true).center());
 
         undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(item)));
 
