@@ -32,12 +32,12 @@ namespace av::hwaccel
             return device_ctx.data() ? static_cast<T *>(device_ctx.data()->hwctx) : nullptr;
         }
 
-        template<typename AVCTX> auto native_context() -> decltype(hwctx<AVCTX>()->device_context) const
+        template<typename AVCTX> auto native_context() const
         {
             return hwctx<AVCTX>() ? hwctx<AVCTX>()->device_context : nullptr;
         }
 
-        template<typename AVCTX> auto native_device() -> decltype(hwctx<AVCTX>()->device) const
+        template<typename AVCTX> auto native_device() const
         {
             return hwctx<AVCTX>() ? hwctx<AVCTX>()->device : nullptr;
         }

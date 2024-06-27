@@ -39,7 +39,7 @@ int WasapiRenderer::open(const std::string&, const RenderFlags flags)
         SWITCH_EVENT.attach(::CreateEvent(nullptr, false, false, nullptr));
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 
@@ -123,7 +123,7 @@ int WasapiRenderer::start()
         winrt::check_hresult(audio_client_->Start());
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 
@@ -385,7 +385,7 @@ int WasapiRenderer::stop()
 
     if (thread_.joinable()) thread_.join();
 
-    logi("[A] [  RENDERER] STOPPED");
+    logi("[   WASAPI-R] STOPPED");
 
     return 0;
 }
@@ -398,7 +398,7 @@ WasapiRenderer::~WasapiRenderer()
 
     InterlockedDecrement(&refs);
 
-    logi("[A] [  RENDERER] ~");
+    logi("[   WASAPI-R] ~");
 }
 
 HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)

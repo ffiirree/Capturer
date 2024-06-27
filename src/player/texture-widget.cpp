@@ -125,8 +125,7 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
 TextureWidget::TextureWidget(QWidget *parent)
     : QRhiWidget(parent)
 {
-    connect(
-        this, &TextureWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
+    connect(this, &TextureWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 std::vector<AVPixelFormat> TextureWidget::PixelFormats()
@@ -292,7 +291,7 @@ void TextureWidget::render(QRhiCommandBuffer *cb)
     cb->draw(4);
 
     for (auto& item : items_) {
-        cb->setGraphicsPipeline(sub_pipeline_.get());
+        cb->setGraphicsPipeline(item.pipeline.get());
         cb->setShaderResources(item.srb.get());
 
         const QRhiCommandBuffer::VertexInput svbb{ item.vbuf.get(), 0 };
@@ -335,42 +334,40 @@ void TextureWidget::present(const av::frame& frame)
     emit arrived();
 }
 
-#define GET_R(C) static_cast<uint8_t>(((C) >> 24))
-#define GET_G(C) static_cast<uint8_t>(((C) >> 16) & 0x00ff)
-#define GET_B(C) static_cast<uint8_t>(((C) >> 8) & 0x00ff)
-#define GET_A(C) static_cast<uint8_t>((C) & 0x00ff)
-
-void TextureWidget::present(ASS_Image *subtitles, int changed)
+void TextureWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
     if (!changed) return;
 
-    std::lock_guard lock(sub_mtx_);
-    items_.clear();
+    logd("subtitles updated");
 
-    if (!subtitles) return;
+    subtitles_ = subtitles;
+
+    std::lock_guard lock(sub_mtx_);
 
     if (sub_rub_) {
         sub_rub_->release();
         sub_rub_ = nullptr;
     }
+    items_.clear();
+
+    if (subtitles.empty()) return;
+
     sub_rub_ = rhi_->nextResourceUpdateBatch();
 
-    for (auto subtitle = subtitles; subtitle; subtitle = subtitle->next) {
+    for (auto image : subtitles) {
         RenderItem item{};
         item.vbuf.reset(rhi_->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
         item.vbuf->create();
 
-        const auto sz = framePixelSize();
+        const auto x = image.x.get<float>();
+        const auto y = image.y.get<float>();
+        const auto w = image.w.get<float>();
+        const auto h = image.h.get<float>();
 
-        const float x = static_cast<float>(subtitle->dst_x) / static_cast<float>(sz.width());
-        const float y = static_cast<float>(subtitle->dst_y) / static_cast<float>(sz.height());
-        const float w = static_cast<float>(subtitle->w) / static_cast<float>(sz.width());
-        const float h = static_cast<float>(subtitle->h) / static_cast<float>(sz.height());
-
-        const float x1 = 2 * x - 1.0f;
-        const float y1 = 1.0f - 2 * y;
-        const float x2 = 2 * (x + w) - 1.0f;
-        const float y2 = 1.0f - 2 * (y + h);
+        const float x1 = std::clamp(2 * x - 1.0f, -1.0f, 1.0f);
+        const float y1 = std::clamp(1.0f - 2 * y, -1.0f, 1.0f);
+        const float x2 = std::clamp(2 * (x + w) - 1.0f, -1.0f, 1.0f);
+        const float y2 = std::clamp(1.0f - 2 * (y + h), -1.0f, 1.0f);
 
         // clang-format off
         float vs[] = {
@@ -385,19 +382,18 @@ void TextureWidget::present(ASS_Image *subtitles, int changed)
         item.ubuf.reset(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 64 + 64 + 16));
         item.ubuf->create();
 
-        auto  r        = GET_R(subtitle->color);
-        auto  g        = GET_G(subtitle->color);
-        auto  b        = GET_B(subtitle->color);
-        auto  opacity  = 0xff - GET_A(subtitle->color);
-        float color[4] = { r / 255.0f, g / 255.0f, b / 255.0f, opacity / 255.0f };
+        float color[4] = { image.color[0] / 255.0f, image.color[1] / 255.0f, image.color[2] / 255.0f,
+                           (0xff - image.color[3]) / 255.0f };
         sub_rub_->updateDynamicBuffer(item.ubuf.get(), 128, 16, color);
 
-        item.tex.reset(rhi_->newTexture(QRhiTexture::R8, { subtitle->w, subtitle->h }));
+        item.tex.reset(
+            rhi_->newTexture((image.format == AV_PIX_FMT_PAL8) ? QRhiTexture::R8 : QRhiTexture::RGBA8,
+                             { image.w.num, image.h.num }));
         item.tex->create();
         QRhiTextureSubresourceUploadDescription desc{};
-        desc.setData(QByteArray::fromRawData(reinterpret_cast<const char *>(subtitle->bitmap),
-                                             subtitle->w * subtitle->h));
-        desc.setDataStride(subtitle->stride);
+        desc.setData(QByteArray::fromRawData(reinterpret_cast<const char *>(image.buffer.get()),
+                                             image.w.num * image.h.num * 4));
+        desc.setDataStride(image.stride);
         sub_rub_->uploadTexture(item.tex.get(), QRhiTextureUploadDescription{ { 0, 0, desc } });
 
         item.srb.reset(rhi_->newShaderResourceBindings());
@@ -410,18 +406,18 @@ void TextureWidget::present(ASS_Image *subtitles, int changed)
         item.srb->setBindings(bindings, bindings + 2);
         item.srb->create();
 
-        if (!sub_pipeline_) {
-            sub_pipeline_.reset(rhi_->newGraphicsPipeline());
-            QRhiGraphicsPipeline::TargetBlend blend{
-                .enable   = true,
-                .srcColor = QRhiGraphicsPipeline::SrcAlpha,
-                .dstColor = QRhiGraphicsPipeline::OneMinusSrcAlpha,
-            };
-            sub_pipeline_->setTargetBlends({ blend });
-            sub_pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
+        item.pipeline.reset(rhi_->newGraphicsPipeline());
+        QRhiGraphicsPipeline::TargetBlend blend{
+            .enable   = true,
+            .srcColor = QRhiGraphicsPipeline::SrcAlpha,
+            .dstColor = QRhiGraphicsPipeline::OneMinusSrcAlpha,
+        };
+        item.pipeline->setTargetBlends({ blend });
+        item.pipeline->setTopology(QRhiGraphicsPipeline::TriangleStrip);
 
-            SetupPipeline(sub_pipeline_.get(), item.srb.get(), "ass");
-        }
+        SetupPipeline(item.pipeline.get(), item.srb.get(),
+                      (image.format == AV_PIX_FMT_PAL8) ? "ass" : "rgba");
+
         items_.push_back(std::move(item));
     }
 }

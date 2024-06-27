@@ -15,6 +15,7 @@ extern "C" {
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/time.h>
 }
@@ -125,13 +126,43 @@ int Decoder::open(const std::string& name)
 
     if (open_video_stream(-1) < 0) return -1;
     if (open_audio_stream(-1) < 0) return -1;
+    if (open_subtitle_stream(-1) < 0 || ass_init() < 0) return -1;
     if (vctx_.index < 0 && actx_.index < 0) {
         loge("[    DECODER] not found any stream");
         return -1;
     }
 
-    // TODO: DVD_SUBTITLE -> graphics subtitle formats
-    if (open_subtitle_stream(-1) < 0 || ass_init() < 0) return -1;
+    if (sctx_.index >= 0) {
+        switch (sctx_.codec->codec_id) {
+        case AV_CODEC_ID_DVD_SUBTITLE:
+        case AV_CODEC_ID_DVB_SUBTITLE:
+        case AV_CODEC_ID_TEXT:
+        case AV_CODEC_ID_XSUB:
+        case AV_CODEC_ID_SSA:
+        case AV_CODEC_ID_MOV_TEXT:
+        case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
+        case AV_CODEC_ID_DVB_TELETEXT:
+        case AV_CODEC_ID_SRT:
+        case AV_CODEC_ID_MICRODVD:
+        case AV_CODEC_ID_EIA_608:
+        case AV_CODEC_ID_JACOSUB:
+        case AV_CODEC_ID_SAMI:
+        case AV_CODEC_ID_REALTEXT:
+        case AV_CODEC_ID_STL:
+        case AV_CODEC_ID_SUBVIEWER1:
+        case AV_CODEC_ID_SUBVIEWER:
+        case AV_CODEC_ID_SUBRIP:
+        case AV_CODEC_ID_WEBVTT:
+        case AV_CODEC_ID_MPL2:
+        case AV_CODEC_ID_VPLAYER:
+        case AV_CODEC_ID_PJS:
+        case AV_CODEC_ID_ASS:
+        case AV_CODEC_ID_HDMV_TEXT_SUBTITLE:
+        case AV_CODEC_ID_TTML:
+        case AV_CODEC_ID_ARIB_CAPTION:
+        default: break;
+        }
+    }
 
     ready_ = true;
 
@@ -282,28 +313,25 @@ int Decoder::ass_init()
         }
     }
 
-    ass_set_fonts(ass_renderer_, nullptr, nullptr, 1, nullptr, 1);
+    ass_set_fonts(ass_renderer_, nullptr, nullptr, ASS_FONTPROVIDER_AUTODETECT, nullptr, 1);
 
-    return ass_create_track();
+    return 0;
 }
 
-int Decoder::ass_create_track()
+int Decoder::ass_open_internal()
 {
-    if (ass_track_) {
-        ass_free_track(ass_track_);
-        ass_track_ = nullptr;
-    }
+    if (sctx_.index < 0) return 0;
 
-    if (sctx_.index >= 0) {
-        ass_track_ = ass_new_track(ass_library_);
-        if (!ass_track_) {
-            loge("[    DECODER] [S] could not create libass track");
-            return AVERROR(EINVAL);
-        }
-        if (sctx_.codec->subtitle_header) {
-            ass_process_codec_private(ass_track_, reinterpret_cast<char *>(sctx_.codec->subtitle_header),
-                                      sctx_.codec->subtitle_header_size);
-        }
+    if (ass_track_) ass_free_track(ass_track_);
+
+    ass_track_ = ass_new_track(ass_library_);
+    if (!ass_track_) {
+        loge("[    DECODER] [S] could not create libass track");
+        return AVERROR(EINVAL);
+    }
+    if (sctx_.codec->subtitle_header) {
+        ass_process_codec_private(ass_track_, reinterpret_cast<char *>(sctx_.codec->subtitle_header),
+                                  sctx_.codec->subtitle_header_size);
     }
 
     return 0;
@@ -437,6 +465,29 @@ int Decoder::select(AVMediaType type, int index)
     }
 }
 
+int Decoder::ass_open_external(const std::string& filename)
+{
+    std::scoped_lock lock(ass_mtx_);
+
+    if (sctx_.index >= 0) {
+        sctx_.queue.stop();
+        sctx_.done = true;
+        if (sctx_.thread.joinable()) sctx_.thread.join();
+        sctx_.index = -1;
+        avcodec_free_context(&sctx_.codec);
+    }
+
+    if (ass_track_) ass_free_track(ass_track_);
+
+    ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), nullptr);
+    if (!ass_track_) {
+        loge("[     LIBASS] failed to open file: {}", filename);
+        return -1;
+    }
+
+    return 0;
+}
+
 void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel)
 {
     std::scoped_lock lock(seek_mtx_);
@@ -455,6 +506,12 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
     vctx_.queue.stop();
     actx_.queue.stop();
     sctx_.queue.stop();
+
+    {
+        std::scoped_lock sublock(sub_mtx_);
+        subtitles_changed_ = true;
+        subtitles_.clear();
+    }
 
     notenough_.notify_all();
 
@@ -512,7 +569,7 @@ void Decoder::readpkt_thread_fn()
 
                 avcodec_free_context(&sctx_.codec);
 
-                if (open_subtitle_stream(selected_index_) < 0 || ass_create_track() < 0) {
+                if (open_subtitle_stream(selected_index_) < 0 || ass_open_internal() < 0) {
                     loge("failed to switch subtitle stream to {}", selected_index_);
                 }
 
@@ -737,12 +794,44 @@ void Decoder::sdecode_thread_fn()
             if (got) {
                 const auto    pts      = subtitle.pts / 1000;
                 const int64_t duration = subtitle.end_display_time;
-                
+
+                if (subtitle.format == 0) {
+                    subtitles_.clear();
+                    subtitles_changed_ = true;
+                }
+
                 for (int i = 0; i < subtitle.num_rects; ++i) {
                     const auto rect = subtitle.rects[i];
                     if (rect->type == SUBTITLE_ASS && rect->ass != nullptr && ass_track_) {
                         const auto length = static_cast<int>(strlen(rect->ass));
                         ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
+                    }
+                    else if (rect->type == SUBTITLE_BITMAP && rect->data[0]) {
+                        std::scoped_lock sublock(sub_mtx_);
+                        const uint32_t  *colors = reinterpret_cast<uint32_t *>(rect->data[1]);
+                        logd("graphics +{} {:.3%T}+{:%S}", subtitle.num_rects,
+                             std::chrono::milliseconds{ pts }, std::chrono::milliseconds{ duration });
+
+                        Subtitle sub{
+                            .x      = { rect->x, vfi.width },
+                            .y      = { rect->y - std::max(0, rect->y + rect->h - vfi.height), vfi.height },
+                            .w      = { rect->w, vfi.width },
+                            .h      = { rect->h, vfi.height },
+                            .stride = rect->w * 4,
+                            .pts    = std::chrono::milliseconds{ pts },
+                            .duration = std::chrono::milliseconds{ duration },
+                            .format   = AV_PIX_FMT_ARGB,
+                            .buffer   = std::make_shared<uint8_t[]>(rect->w * rect->h * 4),
+                        };
+
+                        const auto dst = reinterpret_cast<uint32_t *>(sub.buffer.get());
+                        for (int h = 0; h < rect->h; ++h) {
+                            const auto ptr = rect->data[0] + h * rect->linesize[0];
+                            for (int c = 0; c < rect->w; ++c) {
+                                dst[h * rect->w + c] = colors[ptr[c]];
+                            }
+                        }
+                        subtitles_.push_back(sub);
                     }
                 }
             }
@@ -754,23 +843,68 @@ void Decoder::sdecode_thread_fn()
     }
 }
 
-std::pair<int, ASS_Image *> Decoder::subtitle(const std::chrono::milliseconds& now)
+#define GET_R(C) static_cast<uint8_t>(((C) >> 24))
+#define GET_G(C) static_cast<uint8_t>(((C) >> 16) & 0x00ff)
+#define GET_B(C) static_cast<uint8_t>(((C) >> 8) & 0x00ff)
+#define GET_A(C) static_cast<uint8_t>((C) & 0x00ff)
+
+std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::milliseconds& now)
 {
-    std::shared_lock lock(ass_mtx_);
+    std::scoped_lock lock(ass_mtx_, sub_mtx_);
 
-    if (sctx_.index < 0 || !ass_renderer_) return { 0, nullptr };
+    int changed = subtitles_changed_;
 
-    int        changed = 0;
-    ASS_Image *image   = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
+    subtitles_.remove_if([&](auto& sub) {
+        const auto ex = sub.pts + sub.duration < now;
+        if (ex) changed = 2;
+        return ex;
+    });
 
-    return { changed, image };
+    subtitles_changed_ = 0;
+
+    if (!ass_renderer_ || !ass_track_) return { changed, subtitles_ };
+
+    ASS_Image *image = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
+
+    if (changed) {
+        subtitles_.clear();
+
+        for (; image; image = image->next) {
+
+            const size_t bytes = image->stride * (image->h - 1) + image->w;
+
+            Subtitle subtitle{
+                    .x      = {image->dst_x, vfi.width},
+                    .y      = {image->dst_y, vfi.height},
+                    .w      = {image->w, vfi.width},
+                    .h      = {image->h, vfi.height},
+                    .stride = image->stride,
+                    .pts    = now,
+                    .color  = {
+                        GET_R(image->color),
+                        GET_G(image->color),
+                        GET_B(image->color),
+                        GET_A(image->color),
+                    },
+                    .buffer  = std::make_shared<uint8_t[]>(bytes),
+                };
+
+            std::memcpy(subtitle.buffer.get(), image->bitmap, bytes);
+
+            subtitles_.push_back(subtitle);
+        }
+    }
+
+    logd_if(changed || image, "changed {}, @{}", changed, (void *)image);
+
+    return { changed, subtitles_ };
 }
 
 void Decoder::set_ass_render_size(int w, int h)
 {
     std::shared_lock lock(ass_mtx_);
 
-    if (!ass_renderer_) return;
+    if (!ass_renderer_ || !w || !h) return;
 
     ass_set_frame_size(ass_renderer_, w, h);
     ass_set_storage_size(ass_renderer_, w, h);
@@ -812,8 +946,8 @@ Decoder::~Decoder()
     avfilter_graph_free(&vctx_.graph);
     avfilter_graph_free(&actx_.graph);
 
-    if (ass_renderer_) ass_renderer_done(ass_renderer_);
     if (ass_track_) ass_free_track(ass_track_);
+    if (ass_renderer_) ass_renderer_done(ass_renderer_);
     if (ass_library_) ass_library_done(ass_library_);
 
     logi("[    DECODER] ~");

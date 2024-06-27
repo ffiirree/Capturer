@@ -13,6 +13,7 @@
 #include <QApplication>
 #include <QFileInfo>
 #include <QHeaderView>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
@@ -36,6 +37,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     setAttribute(Qt::WA_DeleteOnClose);
 
     setMouseTracking(true);
+    setAcceptDrops(true);
 
     const auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
@@ -51,7 +53,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });
-    connect(control_,   &ControlWidget::subtitlesEnabled,   [this](auto en) { subtitles_enabled_ = en; if(!en) texture_->present(nullptr, 2); });
+    connect(control_,   &ControlWidget::subtitlesEnabled,   [this](auto en) { subtitles_enabled_ = en; if(!en) texture_->present({}, 2); });
     connect(this,       &VideoPlayer::timeChanged,      control_, &ControlWidget::setTime, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::videoFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::audioFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
@@ -229,11 +231,7 @@ void VideoPlayer::video_thread_fn()
             auto pts  = av::clock::ms(frame->pts, source_->vfo.time_base);
             auto diff = std::min((pts - timeline_.ms()) / timeline_.speed(), 300ms);
 
-            if (diff < 5ms) continue;
-
-            //            logd("[V] {:.3%T} ~ {:.3%T} -> {:.3%S}", pts, timeline_.time(), diff);
-
-            std::this_thread::sleep_for(diff);
+            if (diff > 5ms) std::this_thread::sleep_for(diff);
         }
 
         if (timeline_.time() >= 0ns) emit timeChanged(timeline_.us().count());
@@ -399,7 +397,7 @@ void VideoPlayer::stop()
 
     if (video_thread_.joinable()) video_thread_.join();
 
-    logi("[    PLAYER] [{:>10}] STOPPED", filename_);
+    logd("[     PLAYER] [{:>10}] STOPPED", filename_);
 }
 
 VideoPlayer::~VideoPlayer()
@@ -466,6 +464,30 @@ void VideoPlayer::resizeEvent(QResizeEvent *event)
         source_->set_ass_render_size(sz.width(), sz.height());
     }
     FramelessWindow::resizeEvent(event);
+}
+
+void VideoPlayer::dropEvent(QDropEvent *event)
+{
+    const auto urls = event->mimeData()->urls();
+    if (urls.empty()) return;
+
+    for (const auto& url : urls) {
+        QFileInfo info{ url.toLocalFile() };
+        if (info.isFile() && QString("ass;ssa;srt;vtt;stl;sbv;sub;dfxp;ttml")
+                                 .split(';')
+                                 .contains(info.suffix(), Qt::CaseInsensitive)) {
+            logi("add subtitle: {}", info.fileName().toStdString());
+
+            if (source_) source_->ass_open_external(info.absoluteFilePath().toStdString());
+        }
+    }
+}
+
+void VideoPlayer::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
 }
 
 void VideoPlayer::initContextMenu()

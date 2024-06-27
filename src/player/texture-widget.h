@@ -3,6 +3,7 @@
 
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/media.h"
+#include "subtitle.h"
 
 #include <array>
 #include <ass/ass.h>
@@ -40,7 +41,7 @@ public:
 public:
     void present(const av::frame& frame);
 
-    void present(ASS_Image *subtitles, int changed);
+    void present(const std::list<Subtitle>& subtitles, int changed);
 
     static std::vector<AVPixelFormat> PixelFormats();
 
@@ -69,19 +70,21 @@ private:
     std::array<std::unique_ptr<QRhiTexture>, MAX_PLANES> planes_{};
 
     // subtitles
-    std::unique_ptr<QRhiGraphicsPipeline> sub_pipeline_{};
     struct RenderItem
     {
         std::unique_ptr<QRhiBuffer>                 vbuf{};
         std::unique_ptr<QRhiBuffer>                 ubuf{};
         std::unique_ptr<QRhiTexture>                tex{};
         std::unique_ptr<QRhiShaderResourceBindings> srb{};
+        std::unique_ptr<QRhiGraphicsPipeline>       pipeline{};
     };
     std::vector<RenderItem>  items_{};
     QRhiResourceUpdateBatch *sub_rub_{};
+
+    std::list<Subtitle> subtitles_{};
     // @}
 
-    av::vformat_t fmt_{ .width = 1920, .height = 1080, .pix_fmt = AV_PIX_FMT_YUV420P };
+    av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P };
 
     // frame
     av::frame frame_{};

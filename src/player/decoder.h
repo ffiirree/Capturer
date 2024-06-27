@@ -4,8 +4,10 @@
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/producer.h"
 #include "libcap/queue.h"
+#include "subtitle.h"
 
 #include <ass/ass.h>
+#include <list>
 #include <shared_mutex>
 
 extern "C" {
@@ -78,7 +80,7 @@ public:
 
     std::function<void(const av::frame&, AVMediaType)> onarrived = [](auto, auto) {};
 
-    std::pair<int, ASS_Image *> subtitle(const std::chrono::milliseconds& now);
+    std::pair<int, std::list<Subtitle>> subtitle(const std::chrono::milliseconds& now);
 
     std::vector<AVStream *> streams(AVMediaType type);
 
@@ -86,13 +88,15 @@ public:
 
     int select(AVMediaType type, int index);
 
+    int ass_open_external(const std::string& filename);
+
 private:
     int open_video_stream(int index);
     int open_audio_stream(int index);
     int open_subtitle_stream(int index);
 
     int ass_init();
-    int ass_create_track();
+    int ass_open_internal();
 
     int create_audio_graph();
     int create_video_graph();
@@ -123,6 +127,11 @@ private:
     ASS_Library              *ass_library_{};
     ASS_Renderer             *ass_renderer_{};
     ASS_Track                *ass_track_{};
+    std::atomic<bool>         is_ass_{ true };
+
+    std::mutex          sub_mtx_{};
+    std::atomic<int>    subtitles_changed_{};
+    std::list<Subtitle> subtitles_{};
 
     // switch stream
     mutable std::shared_mutex selected_mtx_{};
@@ -134,8 +143,8 @@ private:
     int64_t                   seek_min_{ std::numeric_limits<int64_t>::min() };
     std::atomic<int64_t>      seek_pts_{ AV_NOPTS_VALUE };
     int64_t                   seek_max_{ std::numeric_limits<int64_t>::max() };
-    // @}
     std::atomic<int64_t>      trim_pts_{ 0 };
+    // @}
 };
 
 #endif //! CAPTURER_DECODER_H
