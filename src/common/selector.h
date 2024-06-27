@@ -67,7 +67,7 @@ public:
         return relative ? box_.rect().translated(-box_.range().topLeft()) : box_.rect();
     }
 
-    // set minium valid size
+    // set minimum valid size
     void setMinValidSize(int x, int y) { min_size_ = QSize{ std::max(2, x), std::max(2, y) }; }
 
     [[nodiscard]] bool invalid() const

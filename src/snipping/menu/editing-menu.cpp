@@ -4,7 +4,6 @@
 #include "separator.h"
 
 #include <map>
-#include <QBrush>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QMoveEvent>
@@ -274,7 +273,7 @@ void EditingMenu::setPen(const QPen& pen, bool silence)
 
 bool EditingMenu::filled() const
 {
-    return (submenus_.contains(graph_)) ? submenus_.at(graph_)->filled() : false;
+    return (submenus_.contains(graph_)) && submenus_.at(graph_)->filled();
 }
 
 void EditingMenu::fill(bool v)

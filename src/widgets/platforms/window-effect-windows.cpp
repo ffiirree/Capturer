@@ -54,7 +54,7 @@ namespace windows::dwm
     HRESULT blur_disable(HWND hwnd)
     {
         const auto SetWindowCompositionAttribute =
-            static_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
+            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
         ACCENT_POLICY               accent = { ACCENT_DISABLED };
@@ -67,7 +67,7 @@ namespace windows::dwm
     HRESULT blur_aero(HWND hwnd)
     {
         const auto SetWindowCompositionAttribute =
-            static_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
+            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
         ACCENT_POLICY               accent = { ACCENT_ENABLE_BLURBEHIND };
@@ -80,7 +80,7 @@ namespace windows::dwm
     HRESULT blur_acrylic(HWND hwnd)
     {
         const auto SetWindowCompositionAttribute =
-            static_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
+            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
         ACCENT_POLICY accent = {
@@ -100,7 +100,7 @@ namespace windows::dwm
     HRESULT blur_mica(HWND hwnd, bool alt)
     {
         const auto SetWindowCompositionAttribute =
-            static_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
+            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
         ACCENT_POLICY               accent = { ACCENT_ENABLE_HOSTBACKDROP };
