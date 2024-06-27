@@ -8,7 +8,8 @@ class ComboBox : public QComboBox
     Q_OBJECT
 public:
     explicit ComboBox(QWidget *parent = nullptr);
-    ComboBox(const std::vector<std::pair<QVariant, QString>>& items, QWidget *parent = nullptr);
+
+    explicit ComboBox(const std::vector<std::pair<QVariant, QString>>& items, QWidget *parent = nullptr);
 
     template<typename T>
     requires std::integral<T>
@@ -16,6 +17,16 @@ public:
     {
         for (const auto& [value, text] : items) {
             insertItem(count(), text, value);
+        }
+        return *this;
+    }
+
+    template<typename T>
+    requires std::integral<T>
+    ComboBox& add(const std::map<T, std::string>& items)
+    {
+        for (const auto& [value, text] : items) {
+            insertItem(count(), QString::fromStdString(text), value);
         }
         return *this;
     }
@@ -35,6 +46,11 @@ public:
 
 signals:
     void selected(const QVariant& value);
+
+private:
+#ifdef Q_OS_WIN
+    bool eventFilter(QObject *watched, QEvent *event) override;
+#endif
 };
 
 #endif //! CAPTURER_COMBOBOX_H

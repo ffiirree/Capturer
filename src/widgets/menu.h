@@ -9,6 +9,11 @@ class Menu : public QMenu
 public:
     explicit Menu(QWidget *parent = nullptr);
     explicit Menu(const QString& title, QWidget *parent = nullptr);
+
+private:
+#ifdef Q_OS_WIN
+    bool eventFilter(QObject *watched, QEvent *event) override;
+#endif
 };
 
 #endif

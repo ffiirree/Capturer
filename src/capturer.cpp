@@ -13,6 +13,7 @@
 #include <QFileInfo>
 #include <QKeyEvent>
 #include <QScreen>
+#include <QStyleFactory>
 #include <QSystemTrayIcon>
 #include <QUrl>
 
@@ -26,6 +27,8 @@ Capturer::Capturer(int& argc, char **argv)
     : QApplication(argc, argv)
 {
     setWindowIcon(QIcon(":/icons/capturer"));
+
+    setStyle(QStyleFactory::create("Fusion"));
 
     snip_hotkey_       = new QHotkey(this);
     preview_hotkey_    = new QHotkey(this);
