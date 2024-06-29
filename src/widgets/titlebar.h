@@ -8,7 +8,7 @@
 class QAbstractButton;
 class QLabel;
 
-class TitleBar : public QWidget
+class TitleBar final : public QWidget
 {
     Q_OBJECT
 public:

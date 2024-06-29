@@ -3,7 +3,7 @@
 
 #include <QMenu>
 
-class Menu : public QMenu
+class Menu final : public QMenu
 {
     Q_OBJECT
 public:

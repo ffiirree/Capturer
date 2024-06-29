@@ -3,7 +3,7 @@
 
 #include <QCheckBox>
 
-class WidthButton : public QCheckBox
+class WidthButton final : public QCheckBox
 {
     Q_OBJECT
 
@@ -23,7 +23,7 @@ protected:
     void paintEvent(QPaintEvent *) override;
 
 private:
-    int MAX() const { return (width() / 2 - 3) * 3; }
+    [[nodiscard]] int MAX() const { return (width() / 2 - 3) * 3; }
 
     int width_{ 6 };
 };

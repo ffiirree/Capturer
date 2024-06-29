@@ -6,10 +6,10 @@
 #include "framelesswindow.h"
 #include "widthbutton.h"
 
-#include <QCheckBox>
 #include <QFont>
-#include <QFontDatabase>
 #include <QPen>
+
+class QCheckBox;
 
 class EditingSubmenu final : public FramelessWindow
 {
@@ -36,7 +36,7 @@ public:
 
     [[nodiscard]] QFont font() const;
     //
-    [[nodiscard]] bool filled() const;
+    [[nodiscard]] bool  filled() const;
 
     void fill(bool);
 
@@ -51,15 +51,14 @@ private:
     WidthButton *width_btn_{};
     QCheckBox   *fill_btn_{};
 
-    QFontDatabase fonts_{};
-    ComboBox     *font_family_{};
-    ComboBox     *font_size_{};
-    ComboBox     *font_style_{};
+    ComboBox *font_family_{};
+    ComboBox *font_size_{};
+    ComboBox *font_style_{};
 
     ColorPanel *color_panel_{};
 
-    QPen  pen_{ Qt::red, 6 };
-    bool  fill_{};
+    QPen pen_{ Qt::red, 6 };
+    bool fill_{};
 };
 
 #endif //! CAPTURER_EDITING_SUBMENU_H

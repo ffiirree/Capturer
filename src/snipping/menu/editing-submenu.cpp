@@ -3,6 +3,8 @@
 #include "separator.h"
 
 #include <QButtonGroup>
+#include <QCheckBox>
+#include <QFontDatabase>
 #include <QHBoxLayout>
 #include <QLineEdit>
 
@@ -70,10 +72,10 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->addWidget(font_size_);
 
         // font family
-        font_family_->addItems(fonts_.families());
+        font_family_->addItems(QFontDatabase::families());
         connect(font_family_, &QComboBox::currentTextChanged, [this](const QString& family) {
             font_style_->clear();
-            font_style_->addItems(fonts_.styles(family));
+            font_style_->addItems(QFontDatabase::styles(family));
             emit fontChanged(font());
         });
 
@@ -82,13 +84,13 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
 
         // font size
         font_size_->setEditable(true);
-        foreach(const int& s, fonts_.standardSizes()) {
+        foreach(const int& s, QFontDatabase::standardSizes()) {
             font_size_->addItem(QString::number(s));
         }
         connect(font_size_, &QComboBox::currentTextChanged, [this] { emit fontChanged(font()); });
 
         // default font
-        setFont(fonts_.font("微软雅黑", "Regular", 16)); // or application's default font
+        setFont(QFontDatabase::font("微软雅黑", "Regular", 16)); // or application's default font
     }
 
     // pen: color
@@ -130,7 +132,7 @@ QFont EditingSubmenu::font() const
 {
     if (!font_family_ || !font_style_ || !font_size_) return QFont{};
 
-    auto font = fonts_.font(font_family_->currentText(), font_style_->currentText(), 16);
+    auto font = QFontDatabase::font(font_family_->currentText(), font_style_->currentText(), 16);
     font.setPointSizeF(font_size_->currentText().toFloat());
     return font;
 }

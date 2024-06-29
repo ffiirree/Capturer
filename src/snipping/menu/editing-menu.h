@@ -6,7 +6,7 @@
 #include "editing-submenu.h"
 #include "framelesswindow.h"
 
-#include <QCheckBox>
+class QCheckBox;
 
 class EditingMenu final : public FramelessWindow
 {

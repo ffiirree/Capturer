@@ -3,8 +3,8 @@
 
 #include "framelesswindow.h"
 
-#include <QCheckBox>
-#include <QLabel>
+class QCheckBox;
+class QLabel;
 
 class RecordingMenu final : public FramelessWindow
 {

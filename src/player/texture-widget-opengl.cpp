@@ -513,11 +513,11 @@ void TextureGLWidget::CreateTextures()
 
 void TextureGLWidget::DeleteTextures()
 {
-    if (QOpenGLFunctions_3_3_Core::isInitialized()) {
+    if (QOpenGLFunctions_4_1_Core::isInitialized()) {
         glDeleteTextures(3, texture_);
     }
 
-    memset(texture_, 0, sizeof(texture_));
+    std::memset(texture_, 0, sizeof(texture_));
 }
 
 void TextureGLWidget::initializeGL()

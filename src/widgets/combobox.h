@@ -3,7 +3,7 @@
 
 #include <QComboBox>
 
-class ComboBox : public QComboBox
+class ComboBox final : public QComboBox
 {
     Q_OBJECT
 public:

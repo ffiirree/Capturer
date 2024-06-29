@@ -1,5 +1,7 @@
 #include "navigation-bar.h"
 
+#include <QAbstractButton>
+#include <QButtonGroup>
 #include <QHBoxLayout>
 
 NavigationBar::NavigationBar(QWidget *parent)
@@ -19,7 +21,7 @@ NavigationBar::NavigationBar(QWidget *parent)
     });
 }
 
-void NavigationBar::add(QAbstractButton *button, int id)
+void NavigationBar::add(QAbstractButton *button, const int id)
 {
     group_->addButton(button, id);
     layout()->addWidget(button);
@@ -27,4 +29,4 @@ void NavigationBar::add(QAbstractButton *button, int id)
 
 int NavigationBar::id() const { return group_->checkedId(); }
 
-void NavigationBar::setId(int id) { group_->button(id)->setChecked(true); }
+void NavigationBar::setId(const int id) { group_->button(id)->setChecked(true); }

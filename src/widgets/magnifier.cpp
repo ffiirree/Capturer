@@ -51,7 +51,7 @@ QRect Magnifier::grabRect() const
     };
 }
 
-QString Magnifier::colorname(ColorFormat format) const
+QString Magnifier::colorname(const ColorFormat format) const
 {
     // clang-format off
     switch ((format == ColorFormat::AUTO) ? cfmt_ : format) {
@@ -83,8 +83,11 @@ bool Magnifier::eventFilter(QObject *obj, QEvent *event)
     return qApp->eventFilter(obj, event);
 }
 
-// TODO: clear the background when close
-void Magnifier::showEvent(QShowEvent *) { move(position()); }
+void Magnifier::showEvent(QShowEvent *event)
+{
+    move(position());
+    QWidget::showEvent(event);
+}
 
 void Magnifier::setGrabPixmap(const QPixmap& pixmap) { desktop_ = pixmap; }
 

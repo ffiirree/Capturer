@@ -11,8 +11,8 @@ enum class exclusive_t
     nonexclusive,
 };
 
-class ButtonGroup : public QObject // inherit from QObject, since the behaivor of QButtonGroup is bound with
-                                   // QAbstractButton
+class ButtonGroup final : public QObject // inherit from QObject, since the behaivor of QButtonGroup is
+                                         // bound with QAbstractButton
 {
     Q_OBJECT
 public:
@@ -23,22 +23,22 @@ public:
     void addButton(QAbstractButton *button, int id = -1);
 
     // may be nullptr
-    QAbstractButton *checkedButton() const { return checked_; }
+    [[nodiscard]] QAbstractButton *checkedButton() const { return checked_; }
 
     // return -1 if not found
-    int checkedId() const { return mapping_.value(checked_, -1); }
+    [[nodiscard]] int checkedId() const { return mapping_.value(checked_, -1); }
 
     // retrieve button pointer by id, return nullptr if not found
-    QAbstractButton *button(int id) const { return mapping_.key(id, nullptr); }
+    [[nodiscard]] QAbstractButton *button(int id) const { return mapping_.key(id, nullptr); }
 
     // retrieve id by button pointer, return -1 if not found
     int id(QAbstractButton *button) const { return mapping_.value(button, -1); }
 
     //
-    QList<QAbstractButton *> buttons() const { return buttons_; }
+    [[nodiscard]] QList<QAbstractButton *> buttons() const { return buttons_; }
 
     // exclusive
-    exclusive_t exclusive() const { return exclusive_; };
+    [[nodiscard]] exclusive_t exclusive() const { return exclusive_; };
 
     void setExclusive(exclusive_t exclusive) { exclusive_ = exclusive; }
 

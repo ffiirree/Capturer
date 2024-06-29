@@ -3,7 +3,7 @@
 
 #include <QLineEdit>
 
-class ShortcutInput : public QLineEdit
+class ShortcutInput final : public QLineEdit
 {
     Q_OBJECT
 
@@ -12,19 +12,19 @@ public:
     explicit ShortcutInput(const QKeySequence&, QWidget *parent = nullptr);
     explicit ShortcutInput(const QString&, QWidget *parent = nullptr);
 
-    inline void set(const QString& str)
+    void set(const QString& str)
     {
         setText(str);
         emit changed(QKeySequence(str));
     }
 
-    inline void set(const QKeySequence& ks)
+    void set(const QKeySequence& ks)
     {
         setText(ks.toString());
         emit changed(ks);
     }
 
-    [[nodiscard]] inline QKeySequence get() const { return text(); }
+    [[nodiscard]] QKeySequence get() const { return text(); }
 
 signals:
     void changed(const QKeySequence&);

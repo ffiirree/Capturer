@@ -1,10 +1,12 @@
 #ifndef CAPTURER_NAVIGATION_BAR_H
 #define CAPTURER_NAVIGATION_BAR_H
 
-#include <QAbstractButton>
-#include <QButtonGroup>
+#include <QWidget>
 
-class NavigationBar : public QWidget
+class QButtonGroup;
+class QAbstractButton;
+
+class NavigationBar final : public QWidget
 {
     Q_OBJECT
 
@@ -13,8 +15,8 @@ public:
 
     void add(QAbstractButton *button, int id = -1);
 
-    int  id() const;
-    void setId(int id);
+    [[nodiscard]] int id() const;
+    void              setId(int id);
 
 signals:
     void toggled(int);

@@ -14,8 +14,7 @@
 #include <QMimeData>
 #include <QPointer>
 #include <QScopedPointer>
-
-class QSystemTrayIcon;
+#include <QSystemTrayIcon>
 
 class Capturer final : public QApplication
 {

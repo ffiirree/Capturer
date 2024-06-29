@@ -2,14 +2,13 @@
 #define CAPTURER_IMAGE_WINDOW_H
 
 #include "framelesswindow.h"
-#include "menu.h"
-#include "menu/editing-menu.h"
 #include "texture-widget.h"
 
-#include <any>
 #include <memory>
 #include <optional>
-#include <QStandardPaths>
+#include <QMimeData>
+
+class QMenu;
 
 class ImageWindow final : public FramelessWindow
 {

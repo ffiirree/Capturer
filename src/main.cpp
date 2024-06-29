@@ -21,8 +21,7 @@ int main(int argc, char *argv[])
 
     // OpenGL 4.1, core-profile mode
     QSurfaceFormat format{};
-    format.setMajorVersion(4);
-    format.setMinorVersion(1);
+    format.setVersion(4, 1);
     format.setProfile(QSurfaceFormat::CoreProfile);
 #ifdef QT_DEBUG
     format.setOption(QSurfaceFormat::DebugContext);

@@ -3,7 +3,9 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <probe/graphics.h>
+#include <QCheckBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QWindow>
 
@@ -88,7 +90,7 @@ void RecordingMenu::start()
     show();
 }
 
-void RecordingMenu::mute(int type, bool muted)
+void RecordingMenu::mute(const int type, const bool muted)
 {
     if (type == 0 && mic_btn_) {
         mic_btn_->setChecked(muted);
@@ -98,14 +100,14 @@ void RecordingMenu::mute(int type, bool muted)
     }
 }
 
-void RecordingMenu::disable_mic(bool v)
+void RecordingMenu::disable_mic(const bool v)
 {
     if (mic_btn_) {
         mic_btn_->setDisabled(v);
     }
 }
 
-void RecordingMenu::disable_speaker(bool v)
+void RecordingMenu::disable_speaker(const bool v)
 {
     if (speaker_btn_) {
         speaker_btn_->setDisabled(v);

@@ -3,7 +3,7 @@
 #include "clipboard.h"
 #include "config.h"
 #include "logging.h"
-#include "platforms/window-effect.h"
+#include "menu.h"
 
 #include <QActionGroup>
 #include <QApplication>

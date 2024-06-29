@@ -4,6 +4,7 @@
 #include "separator.h"
 
 #include <map>
+#include <QCheckBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QMoveEvent>
@@ -163,8 +164,8 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
                 emit graphChanged(graph_);
             }
 
-            const auto button_graph = static_cast<canvas::graphics_t>(group_->id(button));
-            if (submenus_.contains(button_graph)) {
+            if (const auto button_graph = static_cast<canvas::graphics_t>(group_->id(button));
+                submenus_.contains(button_graph)) {
                 submenus_[button_graph]->setVisible(checked);
                 if (checked) {
                     submenus_[button_graph]->move(pos().x(), pos().y() + (height() + 3) *
@@ -207,7 +208,7 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
     if (groups & SAVE_GROUP) {
         layout->addWidget(new Separator());
 
-        auto pin_btn = new QCheckBox(this);
+        const auto pin_btn = new QCheckBox(this);
         pin_btn->setCheckable(false);
         pin_btn->setObjectName("pin-btn");
         connect(pin_btn, &QCheckBox::clicked, [this]() {
@@ -216,7 +217,7 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
         });
         layout->addWidget(pin_btn);
 
-        auto save_btn = new QCheckBox(this);
+        const auto save_btn = new QCheckBox(this);
         save_btn->setCheckable(false);
         save_btn->setObjectName("save-btn");
         connect(save_btn, &QCheckBox::clicked, this, &EditingMenu::save);
@@ -228,7 +229,7 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
     if (groups & EXIT_GROUP) {
         layout->addWidget(new Separator());
 
-        auto close_btn = new QCheckBox(this);
+        const auto close_btn = new QCheckBox(this);
         close_btn->setCheckable(false);
         close_btn->setObjectName("close-btn");
         connect(close_btn, &QCheckBox::clicked, [this]() {
@@ -237,7 +238,7 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
         });
         layout->addWidget(close_btn);
 
-        auto ok_btn = new QCheckBox(this);
+        const auto ok_btn = new QCheckBox(this);
         ok_btn->setCheckable(false);
         ok_btn->setObjectName("ok-btn");
         connect(ok_btn, &QCheckBox::clicked, [this]() {
@@ -248,11 +249,11 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
     }
 }
 
-void EditingMenu::canUndo(bool val) { undo_btn_->setDisabled(!val); }
+void EditingMenu::canUndo(const bool val) { undo_btn_->setDisabled(!val); }
 
-void EditingMenu::canRedo(bool val) { redo_btn_->setDisabled(!val); }
+void EditingMenu::canRedo(const bool val) { redo_btn_->setDisabled(!val); }
 
-void EditingMenu::paintGraph(canvas::graphics_t graph)
+void EditingMenu::paintGraph(const canvas::graphics_t graph)
 {
     graph_ = graph;
     if (group_->button(graph_))
@@ -266,17 +267,14 @@ QPen EditingMenu::pen() const
     return (submenus_.contains(graph_)) ? submenus_.at(graph_)->pen() : QPen{ Qt::red };
 }
 
-void EditingMenu::setPen(const QPen& pen, bool silence)
+void EditingMenu::setPen(const QPen& pen, const bool silence)
 {
     if (submenus_.contains(graph_)) submenus_.at(graph_)->setPen(pen, silence);
 }
 
-bool EditingMenu::filled() const
-{
-    return (submenus_.contains(graph_)) && submenus_.at(graph_)->filled();
-}
+bool EditingMenu::filled() const { return (submenus_.contains(graph_)) && submenus_.at(graph_)->filled(); }
 
-void EditingMenu::fill(bool v)
+void EditingMenu::fill(const bool v)
 {
     if (submenus_.contains(graph_)) submenus_.at(graph_)->fill(v);
 }

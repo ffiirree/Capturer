@@ -7,7 +7,7 @@
 struct QFormLayout;
 struct QVBoxLayout;
 
-class ScrollWidget : public QScrollArea
+class ScrollWidget final : public QScrollArea
 {
     Q_OBJECT
 

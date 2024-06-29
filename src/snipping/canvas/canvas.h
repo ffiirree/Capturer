@@ -7,7 +7,7 @@
 
 namespace canvas
 {
-    class Canvas : public QGraphicsScene
+    class Canvas final : public QGraphicsScene
     {
     public:
         explicit Canvas(QObject * = nullptr);

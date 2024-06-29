@@ -3,7 +3,6 @@
 
 #include "canvas/canvas.h"
 #include "canvas/command.h"
-#include "circlecursor.h"
 #include "hunter.h"
 #include "magnifier.h"
 #include "menu/editing-menu.h"
@@ -12,8 +11,6 @@
 
 #include <QGraphicsView>
 #include <QPixmap>
-#include <QStandardPaths>
-#include <QSystemTrayIcon>
 
 class ScreenShoter final : public QGraphicsView
 {

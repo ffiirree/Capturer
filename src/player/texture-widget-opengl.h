@@ -6,8 +6,7 @@
 
 #include <memory>
 #include <mutex>
-#include <QOpenGLBuffer>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLFunctions_4_1_Core>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <tuple>
@@ -17,7 +16,7 @@
 class QOpenGLDebugLogger;
 #endif
 
-class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
+class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions_4_1_Core
 {
     Q_OBJECT
 public:

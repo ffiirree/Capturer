@@ -5,8 +5,9 @@
 
 #include <memory>
 #include <QColor>
-#include <QLineEdit>
 #include <QMimeData>
+
+class QLineEdit;
 
 enum class number_t : int
 {

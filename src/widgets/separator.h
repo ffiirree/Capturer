@@ -3,7 +3,7 @@
 
 #include <QFrame>
 
-class Separator : public QFrame
+class Separator final : public QFrame
 {
 public:
     explicit Separator(QWidget *parent = nullptr);
