@@ -1,5 +1,6 @@
 #include "screenshoter.h"
 
+#include "circlecursor.h"
 #include "clipboard.h"
 #include "config.h"
 #include "logging.h"
@@ -18,6 +19,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
 #ifdef NDEBUG
     setWindowFlag(Qt::WindowStaysOnTopHint, true);
 #endif
+
+    setAttribute(Qt::WA_TranslucentBackground); // FIXME: otherwise, the screen will be black when full
+                                                // screen on Linux
 
     setFrameStyle(QGraphicsView::NoFrame);
     setContentsMargins({});
@@ -111,8 +115,13 @@ ScreenShoter::ScreenShoter(QWidget *parent)
     connect(selector_, &Selector::resized, this, &ScreenShoter::moveMenu);
     connect(selector_, &Selector::statusChanged, [this](auto status) {
         if ((status > SelectorStatus::READY && status < SelectorStatus::CAPTURED) ||
-            status == SelectorStatus::RESIZING)
+            status == SelectorStatus::RESIZING) {
+#ifdef Q_OS_LINUX
+            magnifier_->hide(); // FIXME: Ubuntu
+#endif
+
             magnifier_->show();
+        }
         else
             magnifier_->hide();
     });
@@ -178,7 +187,7 @@ QBrush ScreenShoter::mosaicBrush()
         .scaled(pixmap.size());
 }
 
-void ScreenShoter::updateCursor(ResizerLocation location)
+void ScreenShoter::updateCursor(const ResizerLocation location)
 {
     if (menu_->graph() & canvas::eraser) {
         setCursor(

@@ -34,6 +34,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
                                   Qt::WindowStaysOnTopHint)
 {
     setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_TranslucentBackground); // FIXME: otherwise, the screen will be black when full
+                                                // screen on Linux
 
     setMouseTracking(true);
 

@@ -127,31 +127,33 @@ void FramelessWindow::updateCursor(const Qt::Edges edges)
 // FIXME:
 bool FramelessWindow::event(QEvent *event)
 {
-    switch (event->type()) {
-    case QEvent::MouseButtonPress:
-        if (edges_) {
-            windowHandle()->startSystemResize(edges_);
-            return true;
+    if (!isSizeFixed()) {
+        switch (event->type()) {
+        case QEvent::MouseButtonPress:
+            if (edges_) {
+                windowHandle()->startSystemResize(edges_);
+                return true;
+            }
+            break;
+        case QEvent::MouseButtonRelease: break;
+        case QEvent::HoverEnter:
+        case QEvent::HoverLeave:
+        case QEvent::HoverMove:          {
+            const auto pos = dynamic_cast<QHoverEvent *>(event)->position().toPoint();
+            const auto ftn = style()->pixelMetric(QStyle::PM_LayoutBottomMargin);
+
+            edges_ = Qt::Edges{};
+
+            if (pos.x() < ftn) edges_ |= Qt::LeftEdge;
+            if (pos.x() > width() - ftn) edges_ |= Qt::RightEdge;
+            if (pos.y() < ftn) edges_ |= Qt::TopEdge;
+            if (pos.y() > height() - ftn) edges_ |= Qt::BottomEdge;
+
+            updateCursor(edges_);
+            break;
         }
-        break;
-    case QEvent::MouseButtonRelease: break;
-    case QEvent::HoverEnter:
-    case QEvent::HoverLeave:
-    case QEvent::HoverMove:          {
-        const auto pos = dynamic_cast<QHoverEvent *>(event)->pos();
-        const auto ftn = style()->pixelMetric(QStyle::PM_LayoutBottomMargin);
-
-        edges_ = Qt::Edges{};
-
-        if (pos.x() < ftn) edges_ |= Qt::LeftEdge;
-        if (pos.x() > width() - ftn) edges_ |= Qt::RightEdge;
-        if (pos.y() < ftn) edges_ |= Qt::TopEdge;
-        if (pos.y() > height() - ftn) edges_ |= Qt::BottomEdge;
-
-        updateCursor(edges_);
-        break;
-    }
-    default: break;
+        default: break;
+        }
     }
 
     return QWidget::event(event);
