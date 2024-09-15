@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
     ::setvbuf(stdout, nullptr, _IONBF, 0);
 #endif
 
-    // OpenGL 4.1, core-profile mode
+    // OpenGL 4.4, core-profile mode
     QSurfaceFormat format{};
-    format.setVersion(4, 1);
+    format.setVersion(4, 4);
     format.setProfile(QSurfaceFormat::CoreProfile);
 #ifdef QT_DEBUG
     format.setOption(QSurfaceFormat::DebugContext);

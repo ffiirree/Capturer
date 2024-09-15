@@ -68,7 +68,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 
     stacked_layout->addWidget(texture_);
 
-    // hide / show tool bar
+    // hide / show toolbar
     setAttribute(Qt::WA_Hover);
 
     timer_ = new QTimer(this);

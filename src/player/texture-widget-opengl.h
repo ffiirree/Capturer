@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <mutex>
-#include <QOpenGLFunctions_4_1_Core>
+#include <QOpenGLFunctions_4_4_Core>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <tuple>
@@ -16,7 +16,7 @@
 class QOpenGLDebugLogger;
 #endif
 
-class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions_4_1_Core
+class TextureGLWidget final : public QOpenGLWidget, protected QOpenGLFunctions_4_4_Core
 {
     Q_OBJECT
 public:
@@ -28,16 +28,16 @@ public:
 
     static std::vector<AVPixelFormat> pix_fmts();
 
-    bool isSupported(AVPixelFormat) const;
+    [[nodiscard]] bool isSupported(AVPixelFormat) const;
 
     int setFormat(const av::vformat_t& vfmt);
 
     av::vformat_t format() const { return format_; }
 
-    AVPixelFormat pix_fmt() const { return format_.pix_fmt; }
+    [[nodiscard]] AVPixelFormat pix_fmt() const { return format_.pix_fmt; }
 
-    AVRational SAR() const;
-    AVRational DAR() const;
+    [[nodiscard]] AVRational SAR() const;
+    [[nodiscard]] AVRational DAR() const;
 
 signals:
     void updateRequest();
@@ -58,7 +58,7 @@ private:
     // shader program
     QOpenGLShaderProgram *program_{};
 
-    // vertex buffer objectss
+    // vertex buffer objects
     GLuint vao_{}; // vertex array object
     GLuint vbo_{}; // vertex buffer object
 

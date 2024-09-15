@@ -2,7 +2,6 @@
 
 #include "logging.h"
 
-#include <fmt/format.h>
 #include <map>
 #include <QCoreApplication>
 #include <QOpenGLDebugLogger>
@@ -21,7 +20,7 @@ static constexpr GLfloat vertices[] = {
 
 // https://github.com/libsdl-org/SDL/blob/main/src/render/opengl/SDL_shaders_gl.c
 static const QString TEXTURE_VERTEX_SHADER = R"(
-    #version 330 core
+    #version 440 core
 
     layout (location = 0) in vec3 vtx;
     layout (location = 1) in vec2 tex;
@@ -39,13 +38,13 @@ static const QString TEXTURE_VERTEX_SHADER = R"(
 
 // EMPTY
 static const QString EMPTY_SHADER_CONSTANTS = R"(
-    #version 330 core
+    #version 440 core
 )";
 
 // FULL: [0, 255]
 // TV  : Y [16, 235], Cb & Cr [16, 240]
 static const QString BT601_TV_SHADER_CONSTANTS = R"(
-    #version 330 core
+    #version 440 core
 
     // BT.601 PAL, TV
 
@@ -61,7 +60,7 @@ static const QString BT601_TV_SHADER_CONSTANTS = R"(
 )";
 
 static const QString BT709_TV_SHADER_CONSTANTS = R"(
-    #version 330 core
+    #version 440 core
 
     // BT.709 & sRGB, TV
 
@@ -77,7 +76,7 @@ static const QString BT709_TV_SHADER_CONSTANTS = R"(
 )";
 
 static const QString BT2020_TV_SHADER_CONSTANTS = R"(
-    #version 330 core
+    #version 440 core
 
     // BT.2020, TV
 
@@ -106,7 +105,7 @@ static const QString TEX2_SHADER_PROLOGUE = R"(
     in vec2 texCoord;
 
     uniform sampler2D tex0; // Y
-    uniform sampler2D tex1; // Y
+    uniform sampler2D tex1; // UV
 )";
 
 static const QString TEX3_SHADER_PROLOGUE = R"(
@@ -328,8 +327,10 @@ void TextureGLWidget::cleanup()
     delete program_;
     program_ = nullptr;
 
-    glDeleteBuffers(1, &vbo_);
-    glDeleteBuffers(1, &vao_);
+    if (QOpenGLFunctions_4_4_Core::isInitialized()) {
+        glDeleteBuffers(1, &vbo_);
+        glDeleteBuffers(1, &vao_);
+    }
 
     doneCurrent();
 
@@ -513,7 +514,7 @@ void TextureGLWidget::CreateTextures()
 
 void TextureGLWidget::DeleteTextures()
 {
-    if (QOpenGLFunctions_4_1_Core::isInitialized()) {
+    if (QOpenGLFunctions_4_4_Core::isInitialized()) {
         glDeleteTextures(3, texture_);
     }
 
