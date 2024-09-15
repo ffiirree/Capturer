@@ -30,7 +30,7 @@ Magnifier::Magnifier(QWidget *parent)
     // size
     setFixedSize(psize_.width(), psize_.height() + label_->height());
 
-    // TODO: listen sytem level mouse move event, not just this APP
+    // TODO: listen system level mouse move event, not just this APP
     qApp->installEventFilter(this);
 }
 
@@ -38,9 +38,8 @@ QRect Magnifier::grabRect() const
 {
     auto mouse_pos = QCursor::pos();
 
-    if (!desktop_.isNull()) {
-        const auto offset  = probe::graphics::virtual_screen_geometry();
-        mouse_pos         -= QPoint{ offset.x, offset.y };
+    if (!desktop_screenshot_.isNull()) {
+        mouse_pos -= desktop_rect_.topLeft();
     }
 
     return {
@@ -66,17 +65,16 @@ QPoint Magnifier::position() const
 {
     const auto cx = QCursor::pos().x();
     const auto cy = QCursor::pos().y();
-    const auto rg = probe::graphics::virtual_screen_geometry();
 
-    int mx = (rg.right() - cx > width()) ? cx + 16 : cx - width() - 16;
-    int my = (rg.bottom() - cy > height()) ? cy + 16 : cy - height() - 16;
+    int mx = (desktop_rect_.right() - cx > width()) ? cx + 16 : cx - width() - 16;
+    int my = (desktop_rect_.bottom() - cy > height()) ? cy + 16 : cy - height() - 16;
     return { mx, my };
 }
 
 bool Magnifier::eventFilter(QObject *obj, QEvent *event)
 {
     // FIXME: grab the system-wide mouse event
-    if (event->type() == QEvent::MouseMove) {
+    if (event->type() == QEvent::MouseMove && isVisible()) {
         update();
         move(position());
     }
@@ -89,17 +87,21 @@ void Magnifier::showEvent(QShowEvent *event)
     QWidget::showEvent(event);
 }
 
-void Magnifier::setGrabPixmap(const QPixmap& pixmap) { desktop_ = pixmap; }
+void Magnifier::setGrabPixmap(const QPixmap& pixmap, const QRect& rect)
+{
+    desktop_screenshot_ = pixmap;
+    desktop_rect_       = rect;
+}
 
 QPixmap Magnifier::grab() const
 {
     const auto rect = grabRect();
-    if (desktop_.isNull()) {
+    if (desktop_screenshot_.isNull()) {
         return QGuiApplication::primaryScreen()->grabWindow(
             probe::graphics::virtual_screen().handle, rect.x(), rect.y(), rect.width(), rect.height());
     }
 
-    return desktop_.copy(rect);
+    return desktop_screenshot_.copy(rect);
 }
 
 void Magnifier::paintEvent(QPaintEvent *)
@@ -139,6 +141,6 @@ void Magnifier::paintEvent(QPaintEvent *)
 
 void Magnifier::closeEvent(QCloseEvent *event)
 {
-    desktop_ = {};
+    desktop_screenshot_ = {};
     QWidget::closeEvent(event);
 }

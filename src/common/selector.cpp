@@ -239,7 +239,7 @@ void Selector::update_info_label()
     // move
     auto info_y = box_.top() - info_->geometry().height() - 1;
     info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) -
-                QRect(probe::graphics::virtual_screen_geometry()).topLeft());
+                box_.range().topLeft());
 }
 
 void Selector::paintEvent(QPaintEvent *)

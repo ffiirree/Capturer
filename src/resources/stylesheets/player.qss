@@ -26,11 +26,11 @@ ControlWidget QCheckBox#full-btn:hover {
     background: rgba(0, 0, 0, 100);
 }
 
-ControlWidget TitleBar QCheckBox#pin-btn::indicator:unchecked  {
+ControlWidget TitleBar QCheckBox#pin-btn::indicator:unchecked {
     image: url(:/icons/title-pin-light);
 }
 
-ControlWidget TitleBar QCheckBox#pin-btn::indicator:checked  {
+ControlWidget TitleBar QCheckBox#pin-btn::indicator:checked {
     image: url(:/icons/title-pin-fill-light);
 }
 

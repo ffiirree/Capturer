@@ -173,7 +173,7 @@ void ScreenShoter::refresh(const probe::geometry_t& geometry)
     setCacheMode(QGraphicsView::CacheBackground);
 
     //
-    magnifier_->setGrabPixmap(background);
+    magnifier_->setGrabPixmap(background, geometry);
 }
 
 QBrush ScreenShoter::mosaicBrush()

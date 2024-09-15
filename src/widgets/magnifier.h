@@ -32,7 +32,7 @@ public:
     }
 
     //
-    void setGrabPixmap(const QPixmap&);
+    void setGrabPixmap(const QPixmap&, const QRect&);
 
 protected:
     bool eventFilter(QObject *, QEvent *) override;
@@ -47,7 +47,8 @@ private:
     [[nodiscard]] QPixmap grab() const;
     [[nodiscard]] QPoint  position() const;
 
-    QPixmap desktop_{};
+    QPixmap desktop_screenshot_{};
+    QRect   desktop_rect_{}; // desktop | virtual screen
 
     QLabel *label_{};
 
