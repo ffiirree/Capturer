@@ -307,11 +307,11 @@
     </message>
     <message>
         <source>Preset</source>
-        <translation>预设</translation>
+        <translation>预设 (Preset)</translation>
     </message>
     <message>
         <source>Profile</source>
-        <translation>配置</translation>
+        <translation>配置 (Profile)</translation>
     </message>
     <message>
         <source>Max Colors</source>
@@ -352,6 +352,22 @@
     <message>
         <source>Floating Menu</source>
         <translation>悬浮菜单</translation>
+    </message>
+    <message>
+        <source>Pixel Format</source>
+        <translation>像素格式</translation>
+    </message>
+    <message>
+        <source>Color Space</source>
+        <translation>颜色空间</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>颜色范围</translation>
+    </message>
+    <message>
+        <source>Tune</source>
+        <translation>微调 (Tune)</translation>
     </message>
 </context>
 <context>

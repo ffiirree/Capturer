@@ -129,7 +129,7 @@
     </message>
     <message>
         <source>Transparent Input</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -351,6 +351,22 @@
     </message>
     <message>
         <source>Floating Menu</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Pixel Format</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Color Space</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Tune</source>
         <translation></translation>
     </message>
 </context>

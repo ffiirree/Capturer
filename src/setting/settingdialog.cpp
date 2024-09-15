@@ -378,6 +378,7 @@ QWidget *SettingWindow::setupRecordWidget()
         const auto preset = new ComboBox();
         preset
             ->add({
+                { "", "(none)" },
                 { "ultrafast", "ultrafast" },
                 { "superfast", "superfast" },
                 { "veryfast", "veryfast" },
@@ -396,6 +397,7 @@ QWidget *SettingWindow::setupRecordWidget()
         const auto profile = new ComboBox();
         profile
             ->add({
+                { "", "(none)" },
                 { "baseline", "baseline" },
                 { "main", "main" },
                 { "high", "high" },
@@ -404,6 +406,64 @@ QWidget *SettingWindow::setupRecordWidget()
                 [](auto value) { config::recording::video::v::profile = value.toString().toStdString(); })
             .select(QString::fromStdString(config::recording::video::v::profile));
         form->addRow(tr("Profile"), profile);
+
+        const auto tune = new ComboBox();
+        tune->add({
+                      { "", "(none)" },
+                      { "film", "film" },
+                      { "animation", "animation" },
+                      { "grain", "grain" },
+                      { "stillimage", "stillimage" },
+                      { "psnr", "psnr" },
+                      { "ssim", "ssim" },
+                      { "fastdecode", "fastdecode" },
+                      { "zerolatency", "zerolatency" },
+                  })
+            .onselected(
+                [](auto value) { config::recording::video::v::tune = value.toString().toStdString(); })
+            .select(QString::fromStdString(config::recording::video::v::tune));
+        form->addRow(tr("Tune"), tune);
+
+        const auto pixfmt = new ComboBox();
+        pixfmt
+            ->add({
+                { AV_PIX_FMT_YUV420P, "YUV420P (8-bit, planar YUV 4:2:0, 12bpp)" },
+                { AV_PIX_FMT_YUV422P, "YUV422P (8-bit, planar YUV 4:2:2, 16bpp)" },
+                { AV_PIX_FMT_YUV444P, "YUV444P (8-bit, planar YUV 4:4:4, 24bpp)" },
+                { AV_PIX_FMT_YUV420P10LE, "YUV420P10P (10-bit, planar YUV 4:2:0, 15bpp)" },
+
+            })
+            .onselected([](auto value) {
+                config::recording::video::v::pix_fmt = static_cast<AVPixelFormat>(value.toUInt());
+            })
+            .select(config::recording::video::v::pix_fmt);
+        form->addRow(tr("Pixel Format"), pixfmt);
+
+        const auto colorspace = new ComboBox();
+        colorspace
+            ->add({
+                { AVCOL_SPC_RGB, "sRGB" },
+                { AVCOL_SPC_BT709, "BT709" },
+                { AVCOL_SPC_BT470BG, "BT601" },
+                { AVCOL_SPC_BT2020_NCL, "BT2020" },
+            })
+            .onselected([](auto value) {
+                config::recording::video::v::color_space = static_cast<AVColorSpace>(value.toUInt());
+            })
+            .select(config::recording::video::v::color_space);
+        form->addRow(tr("Color Space"), colorspace);
+
+        const auto colorrange = new ComboBox();
+        colorrange
+            ->add({
+                { AVCOL_RANGE_MPEG, "Limited (TV/MPEG)" },
+                { AVCOL_RANGE_JPEG, "Full (PC/JPEG)" },
+            })
+            .onselected([](auto value) {
+                config::recording::video::v::color_range = static_cast<AVColorRange>(value.toUInt());
+            })
+            .select(config::recording::video::v::color_range);
+        form->addRow(tr("Color Range"), colorrange);
     }
 
     {

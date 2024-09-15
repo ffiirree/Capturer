@@ -44,7 +44,7 @@ public:
 
 private:
     int new_video_stream(const std::string& codec_name);
-    int new_auido_stream(const std::string& codec_name);
+    int new_audio_stream(const std::string& codec_name);
 
     std::pair<int, int> video_sync_process(av::frame& frame);
     int                 process_video_frames();
@@ -56,7 +56,12 @@ private:
     std::atomic<bool> video_enabled_{ false };
     std::atomic<bool> audio_enabled_{ false };
 
-    int crf_{ -1 };
+    std::atomic<bool> header_written_{ false };
+
+    int         crf_{ -1 };
+    std::string preset_{};
+    std::string profile_{};
+    std::string tune_{};
 
     // ffmpeg encoders @ {
     AVFormatContext *fmt_ctx_{};

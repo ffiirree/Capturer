@@ -25,6 +25,9 @@ int Encoder::open(const std::string& filename, std::map<std::string, std::string
 
     const auto vcodec_name = options.contains("vcodec") ? options.at("vcodec") : "libx264";
     const auto acodec_name = options.contains("acodec") ? options.at("acodec") : "aac";
+    preset_                = options.contains("preset") ? options.at("preset") : std::string{};
+    profile_               = options.contains("profile") ? options.at("profile") : std::string{};
+    tune_                  = options.contains("tune") ? options.at("tune") : std::string{};
 
     if (options.contains("vsync")) {
         vsync_ = av::to_vsync(options.at("vsync"));
@@ -43,7 +46,7 @@ int Encoder::open(const std::string& filename, std::map<std::string, std::string
 
     // streams
     if (video_enabled_ && new_video_stream(vcodec_name) < 0) return -1;
-    if (audio_enabled_ && new_auido_stream(acodec_name) < 0) return -1;
+    if (audio_enabled_ && new_audio_stream(acodec_name) < 0) return -1;
 
     // output file
     if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE)) {
@@ -57,6 +60,8 @@ int Encoder::open(const std::string& filename, std::map<std::string, std::string
         loge("[   ENCODER] can not write the header to the output file: ", filename);
         return -1;
     }
+
+    header_written_ = true;
 
     av_dump_format(fmt_ctx_, 0, filename.c_str(), 1);
 
@@ -91,12 +96,19 @@ int Encoder::new_video_stream(const std::string& codec_name)
     defer(av_dict_free(&options));
     av_dict_set(&options, "threads", "auto", 0);
     av_dict_set(&options, (vfmt.hwaccel) ? "cq" : "crf", std::to_string(crf_).c_str(), 0);
+    if (!preset_.empty()) av_dict_set(&options, "preset", preset_.c_str(), 0);
+    if (!profile_.empty()) av_dict_set(&options, "profile", profile_.c_str(), 0);
+    if (!tune_.empty()) av_dict_set(&options, "tune", tune_.c_str(), 0);
 
     vcodec_ctx_->height              = vfmt.height;
     vcodec_ctx_->width               = vfmt.width;
     vcodec_ctx_->pix_fmt             = vfmt.pix_fmt;
     vcodec_ctx_->sample_aspect_ratio = vfmt.sample_aspect_ratio;
     vcodec_ctx_->framerate           = vfmt.framerate;
+    vcodec_ctx_->colorspace          = vfmt.color.space;
+    vcodec_ctx_->color_range         = vfmt.color.range;
+    vcodec_ctx_->color_primaries     = vfmt.color.primaries;
+    vcodec_ctx_->color_trc           = vfmt.color.transfer;
     vcodec_ctx_->time_base = (vsync_ == av::vsync_t::cfr) ? av_inv_q(vfmt.framerate) : vfmt.time_base;
     fmt_ctx_->streams[vstream_idx_]->time_base = vfmt.time_base;
 
@@ -130,7 +142,7 @@ int Encoder::new_video_stream(const std::string& codec_name)
     return 0;
 }
 
-int Encoder::new_auido_stream(const std::string& codec_name)
+int Encoder::new_audio_stream(const std::string& codec_name)
 {
     logi("[   ENCODER] [A] <<< [{}], {}", codec_name, av::to_string(afmt));
 
@@ -460,11 +472,11 @@ void Encoder::close_output_file()
 {
     if (!fmt_ctx_) return;
 
-    if (av_write_trailer(fmt_ctx_) < 0) {
+    if (header_written_ && av_write_trailer(fmt_ctx_) < 0) {
         loge("[   ENCODER] failed to write trailer");
     }
 
-    if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE) && avio_close(fmt_ctx_->pb) < 0) {
+    if (!(fmt_ctx_->oformat->flags & AVFMT_NOFILE) && avio_closep(&fmt_ctx_->pb) < 0) {
         loge("[   ENCODER] failed to close the output file.");
     }
 

@@ -71,6 +71,12 @@ namespace config
                     }
                     JSON_GET(v::rate_control, j["recording"]["video"]["v"], "rate-control");
                     JSON_GET(v::crf, j["recording"]["video"]["v"], "crf");
+                    JSON_GET(v::preset, j["recording"]["video"]["v"], "preset");
+                    JSON_GET(v::profile, j["recording"]["video"]["v"], "profile");
+                    JSON_GET(v::tune, j["recording"]["video"]["v"], "tune");
+                    JSON_GET(v::pix_fmt, j["recording"]["video"]["v"], "pixel-format");
+                    JSON_GET(v::color_space, j["recording"]["video"]["v"], "color-space");
+                    JSON_GET(v::color_range, j["recording"]["video"]["v"], "color-range");
                 }
                 if (j["recording"]["video"].contains("a")) {
                     JSON_GET(a::codec, j["recording"]["video"]["a"], "codec");
@@ -144,6 +150,12 @@ namespace config
         j["recording"]["video"]["v"]["framerate"]["den"] = recording::video::v::framerate.den;
         j["recording"]["video"]["v"]["rate-control"]     = recording::video::v::rate_control;
         j["recording"]["video"]["v"]["crf"]              = recording::video::v::crf;
+        j["recording"]["video"]["v"]["preset"]           = recording::video::v::preset;
+        j["recording"]["video"]["v"]["profile"]          = recording::video::v::profile;
+        j["recording"]["video"]["v"]["tune"]             = recording::video::v::tune;
+        j["recording"]["video"]["v"]["pixel-format"]     = recording::video::v::pix_fmt;
+        j["recording"]["video"]["v"]["color-space"]      = recording::video::v::color_space;
+        j["recording"]["video"]["v"]["color-range"]      = recording::video::v::color_range;
 
         j["recording"]["video"]["a"]["codec"]       = recording::video::a::codec;
         j["recording"]["video"]["a"]["channels"]    = recording::video::a::channels;

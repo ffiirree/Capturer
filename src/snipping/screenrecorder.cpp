@@ -121,7 +121,7 @@ void ScreenRecorder::start()
 
     filename_ = "Capturer_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_hhmmss_zzz").toStdString();
     if (rec_type_ == VIDEO) {
-        pix_fmt_                  = AV_PIX_FMT_YUV420P;
+        pix_fmt_                  = config::recording::video::v::pix_fmt;
         codec_name_               = config::recording::video::v::codec;
         filters_                  = "";
         encoder_options_["vsync"] = av::to_string(av::vsync_t::cfr);
@@ -272,7 +272,11 @@ void ScreenRecorder::setup()
         pix_fmt_ = pix_fmt;
     }
 
-    encoder_->vfmt.pix_fmt        = pix_fmt_;
+    encoder_->vfmt.pix_fmt = pix_fmt_;
+    if (rec_type_ == VIDEO) {
+        encoder_->vfmt.color.space = config::recording::video::v::color_space;
+        encoder_->vfmt.color.range = config::recording::video::v::color_range;
+    }
     encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     encoder_->afmt.channels       = config::recording::video::a::channels;
     encoder_->afmt.channel_layout = av_get_default_channel_layout(encoder_->afmt.channels);
@@ -292,9 +296,12 @@ void ScreenRecorder::setup()
         return;
     }
 
-    encoder_options_["crf"]    = std::to_string(config::recording::video::v::crf);
-    encoder_options_["vcodec"] = codec_name_;
-    encoder_options_["acodec"] = config::recording::video::a::codec;
+    encoder_options_["crf"]     = std::to_string(config::recording::video::v::crf);
+    encoder_options_["vcodec"]  = codec_name_;
+    encoder_options_["acodec"]  = config::recording::video::a::codec;
+    encoder_options_["preset"]  = config::recording::video::v::preset;
+    encoder_options_["profile"] = config::recording::video::v::profile;
+    encoder_options_["tune"]    = config::recording::video::v::tune;
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
         loge("open encoder failed");

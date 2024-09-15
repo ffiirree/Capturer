@@ -47,20 +47,23 @@ namespace config
 
             namespace v
             {
-                inline std::string codec{ "libx264" };
+                inline std::string   codec{ "libx264" };
                 // options
-                inline AVRational  framerate{ 30, 1 };
+                inline AVRational    framerate{ 30, 1 };
                 // H.264: 0-51, default 23
                 // H.265: 0-51, default 28
                 // Vp9  : 0-63, 15-35
                 // Values of ±6 will result in about half or twice the original bitrate.
-                inline int         crf{ 23 }; // CRF or  CQ
-                inline std::string rate_control{ "crf" };
-                inline std::string preset{ "medium" };
-                inline std::string profile{ "high" };
-                inline int         bitrate{}; // kbs
-                inline std::string maxrate{};
-                inline std::string tuning{};
+                inline int           crf{ 23 }; // CRF or  CQ
+                inline std::string   rate_control{ "crf" };
+                inline std::string   preset{ "medium" };
+                inline std::string   profile{};
+                inline std::string   tune{};
+                inline int           bitrate{}; // kbs
+                inline std::string   maxrate{};
+                inline AVPixelFormat pix_fmt{ AV_PIX_FMT_YUV420P };
+                inline AVColorSpace  color_space{ AVCOL_SPC_BT709 };
+                inline AVColorRange  color_range{ AVCOL_RANGE_MPEG };
             } // namespace v
 
             namespace a
@@ -70,7 +73,7 @@ namespace config
                 inline int         channels{ 2 };
                 inline int         sample_rate{ 48000 };
             } // namespace a
-        };    // namespace video
+        }; // namespace video
 
         namespace gif
         {
@@ -85,7 +88,7 @@ namespace config
             inline int        colors{ 128 };
             inline bool       dither{ false };
         }; // namespace gif
-    };     // namespace recording
+    }; // namespace recording
 
     namespace devices
     {

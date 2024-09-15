@@ -150,6 +150,7 @@ int XshmCapturer::open(const std::string& name, std::map<std::string, std::strin
     vfmt.width   = (right - left) & (~1);
     vfmt.height  = (bottom - top) & (~1);
     vfmt.pix_fmt = x::from_xcb_pixmap_format(conn_, geo->depth);
+    vfmt.color   = { AVCOL_SPC_RGB, AVCOL_RANGE_JPEG };
 
     if (vfmt.pix_fmt == AV_PIX_FMT_NONE || vfmt.width <= 0 || vfmt.height <= 0) {
         logi("[ LINUX-XSHM] invalid pixel format");
@@ -222,13 +223,17 @@ int XshmCapturer::start()
                 continue;
             }
 
-            frame->width       = vfmt.width;
-            frame->height      = vfmt.height;
-            frame->format      = vfmt.pix_fmt;
-            frame->pts         = av::clock::ns().count();
-            frame->linesize[0] = av_image_get_linesize(vfmt.pix_fmt, vfmt.width, 0);
-            frame->buf[0]      = buf;
-            frame->data[0]     = buf->data;
+            frame->width           = vfmt.width;
+            frame->height          = vfmt.height;
+            frame->format          = vfmt.pix_fmt;
+            frame->pts             = av::clock::ns().count();
+            frame->linesize[0]     = av_image_get_linesize(vfmt.pix_fmt, vfmt.width, 0);
+            frame->buf[0]          = buf;
+            frame->data[0]         = buf->data;
+            frame->color_range     = vfmt.color.range;
+            frame->color_primaries = vfmt.color.primaries;
+            frame->color_trc       = vfmt.color.transfer;
+            frame->colorspace      = vfmt.color.space;
 
             if (draw_cursor && bpp_ >= 24) xfixes_draw_cursor(frame);
 
