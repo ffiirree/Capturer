@@ -39,55 +39,78 @@ static const QString TEXTURE_VERTEX_SHADER = R"(
 // EMPTY
 static const QString EMPTY_SHADER_CONSTANTS = R"(
     #version 440 core
+
+    const mat4 CM = mat4(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
 )";
 
-// FULL: [0, 255]
-// TV  : Y [16, 235], Cb & Cr [16, 240]
 static const QString BT601_TV_SHADER_CONSTANTS = R"(
     #version 440 core
 
-    // BT.601 PAL, TV
+    const mat4 CM = mat4(
+        1.164f,  0.000f,  1.596f, -0.8708f,
+        1.164f, -0.392f, -0.813f,  0.5296f,
+        1.164f,  2.017f,  0.000f, -1.0810f,
+        0.000f,  0.000f,  0.000f,  1.0000f
+    );
+)";
 
-    // range offset
-    const vec3 OFFSET = vec3(-0.0627451017, -0.501960814, -0.501960814);
+static const QString BT601_PC_SHADER_CONSTANTS = R"(
+    #version 440 core
 
-    // convert matrix
-    const mat3 CM = mat3(
-        1.1643835616,  1.1643835616, 1.1643835616,
-        0.0000000000, -0.3917622901, 2.0172321429,
-        1.5960267857, -0.8129676472, 0.0000000000
+    const mat4 CM = mat4(
+        1.0000f,  0.0000f,  1.77200f, -0.88600f,
+        1.0000f, -0.1646f, -0.57135f,  0.36795f,
+        1.0000f,  1.4200f,  0.00000f, -0.71000f,
+        0.0000f,  0.0000f,  0.00000f,  1.00000f
     );
 )";
 
 static const QString BT709_TV_SHADER_CONSTANTS = R"(
     #version 440 core
 
-    // BT.709 & sRGB, TV
+    const mat4 CM = mat4(
+        1.1644f,  0.0000f,  1.7927f, -0.9729f,
+        1.1644f, -0.2132f, -0.5329f,  0.3015f,
+        1.1644f,  2.1124f,  0.0000f, -1.1334f,
+        0.0000f,  0.0000f,  0.0000f,  1.0000f
+    );
+)";
 
-    // range offset
-    const vec3 OFFSET = vec3(-0.0627451017, -0.501960814, -0.501960814);
+static const QString BT709_PC_SHADER_CONSTANTS = R"(
+    #version 440 core
 
-    // convert matrix
-    const mat3 CM = mat3(
-        1.1643835616,  1.1643835616, 1.1643835616,
-        0.0000000000, -0.2132486143, 2.1124017857,
-        1.7927410714, -0.5329093286, 0.0000000000
+    const mat4 CM = mat4(
+        1.0000f,  0.000000f,  1.57480f,  -0.790488f,
+        1.0000f, -0.187324f, -0.468124f,  0.329010f,
+        1.0000f,  1.855600f,  0.00000f,  -0.931439f,
+        0.0000f,  0.000000f,  0.00000f,   1.000000f
     );
 )";
 
 static const QString BT2020_TV_SHADER_CONSTANTS = R"(
     #version 440 core
 
-    // BT.2020, TV
+    const mat4 CM = mat4(
+        1.1644f,  0.000f,   1.6787f, -0.9157f,
+        1.1644f, -0.1874f, -0.6504f,  0.3475f,
+        1.1644f,  2.1418f,  0.0000f, -1.1483f,
+        0.0000f,  0.0000f,  0.0000f,  1.0000f
+    );
+)";
 
-    // range offset
-    const vec3 OFFSET = vec3(-0.0627451017, -0.501960814, -0.501960814);
+static const QString BT2020_PC_SHADER_CONSTANTS = R"(
+    #version 440 core
 
-    // convert matrix
-    const mat3 CM = mat3(
-        1.1643835616,  1.1643835616, 1.1643835616,
-        0.0000000000, -0.1873261042, 2.1417723214,
-        1.6786741071, -0.6504243185, 0.0000000000
+    const mat4 CM = mat4(
+        1.0000f,  0.0000f,  1.4746f, -0.7402f,
+        1.0000f, -0.1646f, -0.5714f,  0.3694f,
+        1.0000f,  1.8814f,  0.0000f, -0.9445f,
+        0.0000f,  0.0000f,  0.0000f,  1.0000f
     );
 )";
 
@@ -128,7 +151,7 @@ static const QString YUV_FRAGMENT_SHADER = R"(
         yuv.y = texture(tex1, texCoord).r; // U
         yuv.z = texture(tex2, texCoord).r; // V
 
-        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = clamp(vec4(yuv, 1.0) * CM, 0.0, 1.0);
     }
 )";
 
@@ -139,15 +162,15 @@ static const QString YUV_10LE_FRAGMENT_SHADER = R"(
         vec3 yuv0, yuv1, yuv;
 
         yuv0.x = texture(tex0, texCoord).r; // Y
-        yuv1.x = texture(tex0, texCoord).a; // Y
+        yuv1.x = texture(tex0, texCoord).g; // Y
         yuv0.y = texture(tex1, texCoord).r; // U
-        yuv1.y = texture(tex1, texCoord).a; // U
+        yuv1.y = texture(tex1, texCoord).g; // U
         yuv0.z = texture(tex2, texCoord).r; // V
-        yuv1.z = texture(tex2, texCoord).a; // V
+        yuv1.z = texture(tex2, texCoord).g; // V
 
         yuv = (yuv0 * 255.0 + yuv1 * 255.0 * 256.0) / (1023.0);
 
-        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = clamp(vec4(yuv, 1.0) * CM, 0.0, 1.0);
     }
 )";
 
@@ -161,7 +184,7 @@ static const QString YUYV_FRAGMENT_SHADER = R"(
         yuv.y = texture(tex0, texCoord).g; // U
         yuv.z = texture(tex0, texCoord).a; // V
 
-        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = clamp(vec4(yuv, 1.0) * CM, 0.0, 1.0);
     }
 )";
 
@@ -190,7 +213,7 @@ static const QString NV12_FRAGMENT_SHADER = R"(
         yuv.x  = texture(tex0, texCoord).r;   // Y
         yuv.yz = texture(tex1, texCoord).rg;  // U / V
 
-        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = clamp(vec4(yuv, 1.0) * CM, 0.0, 1.0);
     }
 )";
 
@@ -203,7 +226,7 @@ static const QString NV21_FRAGMENT_SHADER = R"(
         yuv.x  = texture(tex0, texCoord).r;   // Y
         yuv.yz = texture(tex1, texCoord).gr;  // U / V
 
-        FragColor = vec4(CM * (yuv + OFFSET), 1.0);
+        FragColor = clamp(vec4(yuv, 1.0) * CM, 0.0, 1.0);
     }
 )";
 
@@ -255,55 +278,55 @@ static const QString XBGR_FRAGMENT_SHADER = R"(
     }
 )";
 
-static const std::map<AVColorSpace, QString> SHADER_CONSTANTS = {
-    { AVCOL_SPC_RGB, EMPTY_SHADER_CONSTANTS },            // RGB
-    { AVCOL_SPC_BT709, BT709_TV_SHADER_CONSTANTS },       // BT.709 & sRGB
-    { AVCOL_SPC_UNSPECIFIED, BT709_TV_SHADER_CONSTANTS },
-    { AVCOL_SPC_BT470BG, BT601_TV_SHADER_CONSTANTS },     // BT.601 PAL
-    { AVCOL_SPC_BT2020_NCL, BT2020_TV_SHADER_CONSTANTS }, // BT.2020
-};
+static QString ShaderConstants(AVColorSpace space, AVColorRange range)
+{
+    switch ((space << 8) | range) {
+    case (AVCOL_SPC_RGB << 8) | AVCOL_RANGE_JPEG:
+    case (AVCOL_SPC_RGB << 8) | AVCOL_RANGE_MPEG:        return EMPTY_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT709 << 8) | AVCOL_RANGE_JPEG:      return BT709_PC_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT709 << 8) | AVCOL_RANGE_MPEG:      return BT709_TV_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT470BG << 8) | AVCOL_RANGE_JPEG:    return BT601_PC_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT470BG << 8) | AVCOL_RANGE_MPEG:    return BT601_TV_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT2020_NCL << 8) | AVCOL_RANGE_JPEG: return BT2020_PC_SHADER_CONSTANTS;
+    case (AVCOL_SPC_BT2020_NCL << 8) | AVCOL_RANGE_MPEG: return BT2020_TV_SHADER_CONSTANTS;
+    default:                                             return BT709_TV_SHADER_CONSTANTS;
+    }
+}
 
 static const std::map<AVPixelFormat, QString> PROLOGUES = {
-    { AV_PIX_FMT_YUV420P, TEX3_SHADER_PROLOGUE },     { AV_PIX_FMT_YUYV422, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_RGB24, TEX1_SHADER_PROLOGUE },       { AV_PIX_FMT_BGR24, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_YUV422P, TEX3_SHADER_PROLOGUE },     { AV_PIX_FMT_YUV444P, TEX3_SHADER_PROLOGUE },
-    { AV_PIX_FMT_YUV410P, TEX3_SHADER_PROLOGUE },     { AV_PIX_FMT_YUV411P, TEX3_SHADER_PROLOGUE },
-    { AV_PIX_FMT_BGR8, TEX1_SHADER_PROLOGUE },        { AV_PIX_FMT_RGB8, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_NV12, TEX2_SHADER_PROLOGUE },        { AV_PIX_FMT_NV21, TEX2_SHADER_PROLOGUE },
-    { AV_PIX_FMT_ARGB, TEX1_SHADER_PROLOGUE },        { AV_PIX_FMT_RGBA, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_ABGR, TEX1_SHADER_PROLOGUE },        { AV_PIX_FMT_BGRA, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_0RGB, TEX1_SHADER_PROLOGUE },        { AV_PIX_FMT_RGB0, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_0BGR, TEX1_SHADER_PROLOGUE },        { AV_PIX_FMT_BGR0, TEX1_SHADER_PROLOGUE },
-    { AV_PIX_FMT_YUV420P10LE, TEX3_SHADER_PROLOGUE },
+    { AV_PIX_FMT_YUV420P, TEX3_SHADER_PROLOGUE },  { AV_PIX_FMT_YUYV422, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_RGB24, TEX1_SHADER_PROLOGUE },    { AV_PIX_FMT_BGR24, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_YUV422P, TEX3_SHADER_PROLOGUE },  { AV_PIX_FMT_YUV444P, TEX3_SHADER_PROLOGUE },
+    { AV_PIX_FMT_YUV410P, TEX3_SHADER_PROLOGUE },  { AV_PIX_FMT_YUV411P, TEX3_SHADER_PROLOGUE },
+    { AV_PIX_FMT_YUVJ420P, TEX3_SHADER_PROLOGUE }, { AV_PIX_FMT_YUVJ422P, TEX3_SHADER_PROLOGUE },
+    { AV_PIX_FMT_YUVJ444P, TEX3_SHADER_PROLOGUE }, { AV_PIX_FMT_BGR8, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_RGB8, TEX1_SHADER_PROLOGUE },     { AV_PIX_FMT_NV12, TEX2_SHADER_PROLOGUE },
+    { AV_PIX_FMT_NV21, TEX2_SHADER_PROLOGUE },     { AV_PIX_FMT_ARGB, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_RGBA, TEX1_SHADER_PROLOGUE },     { AV_PIX_FMT_ABGR, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_BGRA, TEX1_SHADER_PROLOGUE },     { AV_PIX_FMT_0RGB, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_RGB0, TEX1_SHADER_PROLOGUE },     { AV_PIX_FMT_0BGR, TEX1_SHADER_PROLOGUE },
+    { AV_PIX_FMT_BGR0, TEX1_SHADER_PROLOGUE },     { AV_PIX_FMT_YUV420P10LE, TEX3_SHADER_PROLOGUE },
 };
 
 static const std::map<AVPixelFormat, QString> SHADERS = {
-    { AV_PIX_FMT_YUV420P, YUV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUYV422, YUYV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_RGB24, RGB_FRAGMENT_SHADER },
-    { AV_PIX_FMT_BGR24, BGR_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUV422P, YUV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUV444P, YUV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUV410P, YUV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUV411P, YUV_FRAGMENT_SHADER },
-    { AV_PIX_FMT_BGR8, BGR_FRAGMENT_SHADER },
-    { AV_PIX_FMT_RGB8, RGB_FRAGMENT_SHADER },
-    { AV_PIX_FMT_NV12, NV12_FRAGMENT_SHADER },
-    { AV_PIX_FMT_NV21, NV21_FRAGMENT_SHADER },
-    { AV_PIX_FMT_ARGB, ARGB_FRAGMENT_SHADER },
-    { AV_PIX_FMT_RGBA, RGBA_FRAGMENT_SHADER },
-    { AV_PIX_FMT_ABGR, ABGR_FRAGMENT_SHADER },
-    { AV_PIX_FMT_BGRA, BGRA_FRAGMENT_SHADER },
-    { AV_PIX_FMT_0RGB, XRGB_FRAGMENT_SHADER },
-    { AV_PIX_FMT_RGB0, RGB_FRAGMENT_SHADER },
-    { AV_PIX_FMT_0BGR, XBGR_FRAGMENT_SHADER },
-    { AV_PIX_FMT_BGR0, BGR_FRAGMENT_SHADER },
-    { AV_PIX_FMT_YUV420P10LE, YUV_10LE_FRAGMENT_SHADER },
+    { AV_PIX_FMT_YUV420P, YUV_FRAGMENT_SHADER },  { AV_PIX_FMT_YUYV422, YUYV_FRAGMENT_SHADER },
+    { AV_PIX_FMT_RGB24, RGB_FRAGMENT_SHADER },    { AV_PIX_FMT_BGR24, BGR_FRAGMENT_SHADER },
+    { AV_PIX_FMT_YUV422P, YUV_FRAGMENT_SHADER },  { AV_PIX_FMT_YUV444P, YUV_FRAGMENT_SHADER },
+    { AV_PIX_FMT_YUV410P, YUV_FRAGMENT_SHADER },  { AV_PIX_FMT_YUV411P, YUV_FRAGMENT_SHADER },
+    { AV_PIX_FMT_YUVJ420P, YUV_FRAGMENT_SHADER }, { AV_PIX_FMT_YUVJ422P, YUV_FRAGMENT_SHADER },
+    { AV_PIX_FMT_YUVJ444P, YUV_FRAGMENT_SHADER }, { AV_PIX_FMT_BGR8, BGR_FRAGMENT_SHADER },
+    { AV_PIX_FMT_RGB8, RGB_FRAGMENT_SHADER },     { AV_PIX_FMT_NV12, NV12_FRAGMENT_SHADER },
+    { AV_PIX_FMT_NV21, NV21_FRAGMENT_SHADER },    { AV_PIX_FMT_ARGB, ARGB_FRAGMENT_SHADER },
+    { AV_PIX_FMT_RGBA, RGBA_FRAGMENT_SHADER },    { AV_PIX_FMT_ABGR, ABGR_FRAGMENT_SHADER },
+    { AV_PIX_FMT_BGRA, BGRA_FRAGMENT_SHADER },    { AV_PIX_FMT_0RGB, XRGB_FRAGMENT_SHADER },
+    { AV_PIX_FMT_RGB0, RGB_FRAGMENT_SHADER },     { AV_PIX_FMT_0BGR, XBGR_FRAGMENT_SHADER },
+    { AV_PIX_FMT_BGR0, BGR_FRAGMENT_SHADER },     { AV_PIX_FMT_YUV420P10LE, YUV_10LE_FRAGMENT_SHADER },
 };
 
 static QString GENERATOR_FRAGMENT_SHADER(const av::vformat_t& fmt)
 {
-    return SHADER_CONSTANTS.at(fmt.color.space) + PROLOGUES.at(fmt.pix_fmt) + SHADERS.at(fmt.pix_fmt);
+    return ShaderConstants(fmt.color.space, fmt.color.range) + PROLOGUES.at(fmt.pix_fmt) +
+           SHADERS.at(fmt.pix_fmt);
 }
 
 ///
@@ -352,6 +375,10 @@ std::vector<AVPixelFormat> TextureGLWidget::pix_fmts()
         AV_PIX_FMT_YUV444P, ///< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
         AV_PIX_FMT_YUV410P, ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
         AV_PIX_FMT_YUV411P, ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
+
+        AV_PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV420P and setting color_range
+        AV_PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV422P and setting color_range
+        AV_PIX_FMT_YUVJ444P,  ///< planar YUV 4:4:4, 24bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV444P and setting color_range
 
         AV_PIX_FMT_BGR8,    ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
         AV_PIX_FMT_RGB8,    ///< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
@@ -460,6 +487,30 @@ bool TextureGLWidget::UpdateTextureParams()
         };
         return true;
 
+    case AV_PIX_FMT_YUVJ420P:
+        tex_params_ = {
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 2, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 2, GL_RED, GL_UNSIGNED_BYTE, 1 },
+        };
+        return true;
+
+    case AV_PIX_FMT_YUVJ422P:
+        tex_params_ = {
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 2, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+        };
+        return true;
+
+    case AV_PIX_FMT_YUVJ444P:
+        tex_params_ = {
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+            { 1, 1, GL_RED, GL_UNSIGNED_BYTE, 1 },
+        };
+        return true;
+
     case AV_PIX_FMT_BGR8: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE_2_3_3_REV, 1 } }; return true;
 
     case AV_PIX_FMT_RGB8: tex_params_ = { { 1, 1, GL_RGB, GL_UNSIGNED_BYTE_3_3_2, 1 } }; return true;
@@ -483,9 +534,9 @@ bool TextureGLWidget::UpdateTextureParams()
 
     case AV_PIX_FMT_YUV420P10LE:
         tex_params_ = {
-            { 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 2 },
-            { 2, 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 2 },
-            { 2, 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 2 },
+            { 1, 1, GL_RG, GL_UNSIGNED_BYTE, 2 },
+            { 2, 2, GL_RG, GL_UNSIGNED_BYTE, 2 },
+            { 2, 2, GL_RG, GL_UNSIGNED_BYTE, 2 },
         };
         return true;
     default: break;
