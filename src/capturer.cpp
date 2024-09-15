@@ -111,35 +111,20 @@ void Capturer::SystemTrayInit()
     tray_menu_.reset(new Menu());
     tray_menu_->setObjectName("tray-menu");
 
-    const QString color = (config::definite_theme() == "dark") ? "light" : "dark";
-
-    tray_snip_         = new QAction(QIcon(":/icons/screenshot-" + color), tr("Screenshot"));
-    tray_record_video_ = new QAction(QIcon(":/icons/capture-" + color), tr("Record Video"));
-    tray_record_gif_   = new QAction(QIcon(":/icons/gif-" + color), tr("Record GIF"));
-    tray_open_camera_  = new QAction(QIcon(":/icons/camera-" + color), tr("Open Camera"));
-    tray_settings_     = new QAction(QIcon(":/icons/setting-" + color), tr("Settings"));
-    tray_exit_         = new QAction(QIcon(":/icons/exit-" + color), tr("Quit"));
-
-    tray_menu_->addAction(tray_snip_);
-    tray_menu_->addAction(tray_record_video_);
-    tray_menu_->addAction(tray_record_gif_);
+    tray_snip_         = tray_menu_->addAction(tr("Screenshot"), sniper_.data(), &ScreenShoter::start);
+    tray_record_video_ = tray_menu_->addAction(tr("Record Video"), this, &Capturer::RecordVideo);
+    tray_record_gif_   = tray_menu_->addAction(tr("Record GIF"), this, &Capturer::RecordGIF);
     tray_menu_->addSeparator();
-    tray_menu_->addAction(tray_open_camera_);
+    tray_open_camera_ = tray_menu_->addAction(tr("Open Camera"), this, &Capturer::ToggleCamera);
     tray_menu_->addSeparator();
-    tray_menu_->addAction(tray_settings_);
+    tray_settings_ = tray_menu_->addAction(tr("Settings"), this, &Capturer::OpenSettingsDialog);
     tray_menu_->addSeparator();
-    tray_menu_->addAction(tray_exit_);
+    tray_exit_ = tray_menu_->addAction(tr("Quit"), qApp, &QCoreApplication::exit);
 
     tray_->setContextMenu(tray_menu_.data());
     tray_->show();
 
     connect(tray_.data(), &QSystemTrayIcon::activated, this, &Capturer::TrayActivated);
-    connect(tray_snip_, &QAction::triggered, sniper_.data(), &ScreenShoter::start);
-    connect(tray_record_video_, &QAction::triggered, this, &Capturer::RecordVideo);
-    connect(tray_record_gif_, &QAction::triggered, this, &Capturer::RecordGIF);
-    connect(tray_open_camera_, &QAction::triggered, this, &Capturer::ToggleCamera);
-    connect(tray_settings_, &QAction::triggered, this, &Capturer::OpenSettingsDialog);
-    connect(tray_exit_, &QAction::triggered, qApp, &QCoreApplication::exit);
 }
 
 void Capturer::PreviewClipboard() { PreviewMimeData(clipboard::back(true)); }
