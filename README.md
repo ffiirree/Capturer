@@ -174,6 +174,8 @@ cmake --build build --target install --config Release
 ```bash
 sudo apt install build-essential cmake
 
+sudo apt install libglx-dev libgl1-mesa-dev
+
 # ffmpeg: video / audio
 sudo apt install ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev libavfilter-dev
 

@@ -9,6 +9,7 @@
 #include "settingdialog.h"
 #include "video-player.h"
 
+#include <probe/system.h>
 #include <QApplication>
 #include <QFileInfo>
 #include <QKeyEvent>
@@ -160,7 +161,7 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
             const auto screen = screenAt(QCursor::pos()) ? screenAt(QCursor::pos()) : primaryScreen();
             preview->move(screen->geometry().center() - preview->rect().center());
         }
-        previews_.push_back(preview);
+        previews_.emplace_back(preview);
 
         connect(preview, &FramelessWindow::closed, [this] {
             previews_.erase(std::ranges::remove_if(previews_, [](auto ptr) { return !ptr; }).begin(),
@@ -309,7 +310,10 @@ void Capturer::SetTheme(const QString& theme)
     setStyleSheet(style);
 
     // system tray menu icons
-    const QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+    QString color = (config::definite_theme() == "dark") ? "light" : "dark";
+    if (probe::util::tolower(probe::system::name()).starts_with("ubuntu")) {
+        color = (probe::system::theme() == probe::system::theme_t::dark) ? "light" : "dark";
+    }
 
     tray_snip_->setIcon(QIcon(":/icons/screenshot-" + color));
     tray_record_video_->setIcon(QIcon(":/icons/capture-" + color));

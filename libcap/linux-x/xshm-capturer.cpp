@@ -18,7 +18,11 @@ extern "C" {
 #include <libavutil/imgutils.h>
 }
 
+#if LIBAVUTIL_VERSION_MAJOR < 57
 static AVBufferRef *xshm_alloc(void *opaque, const int size)
+#else
+static AVBufferRef *xshm_alloc(void *opaque, const size_t size)
+#endif
 {
     const auto          xconn = static_cast<xcb_connection_t *>(opaque);
     const xcb_shm_seg_t xseg  = ::xcb_generate_id(xconn);
