@@ -6,8 +6,9 @@ using namespace probe::graphics;
 
 namespace hunter
 {
-    static std::deque<prey_t> __preys{};
-    static window_filter_t    __scope{ window_filter_t::visible };
+    static std::deque<prey_t>     __preys{};
+    static std::vector<display_t> __displays{};
+    static window_filter_t        __scope{ window_filter_t::visible };
 
     prey_t prey_t::from(const QRect& rect)
     {
@@ -62,7 +63,7 @@ namespace hunter
 #ifdef _WIN32
             scoped = prey_t::from(display_contains(pos).value());
 #else
-            for (const auto& display : probe::graphics::displays()) {
+            for (const auto& display : __displays) {
                 if (display.geometry.contains(pos.x(), pos.y())) {
                     scoped = prey_t::from(display);
                     break;
@@ -89,7 +90,8 @@ namespace hunter
         std::ranges::for_each(probe::graphics::windows(flags, false),
                               [&](const auto& win) { __preys.emplace_back(prey_t::from(win)); });
 
-        std::ranges::for_each(probe::graphics::displays(),
+        __displays = probe::graphics::displays();
+        std::ranges::for_each(__displays,
                               [&](const auto& dis) { __preys.emplace_back(prey_t::from(dis)); });
 
         if (!any(flags & window_filter_t::capturable)) {
@@ -109,6 +111,7 @@ namespace hunter
     {
         __scope = window_filter_t::visible;
         __preys.clear();
+        __displays.clear();
     }
 
     std::string to_string(const prey_type_t type)
