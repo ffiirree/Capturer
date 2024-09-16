@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(capturer VERSION 1.6.2 LANGUAGES C CXX)
+project(capturer VERSION 1.6.3 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -129,7 +129,6 @@ message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 # Binaries
 if (WIN32)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
-    install(IMPORTED_RUNTIME_ARTIFACTS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets DESTINATION "${CMAKE_INSTALL_PREFIX}")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
 elseif (UNIX AND NOT APPLE)
     # installed: /usr/local/bin/capturer

@@ -6,6 +6,7 @@
 #include "config.h"
 #include "libcap/devices.h"
 #include "libcap/hwaccel.h"
+#include "path-edit.h"
 #include "scrollwidget.h"
 #include "shortcutinput.h"
 #include "version.h"
@@ -228,9 +229,8 @@ QWidget *SettingWindow::setupSnipWidget()
 
     const auto form = page->addForm(tr("File"));
     {
-        const auto path = new QLineEdit(config::snip::path);
-        path->setContextMenuPolicy(Qt::NoContextMenu);
-        path->setReadOnly(true);
+        const auto path = new PathEdit(config::snip::path);
+        connect(path, &PathEdit::changed, [](auto&& dir) { config::snip::path = dir; });
         form->addRow(LABEL(tr("Save Path"), 175), path);
     }
 
@@ -284,9 +284,8 @@ QWidget *SettingWindow::setupRecordWidget()
     {
         const auto form = page->addForm(tr("File"));
 
-        const auto path = new QLineEdit(config::recording::video::path);
-        path->setContextMenuPolicy(Qt::NoContextMenu);
-        path->setReadOnly(true);
+        const auto path = new PathEdit(config::recording::video::path);
+        connect(path, &PathEdit::changed, [](auto&& dir) { config::recording::video::path = dir; });
         form->addRow(LABEL(tr("Save Path"), 175), path);
 
         const auto format = new ComboBox();
@@ -533,6 +532,14 @@ QWidget *SettingWindow::setupGIFWidget()
         connect(hmenu, &QCheckBox::toggled,
                 [](auto checked) { config::recording::gif::floating_menu = checked; });
         form->addRow(tr("Floating Menu"), hmenu);
+    }
+
+    {
+        const auto form = page->addForm(tr("File"));
+
+        const auto path = new PathEdit(config::recording::gif::path);
+        connect(path, &PathEdit::changed, [](auto&& dir) { config::recording::gif::path = dir; });
+        form->addRow(LABEL(tr("Save Path"), 175), path);
     }
 
     {

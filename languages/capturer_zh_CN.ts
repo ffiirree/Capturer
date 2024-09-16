@@ -133,6 +133,13 @@
     </message>
 </context>
 <context>
+    <name>PathEdit</name>
+    <message>
+        <source>Browse</source>
+        <translation>浏览</translation>
+    </message>
+</context>
+<context>
     <name>ScreenShoter</name>
     <message>
         <source>Save Image</source>
