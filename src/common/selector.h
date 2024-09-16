@@ -110,6 +110,8 @@ protected:
     void paintEvent(QPaintEvent *) override;
     void closeEvent(QCloseEvent *event) override;
 
+    void wheelEvent(QWheelEvent *event) override;
+
     void update_info_label();
 
     // selected area @{

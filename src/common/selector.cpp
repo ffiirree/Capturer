@@ -216,6 +216,16 @@ void Selector::closeEvent(QCloseEvent *event)
     QWidget::closeEvent(event);
 }
 
+void Selector::wheelEvent(QWheelEvent *event)
+{
+    if (status_ == SelectorStatus::PREY_SELECTING) {
+        (event->angleDelta().y() > 0) ? select(hunter::contains(prey_))
+                                      : select(hunter::contained(prey_, QCursor::pos()));
+    }
+
+    QWidget::wheelEvent(event);
+}
+
 void Selector::update_info_label()
 {
     std::string str{ "-- x --" };

@@ -54,7 +54,7 @@ namespace hunter
         };
     }
 
-    prey_t hunt(const QPoint& pos)
+    static prey_t scope_of(const QPoint& pos)
     {
         // virtual screen or corresponding display
         auto scoped = __preys.back();
@@ -72,7 +72,14 @@ namespace hunter
 #endif
         }
 
-        for (auto& prey : __preys) {
+        return scoped;
+    }
+
+    prey_t hunt(const QPoint& pos)
+    {
+        auto scoped = scope_of(pos);
+
+        for (auto prey : __preys) {
             if (prey.geometry.contains(pos.x(), pos.y())) {
                 prey.geometry = scoped.geometry.intersected(prey.geometry);
                 return prey;
@@ -80,6 +87,43 @@ namespace hunter
         }
 
         return scoped;
+    }
+
+    prey_t contains(const prey_t& win)
+    {
+        auto scoped = scope_of(win.geometry.center());
+
+        for (auto prey : __preys) {
+            prey.geometry = scoped.geometry.intersected(prey.geometry);
+
+            if (prey.geometry.contains(win.geometry) && (prey.geometry != win.geometry)) {
+                return prey;
+            }
+        }
+
+        return scoped;
+    }
+
+    prey_t contained(const prey_t& win, const QPoint& pos)
+    {
+        auto scoped = scope_of(pos);
+
+        prey_t last{};
+        for (auto prey : __preys) {
+            prey.geometry = scoped.geometry.intersected(prey.geometry);
+
+            if (prey.geometry.contains(pos.x(), pos.y()) &&
+                ((prey.geometry.contains(last.geometry) && (prey.geometry != last.geometry)) ||
+                 last.geometry == probe::geometry_t{})) {
+                if (!win.geometry.contains(prey.geometry, true)) {
+                    if ((last.geometry == probe::geometry_t{})) return prey;
+                    return last;
+                }
+                last = prey;
+            }
+        }
+
+        return win;
     }
 
     void ready(const window_filter_t flags)

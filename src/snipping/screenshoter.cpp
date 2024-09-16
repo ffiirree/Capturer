@@ -329,6 +329,8 @@ void ScreenShoter::wheelEvent(QWheelEvent *event)
             updateCursor(ResizerLocation::DEFAULT);
         }
     }
+
+    QGraphicsView::wheelEvent(event);
 }
 
 void ScreenShoter::keyPressEvent(QKeyEvent *event)

@@ -33,6 +33,9 @@ namespace hunter
     // return the prey at the point, world coordinate system
     prey_t hunt(const QPoint&);
 
+    prey_t contains(const prey_t&);
+    prey_t contained(const prey_t&, const QPoint&);
+
     // refresh
     void ready(probe::graphics::window_filter_t = probe::graphics::window_filter_t::visible);
 
