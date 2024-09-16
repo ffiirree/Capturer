@@ -42,12 +42,12 @@ QComboBox:on {
 }
 
 QComboBox QAbstractItemView {
-    border: 1px solid #e4e7ed;
+    background-color: transparent;
+    border: 0px;
 }
 
-QComboBox QAbstractItemView {
+QComboBox[system="linux"] QAbstractItemView {
     background-color: #232323;
-    border: 1px solid #323232;
 }
 
 QComboBox QAbstractItemView::item {
@@ -57,7 +57,7 @@ QComboBox QAbstractItemView::item {
 QComboBox QAbstractItemView::item:hover,
 QComboBox QAbstractItemView::item:selected,
 QComboBox QAbstractItemView::item:checked {
-    background-color: #323232;
+    background-color: rgba(95, 95, 95, 75);
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -115,17 +115,23 @@ QSpinBox::down-arrow {
 
 /*///////////////////////////////////////////////////////////////*/
 QMenu {
-    background-color: #232323;
+    background-color: transparent;
     color: #e6e6e6;
-    border: 1px solid #323232;
+}
+
+QMenu[system="linux"] {
+    background-color: #232323;
 }
 
 QMenu::item::selected {
-    background-color: #323232;
+    background-color: rgba(95, 95, 95, 75);
+}
+
+QMenu::item::disabled {
+    color: #2c2c2c;
 }
 
 QMenu::indicator:checked {
-    border: 1px solid #969696;
     background: #e6e6e6;
 }
 

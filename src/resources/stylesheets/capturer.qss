@@ -80,19 +80,17 @@ QComboBox::down-arrow {
 
 QComboBox QAbstractItemView {
     outline: 0px;
-}
-
-QComboBox QAbstractItemView {
-    padding: 5px;
-    border-radius: 5px;
+    padding: 4px 3px 3px 3px;
 }
 
 QComboBox QAbstractItemView::item {
+    background-color: transparent;
     font-size: 10.5pt;
     border-radius: 5px;
+
+    height: 1.75em;
+    margin: 2px;
     padding-left: 0.5em;
-    height: 2em;
-    background-color: transparent;
 }
 
 /*///////////////////////////////////////////////////////////////*/
@@ -142,23 +140,19 @@ QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
 /*///////////////////////////////////////////////////////////////*/
 
 QMenu {
-    border-radius: 8px;
     padding: 0.25em;
-}
-
-QMenu::icon {
-    position: absolute;
-    left: 0.75em;
 }
 
 QMenu::item {
     background-color: transparent;
-    border-radius: 6px;
+
+    border-radius: 5px;
+    margin: 2px;
 
     font-family: "Microsoft YaHei";
     font-size: 10pt;
 
-    height: 1.5em;
+    height: 1.75em;
 
     padding-left: 0.75em;
     padding-right: 0.75em;
@@ -167,12 +161,16 @@ QMenu::item {
 QMenu::item::selected {
 }
 
-QMenu::indicator  {
-    height: 1em;
-    width: 2px;
-    border: 1px solid transparent;
+QMenu::icon {
+    position: absolute;
+    left: 8px;
+}
+
+QMenu::indicator {
+    width: 4px;
+    height: 4px;
     border-radius: 2px;
-    margin-right: -4px;
+    margin-left: 14px;
 }
 
 QMenu::indicator:checked {
@@ -186,7 +184,7 @@ QMenu::right-arrow {
 
 QMenu::separator {
     height: 1px;
-    margin: 0.25em;
+    margin: 3px;
 }
 
 /*///////////////////////////////////////////////////////////////*/

@@ -13,6 +13,10 @@ Menu::Menu(const QString& title, QWidget *parent)
 {
     setWindowFlag(Qt::NoDropShadowWindowHint);
 
+#ifdef Q_OS_LINUX
+    setProperty("system", "linux");
+#endif
+
 #ifdef Q_OS_WIN
     installEventFilter(this);
 #endif

@@ -9,10 +9,14 @@ ComboBox::ComboBox(QWidget *parent)
     : QComboBox(parent)
 {
     setView(new QListView());
-    view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
-    view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+
+#ifdef Q_OS_LINUX
+    setProperty("system", "linux");
+#endif
 
 #ifdef Q_OS_WIN
+    view()->window()->setAttribute(Qt::WA_TranslucentBackground);
+    view()->window()->setWindowFlag(Qt::NoDropShadowWindowHint);
     view()->window()->installEventFilter(this);
 #endif
 
