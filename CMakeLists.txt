@@ -33,7 +33,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.7 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
+find_package(Qt6 6.4 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
 
 if (WIN32)
     # GUI/console
@@ -129,6 +129,7 @@ message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 # Binaries
 if (WIN32)
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
+    install(IMPORTED_RUNTIME_ARTIFACTS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets DESTINATION "${CMAKE_INSTALL_PREFIX}")
     install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
 elseif (UNIX AND NOT APPLE)
     # installed: /usr/local/bin/capturer
@@ -141,7 +142,9 @@ elseif (UNIX AND NOT APPLE)
     # installed: ~/.config/autostart/capturer.desktop
     # installed: ~/.local/logs/capturer/capturer-*.log
     install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-    install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/etc/capturer/translations")
+    # install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_INSTALL_PREFIX}/capturer/capturer /usr/local/bin/capturer)")
+    # install(IMPORTED_RUNTIME_ARTIFACTS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets DESTINATION "${CMAKE_INSTALL_PREFIX}/capturer")
+    install(FILES ${QM_FILES} DESTINATION "/usr/local/etc/capturer/translations")
     install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/pixmaps")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")

@@ -29,7 +29,6 @@ static const std::vector<std::pair<std::underlying_type_t<Qt::PenStyle>, QString
 SettingWindow::SettingWindow(QWidget *parent)
     : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint)
 {
-    setMinimumSize(1080, 760);
     setContentsMargins({});
 
     setAttribute(Qt::WA_DeleteOnClose);
@@ -53,7 +52,7 @@ SettingWindow::SettingWindow(QWidget *parent)
         menu->addItem(tr("GIF Recording"));
         menu->addItem(tr("Devices"));
         menu->addItem(tr("About"));
-        menu->setMinimumWidth(275);
+        menu->setMinimumWidth(250);
         menu->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
         layout->addWidget(menu);
 
@@ -86,6 +85,8 @@ SettingWindow::SettingWindow(QWidget *parent)
 
         menu->setCurrentRow(0);
     }
+
+    resize(960, 640);
 
     connect(this, &SettingWindow::closed, [] { config::save(); });
 }
@@ -430,7 +431,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { AV_PIX_FMT_YUV420P, "YUV420P (8-bit, planar YUV 4:2:0, 12bpp)" },
                 { AV_PIX_FMT_YUV422P, "YUV422P (8-bit, planar YUV 4:2:2, 16bpp)" },
                 { AV_PIX_FMT_YUV444P, "YUV444P (8-bit, planar YUV 4:4:4, 24bpp)" },
-                { AV_PIX_FMT_YUV420P10LE, "YUV420P10P (10-bit, planar YUV 4:2:0, 15bpp)" },
+                { AV_PIX_FMT_YUV420P10LE, "YUV420P10 (10-bit, planar YUV 4:2:0, 15bpp)" },
 
             })
             .onselected([](auto value) {

@@ -34,7 +34,7 @@
 下载后安装：
 
 ```bash
-sudo dpkg -i capturer-1.6.1-ubuntu_xx.04-amd64.deb
+sudo dpkg -i capturer-1.6.2-ubuntu_xx.04-amd64.deb
 sudo apt install -f
 ```
 
@@ -136,7 +136,7 @@ git submodule update --init --recursive
 ### Development Environment
 
 - `C++` : `C++20`
-- `Qt` : `6.7.x`
+- `Qt` : `>= 6.4`
 - `CMake` : `>= 3.27`
 - Windows
   - `Windows` : `>= Windows 10 2004`
@@ -173,6 +173,9 @@ cmake --build build --target install --config Release
 
 ```bash
 sudo apt install build-essential cmake
+
+# Ubuntu 24.04
+sudo apt install qt6-base-dev qt6-tools-dev
 
 sudo apt install libglx-dev libgl1-mesa-dev
 
