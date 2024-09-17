@@ -39,10 +39,15 @@ public slots:
 
     void updateCursor(ResizerLocation);
 
-    void refresh(const probe::geometry_t&);
+    bool screenshot(const probe::geometry_t&);
+    void setBackground(const QPixmap&, const probe::geometry_t&);
 
     void createItem(const QPointF& pos);
     void finishItem();
+
+#ifdef Q_OS_LINUX
+    void DbusScreenshotArrived(uint, const QVariantMap&);
+#endif
 
 protected:
     bool eventFilter(QObject *, QEvent *) override;

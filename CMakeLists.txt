@@ -41,6 +41,7 @@ if (WIN32)
 
     find_package(FFmpeg 6 REQUIRED)
 elseif (UNIX AND NOT APPLE)
+    find_package(Qt6 6.4 COMPONENTS DBus REQUIRED)
     find_package(FFmpeg 4.2 REQUIRED)
 endif ()
 
@@ -55,10 +56,10 @@ set(TS_FILES languages/capturer_en_US.ts languages/capturer_zh_CN.ts)
 qt6_create_translation(QM_FILES ${SOURCES} ${TS_FILES} OPTIONS -locations none -no-obsolete)
 
 add_executable(${PROJECT_NAME}
-    ${SOURCES}
-    src/capturer.qrc
-    ${QM_FILES}
-    $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
+        ${SOURCES}
+        src/capturer.qrc
+        ${QM_FILES}
+        $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
 if (WIN32)
@@ -78,11 +79,11 @@ if (WIN32)
         get_source_file_property(shadertype ${FILE} ShaderType)
         get_source_file_property(shadermodel ${FILE} ShaderModel)
         add_custom_command(TARGET shaders
-            COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
-            MAIN_DEPENDENCY ${FILE}
-            COMMENT "HLSL ${FILE}"
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            VERBATIM
+                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
+                MAIN_DEPENDENCY ${FILE}
+                COMMENT "HLSL ${FILE}"
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                VERBATIM
         )
     endforeach ()
 
@@ -90,14 +91,14 @@ if (WIN32)
 endif ()
 
 target_compile_options(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
         $<$<CXX_COMPILER_ID:MSVC>:/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR> # VS 17.10: https://github.com/microsoft/STL/issues/4730
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion>
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         QHotkey::QHotkey
         Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets
         glog::glog
@@ -107,10 +108,11 @@ target_link_libraries(${PROJECT_NAME}
         nlohmann_json::nlohmann_json
         libcap::libcap
         $<$<PLATFORM_ID:Windows>:Winmm>
+        $<$<PLATFORM_ID:Linux>:Qt6::DBus>
 )
 
 target_include_directories(${PROJECT_NAME}
-    PRIVATE
+        PRIVATE
         src/
         src/common
         src/widgets
@@ -177,18 +179,18 @@ if (UNIX)
     if (EXISTS "/etc/lsb-release")
         file(STRINGS "/etc/lsb-release" SYSTEM_NAME)
         execute_process(
-            COMMAND echo "${SYSTEM_NAME}"
-            COMMAND cut -d ";" -f 1
-            COMMAND cut -d "=" -f 2
-            OUTPUT_VARIABLE HOST_SYSTEM_NAME
-            OUTPUT_STRIP_TRAILING_WHITESPACE
+                COMMAND echo "${SYSTEM_NAME}"
+                COMMAND cut -d ";" -f 1
+                COMMAND cut -d "=" -f 2
+                OUTPUT_VARIABLE HOST_SYSTEM_NAME
+                OUTPUT_STRIP_TRAILING_WHITESPACE
         )
         execute_process(
-            COMMAND echo "${SYSTEM_NAME}"
-            COMMAND cut -d ";" -f 2
-            COMMAND cut -d "=" -f 2
-            OUTPUT_VARIABLE HOST_SYSTEM_VER
-            OUTPUT_STRIP_TRAILING_WHITESPACE
+                COMMAND echo "${SYSTEM_NAME}"
+                COMMAND cut -d ";" -f 2
+                COMMAND cut -d "=" -f 2
+                OUTPUT_VARIABLE HOST_SYSTEM_VER
+                OUTPUT_STRIP_TRAILING_WHITESPACE
         )
 
         if (${HOST_SYSTEM_NAME} MATCHES "Ubuntu")

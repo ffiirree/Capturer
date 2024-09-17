@@ -5,12 +5,18 @@
 #include "config.h"
 #include "logging.h"
 
+#include <probe/system.h>
 #include <QApplication>
 #include <QDateTime>
 #include <QFileDialog>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
+
+#ifdef Q_OS_LINUX
+#include <QDBusInterface>
+#include <QDBusReply>
+#endif
 
 ScreenShoter::ScreenShoter(QWidget *parent)
     : QGraphicsView(parent)
@@ -148,31 +154,73 @@ void ScreenShoter::start()
     selector_->setGeometry(rect());          // relative coordinate, start at (0, 0)
     selector_->coordinate(virtual_geometry); // painter coordinate, absolute coordinate
 
-    refresh(virtual_geometry);
+    if (screenshot(virtual_geometry)) {
+        //
+        selector_->start(probe::graphics::window_filter_t::visible |
+                         probe::graphics::window_filter_t::children);
 
-    //
-    selector_->start(probe::graphics::window_filter_t::visible |
-                     probe::graphics::window_filter_t::children);
+        selector_->show();
 
-    selector_->show();
+        show();
 
-    show();
-
-    // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
-    activateWindow();
+        // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
+        activateWindow();
+    }
 }
 
-void ScreenShoter::refresh(const probe::geometry_t& geometry)
+#ifdef Q_OS_LINUX
+void ScreenShoter::DbusScreenshotArrived(uint response, const QVariantMap& results)
 {
-    // TODO: 180ms (4K + 2K two monitors), speed up
-    const auto background = QGuiApplication::primaryScreen()->grabWindow(
-        probe::graphics::virtual_screen().handle, geometry.x, geometry.y, static_cast<int>(geometry.width),
-        static_cast<int>(geometry.height));
+    if (!response && results.contains(QLatin1String("uri"))) {
+        auto       uri  = results.value(QLatin1String("uri")).toString();
+        const auto path = uri.remove(QLatin1String("file://"));
 
+        QPixmap background(path);
+
+        setBackground(background, probe::geometry_t{ 0, 0, static_cast<uint32_t>(background.width()),
+                                                     static_cast<uint32_t>(background.height()) });
+    }
+}
+#endif
+
+bool ScreenShoter::screenshot(const probe::geometry_t& geometry)
+{
+#ifdef Q_OS_LINUX
+    if (probe::system::windowing_system() == probe::system::windowing_system_t::Wayland) {
+        QDBusInterface interface("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop",
+                                 "org.freedesktop.portal.Screenshot");
+
+        QDBusReply<QDBusObjectPath> reply = interface.call(
+            "Screenshot", "", QVariantMap{ { "interactive", false }, { "handle_token", "123456" } });
+        if (!reply.isValid()) {
+            loge("[WAYLOAD] org.freedesktop.portal.Screenshot");
+            return false;
+        }
+        QDBusConnection::sessionBus().connect(QString(), reply.value().path(),
+                                              "org.freedesktop.portal.Request", "Response", this,
+                                              SLOT(DbusScreenshotArrived(uint, QVariantMap)));
+    }
+    else {
+#endif
+        // TODO: 180ms (4K + 2K two monitors), speed up
+        const auto background = QGuiApplication::primaryScreen()->grabWindow(
+            probe::graphics::virtual_screen().handle, geometry.x, geometry.y,
+            static_cast<int>(geometry.width), static_cast<int>(geometry.height));
+
+        setBackground(background, geometry);
+
+#ifdef Q_OS_LINUX
+    }
+#endif
+
+    return true;
+}
+
+void ScreenShoter::setBackground(const QPixmap& background, const probe::geometry_t& geometry)
+{
     setBackgroundBrush(background);
     setCacheMode(QGraphicsView::CacheBackground);
 
-    //
     magnifier_->setGrabPixmap(background, geometry);
 }
 
@@ -511,7 +559,7 @@ void ScreenShoter::registerShortcuts()
 
         hide();
 
-        refresh(probe::graphics::virtual_screen_geometry());
+        screenshot(probe::graphics::virtual_screen_geometry());
 
         show();
 
