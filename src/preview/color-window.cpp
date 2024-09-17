@@ -58,7 +58,7 @@ ColorWindow::ColorWindow(QWidget *parent)
 {}
 
 ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent)
-    : FramelessWindow(parent)
+    : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
     setWindowTitle("Color Window");
 
@@ -68,7 +68,6 @@ ColorWindow::ColorWindow(const std::shared_ptr<QMimeData>& data, QWidget *parent
         color_ = data_->colorData().value<QColor>();
     }
 
-    setWindowFlags((windowFlags() & ~Qt::Window) | Qt::Tool | Qt::WindowStaysOnTopHint);
     connect(new QShortcut(Qt::Key_Escape, this), &QShortcut::activated, [this]() { close(); });
 
     auto layout = new QVBoxLayout();

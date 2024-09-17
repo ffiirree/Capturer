@@ -141,16 +141,12 @@ int VideoPlayer::open(const std::string& filename)
         source_->vfo         = source_->vfi;
         source_->vfo.pix_fmt = texture_->isSupported(source_->vfo.pix_fmt) ? source_->vfo.pix_fmt
                                                                            : TextureGLWidget::pix_fmts()[0];
-
-        if (texture_->setFormat(source_->vfo) < 0) {
-            loge("[    PLAYER] unsupported video format: {}", av::to_string(source_->vfo));
-            return -1;
-        }
     }
-    ready_ = true;
 
     // title
     setWindowTitle(file.isFile() ? file.fileName() : file.filePath());
+
+    ready_ = true;
 
     return 0;
 }
@@ -464,22 +460,6 @@ void VideoPlayer::initContextMenu()
     {
         const auto video_menu = new Menu(tr("Video"), this);
 
-        // video renderers
-        {
-            const auto renders = new Menu(tr("Renderer"), this);
-
-            const auto group = new QActionGroup(renders);
-            group->addAction(renders->addAction("OpenGL"))->setCheckable(true);
-#ifdef _WIN32
-            group->addAction(renders->addAction("D3D11"))->setCheckable(true);
-#endif
-            group->actions()[0]->setChecked(true);
-
-            video_menu->addMenu(renders);
-        }
-
-        video_menu->addSeparator();
-
         video_menu->addAction(tr("Rotate +90"));
         video_menu->addAction(tr("Rotate -90"));
 
@@ -523,7 +503,6 @@ void VideoPlayer::initContextMenu()
         ssgroup_ = new QActionGroup(this);
         subtitles_menu->addMenu(ssmenu_);
         subtitles_menu->addAction(tr("Add Subtitles"));
-        subtitles_menu->addAction(tr("Show/Hide Subtitles"))->setCheckable(true);
         menu_->addMenu(subtitles_menu);
     }
 

@@ -5,17 +5,19 @@
 
 namespace av
 {
+    template<typename I>
+    requires std::integral<I>
     struct rational
     {
-        intmax_t num{ 0 };
-        intmax_t den{ 1 };
+        I num{ 0 };
+        I den{ 1 };
 
-        template<typename T> T get() { return static_cast<T>(num) / static_cast<T>(den); }
+        template<typename R> R get() { return static_cast<R>(num) / static_cast<R>(den); }
     };
 
     template<class Rep, class Period>
     std::chrono::duration<Rep, Period> operator/(const std::chrono::duration<Rep, Period>& ts,
-                                                 const rational                            speed)
+                                                 const rational<intmax_t>                  speed)
     {
 
         return ts * speed.den / speed.num;
@@ -23,7 +25,7 @@ namespace av
 
     template<class Rep, class Period>
     std::chrono::duration<Rep, Period> operator*(const std::chrono::duration<Rep, Period>& ts,
-                                                 const rational                            speed)
+                                                 const rational<intmax_t>                  speed)
     {
         return ts * speed.num / speed.den;
     }

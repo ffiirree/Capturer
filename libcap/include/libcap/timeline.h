@@ -89,14 +89,14 @@ namespace av
             paused_  = false;
         }
 
-        [[nodiscard]] rational speed() const
+        [[nodiscard]] rational<intmax_t> speed() const
         {
             std::shared_lock lock(mtx_);
 
             return speed_;
         }
 
-        void set_speed(const rational value)
+        void set_speed(const rational<intmax_t> value)
         {
             std::unique_lock lock(mtx_);
 
@@ -132,7 +132,7 @@ namespace av
 
         duration updated_{ clock::nopts };
 
-        rational speed_{ 1, 1 };
+        rational<intmax_t> speed_{ 1, 1 };
 
         bool paused_{ false };
     };

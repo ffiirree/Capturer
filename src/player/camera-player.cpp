@@ -49,11 +49,6 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
     vfmt         = source_->vfmt;
     vfmt.pix_fmt = texture_->isSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureGLWidget::pix_fmts()[0];
 
-    if (texture_->setFormat(vfmt) < 0) {
-        loge("[    CAMERA] unsupported video format: {}", av::to_string(vfmt));
-        return -1;
-    }
-
     ready_ = true;
 
     // title

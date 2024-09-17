@@ -35,7 +35,6 @@ SettingWindow::SettingWindow(QWidget *parent)
     setAttribute(Qt::WA_DeleteOnClose);
 
     setWindowTitle(tr("Settings"));
-    setWindowIcon(QIcon(":/icons/capturer"));
 
     //
     const auto layout = new QHBoxLayout(this);

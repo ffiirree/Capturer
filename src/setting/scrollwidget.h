@@ -4,8 +4,8 @@
 #include <QPointer>
 #include <QScrollArea>
 
-struct QFormLayout;
-struct QVBoxLayout;
+class QFormLayout;
+class QVBoxLayout;
 
 class ScrollWidget final : public QScrollArea
 {

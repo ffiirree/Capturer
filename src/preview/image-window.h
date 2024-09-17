@@ -49,9 +49,9 @@ private:
 
     QSize THUMBNAIL_SIZE_{ 125, 125 };
 
-    QMenu   *context_menu_{ nullptr };
-    QAction *zoom_action_{ nullptr };
-    QAction *opacity_action_{ nullptr };
+    QMenu   *context_menu_{};
+    QAction *zoom_action_{};
+    QAction *opacity_action_{};
 
     // data
     std::shared_ptr<QMimeData> data_{};

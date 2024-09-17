@@ -32,12 +32,12 @@ namespace av::hwaccel
             return device_ctx.data() ? static_cast<T *>(device_ctx.data()->hwctx) : nullptr;
         }
 
-        template<typename AVCTX> auto native_context() -> decltype(hwctx<AVCTX>()->device_context) const
+        template<typename AVCTX> auto native_context() const
         {
             return hwctx<AVCTX>() ? hwctx<AVCTX>()->device_context : nullptr;
         }
 
-        template<typename AVCTX> auto native_device() -> decltype(hwctx<AVCTX>()->device) const
+        template<typename AVCTX> auto native_device() const
         {
             return hwctx<AVCTX>() ? hwctx<AVCTX>()->device : nullptr;
         }
@@ -50,7 +50,7 @@ namespace av::hwaccel
             frames_ctx.data()->width     = w;
             frames_ctx.data()->height    = h;
             frames_ctx.data()->sw_format = swfmt;
-            
+
             return av_hwframe_ctx_init(frames_ctx.get());
         }
     };
@@ -75,4 +75,5 @@ namespace av::hwaccel
 
     int transfer_frame(AVFrame *input, AVPixelFormat pix_fmt);
 } // namespace av::hwaccel
+
 #endif //! CAPTURER_HWACCEL_H

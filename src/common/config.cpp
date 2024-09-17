@@ -11,7 +11,7 @@
 #include <QTextStream>
 
 #define JSON_GET(V, J, KEY)                                                                                \
-    if ((J).contains(KEY)) V = (J)[KEY].get<decltype(V)>();
+    if ((J).contains(KEY)) V = (J)[KEY].get<decltype(V)>()
 
 namespace config
 {
