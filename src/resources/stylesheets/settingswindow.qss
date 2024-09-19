@@ -25,8 +25,3 @@ SettingWindow QCheckBox#close-btn::indicator:hover {
     font-size: 10.5pt;
     font-weight: bold;
 }
-
-/*///////////////////////////////////////////////////////////////*/
-SettingWindow ShortcutInput:focus {
-    color: #409eff;
-}

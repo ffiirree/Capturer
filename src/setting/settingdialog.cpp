@@ -8,12 +8,13 @@
 #include "libcap/hwaccel.h"
 #include "path-edit.h"
 #include "scrollwidget.h"
-#include "shortcutinput.h"
 #include "version.h"
 
 #include <QCheckBox>
 #include <QDir>
 #include <QFormLayout>
+#include <QKeySequenceEdit>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QSpinBox>
 #include <QStackedWidget>
@@ -147,42 +148,27 @@ QWidget *SettingWindow::setupHotkeyWidget()
     {
         const auto form = page->addForm(tr("Hotkeys"));
 
-        const auto snip = new ShortcutInput(config::hotkeys::screenshot);
-        connect(snip, &ShortcutInput::changed, [](auto ks) { config::hotkeys::screenshot = ks; });
-        connect(snip, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(LABEL(tr("Screenshot"), 175), snip);
-
-        const auto preview = new ShortcutInput(config::hotkeys::preview);
-        connect(preview, &ShortcutInput::changed, [](auto&& ks) { config::hotkeys::preview = ks; });
-        connect(preview, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Preview Clipboard"), preview);
-
-        const auto tp = new ShortcutInput(config::hotkeys::toggle_previews);
-        connect(tp, &ShortcutInput::changed, [](auto ks) { config::hotkeys::toggle_previews = ks; });
-        connect(tp, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Toggle Previews"), tp);
-
-#if _WIN32
-        const auto qlook = new ShortcutInput(config::hotkeys::quick_look);
-        connect(qlook, &ShortcutInput::changed, [](auto&& ks) { config::hotkeys::quick_look = ks; });
-        connect(qlook, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Quick Look"), qlook);
+        const auto updateHotkey = [=](const QString& name, QKeySequence& sequence) {
+            const auto edit = new QKeySequenceEdit(sequence);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+            edit->setMaximumSequenceLength(1);
 #endif
+            connect(edit, &QKeySequenceEdit::keySequenceChanged, [&](auto ks) {
+                sequence = ks;
+                App()->UpdateHotkeys();
+            });
+            form->addRow(LABEL(name, 175), edit);
+        };
 
-        const auto trans = new ShortcutInput(config::hotkeys::transparent_input);
-        connect(trans, &ShortcutInput::changed, [](auto ks) { config::hotkeys::transparent_input = ks; });
-        connect(trans, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Transparent Input"), trans);
-
-        const auto rvideo = new ShortcutInput(config::hotkeys::record_video);
-        connect(rvideo, &ShortcutInput::changed, [](auto ks) { config::hotkeys::record_video = ks; });
-        connect(rvideo, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Video Recording"), rvideo);
-
-        const auto rgif = new ShortcutInput(config::hotkeys::record_gif);
-        connect(rgif, &ShortcutInput::changed, [](auto ks) { config::hotkeys::record_gif = ks; });
-        connect(rgif, &ShortcutInput::changed, [] { App()->UpdateHotkeys(); });
-        form->addRow(tr("Gif Recording"), rgif);
+        updateHotkey(tr("Screenshot"), config::hotkeys::screenshot);
+        updateHotkey(tr("Preview Clipboard"), config::hotkeys::preview);
+        updateHotkey(tr("Toggle Previews"), config::hotkeys::toggle_previews);
+#if _WIN32
+        updateHotkey(tr("Quick Look"), config::hotkeys::quick_look);
+#endif
+        updateHotkey(tr("Transparent Input"), config::hotkeys::transparent_input);
+        updateHotkey(tr("Video Recording"), config::hotkeys::record_video);
+        updateHotkey(tr("Gif Recording"), config::hotkeys::record_gif);
     }
 
     page->addSpacer();
