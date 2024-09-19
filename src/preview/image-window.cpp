@@ -45,12 +45,21 @@ void ImageWindow::preview(const std::shared_ptr<QMimeData>& mimedata)
     opacity_   = 1.0;
     thumbnail_ = false;
 
+    setWindowOpacity(opacity_);
+
     if (const auto pixmap = render(data_); pixmap) {
         pixmap_ = pixmap.value();
         texture_->present(pixmap_);
 
         if (mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
             move(clipboard::deserialize<QPoint>(mimedata->data(clipboard::MIME_TYPE_POINT)));
+        }
+        else {
+            const auto screen = QGuiApplication::screenAt(QCursor::pos())
+                                    ? QGuiApplication::screenAt(QCursor::pos())
+                                    : QGuiApplication::primaryScreen();
+            move(screen->geometry().center() -
+                 QPoint{ pixmap_.size().width() / 2, pixmap_.size().height() / 2 });
         }
 
         resize(pixmap_.size());
@@ -72,20 +81,23 @@ void ImageWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     thumbnail_ = !thumbnail_;
 
-    QRect _geometry{};
-
     if (thumbnail_) {
-        _geometry.setSize(THUMBNAIL_SIZE_);
-        _geometry.moveCenter(event->pos());
-        texture_->present(pixmap_.copy(_geometry));
+        QRect rect({ 0, 0 }, THUMBNAIL_SIZE_);
+        rect.moveCenter(event->globalPosition().toPoint());
+        const auto geo = rect.intersected(geometry());
+
+        texture_->present(grab(geo.translated((event->position() - event->globalPosition()).toPoint())));
+
+        thumb_offset_ = geometry().center() - geo.center();
+        setGeometry(geo);
     }
     else {
-        _geometry.setSize(pixmap_.size().scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio));
+        auto geo = QRect({}, pixmap_.size().scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio));
         texture_->present(pixmap_);
-    }
 
-    _geometry.moveCenter(geometry().center());
-    setGeometry(_geometry);
+        geo.moveCenter(geometry().center() + thumb_offset_);
+        setGeometry(geo);
+    }
 }
 
 void ImageWindow::wheelEvent(QWheelEvent *event)

@@ -7,7 +7,6 @@
 #include <QAbstractTextDocumentLayout>
 #include <QGraphicsScene>
 #include <QGraphicsSceneHoverEvent>
-#include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>

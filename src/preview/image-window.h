@@ -47,7 +47,8 @@ private:
     qreal scale_{ 1.0 };
     qreal opacity_{ 1.0 };
 
-    QSize THUMBNAIL_SIZE_{ 125, 125 };
+    QSize  THUMBNAIL_SIZE_{ 125, 125 };
+    QPoint thumb_offset_{};
 
     QMenu   *context_menu_{};
     QAction *zoom_action_{};

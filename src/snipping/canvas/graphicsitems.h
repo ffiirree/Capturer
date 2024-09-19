@@ -274,7 +274,7 @@ public:
 
     void push(const QPointF&) override;
 
-    bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
+    [[nodiscard]] bool invalid() const override { return geometry_.width() * geometry_.height() < 16; }
 
     [[nodiscard]] ResizerLocation location(const QPointF&) const override;
 
