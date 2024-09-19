@@ -5,6 +5,7 @@
 #include "libcap/dispatcher.h"
 #include "libcap/encoder.h"
 #include "logging.h"
+#include "message.h"
 #include "platforms/window-effect.h"
 
 #include <fmt/core.h>
@@ -235,6 +236,7 @@ void ScreenRecorder::setup()
 
     // video source
     if (desktop_src_->open(name, {}) < 0) {
+        Message::error(tr("Could not capture the given window"));
         loge("[RECORDER] failed to open the desktop capturer: {}", name);
         desktop_src_ = std::make_unique<DesktopCapturer>();
         stop();
@@ -305,6 +307,7 @@ void ScreenRecorder::setup()
 
     if (encoder_->open(filename_, encoder_options_) < 0) {
         loge("open encoder failed");
+        Message::error(tr("Could not open the encoder"));
         stop();
         return;
     }

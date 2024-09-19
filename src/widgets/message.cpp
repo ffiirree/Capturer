@@ -5,55 +5,55 @@
 #include <QLabel>
 #include <QScreen>
 
-Message::Message(const QString& text, MessageLevel level, QWidget *parent)
+Message::Message(const QString& text, MessageLevel level, int ms, QWidget *parent)
     : FramelessWindow(parent, Qt::Tool | Qt::WindowStaysOnTopHint)
 {
-    switch (level) {
-    case MessageLevel::LEVEL_SUCCESS: setObjectName("success"); break;
-    case MessageLevel::LEVEL_WARNING: setObjectName("warning"); break;
-    case MessageLevel::LEVEL_ERROR:   setObjectName("error"); break;
-    case MessageLevel::LEVEL_MESSAGE:
-    default:                          setObjectName("message"); break;
-    }
-
     setAttribute(Qt::WA_TransparentForMouseEvents);
     setFocusPolicy(Qt::NoFocus);
     setAttribute(Qt::WA_DeleteOnClose);
 
+    //
     const auto layout = new QHBoxLayout();
-    layout->setContentsMargins({ 10, 15, 10, 15 });
+    layout->setContentsMargins({  });
     layout->setSizeConstraint(QLayout::SetFixedSize);
     setLayout(layout);
 
     layout->addWidget(new QLabel(text));
 
-    connect(&timer_, &QTimer::timeout, this, &Message::close);
-    timer_.start(1500);
+    switch (level) {
+    case Message::MessageLevel::LEVEL_SUCCESS: setObjectName("success"); break;
+    case Message::MessageLevel::LEVEL_WARNING: setObjectName("warning"); break;
+    case Message::MessageLevel::LEVEL_ERROR:   setObjectName("error"); break;
+    case Message::MessageLevel::LEVEL_MESSAGE:
+    default:                                   setObjectName("message"); break;
+    }
+
+    //
+    const auto geo = QApplication::screenAt(QCursor::pos())->geometry();
+    move(geo.center() - rect().center());
 
     show();
 
-    const auto geo = (parent && (parent->windowFlags() & Qt::Window) && parent->isVisible())
-                         ? parent->geometry()
-                         : QApplication::screenAt(QCursor::pos())->geometry();
-    move(geo.width() / 2 + geo.left() - width() / 2, geo.top() + geo.height() / 4 - height() / 2);
+    connect(&timer_, &QTimer::timeout, this, &Message::close);
+    timer_.start(ms);
 }
 
-void Message::message(QWidget *parent, const QString& text)
+void Message::message(const QString& text, int ms)
 {
-    new Message(text, MessageLevel::LEVEL_MESSAGE, parent);
+    new Message(text, MessageLevel::LEVEL_MESSAGE, ms, nullptr);
 }
 
-void Message::success(QWidget *parent, const QString& text)
+void Message::success(const QString& text, int ms)
 {
-    new Message(text, MessageLevel::LEVEL_SUCCESS, parent);
+    new Message(text, MessageLevel::LEVEL_SUCCESS, ms, nullptr);
 }
 
-void Message::warning(QWidget *parent, const QString& text)
+void Message::warning(const QString& text, int ms)
 {
-    new Message(text, MessageLevel::LEVEL_WARNING, parent);
+    new Message(text, MessageLevel::LEVEL_WARNING, ms, nullptr);
 }
 
-void Message::error(QWidget *parent, const QString& text)
+void Message::error(const QString& text, int ms)
 {
-    new Message(text, MessageLevel::LEVEL_ERROR, parent);
+    new Message(text, MessageLevel::LEVEL_ERROR, ms, nullptr);
 }

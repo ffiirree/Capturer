@@ -1,8 +1,9 @@
 #ifndef CAPTURER_MESSAGE_H
 #define CAPTURER_MESSAGE_H
 
-#include <QTimer>
 #include "framelesswindow.h"
+
+#include <QTimer>
 
 class Message final : public FramelessWindow
 {
@@ -18,12 +19,12 @@ public:
     };
 
 public:
-    Message(const QString& text, MessageLevel level, QWidget *parent = nullptr);
+    Message(const QString& text, MessageLevel level, int ms, QWidget *parent = nullptr);
 
-    static void message(QWidget *parent, const QString& text);
-    static void success(QWidget *parent, const QString& text);
-    static void warning(QWidget *parent, const QString& text);
-    static void error(QWidget *parent, const QString& text);
+    static void message(const QString& text, int ms = 1500);
+    static void success(const QString& text, int ms = 1500);
+    static void warning(const QString& text, int ms = 1500);
+    static void error(const QString& text, int ms = 1500);
 
 private:
     QTimer timer_;

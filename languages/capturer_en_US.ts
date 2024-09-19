@@ -140,6 +140,17 @@
     </message>
 </context>
 <context>
+    <name>ScreenRecorder</name>
+    <message>
+        <source>Could not capture the given window</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Could not open the encoder</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
     <name>ScreenShoter</name>
     <message>
         <source>Save Image</source>
@@ -413,10 +424,6 @@
     </message>
     <message>
         <source>Add Subtitles</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Show/Hide Subtitles</source>
         <translation></translation>
     </message>
     <message>

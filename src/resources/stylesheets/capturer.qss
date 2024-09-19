@@ -403,3 +403,24 @@ TitleBar QCheckBox#close-btn::indicator:hover {
     background-color: #C42B1C;
     image: url(:/icons/close);
 }
+
+/*///////////////////////////////////////////////////////////////*/
+Message QLabel {
+    padding: 0.5em 0.75em;
+}
+
+Message#success QLabel {
+    color: #67C23A;
+}
+
+Message#warning QLabel {
+    color: #E6A23C;
+}
+
+Message#error QLabel {
+    color: #F56C6C;
+}
+
+Message#message QLabel {
+    color: #909399;
+}

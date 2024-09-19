@@ -140,6 +140,17 @@
     </message>
 </context>
 <context>
+    <name>ScreenRecorder</name>
+    <message>
+        <source>Could not capture the given window</source>
+        <translation>无法捕获该窗口</translation>
+    </message>
+    <message>
+        <source>Could not open the encoder</source>
+        <translation>无法打开视频编码器</translation>
+    </message>
+</context>
+<context>
     <name>ScreenShoter</name>
     <message>
         <source>Save Image</source>
@@ -414,10 +425,6 @@
     <message>
         <source>Add Subtitles</source>
         <translation>添加字幕</translation>
-    </message>
-    <message>
-        <source>Show/Hide Subtitles</source>
-        <translation>显示/隐藏字幕</translation>
     </message>
     <message>
         <source>Properties</source>
