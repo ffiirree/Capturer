@@ -63,7 +63,7 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->setSpacing(0);
         layout->setContentsMargins({});
 
-        // foont
+        // font
         font_family_ = new ComboBox(this);
         font_style_  = new ComboBox(this);
         font_size_   = new ComboBox(this);
@@ -137,7 +137,7 @@ QFont EditingSubmenu::font() const
     return font;
 }
 
-bool EditingSubmenu::filled() const { return fill_btn_ ? fill_btn_->isChecked() : false; }
+bool EditingSubmenu::filled() const { return fill_btn_ != nullptr && fill_btn_->isChecked(); }
 
 void EditingSubmenu::fill(bool s)
 {

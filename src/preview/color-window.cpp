@@ -6,7 +6,6 @@
 #include <fmt/format.h>
 #include <QCheckBox>
 #include <QGridLayout>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QShortcut>

@@ -711,12 +711,12 @@ void GraphicsPixmapItem::resize(const ResizerF& resizer, ResizerLocation locatio
 
 ///
 
-int GraphicsCounterleItem::counter = 0;
+int GraphicsCounterItem::counter = 0;
 
-GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphicsItem *parent)
+GraphicsCounterItem::GraphicsCounterItem(const QPointF& pos, int v, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
-    // dynamic caculate the rect
+    // dynamic calculate the rect
     QFont font;
     font.setPointSizeF(16);
     font.setBold(true);
@@ -733,22 +733,22 @@ GraphicsCounterleItem::GraphicsCounterleItem(const QPointF& pos, int v, QGraphic
     setCounter(v);
 }
 
-void GraphicsCounterleItem::setCounter(int v)
+void GraphicsCounterItem::setCounter(int v)
 {
     counter_ = (v == -1) ? counter : v;
     counter  = counter_ + 1;
 }
 
-QPainterPath GraphicsCounterleItem::shape() const
+QPainterPath GraphicsCounterItem::shape() const
 {
     QPainterPath path;
     path.addRect(geometry_.boundingRect()); // to include corner anchors
     return shape_from_path(path, pen_);
 }
 
-ResizerLocation GraphicsCounterleItem::location(const QPointF&) const { return ResizerLocation::BORDER; }
+ResizerLocation GraphicsCounterItem::location(const QPointF&) const { return ResizerLocation::BORDER; }
 
-void GraphicsCounterleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
+void GraphicsCounterItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     painter->setPen(QPen{ pen_.color() });
     painter->setBrush(pen_.color());

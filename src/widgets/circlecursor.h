@@ -7,8 +7,8 @@
 
 namespace cursor
 {
-    QPixmap circle(qreal width, const QPen& pen = QPen(QColor("#888888"), 2),
+    QPixmap circle(qreal width, const QPen& pen = QPen(QColor(0x88, 0x88, 0x88), 2),
                    const QBrush& brush = QColor(225, 200, 0, 175));
-};
+}
 
 #endif //! CAPTURER_CIRCLE_CURSOR_H

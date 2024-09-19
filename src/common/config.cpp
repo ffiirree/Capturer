@@ -97,7 +97,7 @@ namespace config
 
                 JSON_GET(path, j["recording"]["gif"], "save-path");
                 JSON_GET(show_region, j["recording"]["gif"], "show-region");
-                JSON_GET(capture_mouse, j["recording"]["gif"], "captuer-mouse");
+                JSON_GET(capture_mouse, j["recording"]["gif"], "capture-mouse");
                 JSON_GET(floating_menu, j["recording"]["gif"], "floating-menu");
 
                 JSON_GET(framerate.num, j["recording"]["gif"], "framerate");
@@ -168,7 +168,7 @@ namespace config
 
         j["recording"]["gif"]["save-path"]     = recording::gif::path;
         j["recording"]["gif"]["show-region"]   = recording::gif::show_region;
-        j["recording"]["gif"]["captuer-mouse"] = recording::gif::capture_mouse;
+        j["recording"]["gif"]["capture-mouse"] = recording::gif::capture_mouse;
         j["recording"]["gif"]["floating-menu"] = recording::gif::floating_menu;
 
         j["recording"]["gif"]["framerate"] = recording::gif::framerate.num;

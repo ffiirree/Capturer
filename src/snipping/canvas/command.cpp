@@ -1,7 +1,6 @@
 #include "command.h"
 
 #include "graphicsitems.h"
-#include "logging.h"
 
 #include <QGraphicsScene>
 #include <utility>

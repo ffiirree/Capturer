@@ -284,10 +284,10 @@ private:
 
 /// Counter Item
 
-class GraphicsCounterleItem : public GraphicsItem
+class GraphicsCounterItem : public GraphicsItem
 {
 public:
-    explicit GraphicsCounterleItem(const QPointF&, int, QGraphicsItem * = nullptr);
+    explicit GraphicsCounterItem(const QPointF&, int, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
     [[nodiscard]] QPainterPath shape() const override;

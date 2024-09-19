@@ -200,11 +200,11 @@ void ScreenRecorder::setup()
     desktop_src_->vfmt.height = region.height();
 #elif _WIN32
     // TODO:
-    //   1. rectanle mode: OK, use display mode
-    //   2. widget   mode: NO, use display mode
-    //   3. window   mode: OK
-    //   4. display  mode: OK
-    //   5. desktop  mode: NO, not supported
+    //   1. rectangle mode: OK, use display mode
+    //   2. widget    mode: NO, use display mode
+    //   3. window    mode: OK
+    //   4. display   mode: OK
+    //   5. desktop   mode: NO, not supported
     switch (selector_->prey().type) {
     case hunter::prey_type_t::rectangle:
     case hunter::prey_type_t::widget:    {
@@ -229,7 +229,7 @@ void ScreenRecorder::setup()
         desktop_src_->handle = selector_->prey().handle;
         selector_->hide();
         break;
-    default: loge("unsuppored mode"); return;
+    default: loge("unsupported mode"); return;
     }
 #endif
 

@@ -309,7 +309,7 @@ void ScreenShoter::createItem(const QPointF& pos)
     case canvas::arrow:     creating_item_ = new GraphicsArrowItem(pos, pos); break;
     case canvas::line:      creating_item_ = new GraphicsLineItem(pos, pos); break;
     case canvas::curve:     creating_item_ = new GraphicsCurveItem(pos, sceneRect().size()); break;
-    case canvas::counter:   creating_item_ = new GraphicsCounterleItem(pos, ++counter_); break;
+    case canvas::counter:   creating_item_ = new GraphicsCounterItem(pos, ++counter_); break;
     case canvas::text:      creating_item_ = new GraphicsTextItem(pos); break;
     case canvas::eraser:
         creating_item_ = new GraphicsEraserItem(pos, sceneRect().size(), backgroundBrush());

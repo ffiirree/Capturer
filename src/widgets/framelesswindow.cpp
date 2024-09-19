@@ -1,6 +1,5 @@
 #include "framelesswindow.h"
 
-#include "logging.h"
 #include "platforms/window-effect.h"
 #include "titlebar.h"
 
@@ -238,26 +237,26 @@ bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_
             }
         }
 
-        // autohide taskbar
+        // auto-hide taskbar
         if (maximized || fullscreen) {
             APPBARDATA abd{ .cbSize = sizeof(APPBARDATA) };
 
             if (const UINT taskbar_state = ::SHAppBarMessage(ABM_GETSTATE, &abd);
                 taskbar_state & ABS_AUTOHIDE) {
 
-                UINT taskbar_postion = ABE_BOTTOM;
+                UINT taskbar_position = ABE_BOTTOM;
 
                 if (!monitor) break;
 
                 for (const auto& abe : std::vector<UINT>{ ABE_BOTTOM, ABE_TOP, ABE_LEFT, ABE_RIGHT }) {
                     APPBARDATA pos{ .cbSize = sizeof(APPBARDATA), .uEdge = abe, .rc = monitor->rcMonitor };
                     if (::SHAppBarMessage(ABM_GETAUTOHIDEBAREX, &pos)) {
-                        taskbar_postion = abe;
+                        taskbar_position = abe;
                         break;
                     }
                 }
 
-                switch (taskbar_postion) {
+                switch (taskbar_position) {
                 case ABE_TOP:   rect->top += 2; break;
                 case ABE_LEFT:  rect->left += 2; break;
                 case ABE_RIGHT: rect->right -= 2; break;

@@ -12,7 +12,6 @@
 
 #ifdef Q_OS_WIN
 #include <dwmapi.h>
-#include <windowsx.h>
 #endif
 
 static void SetWindowStayOnTop(QWidget *win, bool top = true)
