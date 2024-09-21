@@ -150,9 +150,7 @@ QWidget *SettingWindow::setupHotkeyWidget()
 
         const auto updateHotkey = [=](const QString& name, QKeySequence& sequence) {
             const auto edit = new QKeySequenceEdit(sequence);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
             edit->setMaximumSequenceLength(1);
-#endif
             connect(edit, &QKeySequenceEdit::keySequenceChanged, [&](auto ks) {
                 sequence = ks;
                 App()->UpdateHotkeys();

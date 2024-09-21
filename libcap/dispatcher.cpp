@@ -53,7 +53,7 @@ int Dispatcher::initialize(const std::string_view& video_filters, const std::str
     consumer_->enable(AVMEDIA_TYPE_AUDIO, actx_.enabled);
     consumer_->enable(AVMEDIA_TYPE_VIDEO, vctx_.enabled);
 
-    set_encoder_format_by_sinks();
+    update_encoder_format_by_sinks();
 
     ready_ = true;
     return 0;
@@ -147,21 +147,25 @@ int Dispatcher::create_filter_graph(const AVMediaType type)
     return 0;
 }
 
-int Dispatcher::set_encoder_format_by_sinks()
+int Dispatcher::update_encoder_format_by_sinks()
 {
     if (consumer_ && consumer_->accepts(AVMEDIA_TYPE_VIDEO) && vctx_.sink) {
-        consumer_->vfmt.pix_fmt = static_cast<AVPixelFormat>(av_buffersink_get_format(vctx_.sink));
-        consumer_->vfmt.width   = av_buffersink_get_w(vctx_.sink);
-        consumer_->vfmt.height  = av_buffersink_get_h(vctx_.sink);
+        consumer_->vfmt.pix_fmt     = static_cast<AVPixelFormat>(av_buffersink_get_format(vctx_.sink));
+        consumer_->vfmt.color.space = av_buffersink_get_colorspace(vctx_.sink);
+        consumer_->vfmt.color.range = av_buffersink_get_color_range(vctx_.sink);
+        consumer_->vfmt.width       = av_buffersink_get_w(vctx_.sink);
+        consumer_->vfmt.height      = av_buffersink_get_h(vctx_.sink);
         consumer_->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(vctx_.sink);
         consumer_->vfmt.time_base           = av_buffersink_get_time_base(vctx_.sink);
         consumer_->input_framerate          = av_buffersink_get_frame_rate(vctx_.sink);
     }
 
     if (consumer_ && consumer_->accepts(AVMEDIA_TYPE_AUDIO) && actx_.sink) {
-        consumer_->afmt.sample_fmt     = static_cast<AVSampleFormat>(av_buffersink_get_format(actx_.sink));
-        consumer_->afmt.channels       = av_buffersink_get_channels(actx_.sink);
-        consumer_->afmt.channel_layout = av_buffersink_get_channel_layout(actx_.sink);
+        consumer_->afmt.sample_fmt = static_cast<AVSampleFormat>(av_buffersink_get_format(actx_.sink));
+        AVChannelLayout ch_layout{};
+        av_buffersink_get_ch_layout(actx_.sink, &ch_layout);
+        consumer_->afmt.channels       = ch_layout.nb_channels;
+        consumer_->afmt.channel_layout = ch_layout.u.mask;
         consumer_->afmt.sample_rate    = av_buffersink_get_sample_rate(actx_.sink);
         consumer_->afmt.time_base      = av_buffersink_get_time_base(actx_.sink);
     }

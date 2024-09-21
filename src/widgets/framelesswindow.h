@@ -4,12 +4,6 @@
 #include <QPointer>
 #include <QWidget>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#define Q_NATIVE_EVENT_RESULT qintptr
-#else
-#define Q_NATIVE_EVENT_RESULT long
-#endif
-
 class TitleBar;
 
 class FramelessWindow : public QWidget
@@ -51,7 +45,7 @@ protected:
 #endif
 
 #ifdef Q_OS_WIN
-    bool nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result) override;
+    bool nativeEvent(const QByteArray& eventType, void *message, qintptr *result) override;
 #endif
 };
 

@@ -136,14 +136,13 @@ git submodule update --init --recursive
 ### Development Environment
 
 - `C++` : `C++20`
-- `Qt` : `>= 6.4`
+- `Qt` : `>= 6.7`
 - `CMake` : `>= 3.27`
+- `FFmpeg` : `>= 7.0`
 - Windows
   - `Windows` : `>= Windows 10 2004`
   - `Windows SDK` : `>= 10.0.22621.0`
-  - `FFmpeg` : `>= 6.0`
 - Linux
-  - `FFmpeg` : `>= 4.2`
   - `Window System` : `X11`
 
 #### Video & Audio Capture Sources & Methods

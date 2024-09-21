@@ -281,7 +281,7 @@ void ScreenRecorder::setup()
     }
     encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
     encoder_->afmt.channels       = config::recording::video::a::channels;
-    encoder_->afmt.channel_layout = av_get_default_channel_layout(encoder_->afmt.channels);
+    encoder_->afmt.channel_layout = av::default_channel_layout(config::recording::video::a::channels);
     encoder_->afmt.sample_rate    = config::recording::video::a::sample_rate;
     encoder_->vfmt.hwaccel        = hwaccel;
 

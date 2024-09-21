@@ -153,8 +153,8 @@ int Decoder::open(const std::string& name)
         afi = {
             .sample_rate    = actx.codec->sample_rate,
             .sample_fmt     = actx.codec->sample_fmt,
-            .channels       = actx.codec->channels,
-            .channel_layout = actx.codec->channel_layout,
+            .channels       = actx.codec->ch_layout.nb_channels,
+            .channel_layout = actx.codec->ch_layout.u.mask,
             .time_base      = { 1, actx.codec->sample_rate },
         };
 
@@ -605,8 +605,8 @@ std::vector<std::map<std::string, std::string>> Decoder::properties(const AVMedi
             map["Sample Format"] =
                 probe::util::toupper(av::to_string(static_cast<AVSampleFormat>(params->format)));
             map["Bitrate"]  = params->bit_rate ? fmt::format("{} kb/s", params->bit_rate / 1024) : "N/A";
-            map["Channels"] = std::to_string(params->channels);
-            map["Channel Layout"] = av::channel_layout_name(params->channels, params->channel_layout);
+            map["Channels"] = std::to_string(params->ch_layout.nb_channels);
+            map["Channel Layout"] = av::to_string(params->ch_layout);
             map["Sample Rate"]    = fmt::format("{} Hz", params->sample_rate);
             break;
         case AVMEDIA_TYPE_SUBTITLE:

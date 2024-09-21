@@ -194,7 +194,7 @@ static int ResizeHandleHeight(HWND hWnd)
     return ::GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + ::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
 }
 
-bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, Q_NATIVE_EVENT_RESULT *result)
+bool FramelessWindow::nativeEvent(const QByteArray& eventType, void *message, qintptr *result)
 {
     if (!message || !result || !static_cast<MSG *>(message)->hwnd) return false;
 

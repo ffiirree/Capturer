@@ -81,6 +81,13 @@ namespace av
         AVRational time_base{ 1, OS_TIME_BASE };
     };
 
+    inline uint64_t default_channel_layout(int channels)
+    {
+        AVChannelLayout ch{};
+        av_channel_layout_default(&ch, channels);
+        return ch.u.mask;
+    }
+
     inline std::string to_string(const status_t code)
     {
         switch (code) {
@@ -111,24 +118,16 @@ namespace av
     }
 
     // convert <T> to string
-#if LIBAVUTIL_VERSION_MAJOR >= 57
     inline std::string to_string(const AVChannelLayout& channel_layout)
     {
         char buffer[32]{ 0 };
         if (av_channel_layout_describe(&channel_layout, buffer, sizeof(buffer)) < 0) return {};
         return buffer;
     }
-#endif
 
     inline std::string channel_layout_name(int channels, uint64_t channel_layout)
     {
-#if LIBAVUTIL_VERSION_MAJOR >= 57
         return to_string(AV_CHANNEL_LAYOUT_MASK(channels, channel_layout));
-#else
-        char buffer[32]{ 0 };
-        av_get_channel_layout_string(buffer, sizeof(buffer), channels, channel_layout);
-        return buffer; // ATTENTION: make the std::string do not contain '\0'
-#endif
     }
 
     inline std::string to_string(const AVPixelFormat fmt)
@@ -196,12 +195,16 @@ namespace av
     // for creating vbuffer src
     inline std::string to_string(const vformat_t& fmt)
     {
-        auto args = fmt::format("video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}", fmt.width,
-                                fmt.height, to_string(fmt.pix_fmt), fmt.time_base.num, fmt.time_base.den,
-                                fmt.sample_aspect_ratio.num, std::max(fmt.sample_aspect_ratio.den, 1));
+        auto args = fmt::format(
+            "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:colorspace={}:range={}",
+            fmt.width, fmt.height, to_string(fmt.pix_fmt), fmt.time_base.num, fmt.time_base.den,
+            fmt.sample_aspect_ratio.num, std::max(fmt.sample_aspect_ratio.den, 1),
+            to_string(fmt.color.space), to_string(fmt.color.range));
+
         if (fmt.framerate.den && fmt.framerate.num) {
             args += fmt::format(":frame_rate={}/{}", fmt.framerate.num, fmt.framerate.den);
         }
+
         return args;
     }
 

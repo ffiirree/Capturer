@@ -207,7 +207,7 @@ namespace av
 
         AVBufferRef *detach() noexcept { return std::exchange(ptr_, {}); }
 
-        AVBufferRef *get() const noexcept { return ptr_; }
+        [[nodiscard]] AVBufferRef *get() const noexcept { return ptr_; }
 
         T *data() const noexcept { return ptr_ ? reinterpret_cast<T *>(ptr_->data) : nullptr; }
 
@@ -222,4 +222,5 @@ namespace av
         AVBufferRef *ptr_{};
     };
 } // namespace av
+
 #endif //! CAPTURER_FFMPEG_WRAPPER_H

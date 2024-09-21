@@ -6,11 +6,9 @@ if (WIN32 AND "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_LESS "10.0.2
     message(WARNING "Capturer requires Windows SDK 10.0.22621.0 and above to compile.")
 endif()
 
-if(WIN32)
-    # >= 6 required by nvenc for encoding d3d11 format
-    find_package(FFmpeg 6 REQUIRED)
-elseif(UNIX AND NOT APPLE)
-    find_package(FFmpeg 4.2 REQUIRED)
+find_package(FFmpeg 7.0 REQUIRED)
+
+if(UNIX AND NOT APPLE)
     find_package(PulseAudio REQUIRED)
     find_package(Libv4l2 REQUIRED)
     find_package(X11 REQUIRED)

@@ -258,7 +258,7 @@ HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
 
 HRESULT WasapiRenderer::SwitchEventHandler()
 {
-    if (switching_ == false) return S_FALSE;
+    if (!switching_) return S_FALSE;
 
     std::lock_guard lock(mtx_);
 

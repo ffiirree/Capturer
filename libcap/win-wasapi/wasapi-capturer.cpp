@@ -197,8 +197,7 @@ int WasapiCapturer::ProcessReceivedData(BYTE *data_ptr, const UINT32 nb_samples,
     frame->nb_samples  = static_cast<int>(nb_samples);
     frame->format      = afmt.sample_fmt;
     frame->sample_rate = afmt.sample_rate;
-    frame->channels    = afmt.channels;
-    frame->channel_layout = afmt.channel_layout;
+    frame->ch_layout   = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
 
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,

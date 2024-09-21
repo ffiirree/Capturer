@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.27)
 
-project(capturer VERSION 1.6.3 LANGUAGES C CXX)
+project(capturer VERSION 1.7.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,16 +33,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.4 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
+find_package(Qt6 6.7 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
+find_package(FFmpeg 7.0 REQUIRED)
 
 if (WIN32)
     # GUI/console
     set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
 
-    find_package(FFmpeg 6 REQUIRED)
 elseif (UNIX AND NOT APPLE)
-    find_package(Qt6 6.4 COMPONENTS DBus REQUIRED)
-    find_package(FFmpeg 4.2 REQUIRED)
+    find_package(Qt6 6.7 COMPONENTS DBus REQUIRED)
 endif ()
 
 # #######################################################################################################################

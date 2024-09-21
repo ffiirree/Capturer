@@ -45,9 +45,26 @@ namespace av::graph
             return -1;
         }
 
+        // pix_fmts (int list),
         const AVPixelFormat pix_fmts[] = { args.pix_fmt, AV_PIX_FMT_NONE };
         if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[V] av_opt_set_int_list");
+            loge("[V] failed to set 'pix_fmts' for 'buffersink'");
+            return -1;
+        }
+
+        // color_spaces (int list)
+        const AVColorSpace spaces[] = { args.color.space, AVCOL_SPC_UNSPECIFIED };
+        if (av_opt_set_int_list(*ctx, "color_spaces", spaces, AVCOL_SPC_UNSPECIFIED,
+                                AV_OPT_SEARCH_CHILDREN) < 0) {
+            loge("[V] failed to set 'color_spaces' for 'buffersink'");
+            return -1;
+        }
+
+        // color_ranges (int list)
+        const AVColorRange ranges[] = { args.color.range, AVCOL_RANGE_UNSPECIFIED };
+        if (av_opt_set_int_list(*ctx, "color_ranges", ranges, AVCOL_RANGE_UNSPECIFIED,
+                                AV_OPT_SEARCH_CHILDREN) < 0) {
+            loge("[V] failed to set 'color_ranges' for 'buffersink'");
             return -1;
         }
 
@@ -68,7 +85,7 @@ namespace av::graph
         if (const AVSampleFormat sink_fmts[] = { args.sample_fmt, AV_SAMPLE_FMT_NONE };
             av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE,
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[A] faile to set 'sample_fmts' option.");
+            loge("[A] failed to set 'sample_fmts' option.");
             return -1;
         }
 
@@ -79,20 +96,9 @@ namespace av::graph
             return -1;
         }
 
-        // channel_layouts(int64_t) / >= 5.1  ch_layouts(string)
-#if LIBAVFILTER_VERSION_INT >= AV_VERSION_INT(8, 44, 100)
+        // ch_layouts(string)
         const auto layout = av::channel_layout_name(args.channels, args.channel_layout);
         if (av_opt_set(*ctx, "ch_layouts", layout.c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
-#else
-        if (const int64_t channel_counts[] = { args.channel_layout ? -1 : args.channels, -1 };
-            av_opt_set_int_list(*ctx, "channel_counts", channel_counts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[A] failed to set 'channel_counts' option.");
-            return -1;
-        }
-
-        if (const int64_t channel_layouts[] = { static_cast<int64_t>(args.channel_layout), -1 };
-            av_opt_set_int_list(*ctx, "channel_layouts", channel_layouts, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
-#endif
             loge("[A] failed to set 'channel_layouts' option.");
             return -1;
         }

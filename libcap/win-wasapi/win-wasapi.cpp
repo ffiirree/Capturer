@@ -2,6 +2,7 @@
 
 #include "libcap/win-wasapi/win-wasapi.h"
 
+#include "libcap/media.h"
 #include "logging.h"
 
 #include <Audioclient.h>
@@ -24,7 +25,7 @@ uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
     case KSAUDIO_SPEAKER_QUAD:     return AV_CH_LAYOUT_QUAD;
     case KSAUDIO_SPEAKER_2POINT1:  return AV_CH_LAYOUT_SURROUND;
     case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
-    default:                       return av_get_default_channel_layout(channels);
+    default:                       return av::default_channel_layout(channels);
     }
 }
 

@@ -63,7 +63,7 @@ public:
 private:
     int create_filter_graph(AVMediaType);
 
-    int set_encoder_format_by_sinks();
+    int update_encoder_format_by_sinks();
 
     int dispatch_fn(AVMediaType mt);
 

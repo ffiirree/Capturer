@@ -74,7 +74,7 @@ int Encoder::open(const std::string& filename, std::map<std::string, std::string
 
 int Encoder::new_video_stream(const std::string& codec_name)
 {
-    logi("[   ENCODER] [V] <<< [{}], {}", codec_name, av::to_string(vfmt));
+    logi("[   ENCODER] [V] <<< [{}], {}:{}", codec_name, av::to_string(vfmt), av::to_string(vfmt.color));
 
     const auto stream = avformat_new_stream(fmt_ctx_, nullptr);
     if (!stream) {
@@ -132,11 +132,9 @@ int Encoder::new_video_stream(const std::string& codec_name)
         return av::INVALID;
 
     if (vstream_idx_ >= 0) {
-        logi(
-            "[   ENCODER] [V] >>> [{}], video_size={}x{}:pix_fmt={}:frame_rate={}, tbc={}, tbn={}, hwaccel={}",
-            codec_name, vfmt.width, vfmt.height, av::to_string(vfmt.pix_fmt), vfmt.framerate,
-            vcodec_ctx_->time_base, fmt_ctx_->streams[vstream_idx_]->time_base,
-            av::to_string(vfmt.hwaccel));
+        logi("[   ENCODER] [V] >>> [{}], {}:{}, tbc={}, tbn={}, hwaccel={}", codec_name,
+             av::to_string(vfmt), av::to_string(vfmt.color), vcodec_ctx_->time_base,
+             fmt_ctx_->streams[vstream_idx_]->time_base, av::to_string(vfmt.hwaccel));
     }
 
     return 0;
@@ -163,8 +161,7 @@ int Encoder::new_audio_stream(const std::string& codec_name)
     }
 
     acodec_ctx_->sample_rate                   = afmt.sample_rate;
-    acodec_ctx_->channels                      = afmt.channels;
-    acodec_ctx_->channel_layout                = afmt.channel_layout;
+    acodec_ctx_->ch_layout                     = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
     acodec_ctx_->sample_fmt                    = afmt.sample_fmt;
     acodec_ctx_->time_base                     = { 1, afmt.sample_rate };
     fmt_ctx_->streams[astream_idx_]->time_base = afmt.time_base;
@@ -191,7 +188,8 @@ int Encoder::new_audio_stream(const std::string& codec_name)
     if (astream_idx_ >= 0) {
         logi("[   ENCODER] [A] >>> [{}], sample_rate={}:sample_fmt={}:channels={}:tbc={}:tbn={}",
              codec_name, acodec_ctx_->sample_rate, av::to_string(acodec_ctx_->sample_fmt),
-             acodec_ctx_->channels, acodec_ctx_->time_base, fmt_ctx_->streams[astream_idx_]->time_base);
+             acodec_ctx_->ch_layout.nb_channels, acodec_ctx_->time_base,
+             fmt_ctx_->streams[astream_idx_]->time_base);
     }
 
     return 0;
@@ -257,7 +255,7 @@ int Encoder::start()
             if (astream_idx_ >= 0) process_audio_frames();
         } // running
 
-        logi("[    ENCODER] encoded frames: {}, exited", vcodec_ctx_->frame_number);
+        logi("[    ENCODER] encoded frames: {}, exited", vcodec_ctx_->frame_num);
     });
 
     return 0;
@@ -408,12 +406,11 @@ int Encoder::process_audio_frames()
         if ((abuffer_->size() >= acodec_ctx_->frame_size) || (!abuffer_->empty() && asrc_eof_)) {
             aframe.unref();
 
-            aframe->nb_samples     = std::min(acodec_ctx_->frame_size, abuffer_->size());
-            aframe->channels       = stream->codecpar->channels;
-            aframe->channel_layout = stream->codecpar->channel_layout;
-            aframe->format         = stream->codecpar->format;
-            aframe->sample_rate    = stream->codecpar->sample_rate;
-            aframe->pts            = audio_pts_ - abuffer_->size();
+            av_channel_layout_copy(&aframe->ch_layout, &stream->codecpar->ch_layout);
+            aframe->nb_samples  = std::min(acodec_ctx_->frame_size, abuffer_->size());
+            aframe->format      = stream->codecpar->format;
+            aframe->sample_rate = stream->codecpar->sample_rate;
+            aframe->pts         = audio_pts_ - abuffer_->size();
 
             av_frame_get_buffer(aframe.get(), 0);
 
