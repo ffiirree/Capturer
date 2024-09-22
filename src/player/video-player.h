@@ -8,7 +8,7 @@
 #include "libcap/sonic.h"
 #include "libcap/timeline.h"
 #include "menu.h"
-#include "texture-widget-opengl.h"
+#include "texture-widget-rhi.h"
 
 #include <QTimer>
 
@@ -60,7 +60,9 @@ protected:
 
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
-
+    void resizeEvent(QResizeEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *) override;
 
 private:
@@ -72,8 +74,8 @@ private:
     std::string filename_{};
 
     // UI
-    ControlWidget   *control_{};
-    TextureGLWidget *texture_{};
+    ControlWidget    *control_{};
+    TextureRhiWidget *texture_{};
 
     QTimer *timer_{};
 
@@ -106,6 +108,8 @@ private:
     std::atomic<bool>     adone_{};
     safe_queue<av::frame> vqueue_{ 2 };
     std::atomic<bool>     vdone_{};
+
+    std::atomic<bool> subtitles_enabled_{ true };
 
     std::atomic<int> vstep_{ 0 };
     std::atomic<int> astep_{ 0 };

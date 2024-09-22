@@ -33,8 +33,9 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.7 COMPONENTS Core Gui OpenGL Widgets OpenGLWidgets LinguistTools REQUIRED)
+find_package(Qt6 6.7 COMPONENTS Core Gui Widgets LinguistTools ShaderTools REQUIRED)
 find_package(FFmpeg 7.0 REQUIRED)
+find_package(Libass REQUIRED)
 
 if (WIN32)
     # GUI/console
@@ -89,6 +90,27 @@ if (WIN32)
     add_dependencies(${PROJECT_NAME} shaders)
 endif ()
 
+qt_add_shaders(${PROJECT_NAME} "capturer_shaders"
+        PREFIX
+        "/"
+        FILES
+        "src/resources/shaders/vertex.vert"
+        "src/resources/shaders/yuv.frag"
+        "src/resources/shaders/rgba.frag"
+        "src/resources/shaders/bgra.frag"
+        "src/resources/shaders/argb.frag"
+        "src/resources/shaders/abgr.frag"
+        "src/resources/shaders/rgbx.frag"
+        "src/resources/shaders/bgrx.frag"
+        "src/resources/shaders/xrgb.frag"
+        "src/resources/shaders/xbgr.frag"
+        "src/resources/shaders/nv12.frag"
+        "src/resources/shaders/nv21.frag"
+        "src/resources/shaders/yuv420p10le.frag"
+        "src/resources/shaders/yuyv422.frag"
+        "src/resources/shaders/ass.frag"
+)
+
 target_compile_options(${PROJECT_NAME}
         PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
@@ -99,12 +121,13 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         QHotkey::QHotkey
-        Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets
+        Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::Widgets
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg
         probe::probe
         nlohmann_json::nlohmann_json
+        ass::ass
         libcap::libcap
         $<$<PLATFORM_ID:Windows>:Winmm>
         $<$<PLATFORM_ID:Linux>:Qt6::DBus>

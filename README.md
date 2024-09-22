@@ -157,8 +157,8 @@ git submodule update --init --recursive
 
 #### Install FFmpeg
 
-从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
-
+- 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
+- `libass`: [ShiftMediaProject/libass](https://github.com/ShiftMediaProject/libass/releases)下载并添加到环境变量中
 #### 编译 (CMake)
 
 ```bash

@@ -13,6 +13,7 @@
 #include <QApplication>
 #include <QFileInfo>
 #include <QHeaderView>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QShortcut>
@@ -38,6 +39,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
                                                 // screen on Linux
 
     setMouseTracking(true);
+    setAcceptDrops(true);
 
     const auto stacked_layout = new QStackedLayout(this);
     stacked_layout->setStackingMode(QStackedLayout::StackAll);
@@ -53,6 +55,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });
+    connect(control_,   &ControlWidget::subtitlesEnabled, [this](auto en) { subtitles_enabled_ = en; if(!en) texture_->present({}, 2); });
     connect(this,       &VideoPlayer::timeChanged,      control_, &ControlWidget::setTime, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::videoFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
     connect(this,       &VideoPlayer::audioFinished,    this, &VideoPlayer::finish, Qt::QueuedConnection);
@@ -64,7 +67,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     // audio sink
     audio_renderer_ = std::make_unique<AudioOutput>();
     // video sink
-    texture_        = new TextureGLWidget();
+    texture_        = new TextureRhiWidget();
 
     stacked_layout->addWidget(texture_);
 
@@ -139,8 +142,9 @@ int VideoPlayer::open(const std::string& filename)
     if (source_->has(AVMEDIA_TYPE_VIDEO)) {
         video_enabled_       = true;
         source_->vfo         = source_->vfi;
-        source_->vfo.pix_fmt = texture_->isSupported(source_->vfo.pix_fmt) ? source_->vfo.pix_fmt
-                                                                           : TextureGLWidget::pix_fmts()[0];
+        source_->vfo.pix_fmt = TextureRhiWidget::IsSupported(source_->vfo.pix_fmt)
+                                   ? source_->vfo.pix_fmt
+                                   : TextureRhiWidget::PixelFormats()[0];
     }
 
     // title
@@ -215,6 +219,13 @@ void VideoPlayer::video_thread_fn()
         const auto has_next = vqueue_.wait_and_pop();
         if (!has_next) continue;
 
+        // subtitle
+        if (subtitles_enabled_) {
+            const auto [changed, sub] = source_->subtitle(timeline_.ms());
+            texture_->present(sub, changed);
+        }
+
+        // video frame
         const av::frame& frame = has_next.value();
         texture_->present(frame);
 
@@ -222,11 +233,7 @@ void VideoPlayer::video_thread_fn()
             auto pts  = av::clock::ms(frame->pts, source_->vfo.time_base);
             auto diff = std::min((pts - timeline_.ms()) / timeline_.speed(), 300ms);
 
-            if (diff < 5ms) continue;
-
-            logd("[V] {:.3%T} ~ {:.3%T} -> {:.3%S}", pts, timeline_.time(), diff);
-
-            std::this_thread::sleep_for(diff);
+            if (diff > 5ms) std::this_thread::sleep_for(diff);
         }
 
         if (timeline_.time() >= 0ns) emit timeChanged(timeline_.us().count());
@@ -450,6 +457,39 @@ void VideoPlayer::mouseDoubleClickEvent(QMouseEvent *event)
         control_->paused() ? control_->resume() : control_->pause();
     }
     FramelessWindow::mouseDoubleClickEvent(event);
+}
+
+void VideoPlayer::resizeEvent(QResizeEvent *event)
+{
+    if (source_ && texture_) {
+        const auto sz = texture_->framePixelSize();
+        source_->set_ass_render_size(sz.width(), sz.height());
+    }
+    FramelessWindow::resizeEvent(event);
+}
+
+void VideoPlayer::dropEvent(QDropEvent *event)
+{
+    const auto urls = event->mimeData()->urls();
+    if (urls.empty()) return;
+
+    for (const auto& url : urls) {
+        QFileInfo info{ url.toLocalFile() };
+        if (info.isFile() && QString("ass;ssa;srt;vtt;stl;sbv;sub;dfxp;ttml")
+                                 .split(';')
+                                 .contains(info.suffix(), Qt::CaseInsensitive)) {
+            logi("add subtitle: {}", info.fileName().toStdString());
+
+            if (source_) source_->ass_open_external(info.absoluteFilePath().toStdString());
+        }
+    }
+}
+
+void VideoPlayer::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
 }
 
 void VideoPlayer::initContextMenu()

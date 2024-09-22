@@ -46,10 +46,13 @@ signals:
 
     void validDruation(bool);
 
+    void subtitlesEnabled(bool);
+
 private:
     TitleBar  *title_bar_{};
     QWidget   *control_bar_{};
     Slider    *time_slider_{};
+    QCheckBox *subtitles_btn_{};
     ComboBox  *speed_box_{};
     QCheckBox *volume_btn_{};
     Slider    *volume_slider_{};

@@ -35,9 +35,8 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         auto vl = new QVBoxLayout();
         vl->setSpacing(0);
         vl->setContentsMargins({ 10, 0, 10, 10 });
-        connect(this, &ControlWidget::validDruation, [vl](auto valid) {
-            vl->setContentsMargins({ 10, valid ? 0 : 10, 10, 10 });
-        });
+        connect(this, &ControlWidget::validDruation,
+                [vl](auto valid) { vl->setContentsMargins({ 10, valid ? 0 : 10, 10, 10 }); });
         control_bar_->setLayout(vl);
 
         time_slider_ = new Slider(Qt::Horizontal);
@@ -83,10 +82,11 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
 
         // subtitles
-        // auto subtitles_btn = new QCheckBox();
-        // subtitles_btn->setObjectName("subtitles-btn");
-        // subtitles_btn->setCheckable(false);
-        // hl->addWidget(subtitles_btn);
+        subtitles_btn_ = new QCheckBox();
+        subtitles_btn_->setObjectName("subtitles-btn");
+        subtitles_btn_->setChecked(true);
+        connect(subtitles_btn_, &QCheckBox::toggled, this, &ControlWidget::subtitlesEnabled);
+        hl->addWidget(subtitles_btn_);
 
         // speed
         speed_box_ = new ComboBox();
@@ -177,11 +177,13 @@ void ControlWidget::setPlaybackMode(const PlaybackMode mode)
         speed_box_->show();
         volume_btn_->hide();
         volume_slider_->hide();
+        subtitles_btn_->hide();
         break;
     default:
         speed_box_->show();
         volume_btn_->show();
         volume_slider_->show();
+        subtitles_btn_->show();
         break;
     }
 }

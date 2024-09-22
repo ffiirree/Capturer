@@ -4,7 +4,7 @@
 #include "framelesswindow.h"
 #include "libcap/producer.h"
 #include "libcap/queue.h"
-#include "texture-widget-opengl.h"
+#include "texture-widget-rhi.h"
 
 class CameraPlayer final : public FramelessWindow
 {
@@ -30,7 +30,7 @@ private:
     std::string device_id_{};
 
     // UI
-    TextureGLWidget *texture_{};
+    TextureRhiWidget *texture_{};
 
     std::atomic<bool> ready_{};
     std::atomic<bool> running_{};

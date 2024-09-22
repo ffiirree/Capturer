@@ -98,10 +98,18 @@ QWidget#control-bar QLabel#time-label {
 
 /* subtitles */
 QWidget#control-bar QCheckBox#subtitles-btn::indicator {
-    image: url(:/icons/subtitles-light);
+    image: url(:/icons/subtitles-off-light);
 }
 
 QWidget#control-bar QCheckBox#subtitles-btn::indicator:hover {
+    image: url(:/icons/subtitles-off);
+}
+
+QWidget#control-bar QCheckBox#subtitles-btn::indicator:checked {
+    image: url(:/icons/subtitles-light);
+}
+
+QWidget#control-bar QCheckBox#subtitles-btn::indicator:hover:checked {
     image: url(:/icons/subtitles);
 }
 
