@@ -101,7 +101,7 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
     // FFmpeg hardware frame pool
     if (InitializeHWFramesContext() < 0) return -1;
 
-    if (level == CAPTURE_WINDOW && InitalizeResizingResources() < 0) return -1;
+    if (level == CAPTURE_WINDOW && InitializeResizingResources() < 0) return -1;
 
     eof_   = 0x00;
     ready_ = true;
@@ -135,7 +135,7 @@ std::vector<av::vformat_t> WindowsGraphicsCapturer::video_formats() const
     };
 }
 
-int WindowsGraphicsCapturer::InitalizeResizingResources()
+int WindowsGraphicsCapturer::InitializeResizingResources()
 {
     // 1. Input-Assembler State
     // 1.1 vertex buffer

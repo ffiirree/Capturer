@@ -30,7 +30,7 @@ private:
                   const winrt::Windows::Foundation::IInspectable&);
 
     // for resizing texture
-    int InitalizeResizingResources();
+    int InitializeResizingResources();
 
     int InitializeHWFramesContext();
 

@@ -63,31 +63,31 @@ add_executable(${PROJECT_NAME}
 )
 
 if (WIN32)
-    # Build HLSL shaders
-    add_custom_target(shaders)
+   # Build HLSL shaders
+   add_custom_target(shaders)
 
-    set(HLSL_SHADER_FILES src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
+   set(HLSL_SHADER_FILES src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
 
-    set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
+   set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
+   set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
 
-    set_source_files_properties(${HLSL_SHADER_FILES}                            PROPERTIES ShaderModel "5_0")
+   set_source_files_properties(${HLSL_SHADER_FILES}                            PROPERTIES ShaderModel "5_0")
 
-    foreach (FILE ${HLSL_SHADER_FILES})
-        get_filename_component(FILE_WE ${FILE} NAME_WE)
-        list(APPEND CSO_SHADER_FILES ${PROJECT_BINARY_DIR}/${FILE_WE}.cso)
-        get_source_file_property(shadertype ${FILE} ShaderType)
-        get_source_file_property(shadermodel ${FILE} ShaderModel)
-        add_custom_command(TARGET shaders
-                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
-                MAIN_DEPENDENCY ${FILE}
-                COMMENT "HLSL ${FILE}"
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                VERBATIM
-        )
-    endforeach ()
+   foreach (FILE ${HLSL_SHADER_FILES})
+       get_filename_component(FILE_WE ${FILE} NAME_WE)
+       list(APPEND CSO_SHADER_FILES ${PROJECT_BINARY_DIR}/${FILE_WE}.cso)
+       get_source_file_property(shadertype ${FILE} ShaderType)
+       get_source_file_property(shadermodel ${FILE} ShaderModel)
+       add_custom_command(TARGET shaders
+               COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
+               MAIN_DEPENDENCY ${FILE}
+               COMMENT "HLSL ${FILE}"
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+               VERBATIM
+       )
+   endforeach ()
 
-    add_dependencies(${PROJECT_NAME} shaders)
+   add_dependencies(${PROJECT_NAME} shaders)
 endif ()
 
 qt_add_shaders(${PROJECT_NAME} "capturer_shaders"
@@ -108,6 +108,7 @@ qt_add_shaders(${PROJECT_NAME} "capturer_shaders"
         "src/resources/shaders/nv21.frag"
         "src/resources/shaders/yuv420p10le.frag"
         "src/resources/shaders/yuyv422.frag"
+        "src/resources/shaders/gbr.frag"
         "src/resources/shaders/ass.frag"
 )
 

@@ -171,6 +171,13 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
             { 2, 2, QRhiTexture::R16, 2 },
         };
 
+    case AV_PIX_FMT_GBRP:
+        return {
+            { 1, 1, QRhiTexture::R8, 1 },
+            { 1, 1, QRhiTexture::R8, 1 },
+            { 1, 1, QRhiTexture::R8, 1 },
+        };
+
     default: loge("unsupported pixel format: {}", av::to_string(fmt)); return {};
     }
 }
@@ -215,6 +222,8 @@ std::vector<AVPixelFormat> TextureRhiWidget::PixelFormats()
         AV_PIX_FMT_BGR0,    ///< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
 
         AV_PIX_FMT_YUV420P10LE, ///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+
+        AV_PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
     };
     // clang-format on
 }
@@ -239,6 +248,7 @@ static const std::map<AVPixelFormat, QString> SHADERS = {
     { AV_PIX_FMT_BGRA, "bgra" },    { AV_PIX_FMT_0RGB, "xrgb" },
     { AV_PIX_FMT_RGB0, "rgbx" },    { AV_PIX_FMT_0BGR, "xbgr" },
     { AV_PIX_FMT_BGR0, "bgrx" },    { AV_PIX_FMT_YUV420P10LE, "yuv420p10le" },
+    { AV_PIX_FMT_GBRP, "gbr" },
 };
 
 void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)

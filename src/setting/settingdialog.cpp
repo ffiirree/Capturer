@@ -426,9 +426,9 @@ QWidget *SettingWindow::setupRecordWidget()
         colorspace
             ->add({
                 { AVCOL_SPC_RGB, "sRGB" },
-                { AVCOL_SPC_BT709, "BT709" },
-                { AVCOL_SPC_BT470BG, "BT601" },
-                { AVCOL_SPC_BT2020_NCL, "BT2020" },
+                { AVCOL_SPC_BT709, "BT.709" },
+                { AVCOL_SPC_BT470BG, "BT.601" },
+                { AVCOL_SPC_BT2020_NCL, "BT.2020" },
             })
             .onselected([](auto value) {
                 config::recording::video::v::color_space = static_cast<AVColorSpace>(value.toUInt());
