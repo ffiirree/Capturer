@@ -68,7 +68,7 @@ namespace av::graph
             return -1;
         }
 
-        logi("[V] buffersink: '{}'", av::to_string(args.pix_fmt));
+        logi("[V] buffersink: '{}'", av::to_string(args));
 
         return 0;
     }

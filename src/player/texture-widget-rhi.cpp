@@ -74,7 +74,7 @@ static QMatrix4x4 GetColorMatrix(AVColorSpace space, AVColorRange range)
     case AVCOL_SPC_BT709:
     case AVCOL_SPC_UNSPECIFIED: return (range == AVCOL_RANGE_JPEG) ? BT709_FULL_CM : BT709_TV_CM;
     case AVCOL_SPC_BT2020_NCL:  return (range == AVCOL_RANGE_JPEG) ? BT2020_FULL_CM : BT2020_TV_CM;
-    default:                    loge("unsupported colorspace: {}", av::to_string(space)); return IDENTITY_CM;
+    default:                    loge("unsupported color-space: {}", av::to_string(space)); return IDENTITY_CM;
     }
 }
 
@@ -89,8 +89,7 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
     switch (fmt) {
     case AV_PIX_FMT_YUYV422: return { { 2, 1, QRhiTexture::RGBA8, 4 } };
 
-    case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_BGR24:   return { { 1, 1, QRhiTexture::RGBA8, 3 } };
+    case AV_PIX_FMT_GRAY8:   return { { 1, 1, QRhiTexture::R8, 1 } };
 
     case AV_PIX_FMT_YUV420P:
         return {
@@ -127,6 +126,8 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
             { 4, 1, QRhiTexture::R8, 1 },
         };
 
+    case AV_PIX_FMT_GRAY16LE: return { { 1, 1, QRhiTexture::R16, 2 } };
+
     case AV_PIX_FMT_YUVJ420P:
         return {
             { 1, 1, QRhiTexture::R8, 1 },
@@ -143,6 +144,16 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
 
     case AV_PIX_FMT_YUVJ444P:
         return {
+            { 1, 1, QRhiTexture::R8, 1 },
+            { 1, 1, QRhiTexture::R8, 1 },
+            { 1, 1, QRhiTexture::R8, 1 },
+        };
+
+    case AV_PIX_FMT_UYVY422: return { { 2, 1, QRhiTexture::RGBA8, 4 } };
+
+    case AV_PIX_FMT_YUVA444P:
+        return {
+            { 1, 1, QRhiTexture::R8, 1 },
             { 1, 1, QRhiTexture::R8, 1 },
             { 1, 1, QRhiTexture::R8, 1 },
             { 1, 1, QRhiTexture::R8, 1 },
@@ -196,17 +207,19 @@ std::vector<AVPixelFormat> TextureRhiWidget::PixelFormats()
 
         AV_PIX_FMT_YUYV422, ///< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
 
-        AV_PIX_FMT_RGB24,   ///< packed RGB 8:8:8, 24bpp, RGBRGB...
-        AV_PIX_FMT_BGR24,   ///< packed RGB 8:8:8, 24bpp, BGRBGR...
-
         AV_PIX_FMT_YUV422P, ///< planar YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
         AV_PIX_FMT_YUV444P, ///< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
         AV_PIX_FMT_YUV410P, ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
         AV_PIX_FMT_YUV411P, ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
 
+        AV_PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
+        AV_PIX_FMT_GRAY16LE,  ///<        Y        , 16bpp, little-endian
+
         AV_PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV420P and setting color_range
         AV_PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV422P and setting color_range
         AV_PIX_FMT_YUVJ444P,  ///< planar YUV 4:4:4, 24bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV444P and setting color_range
+
+        AV_PIX_FMT_YUVA444P,  ///< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
 
         AV_PIX_FMT_NV12,    ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, < which are interleaved (first byte U and the following byte V)
         AV_PIX_FMT_NV21,    ///< as above, but U and V bytes are swapped
@@ -236,20 +249,37 @@ bool TextureRhiWidget::IsSupported(const AVPixelFormat pix_fmt)
     return false;
 }
 
-static const std::map<AVPixelFormat, QString> SHADERS = {
-    { AV_PIX_FMT_YUV420P, "yuv" },  { AV_PIX_FMT_YUYV422, "yuyv422" },
-    { AV_PIX_FMT_RGB24, "rgba" },   { AV_PIX_FMT_BGR24, "bgra" },
-    { AV_PIX_FMT_YUV422P, "yuv" },  { AV_PIX_FMT_YUV444P, "yuv" },
-    { AV_PIX_FMT_YUV410P, "yuv" },  { AV_PIX_FMT_YUV411P, "yuv" },
-    { AV_PIX_FMT_YUVJ420P, "yuv" }, { AV_PIX_FMT_YUVJ422P, "yuv" },
-    { AV_PIX_FMT_YUVJ444P, "yuv" }, { AV_PIX_FMT_NV12, "nv12" },
-    { AV_PIX_FMT_NV21, "nv21" },    { AV_PIX_FMT_ARGB, "argb" },
-    { AV_PIX_FMT_RGBA, "bgra" },    { AV_PIX_FMT_ABGR, "abgr" },
-    { AV_PIX_FMT_BGRA, "bgra" },    { AV_PIX_FMT_0RGB, "xrgb" },
-    { AV_PIX_FMT_RGB0, "rgbx" },    { AV_PIX_FMT_0BGR, "xbgr" },
-    { AV_PIX_FMT_BGR0, "bgrx" },    { AV_PIX_FMT_YUV420P10LE, "yuv420p10le" },
-    { AV_PIX_FMT_GBRP, "gbr" },
-};
+static QString ShaderNameForPixelFormat(AVPixelFormat fmt)
+{
+    switch (fmt) {
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16LE:    return "y";
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV410P:
+    case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ444P:    return "yuv";
+    case AV_PIX_FMT_YUYV422:     return "yuyv";
+    case AV_PIX_FMT_UYVY422:     return "uyvy";
+    case AV_PIX_FMT_YUVA444P:    return "ayuv_planar";
+    case AV_PIX_FMT_NV12:        return "nv12";
+    case AV_PIX_FMT_NV21:        return "nv21";
+    case AV_PIX_FMT_ARGB:
+    case AV_PIX_FMT_0RGB:        return "argb";
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGB0:        return "bgra";
+    case AV_PIX_FMT_ABGR:
+    case AV_PIX_FMT_0BGR:        return "abgr";
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGR0:        return "bgra";
+    case AV_PIX_FMT_YUV420P10LE: return "yuv_p10le";
+    case AV_PIX_FMT_GBRP:        return "gbr_planar";
+    default:                     return {};
+    }
+}
 
 void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
 {
@@ -267,7 +297,7 @@ void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
             planes_[i]->create();
         }
 
-        QRhiShaderResourceBinding bindings[4];
+        QRhiShaderResourceBinding bindings[5];
         bindings[0] = QRhiShaderResourceBinding::uniformBuffer(
             0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
             ubuf_.get());
@@ -278,14 +308,14 @@ void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
         srb_->setBindings(bindings, bindings + params.size() + 1);
         srb_->create();
 
-        SetupPipeline(pipeline_.get(), srb_.get(), SHADERS.at(fmt_.pix_fmt));
+        SetupPipeline(pipeline_.get(), srb_.get(), ShaderNameForPixelFormat(fmt_.pix_fmt));
     }
 
     for (auto i = 0; i < params.size(); ++i) {
         QRhiTextureSubresourceUploadDescription desc{};
-        desc.setData(
-            QByteArray::fromRawData(reinterpret_cast<const char *>(frame_->data[i]),
-                                    (fmt_.width * fmt_.height) / (params[i].xfactor * params[i].yfactor)));
+        desc.setData(QByteArray::fromRawData(reinterpret_cast<const char *>(frame_->data[i]),
+                                             (fmt_.width * fmt_.height * params[i].bytes) /
+                                                 (params[i].xfactor * params[i].yfactor)));
         desc.setDataStride(frame_->linesize[i]);
 
         rub->uploadTexture(planes_[i].get(), QRhiTextureUploadDescription{ { 0, 0, desc } });

@@ -4,6 +4,7 @@
 #include "libcap/sonic.h"
 #include "logging.h"
 #include "probe/defer.h"
+#include "widgets/message.h"
 
 #include <fmt/chrono.h>
 #include <fmt/ranges.h>
@@ -31,9 +32,11 @@ using AudioOutput = PulseAudioRenderer;
 #endif
 
 VideoPlayer::VideoPlayer(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint |
-                                  Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent, Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint)
 {
+#ifndef _DEBUG
+    setWindowFlag(Qt::WindowStaysOnTopHint, true);
+#endif
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground); // FIXME: otherwise, the screen will be black when full
                                                 // screen on Linux
@@ -109,6 +112,7 @@ int VideoPlayer::open(const std::string& filename)
     if (source_->open(filename) != 0) {
         source_ = std::make_unique<Decoder>();
         loge("[    PLAYER] failed to open video decoder");
+        Message::error(tr("Failed to open the video decoder"));
         return -1;
     }
 
@@ -186,9 +190,14 @@ int VideoPlayer::start()
         }
     }
 
-    // resize & move to center
-    resize(source_->vfo.width, source_->vfo.height);
-    move(QApplication::primaryScreen()->geometry().center() - QPoint{ width() / 2, height() / 2 });
+    // resize & move to center of the primary screen
+    const auto  screen = QApplication::primaryScreen()->geometry();
+    const QSize vsize(source_->vfo.width, source_->vfo.height);
+    QRect       rect({ 0, 0 }, vsize.scaled(std::min(screen.width(), vsize.width()),
+                                            std::min(screen.height(), vsize.height()), Qt::KeepAspectRatio));
+    rect.moveCenter(screen.center());
+
+    setGeometry(rect);
 
     show();
     emit started();

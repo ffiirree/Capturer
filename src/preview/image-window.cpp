@@ -114,9 +114,10 @@ void ImageWindow::wheelEvent(QWheelEvent *event)
         scale_ = std::max(std::min(125.0 / std::min(pixmap_.size().width(), pixmap_.size().height()), 1.0),
                           scale_);
 
-        auto _geometry = QRect{ {}, pixmap_.size().scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio) };
-        _geometry.moveCenter(geometry().center());
-        setGeometry(_geometry);
+        // FIXME:
+        auto rect = QRect{ {}, pixmap_.size().scaled(pixmap_.size() * scale_, Qt::KeepAspectRatio) };
+        rect.moveCenter(geometry().center());
+        setGeometry(rect);
     }
 }
 

@@ -355,6 +355,8 @@ int Decoder::create_video_graph()
         return -1;
     }
 
+    logi("[    DECODER] filter graph \n{}\n", avfilter_graph_dump(vctx_.graph, nullptr));
+
     return 0;
 }
 

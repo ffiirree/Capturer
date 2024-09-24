@@ -430,5 +430,9 @@
         <source>Properties</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Failed to open the video decoder</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

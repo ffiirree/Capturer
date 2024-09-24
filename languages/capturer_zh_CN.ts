@@ -430,5 +430,9 @@
         <source>Properties</source>
         <translation>属性</translation>
     </message>
+    <message>
+        <source>Failed to open the video decoder</source>
+        <translation>无法打开视频解码器</translation>
+    </message>
 </context>
 </TS>

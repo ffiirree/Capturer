@@ -10,9 +10,11 @@ layout(binding = 1) uniform sampler2D plane0;
 
 void main()
 {
-    float y = texture(plane0, texCoord).r;
-    float u = texture(plane0, texCoord).g;
-    float v = texture(plane0, texCoord).a;
+    // | x | y | z | w |
+    // | U | Y | V | Y |
+    float y = texture(plane0, texCoord).y;
+    float u = texture(plane0, texCoord).x;
+    float v = texture(plane0, texCoord).z;
 
     fragColor = clamp(ubuf.M * vec4(y, u, v, 1.0), 0.0, 1.0);
 }

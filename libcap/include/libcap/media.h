@@ -196,10 +196,10 @@ namespace av
     inline std::string to_string(const vformat_t& fmt)
     {
         auto args = fmt::format(
-            "video_size={}x{}:pix_fmt={}:time_base={}/{}:pixel_aspect={}/{}:colorspace={}:range={}",
-            fmt.width, fmt.height, to_string(fmt.pix_fmt), fmt.time_base.num, fmt.time_base.den,
-            fmt.sample_aspect_ratio.num, std::max(fmt.sample_aspect_ratio.den, 1),
-            to_string(fmt.color.space), to_string(fmt.color.range));
+            "video_size={}x{}:pix_fmt={}:colorspace={}:range={}:time_base={}/{}:pixel_aspect={}/{}",
+            fmt.width, fmt.height, to_string(fmt.pix_fmt), to_string(fmt.color.space),
+            to_string(fmt.color.range), fmt.time_base.num, fmt.time_base.den, fmt.sample_aspect_ratio.num,
+            std::max(fmt.sample_aspect_ratio.den, 1));
 
         if (fmt.framerate.den && fmt.framerate.num) {
             args += fmt::format(":frame_rate={}/{}", fmt.framerate.num, fmt.framerate.den);

@@ -7,5 +7,5 @@ layout(binding = 1) uniform sampler2D plane0;
 
 void main()
 {
-    fragColor = texture(plane0, texCoord).argb;
+    fragColor = texture(plane0, texCoord).gbar;
 }
