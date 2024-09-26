@@ -213,6 +213,7 @@ int Decoder::open_video_stream(int index)
                               .transfer   = vctx_.codec->color_trc,
             },
             .hwaccel         = vfi.hwaccel,
+            .sw_pix_fmt      = vctx_.codec->pix_fmt,
         };
 
         logi("[    DECODER] [V] [{:>6}] {}({})", decoder->name, av::to_string(vfi),
