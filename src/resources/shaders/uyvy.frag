@@ -10,8 +10,8 @@ layout(binding = 1) uniform sampler2D plane0;
 
 void main()
 {
-    // | x | y | z | w |
-    // | U | Y | V | Y |
+    // | x  | y  | z  | w  |
+    // | U0 | Y0 | V0 | Y1 |
     float y = texture(plane0, texCoord).y;
     float u = texture(plane0, texCoord).x;
     float v = texture(plane0, texCoord).z;

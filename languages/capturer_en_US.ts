@@ -7,6 +7,10 @@
         <source>Close</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Failed to open the camera</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>Capturer</name>

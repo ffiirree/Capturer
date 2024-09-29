@@ -196,7 +196,7 @@ static std::vector<TextureDescription> GetTextureParams(AVPixelFormat fmt)
 TextureRhiWidget::TextureRhiWidget(QWidget *parent)
     : QRhiWidget(parent)
 {
-    connect(this, &TextureRhiWidget::arrived, this, [this] { update(); }, Qt::QueuedConnection);
+    connect(this, &TextureRhiWidget::updateRequest, this, [this] { update(); }, Qt::QueuedConnection);
 }
 
 std::vector<AVPixelFormat> TextureRhiWidget::PixelFormats()
@@ -349,6 +349,7 @@ void TextureRhiWidget::SetupPipeline(QRhiGraphicsPipeline *pipeline, QRhiShaderR
 void TextureRhiWidget::initialize(QRhiCommandBuffer *cb)
 {
     if (rhi_ != rhi()) {
+        pipeline_.reset();
         rhi_ = rhi();
     }
 
@@ -374,19 +375,24 @@ void TextureRhiWidget::initialize(QRhiCommandBuffer *cb)
 
 void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 {
-    const auto bg = QColor::fromRgbF(0.0f, 0.0f, 0.0f, 1.0f);
+    {
+        std::lock_guard lock(mtx_);
+        if (!frame_ || frame_->width <= 0 || frame_->height <= 0) return;
+    }
 
-    auto       rub = rhi_->nextResourceUpdateBatch();
-    const auto sz  = renderTarget()->pixelSize();
+    auto rub = rhi_->nextResourceUpdateBatch();
 
     {
         std::lock_guard lock(mtx_);
-        if (frame_->width <= 0 || frame_->height <= 0) return;
+
+        // keep the video frames alive until we know that they are not needed anymore
+        frame_slots_[rhi_->currentFrameSlot()] = frame_;
 
         UpdateTextures(rub);
     }
 
     mvp_.setToIdentity();
+    const auto sz  = renderTarget()->pixelSize();
     const auto fsz = QSize{ fmt_.width, fmt_.height }.scaled(sz, Qt::KeepAspectRatio);
     mvp_.scale(float(fsz.width()) / sz.width(), float(fsz.height()) / sz.height());
     rub->updateDynamicBuffer(ubuf_.get(), 0, 64, mvp_.constData());
@@ -404,7 +410,7 @@ void TextureRhiWidget::render(QRhiCommandBuffer *cb)
         sub_rub_ = nullptr;
     }
 
-    cb->beginPass(renderTarget(), bg, { 1.0f, 0 }, rub);
+    cb->beginPass(renderTarget(), Qt::black, { 1.0f, 0 }, rub);
 
     // frame
     cb->setGraphicsPipeline(pipeline_.get());
@@ -455,12 +461,12 @@ void TextureRhiWidget::present(const av::frame& frame)
         format_changed_ = true;
     }
 
-    emit arrived();
+    emit updateRequest();
 }
 
 void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
-    if (!changed) return;
+    if (!changed || !rhi_) return;
 
     logd("subtitles updated");
 

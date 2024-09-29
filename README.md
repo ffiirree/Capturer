@@ -6,7 +6,7 @@
 
 <p>
     <p align="center">
-        <code>Capturer</code>是一款主打快速<code>截图</code>、<code>贴图</code>、<code>录屏</code>和<code>录制GIF</code>的软件
+        <code>Capturer</code>是一款主打快速<code>截图</code>、<code>贴图</code>、<code>视频预览</code>、<code>录屏</code>和<code>录制GIF</code>的软件
     </p>
     <p align="center">
         使用快捷键可以快速选择感兴趣的<code>桌面区域</code>或<code>窗口</code>进行截图/录制，并将截图快速<code>钉在桌面</code>上
@@ -34,7 +34,7 @@
 下载后安装：
 
 ```bash
-sudo dpkg -i capturer-1.6.2-ubuntu_xx.04-amd64.deb
+sudo dpkg -i capturer-1.7.0-ubuntu_xx.04-amd64.deb
 sudo apt install -f
 ```
 
@@ -153,28 +153,17 @@ git submodule update --init --recursive
 | Audio  | Windows Audio Session API      | PulseAudio |
 | Camera | Media Foundation Video Capture | V4L2       |
 
-### Windows
+### Dependencies
 
-#### Install FFmpeg
+#### Windows
 
-- 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`，添加根目录和bin目录到环境变量中。
-- `libass`: [ShiftMediaProject/libass](https://github.com/ShiftMediaProject/libass/releases)下载并添加到环境变量中
-#### 编译 (CMake)
+- `FFmpeg`: 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`并添加到环境变量中
+- `libass`: 从[ShiftMediaProject/libass](https://github.com/ShiftMediaProject/libass/releases)下载并添加到环境变量中
 
-```bash
-cd Capturer
-
-cmake -S. -Bbuild -DCMAKE_INSTALL_PREFIX=D:\\"Program Files"\\Capturer
-cmake --build build --target install --config Release
-```
-
-### Linux (Ubuntu)
+#### Linux (Ubuntu)
 
 ```bash
 sudo apt install build-essential cmake
-
-# Ubuntu 24.04
-sudo apt install qt6-base-dev qt6-tools-dev
 
 sudo apt install libglx-dev libgl1-mesa-dev
 
@@ -191,37 +180,13 @@ sudo apt install libv4l-dev v4l-utils
 sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev libxcb-cursor0
 ```
 
-> 若CMake 版本过低，请先安装更高版本的CMake(>=3.27), 参见下一小节
+### Build
 
 ```bash
-cd Capturer && mkdir build && cd build
+cd Capturer && mkdir build
 
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j8
-
-# install
-sudo make install
-
-# package 'xx.deb'
-make package
-```
-
-### Install CMake from Source
-
-以CMake 3.28.3 为例
-
-```bash
-wget https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3.tar.gz
-tar -zxvf cmake-3.28.3.tar.gz
-cd cmake-3.28.3
-
-sudo apt install libssl-dev
-
-./bootstrap
-make -j8
-sudo make install
-
-cmake --version
+cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target install --config Release
 ```
 
 ## FFmpeg代码示例

@@ -7,6 +7,10 @@
         <source>Close</source>
         <translation>关闭</translation>
     </message>
+    <message>
+        <source>Failed to open the camera</source>
+        <translation>打开摄像头失败</translation>
+    </message>
 </context>
 <context>
     <name>Capturer</name>

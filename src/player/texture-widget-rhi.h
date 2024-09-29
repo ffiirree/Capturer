@@ -48,7 +48,7 @@ public:
     static bool IsSupported(AVPixelFormat fmt);
 
 signals:
-    void arrived();
+    void updateRequest();
 
 private:
     void UpdateTextures(QRhiResourceUpdateBatch *rub);
@@ -88,6 +88,8 @@ private:
 
     // frame
     av::frame frame_{};
+
+    av::frame frame_slots_[4]{};
 
     std::mutex mtx_;
     std::mutex sub_mtx_{};

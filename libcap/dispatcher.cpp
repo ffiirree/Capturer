@@ -132,7 +132,7 @@ int Dispatcher::create_filter_graph(const AVMediaType type)
 
     if (type == AVMEDIA_TYPE_VIDEO && ctx.hwaccel != AV_HWDEVICE_TYPE_NONE) {
         if (av::hwaccel::setup_for_filter_graph(ctx.graph, ctx.hwaccel) != 0) {
-            loge("[DISPATCHER]  can not set hareware device up for filter graph.");
+            loge("[DISPATCHER] can not set hardware device up for filter graph.");
             return -1;
         }
     }

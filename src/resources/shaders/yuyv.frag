@@ -10,8 +10,9 @@ layout(binding = 1) uniform sampler2D plane0;
 
 void main()
 {
-    // | x | y | z | w |
-    // | Y | U | Y | V |
+    // | x  | y  | z  | w  |
+    // | Y0 | U0 | Y1 | V0 |
+    // FIXME:
     float y = texture(plane0, texCoord).x;
     float u = texture(plane0, texCoord).y;
     float v = texture(plane0, texCoord).w;

@@ -3,6 +3,7 @@
 #include "libcap/devices.h"
 #include "logging.h"
 #include "menu.h"
+#include "message.h"
 
 #include <probe/defer.h>
 #include <probe/thread.h>
@@ -20,9 +21,13 @@ using CameraInput = V4l2Capturer;
 #endif
 
 CameraPlayer::CameraPlayer(QWidget *parent)
-    : FramelessWindow(parent, Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint |
-                                  Qt::WindowFullscreenButtonHint | Qt::WindowStaysOnTopHint)
+    : FramelessWindow(parent,
+                      Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowFullscreenButtonHint)
 {
+#ifndef _DEBUG
+    setWindowFlag(Qt::WindowStaysOnTopHint, true);
+#endif
+
     setAttribute(Qt::WA_DeleteOnClose);
 
     const auto layout = new QHBoxLayout(this);
@@ -37,7 +42,8 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
 
     source_ = std::make_unique<CameraInput>();
     if (source_->open(device_id, {}) != 0) {
-        loge("[    CAMERA] failed to open video decoder");
+        loge("[    CAMERA] failed to open the camera");
+        Message::error(tr("Failed to open the camera"));
         return -1;
     }
 
@@ -46,8 +52,9 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
     };
 
     // sink video format
-    vfmt         = source_->vfmt;
-    vfmt.pix_fmt = TextureRhiWidget::IsSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureRhiWidget::PixelFormats()[0];
+    vfmt = source_->vfmt;
+    vfmt.pix_fmt =
+        TextureRhiWidget::IsSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureRhiWidget::PixelFormats()[0];
 
     ready_ = true;
 

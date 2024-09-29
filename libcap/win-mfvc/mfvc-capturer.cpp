@@ -191,7 +191,7 @@ void MFCameraCapturer::handler(IMFSample *Sample)
         if (SUCCEEDED(buffer->Lock(&data, nullptr, &Length) && Length)) {
             av::packet pkt{};
             if (av_new_packet(pkt.put(), static_cast<int>(Length)) < 0) {
-                loge(" [   WIN-MFVC]failed to allocate packet");
+                loge("[   WIN-MFVC] failed to allocate packet");
             }
             else {
                 std::memcpy(pkt->data, data, Length);
@@ -199,7 +199,7 @@ void MFCameraCapturer::handler(IMFSample *Sample)
                 //
                 video_decode(pkt);
 
-                logi("pts = {}, ts = {:.3%T}", pkt->pts, av::clock::ns());
+                logi("[   WIN-MFVC] [V] pts = {}, ts = {:.3%T}", pkt->pts, av::clock::ns());
             }
         }
         buffer->Unlock();
