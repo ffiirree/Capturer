@@ -592,7 +592,15 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
         if (p.contains("title")) title.push_back(p["title"]);
 
         std::string name = fmt::format("{} - {}", fmt::join(attrs, ", "), fmt::join(title, ", "));
-        ssgroup_->addAction(ssmenu_->addAction(name.c_str()))->setCheckable(true);
+
+        const auto action = ssmenu_->addAction(name.c_str(), this, [=, this]() {
+            source_->select(AVMEDIA_TYPE_SUBTITLE, probe::util::to_32i(p.at("Index")).value_or(-1));
+        });
+        action->setCheckable(true);
+        if (p["Index"] == std::to_string(source_->index(AVMEDIA_TYPE_SUBTITLE))) {
+            action->setChecked(true);
+        }
+        ssgroup_->addAction(action);
     }
 
     menu_->exec(event->globalPos());

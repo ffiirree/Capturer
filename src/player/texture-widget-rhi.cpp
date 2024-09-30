@@ -375,34 +375,27 @@ void TextureRhiWidget::initialize(QRhiCommandBuffer *cb)
 
 void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 {
-    {
-        std::lock_guard lock(mtx_);
-        if (!frame_ || frame_->width <= 0 || frame_->height <= 0) return;
-    }
+    std::scoped_lock lock(mtx_, sub_mtx_);
+
+    if (!frame_ || frame_->width <= 0 || frame_->height <= 0) return;
 
     auto rub = rhi_->nextResourceUpdateBatch();
 
-    {
-        std::lock_guard lock(mtx_);
+    // keep the video frames alive until we know that they are not needed anymore
+    frame_slots_[rhi_->currentFrameSlot()] = frame_;
 
-        // keep the video frames alive until we know that they are not needed anymore
-        frame_slots_[rhi_->currentFrameSlot()] = frame_;
-
-        UpdateTextures(rub);
-    }
+    UpdateTextures(rub);
 
     mvp_.setToIdentity();
-    const auto sz  = renderTarget()->pixelSize();
-    const auto fsz = QSize{ fmt_.width, fmt_.height }.scaled(sz, Qt::KeepAspectRatio);
-    mvp_.scale(float(fsz.width()) / sz.width(), float(fsz.height()) / sz.height());
+    pixel_size_    = renderTarget()->pixelSize();
+    const auto fsz = QSize{ fmt_.width, fmt_.height }.scaled(pixel_size_, Qt::KeepAspectRatio);
+    mvp_.scale(float(fsz.width()) / pixel_size_.width(), float(fsz.height()) / pixel_size_.height());
     rub->updateDynamicBuffer(ubuf_.get(), 0, 64, mvp_.constData());
     rub->updateDynamicBuffer(ubuf_.get(), 64, 64,
                              GetColorMatrix(fmt_.color.space, fmt_.color.range).constData());
     for (auto& item : items_) {
         rub->updateDynamicBuffer(item.ubuf.get(), 0, 64, mvp_.constData());
     }
-
-    std::lock_guard lock(sub_mtx_);
 
     if (sub_rub_) {
         rub->merge(sub_rub_);
@@ -414,12 +407,16 @@ void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 
     // frame
     cb->setGraphicsPipeline(pipeline_.get());
-    cb->setViewport(QRhiViewport(0, 0, static_cast<float>(sz.width()), static_cast<float>(sz.height())));
+    cb->setViewport(QRhiViewport(0, 0, static_cast<float>(pixel_size_.width()),
+                                 static_cast<float>(pixel_size_.height())));
     cb->setShaderResources(srb_.get());
     const QRhiCommandBuffer::VertexInput vbb{ vbuf_.get(), 0 };
     cb->setVertexInput(0, 1, &vbb);
     cb->draw(4);
 
+    // keep the subtitle resources alive until they are not needed
+    subtitle_slots_[rhi_->currentFrameSlot()] = subtitles_;
+    items_slots_[rhi_->currentFrameSlot()]    = items_;
     for (auto& item : items_) {
         cb->setGraphicsPipeline(item.pipeline.get());
         cb->setShaderResources(item.srb.get());
@@ -466,13 +463,13 @@ void TextureRhiWidget::present(const av::frame& frame)
 
 void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
-    if (!changed || !rhi_) return;
+    if (!changed || (subtitles.empty() && subtitles_.empty()) || !rhi_) return;
 
-    logd("subtitles updated");
-
-    subtitles_ = subtitles;
+    logd("[RHI-TEXTURE] [S] changed {}, subtitles {}", changed, subtitles.size());
 
     std::lock_guard lock(sub_mtx_);
+
+    subtitles_ = subtitles;
 
     if (sub_rub_) {
         sub_rub_->release();

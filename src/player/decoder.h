@@ -88,6 +88,8 @@ public:
 
     int select(AVMediaType type, int index);
 
+    int index(AVMediaType type) const;
+
     int ass_open_external(const std::string& filename);
 
 private:
@@ -122,16 +124,22 @@ private:
     DecodingContext vctx_{};
     DecodingContext sctx_{};
 
-    // libass
+    // subtitles
+    std::atomic<int> sub_type_{}; // text or bitmap based
+
+    // text: libass
     mutable std::shared_mutex ass_mtx_{};
     ASS_Library              *ass_library_{};
     ASS_Renderer             *ass_renderer_{};
     ASS_Track                *ass_track_{};
-    std::atomic<bool>         is_ass_{ true };
+    std::atomic<int>          ass_width_{};
+    std::atomic<int>          ass_height_{};
+    std::atomic<int>          ass_cached_chunks_{};
 
-    std::mutex          sub_mtx_{};
-    std::atomic<int>    subtitles_changed_{};
-    std::list<Subtitle> subtitles_{};
+    // bitmap
+    std::mutex          bitmaps_mtx_{};
+    std::atomic<int>    bitmaps_changed_{};
+    std::list<Subtitle> bitmaps_{};
 
     // switch stream
     mutable std::shared_mutex selected_mtx_{};

@@ -30,7 +30,7 @@ public:
     void initialize(QRhiCommandBuffer *cb) override;
     void render(QRhiCommandBuffer *cb) override;
 
-    QSize pixelSize() const { return (rhi_ && renderTarget()) ? renderTarget()->pixelSize() : QSize{}; }
+    QSize pixelSize() const { return pixel_size_; }
 
     QSize framePixelSize() const
     {
@@ -59,6 +59,8 @@ private:
     // QRhi @{
     QRhi *rhi_{};
 
+    QSize pixel_size_{};
+
     QMatrix4x4                   mvp_{};
     std::unique_ptr<QRhiSampler> sampler_{};
 
@@ -72,16 +74,19 @@ private:
     // subtitles
     struct RenderItem
     {
-        std::unique_ptr<QRhiBuffer>                 vbuf{};
-        std::unique_ptr<QRhiBuffer>                 ubuf{};
-        std::unique_ptr<QRhiTexture>                tex{};
-        std::unique_ptr<QRhiShaderResourceBindings> srb{};
-        std::unique_ptr<QRhiGraphicsPipeline>       pipeline{};
+        std::shared_ptr<QRhiBuffer>                 vbuf{};
+        std::shared_ptr<QRhiBuffer>                 ubuf{};
+        std::shared_ptr<QRhiTexture>                tex{};
+        std::shared_ptr<QRhiShaderResourceBindings> srb{};
+        std::shared_ptr<QRhiGraphicsPipeline>       pipeline{};
     };
     std::vector<RenderItem>  items_{};
     QRhiResourceUpdateBatch *sub_rub_{};
 
-    std::list<Subtitle> subtitles_{};
+    std::list<Subtitle>     subtitles_{};
+    std::list<Subtitle>     subtitle_slots_[4]{};
+    std::vector<RenderItem> items_slots_[4]{};
+
     // @}
 
     av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P };

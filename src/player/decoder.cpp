@@ -126,42 +126,10 @@ int Decoder::open(const std::string& name)
 
     if (open_video_stream(-1) < 0) return -1;
     if (open_audio_stream(-1) < 0) return -1;
-    if (open_subtitle_stream(-1) < 0 || ass_init() < 0) return -1;
+    if (open_subtitle_stream(-1) < 0) return -1;
     if (vctx_.index < 0 && actx_.index < 0) {
         loge("[    DECODER] not found any stream");
         return -1;
-    }
-
-    if (sctx_.index >= 0) {
-        switch (sctx_.codec->codec_id) {
-        case AV_CODEC_ID_DVD_SUBTITLE:
-        case AV_CODEC_ID_DVB_SUBTITLE:
-        case AV_CODEC_ID_TEXT:
-        case AV_CODEC_ID_XSUB:
-        case AV_CODEC_ID_SSA:
-        case AV_CODEC_ID_MOV_TEXT:
-        case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
-        case AV_CODEC_ID_DVB_TELETEXT:
-        case AV_CODEC_ID_SRT:
-        case AV_CODEC_ID_MICRODVD:
-        case AV_CODEC_ID_EIA_608:
-        case AV_CODEC_ID_JACOSUB:
-        case AV_CODEC_ID_SAMI:
-        case AV_CODEC_ID_REALTEXT:
-        case AV_CODEC_ID_STL:
-        case AV_CODEC_ID_SUBVIEWER1:
-        case AV_CODEC_ID_SUBVIEWER:
-        case AV_CODEC_ID_SUBRIP:
-        case AV_CODEC_ID_WEBVTT:
-        case AV_CODEC_ID_MPL2:
-        case AV_CODEC_ID_VPLAYER:
-        case AV_CODEC_ID_PJS:
-        case AV_CODEC_ID_ASS:
-        case AV_CODEC_ID_HDMV_TEXT_SUBTITLE:
-        case AV_CODEC_ID_TTML:
-        case AV_CODEC_ID_ARIB_CAPTION:
-        default:                             break;
-        }
     }
 
     ready_ = true;
@@ -260,17 +228,43 @@ int Decoder::open_subtitle_stream(int index)
     if (sctx_.index >= 0) {
         sctx_.stream = fmt_ctx_->streams[sctx_.index];
         auto decoder = avcodec_find_decoder(sctx_.stream->codecpar->codec_id);
+        if (!decoder) {
+            loge("[    DECODER] [S] failed to find subtitle decoder");
+            return -1;
+        }
+
         if (sctx_.codec = avcodec_alloc_context3(decoder); !sctx_.codec) return -1;
         if (avcodec_parameters_to_context(sctx_.codec, sctx_.stream->codecpar) < 0) return -1;
 
         sctx_.codec->pkt_timebase = sctx_.stream->time_base;
 
         if (avcodec_open2(sctx_.codec, decoder, nullptr) < 0) {
-            loge("[    DECODER] [A] can not open the subtitle decoder");
+            loge("[    DECODER] [S] can not open the subtitle decoder");
             return -1;
         }
 
-        logi("[    DECODER] [S] [{:>6}] start_time={}", decoder->name, sctx_.stream->start_time);
+        const auto descriptor = avcodec_descriptor_get(sctx_.stream->codecpar->codec_id);
+        if (descriptor) {
+            if (descriptor->props & AV_CODEC_PROP_TEXT_SUB) {
+                sub_type_ = AV_CODEC_PROP_TEXT_SUB;
+            }
+            else if (descriptor->props & AV_CODEC_PROP_BITMAP_SUB) {
+                sub_type_ = AV_CODEC_PROP_BITMAP_SUB;
+            }
+            else {
+                logd("unknown subtitle type");
+                return -1;
+            }
+        }
+
+        if ((sub_type_ == AV_CODEC_PROP_TEXT_SUB) && (ass_init() < 0 || ass_open_internal() < 0)) {
+            return -1;
+        }
+
+        logi("[    DECODER] [S] [{}]: {}({}), {}", decoder->name, descriptor->name, descriptor->long_name,
+             (sub_type_ == AV_CODEC_PROP_TEXT_SUB)
+                 ? "text"
+                 : ((sub_type_ == AV_CODEC_PROP_TEXT_SUB) ? "bitmap" : "unknown"));
     }
 
     return 0;
@@ -278,6 +272,8 @@ int Decoder::open_subtitle_stream(int index)
 
 int Decoder::ass_init()
 {
+    if (ass_library_) return 0;
+
     ass_library_ = ass_library_init();
     if (!ass_library_) {
         loge("[    DECODER] [S] failed to init libass");
@@ -293,6 +289,9 @@ int Decoder::ass_init()
         loge("[    DECODER] [S] could not create libass renderer");
         return AVERROR(EINVAL);
     }
+
+    ass_width_  = vfi.width;
+    ass_height_ = vfi.height;
 
     ass_set_frame_size(ass_renderer_, vfi.width, vfi.height);
     ass_set_storage_size(ass_renderer_, vfi.width, vfi.height);
@@ -314,7 +313,7 @@ int Decoder::ass_init()
         }
     }
 
-    ass_set_fonts(ass_renderer_, nullptr, nullptr, ASS_FONTPROVIDER_AUTODETECT, nullptr, 1);
+    ass_set_fonts(ass_renderer_, nullptr, "sans-serif", ASS_FONTPROVIDER_AUTODETECT, nullptr, 1);
 
     return 0;
 }
@@ -330,11 +329,37 @@ int Decoder::ass_open_internal()
         loge("[    DECODER] [S] could not create libass track");
         return AVERROR(EINVAL);
     }
+
     if (sctx_.codec->subtitle_header) {
         ass_process_codec_private(ass_track_, reinterpret_cast<char *>(sctx_.codec->subtitle_header),
                                   sctx_.codec->subtitle_header_size);
     }
 
+    ass_cached_chunks_ = 0;
+    return 0;
+}
+
+int Decoder::ass_open_external(const std::string& filename)
+{
+    std::scoped_lock lock(ass_mtx_);
+
+    if (sctx_.index >= 0) {
+        sctx_.queue.stop();
+        sctx_.done = true;
+        if (sctx_.thread.joinable()) sctx_.thread.join();
+        sctx_.index = -1;
+        avcodec_free_context(&sctx_.codec);
+    }
+
+    if (ass_track_) ass_free_track(ass_track_);
+
+    ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), nullptr);
+    if (!ass_track_) {
+        loge("[     LIBASS] failed to open file: {}", filename);
+        return -1;
+    }
+
+    ass_cached_chunks_ = std::numeric_limits<int>::max();
     return 0;
 }
 
@@ -468,27 +493,14 @@ int Decoder::select(AVMediaType type, int index)
     }
 }
 
-int Decoder::ass_open_external(const std::string& filename)
+int Decoder::index(AVMediaType type) const
 {
-    std::scoped_lock lock(ass_mtx_);
-
-    if (sctx_.index >= 0) {
-        sctx_.queue.stop();
-        sctx_.done = true;
-        if (sctx_.thread.joinable()) sctx_.thread.join();
-        sctx_.index = -1;
-        avcodec_free_context(&sctx_.codec);
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO:    return vctx_.index;
+    case AVMEDIA_TYPE_AUDIO:    return actx_.index;
+    case AVMEDIA_TYPE_SUBTITLE: return sctx_.index;
+    default:                    return -1;
     }
-
-    if (ass_track_) ass_free_track(ass_track_);
-
-    ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), nullptr);
-    if (!ass_track_) {
-        loge("[     LIBASS] failed to open file: {}", filename);
-        return -1;
-    }
-
-    return 0;
 }
 
 void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanoseconds& rel)
@@ -510,10 +522,10 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
     actx_.queue.stop();
     sctx_.queue.stop();
 
-    {
-        std::scoped_lock sublock(sub_mtx_);
-        subtitles_changed_ = true;
-        subtitles_.clear();
+    if (sub_type_ == AV_CODEC_PROP_BITMAP_SUB) {
+        std::scoped_lock bitmaps_lock(bitmaps_mtx_);
+        bitmaps_changed_ = 2;
+        bitmaps_.clear();
     }
 
     notenough_.notify_all();
@@ -572,7 +584,7 @@ void Decoder::readpkt_thread_fn()
 
                 avcodec_free_context(&sctx_.codec);
 
-                if (open_subtitle_stream(selected_index_) < 0 || ass_open_internal() < 0) {
+                if (open_subtitle_stream(selected_index_) < 0) {
                     loge("failed to switch subtitle stream to {}", selected_index_);
                 }
 
@@ -778,16 +790,18 @@ void Decoder::adecode_thread_fn()
 void Decoder::sdecode_thread_fn()
 {
     probe::thread::set_name("DEC-SUBTITLE");
+    logd("STARTED");
 
     while (running_ && !sctx_.done) {
         const auto& pkt = sctx_.queue.wait_and_pop();
         if (!pkt.has_value()) continue;
 
-        std::shared_lock lock(ass_mtx_);
-
         if (sctx_.dirty) {
             avcodec_flush_buffers(sctx_.codec);
+
+            std::shared_lock lock(ass_mtx_);
             if (ass_track_) ass_flush_events(ass_track_);
+
             sctx_.dirty = false;
         }
 
@@ -798,43 +812,67 @@ void Decoder::sdecode_thread_fn()
                 const auto    pts      = subtitle.pts / 1000;
                 const int64_t duration = subtitle.end_display_time;
 
-                if (subtitle.format == 0) {
-                    subtitles_.clear();
-                    subtitles_changed_ = true;
+                logd("[S] subtitles +{} {:.3%T}+{:%S}", subtitle.num_rects,
+                     std::chrono::milliseconds{ pts }, std::chrono::milliseconds{ duration });
+
+                // FIXME: need clear?
+                if (subtitle.format == 0 && sub_type_ == AV_CODEC_PROP_BITMAP_SUB) {
+                    std::scoped_lock bitmaps_lock(bitmaps_mtx_);
+                    bitmaps_.clear();
+                    bitmaps_changed_ = 2;
                 }
 
                 for (size_t i = 0; i < subtitle.num_rects; ++i) {
                     const auto rect = subtitle.rects[i];
-                    if (rect->type == SUBTITLE_ASS && rect->ass != nullptr && ass_track_) {
-                        const auto length = static_cast<int>(strlen(rect->ass));
-                        ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
-                    }
-                    else if (rect->type == SUBTITLE_BITMAP && rect->data[0]) {
-                        std::scoped_lock sublock(sub_mtx_);
-                        const uint32_t  *colors = reinterpret_cast<uint32_t *>(rect->data[1]);
-                        logd("graphics +{} {:.3%T}+{:%S}", subtitle.num_rects,
-                             std::chrono::milliseconds{ pts }, std::chrono::milliseconds{ duration });
 
-                        Subtitle sub{
-                            .x      = { rect->x, vfi.width },
-                            .y      = { rect->y - std::max(0, rect->y + rect->h - vfi.height), vfi.height },
-                            .w      = { rect->w, vfi.width },
-                            .h      = { rect->h, vfi.height },
-                            .stride = rect->w * 4,
-                            .pts    = std::chrono::milliseconds{ pts },
-                            .duration = std::chrono::milliseconds{ duration },
-                            .format   = AV_PIX_FMT_ARGB,
-                            .buffer   = std::make_shared<uint8_t[]>(rect->w * rect->h * 4),
-                        };
+                    // text sub
+                    switch (sub_type_) {
+                    case AV_CODEC_PROP_BITMAP_SUB:
 
-                        const auto dst = reinterpret_cast<uint32_t *>(sub.buffer.get());
-                        for (int h = 0; h < rect->h; ++h) {
-                            const auto ptr = rect->data[0] + h * rect->linesize[0];
-                            for (int c = 0; c < rect->w; ++c) {
-                                dst[h * rect->w + c] = colors[ptr[c]];
+                        if (rect->type == SUBTITLE_BITMAP && rect->data[0]) {
+                            const uint32_t *colors = reinterpret_cast<uint32_t *>(rect->data[1]);
+
+                            Subtitle sub{
+                                .x = { rect->x, vfi.width },
+                                .y = { rect->y - std::max(0, rect->y + rect->h - vfi.height), vfi.height },
+                                .w = { rect->w, vfi.width },
+                                .h = { rect->h, vfi.height },
+                                .stride   = rect->w * 4,
+                                .pts      = std::chrono::milliseconds{ pts },
+                                .duration = std::chrono::milliseconds{ duration },
+                                .format   = AV_PIX_FMT_ARGB,
+                                .buffer   = std::make_shared<uint8_t[]>(rect->w * rect->h * 4),
+                            };
+
+                            const auto dst = reinterpret_cast<uint32_t *>(sub.buffer.get());
+                            for (int h = 0; h < rect->h; ++h) {
+                                const auto ptr = rect->data[0] + h * rect->linesize[0];
+                                for (int c = 0; c < rect->w; ++c) {
+                                    dst[h * rect->w + c] = colors[ptr[c]];
+                                }
                             }
+
+                            bitmaps_changed_ = 2;
+
+                            std::scoped_lock bitmaps_lock(bitmaps_mtx_);
+                            bitmaps_.push_back(sub);
                         }
-                        subtitles_.push_back(sub);
+
+                        break;
+
+                    case AV_CODEC_PROP_TEXT_SUB: {
+                        std::shared_lock lock(ass_mtx_);
+
+                        if (rect->type == SUBTITLE_ASS && rect->ass) {
+                            const auto length = static_cast<int>(strlen(rect->ass));
+                            ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
+
+                            ass_cached_chunks_++;
+                        }
+                        break;
+                    }
+
+                    default: break;
                     }
                 }
             }
@@ -853,34 +891,45 @@ void Decoder::sdecode_thread_fn()
 
 std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::milliseconds& now)
 {
-    std::scoped_lock lock(ass_mtx_, sub_mtx_);
+    switch (sub_type_) {
+    case AV_CODEC_PROP_BITMAP_SUB: {
+        std::scoped_lock lock(bitmaps_mtx_);
 
-    int changed = subtitles_changed_;
+        int changed      = bitmaps_changed_;
+        bitmaps_changed_ = 0;
 
-    subtitles_.remove_if([&](auto& sub) {
-        const auto ex = sub.pts + sub.duration < now;
-        if (ex) changed = 2;
-        return ex;
-    });
+        // expired
+        bitmaps_.remove_if([&](auto& sub) {
+            const auto expired = sub.pts + sub.duration < now;
+            if (expired) changed = 2;
+            return expired;
+        });
 
-    subtitles_changed_ = 0;
+        logd_if(changed, "[    DECODER] [S] changed {}, subtitles {}", changed, bitmaps_.size());
 
-    if (!ass_renderer_ || !ass_track_) return { changed, subtitles_ };
+        return { changed, bitmaps_ };
+    }
+    case AV_CODEC_PROP_TEXT_SUB: {
+        std::scoped_lock lock(ass_mtx_);
 
-    ASS_Image *image = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
+        if (!ass_cached_chunks_) return {};
 
-    if (changed) {
-        subtitles_.clear();
+        int changed = 0;
 
-        for (; image; image = image->next) {
+        ASS_Image *image = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
 
-            const size_t bytes = image->stride * (image->h - 1) + image->w;
+        std::list<Subtitle> subtitles{};
 
-            Subtitle subtitle{
-                    .x      = {image->dst_x, vfi.width},
-                    .y      = {image->dst_y, vfi.height},
-                    .w      = {image->w, vfi.width},
-                    .h      = {image->h, vfi.height},
+        if (changed) {
+            for (; image; image = image->next) {
+
+                const size_t bytes = image->stride * (image->h - 1) + image->w;
+
+                Subtitle subtitle{
+                    .x      = {image->dst_x, ass_width_},
+                    .y      = {image->dst_y, ass_height_},
+                    .w      = {image->w, ass_width_},
+                    .h      = {image->h, ass_height_},
                     .stride = image->stride,
                     .pts    = now,
                     .color  = {
@@ -892,15 +941,20 @@ std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::millise
                     .buffer  = std::make_shared<uint8_t[]>(bytes),
                 };
 
-            std::memcpy(subtitle.buffer.get(), image->bitmap, bytes);
+                std::memcpy(subtitle.buffer.get(), image->bitmap, bytes);
 
-            subtitles_.push_back(subtitle);
+                logd("[    DECODER] [S] changed {}, image@{}", changed, (void *)image);
+
+                subtitles.push_back(subtitle);
+            }
         }
+
+        logd_if(changed, "[    DECODER] [S] changed {}, subtitles {}", changed, subtitles.size());
+
+        return { changed, subtitles };
     }
-
-    logd_if(changed || image, "changed {}, @{}", changed, (void *)image);
-
-    return { changed, subtitles_ };
+    default: return {};
+    }
 }
 
 void Decoder::set_ass_render_size(int w, int h)
@@ -908,6 +962,9 @@ void Decoder::set_ass_render_size(int w, int h)
     std::shared_lock lock(ass_mtx_);
 
     if (!ass_renderer_ || !w || !h) return;
+
+    ass_width_  = w;
+    ass_height_ = h;
 
     ass_set_frame_size(ass_renderer_, w, h);
     ass_set_storage_size(ass_renderer_, w, h);
