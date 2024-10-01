@@ -92,6 +92,8 @@ public:
 
     int open_external_subtitle(const std::string& filename);
 
+    std::string external_subtitle() const { return ass_external_; }
+
 private:
     int open_video_stream(int index);
     int open_audio_stream(int index);

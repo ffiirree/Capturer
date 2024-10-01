@@ -13,6 +13,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QDir>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMimeData>
@@ -541,16 +542,6 @@ void VideoPlayer::initContextMenu()
 {
     menu_ = new Menu(this);
 
-    // video menu
-    {
-        const auto video_menu = new Menu(tr("Video"), this);
-
-        video_menu->addAction(tr("Rotate +90"));
-        video_menu->addAction(tr("Rotate -90"));
-
-        menu_->addMenu(video_menu);
-    }
-
     // audio menu
     {
         const auto audio_menu = new Menu(tr("Audio"), this);
@@ -587,7 +578,14 @@ void VideoPlayer::initContextMenu()
         ssmenu_  = new Menu(tr("Select Subtitles"), this);
         ssgroup_ = new QActionGroup(this);
         subtitles_menu->addMenu(ssmenu_);
-        subtitles_menu->addAction(tr("Add Subtitles"));
+        subtitles_menu->addAction(tr("Add Subtitles"), this, [=, this]() {
+            const auto file = QFileDialog::getOpenFileName(this, tr("Add Subtitles"),
+                                                           QFileInfo{ filename_.c_str() }.absolutePath(),
+                                                           "Subtitles (*.ass *.ssa *.srt)");
+            if (!file.isEmpty() && source_) {
+                source_->open_external_subtitle(QFileInfo(file).absoluteFilePath().toStdString());
+            }
+        });
         menu_->addMenu(subtitles_menu);
     }
 
@@ -612,9 +610,18 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
         if (p.contains("Sample Rate")) attrs.push_back(p["Sample Rate"]);
         if (p.contains("Bitrate") && p["Bitrate"] != "N/A") attrs.push_back(p["Bitrate"]);
 
-        std::string name = fmt::format("{} - {}", fmt::join(title, ", "), fmt::join(attrs, ", "));
+        std::string name =
+            fmt::format("{}{}", title.empty() ? "" : fmt::format("{} - ", fmt::join(title, ", ")),
+                        fmt::join(attrs, ", "));
 
-        asgroup_->addAction(asmenu_->addAction(name.c_str()))->setCheckable(true);
+        const auto action = asmenu_->addAction(name.c_str(), this, [=, this]() {
+            source_->select(AVMEDIA_TYPE_AUDIO, probe::util::to_32i(p.at("Index")).value_or(-1));
+        });
+        action->setCheckable(true);
+        if (p["Index"] == std::to_string(source_->index(AVMEDIA_TYPE_AUDIO))) {
+            action->setChecked(true);
+        }
+        asgroup_->addAction(action);
     }
 
     ssmenu_->clear();
@@ -640,9 +647,12 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
     }
 
     for (auto& sub : external_subtitles_) {
-        const auto action =
-            ssmenu_->addAction(sub.c_str(), this, [=, this]() { source_->open_external_subtitle(sub); });
+        const auto action = ssmenu_->addAction(QFileInfo{ sub.c_str() }.fileName(), this,
+                                               [=, this]() { source_->open_external_subtitle(sub); });
         action->setCheckable(true);
+        if(source_ && source_->external_subtitle() == sub) {
+            action->setChecked(true);
+        }
         ssgroup_->addAction(action);
     }
 

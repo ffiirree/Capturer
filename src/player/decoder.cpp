@@ -719,12 +719,24 @@ void Decoder::readpkt_thread_fn()
                     loge("failed to switch subtitle stream to {}", selected_index_);
                 }
 
+                if (sctx_.index >= 0 && (sctx_.thread.get_id() == std::thread::id{}))
+                    sctx_.thread = std::jthread([this] { sdecode_thread_fn(); });
+
+                sctx_.queue.start();
+                break;
+            }
+            case AVMEDIA_TYPE_AUDIO: {
+                std::scoped_lock lock(selected_mtx_);
+
+                if (open_audio_stream(selected_index_) < 0) {
+                    loge("failed to switch audio stream to {}", selected_index_);
+                }
+
+                actx_.queue.start();
                 break;
             }
             default: break;
             }
-
-            sctx_.queue.start();
 
             selected_type_  = AVMEDIA_TYPE_UNKNOWN;
             selected_index_ = -1;

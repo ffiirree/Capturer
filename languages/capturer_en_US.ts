@@ -395,19 +395,7 @@
 <context>
     <name>VideoPlayer</name>
     <message>
-        <source>Video</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Renderer</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Rotate +90</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Rotate -90</source>
         <translation></translation>
     </message>
     <message>

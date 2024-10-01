@@ -395,20 +395,8 @@
 <context>
     <name>VideoPlayer</name>
     <message>
-        <source>Video</source>
-        <translation>视频</translation>
-    </message>
-    <message>
         <source>Renderer</source>
         <translation>渲染器</translation>
-    </message>
-    <message>
-        <source>Rotate +90</source>
-        <translation>旋转 +90°</translation>
-    </message>
-    <message>
-        <source>Rotate -90</source>
-        <translation>旋转 -90°</translation>
     </message>
     <message>
         <source>Audio</source>
