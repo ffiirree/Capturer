@@ -86,7 +86,7 @@ static void ass_log(int level, const char *fmt, va_list args, void *)
     logd_if(level > 3 && level < 7, "[  LIBASS-L{}] {}", level, buffer);
 }
 
-static const char *const font_mimetypes[] = {
+inline const std::vector<std::string> font_mimetypes{
     "font/ttf",
     "font/otf",
     "font/sfnt",
@@ -97,14 +97,13 @@ static const char *const font_mimetypes[] = {
     "application/x-truetype-font",
     "application/vnd.ms-opentype",
     "application/x-font-ttf",
-    nullptr,
 };
 
 static bool attachment_is_font(AVStream *st)
 {
     if (const auto tag = av_dict_get(st->metadata, "mimetype", nullptr, AV_DICT_MATCH_CASE); tag) {
-        for (int n = 0; font_mimetypes[n]; n++) {
-            if (std::string{ font_mimetypes[n] } == probe::util::tolower(tag->value)) {
+        for (const auto& mimetype : font_mimetypes) {
+            if (mimetype == probe::util::tolower(tag->value)) {
                 return true;
             }
         }

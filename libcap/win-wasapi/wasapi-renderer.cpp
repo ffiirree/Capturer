@@ -392,6 +392,9 @@ int WasapiRenderer::stop()
         loge_if(hr != AUDCLNT_E_NOT_INITIALIZED, "[   WASAPI-R] failed to reset the audio stream");
     }
 
+    if (enumerator_ && (flags_ & RENDER_ALLOW_STREAM_SWITCH))
+        enumerator_->UnregisterEndpointNotificationCallback(this);
+
     logi("[   WASAPI-R] STOPPED");
 
     return 0;
