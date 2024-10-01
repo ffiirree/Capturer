@@ -25,7 +25,7 @@ public:
 
     virtual ~TextureConverter() = default;
 
-    virtual int64_t texture(av::frame& frame) { return 0; }
+    virtual int64_t texture(av::frame&) { return 0; }
 
     QRhi *rhi{};
 };

@@ -291,7 +291,7 @@ void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
         logd("[    TEXTURE] update textures : {}({}, {})", av::to_string(fmt_.pix_fmt),
              av::to_string(fmt_.color.space), av::to_string(fmt_.color.range));
 
-        for (auto i = 0; i < params.size(); ++i) {
+        for (size_t i = 0; i < params.size(); ++i) {
             planes_[i].reset(rhi_->newTexture(
                 params[i].format, { fmt_.width / params[i].xfactor, fmt_.height / params[i].yfactor }));
             planes_[i]->create();
@@ -301,7 +301,7 @@ void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
         bindings[0] = QRhiShaderResourceBinding::uniformBuffer(
             0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
             ubuf_.get());
-        for (auto i = 0; i < params.size(); ++i) {
+        for (size_t i = 0; i < params.size(); ++i) {
             bindings[i + 1] = QRhiShaderResourceBinding::sampledTexture(
                 i + 1, QRhiShaderResourceBinding::FragmentStage, planes_[i].get(), sampler_.get());
         }
@@ -311,7 +311,7 @@ void TextureRhiWidget::UpdateTextures(QRhiResourceUpdateBatch *rub)
         SetupPipeline(pipeline_.get(), srb_.get(), ShaderNameForPixelFormat(fmt_.pix_fmt));
     }
 
-    for (auto i = 0; i < params.size(); ++i) {
+    for (size_t i = 0; i < params.size(); ++i) {
         QRhiTextureSubresourceUploadDescription desc{};
         desc.setData(QByteArray::fromRawData(reinterpret_cast<const char *>(frame_->data[i]),
                                              (fmt_.width * fmt_.height * params[i].bytes) /

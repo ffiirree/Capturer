@@ -99,11 +99,10 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     // FIXME: calculate the exact pts
     frame->pts =
         av::clock::ns().count() - av_rescale(frame->nb_samples, self->afmt.sample_rate, OS_TIME_BASE);
-    frame->pkt_dts        = frame->pts;
-    frame->format         = self->afmt.sample_fmt;
-    frame->sample_rate    = self->afmt.sample_rate;
-    frame->channels       = self->afmt.channels;
-    frame->channel_layout = self->afmt.channel_layout;
+    frame->pkt_dts     = frame->pts;
+    frame->format      = self->afmt.sample_fmt;
+    frame->sample_rate = self->afmt.sample_rate;
+    frame->ch_layout   = AV_CHANNEL_LAYOUT_MASK(self->afmt.channels, self->afmt.channel_layout);
 
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy(frame->data, (uint8_t *const *)&frames, 0, 0, frame->nb_samples,
@@ -113,7 +112,8 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     }
 
     if (self->muted_)
-        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->channels, self->afmt.sample_fmt);
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, frame->ch_layout.nb_channels,
+                               self->afmt.sample_fmt);
 
     logd("[A] pts = {:>14d}, samples = {:>6d}", frame->pts, frame->nb_samples);
 

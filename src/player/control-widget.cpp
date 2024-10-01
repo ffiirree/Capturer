@@ -134,8 +134,8 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 bool ControlWidget::hideable() const
 {
     const auto pos = mapFromGlobal(QCursor::pos());
-    return (!rect().contains(pos) ||
-            (pos.y() > title_bar_->height() + 15) && (pos.y() < height() - control_bar_->height() - 15)) &&
+    return (!rect().contains(pos) || ((pos.y() > (title_bar_->height() + 15)) &&
+                                      (pos.y() < (height() - control_bar_->height() - 15)))) &&
            !speed_box_->view()->isVisible();
 }
 

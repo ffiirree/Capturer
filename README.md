@@ -177,7 +177,7 @@ sudo apt install libpulse-dev
 sudo apt install libv4l-dev v4l-utils
 
 # x11 & xcb
-sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev libxcb-cursor0
+sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev libxcb-cursor0 libxkbcommon-dev 
 ```
 
 ### Build

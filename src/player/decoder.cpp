@@ -104,7 +104,7 @@ static bool attachment_is_font(AVStream *st)
 {
     if (const auto tag = av_dict_get(st->metadata, "mimetype", nullptr, AV_DICT_MATCH_CASE); tag) {
         for (int n = 0; font_mimetypes[n]; n++) {
-            if (std::string{ font_mimetypes[n] } == probe::util::tolower(tag->value) == 0) {
+            if (std::string{ font_mimetypes[n] } == probe::util::tolower(tag->value)) {
                 return true;
             }
         }
@@ -957,7 +957,6 @@ void Decoder::sdecode_thread_fn()
                 for (size_t i = 0; i < subtitle.num_rects; ++i) {
                     const auto rect = subtitle.rects[i];
 
-                    // text sub
                     switch (sub_type_) {
                     case AV_CODEC_PROP_BITMAP_SUB:
 
