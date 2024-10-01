@@ -6,6 +6,7 @@
 #include "logging.h"
 
 #include <probe/defer.h>
+#include <probe/util.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
 int WasapiRenderer::open(const std::string&, const RenderFlags flags)
@@ -35,8 +36,8 @@ int WasapiRenderer::open(const std::string&, const RenderFlags flags)
         if (flags_ & RENDER_ALLOW_STREAM_SWITCH) winrt::check_hresult(InitializeStreamSwitch());
 
         // events
-        STOP_EVENT.attach(::CreateEvent(nullptr, true, false, nullptr));
-        SWITCH_EVENT.attach(::CreateEvent(nullptr, false, false, nullptr));
+        STOP_EVENT.attach(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
+        SWITCH_EVENT.attach(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
     }
     catch (const winrt::hresult_error& e) {
         loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
@@ -76,7 +77,7 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
     winrt::check_hresult(audio_client_->GetBufferSize(&buffer_frames_));
 
     // event
-    REQUEST_EVENT.attach(::CreateEvent(nullptr, false, false, nullptr));
+    REQUEST_EVENT.attach(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
 
     winrt::check_hresult(audio_client_->SetEventHandle(REQUEST_EVENT.get()));
 
@@ -95,7 +96,7 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
 
 HRESULT WasapiRenderer::InitializeStreamSwitch()
 {
-    SWITCH_COMPLETE_EVENT.attach(::CreateEvent(nullptr, true, false, nullptr));
+    SWITCH_COMPLETE_EVENT.attach(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
 
     winrt::check_hresult(session_->RegisterAudioSessionNotification(this));
 
@@ -132,10 +133,9 @@ int WasapiRenderer::start()
 
         logi("[A] WASAPI RENDER THREAD STARTED");
 
-        const HANDLE events[] = { STOP_EVENT.get(), REQUEST_EVENT.get(), SWITCH_EVENT.get() };
         while (running_) {
-            switch (
-                ::WaitForMultipleObjects(static_cast<DWORD>(std::size(events)), events, false, INFINITE)) {
+            const HANDLE events[] = { STOP_EVENT.get(), REQUEST_EVENT.get(), SWITCH_EVENT.get() };
+            switch (::WaitForMultipleObjects(std::size(events), events, FALSE, INFINITE)) {
             case WAIT_OBJECT_0 + 0: // STOP_EVENT
                 running_ = false;
                 break;
@@ -149,7 +149,7 @@ int WasapiRenderer::start()
                 SwitchEventHandler();
                 break;
 
-            default: break;
+            default: loge("{}", probe::util::format_system_error(::GetLastError())); break;
             }
         }
 
@@ -286,8 +286,8 @@ HRESULT WasapiRenderer::SwitchEventHandler()
         // sample, we are unlikely to actually successfully absorb a format change, but a
         // real audio application implementing stream switching would re-format their
         // pipeline to deliver the new format).
-        if (WaitForSingleObject(SWITCH_COMPLETE_EVENT.get(), 500) == WAIT_TIMEOUT) {
-            loge("Stream switch timeout - aborting...");
+        if (::WaitForSingleObject(SWITCH_COMPLETE_EVENT.get(), 500) == WAIT_TIMEOUT) {
+            loge("[   WASAPI-R] Stream switch timeout - aborting...");
             ::SetEvent(STOP_EVENT.get());
             return E_UNEXPECTED;
         }
@@ -305,7 +305,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
         defer(CoTaskMemFree(wfex));
 
         if (std::memcmp(wfex, wfex_, sizeof(WAVEFORMATEX) + wfex->cbSize) != 0) {
-            loge("WAVE FORMAT ERROR");
+            loge("[   WASAPI-R] WAVE FORMAT ERROR");
             return E_UNEXPECTED;
         }
 
@@ -324,7 +324,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
         winrt::check_hresult(audio_client_->Start());
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
         return e.code().value;
     }
 
@@ -394,19 +394,28 @@ WasapiRenderer::~WasapiRenderer()
 {
     stop();
 
-    if (wfex_) CoTaskMemFree(wfex_);
-
-    InterlockedDecrement(&refs);
+    if (wfex_) {
+        ::CoTaskMemFree(wfex_);
+        wfex_ = nullptr;
+    }
 
     logi("[   WASAPI-R] ~");
 }
 
 HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)
 {
-    if (riid == __uuidof(IMMNotificationClient)) {
+    if (ptr == nullptr) return E_POINTER;
+
+    if (riid == IID_IUnknown) {
+        AddRef();
+        *ptr = static_cast<IUnknown *>(static_cast<IAudioSessionEvents *>(this));
+    }
+    else if (riid == __uuidof(IMMNotificationClient)) {
+        AddRef();
         *ptr = static_cast<IMMNotificationClient *>(this);
     }
     else if (riid == __uuidof(IAudioSessionEvents)) {
+        AddRef();
         *ptr = static_cast<IAudioSessionEvents *>(this);
     }
     else {
@@ -414,8 +423,7 @@ HRESULT WasapiRenderer::QueryInterface(REFIID riid, void **ptr)
         return E_NOINTERFACE;
     }
 
-    AddRef();
-    return NOERROR;
+    return S_OK;
 }
 
 ULONG WasapiRenderer::AddRef() { return static_cast<ULONG>(InterlockedIncrement(&refs)); }
