@@ -509,8 +509,12 @@ void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed
         item.ubuf.reset(rhi_->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, 64 + 64 + 16));
         item.ubuf->create();
 
-        float color[4] = { image.color[0] / 255.0f, image.color[1] / 255.0f, image.color[2] / 255.0f,
-                           (0xff - image.color[3]) / 255.0f };
+        float color[4] = {
+            static_cast<float>(image.color[0]) / 255.0f,
+            static_cast<float>(image.color[1]) / 255.0f,
+            static_cast<float>(image.color[2]) / 255.0f,
+            static_cast<float>(0xff - image.color[3]) / 255.0f,
+        };
         sub_rub_->updateDynamicBuffer(item.ubuf.get(), 128, 16, color);
 
         item.tex.reset(

@@ -12,5 +12,5 @@ void main()
 {
     float alpha = texture(plane0, texCoord).r;
 
-    fragColor = clamp(vec4(ubuf.color.xyz, alpha), 0.0, 1.0);
+    fragColor = clamp(vec4(ubuf.color.xyz, ubuf.color.w * alpha), 0.0, 1.0);
 }

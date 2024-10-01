@@ -371,6 +371,7 @@ int WasapiRenderer::reset()
 
     if (!audio_client_) return -1;
 
+    // must be **stopped** audio stream
     if (FAILED(audio_client_->Reset())) return -1;
 
     return 0;
@@ -384,6 +385,12 @@ int WasapiRenderer::stop()
     ready_   = false;
 
     if (thread_.joinable()) thread_.join();
+
+    // Resetting the stream flushes all pending data and resets the audio clock stream position to 0
+    audio_client_->Stop();
+    if (auto hr = audio_client_->Reset(); FAILED(hr)) {
+        loge_if(hr != AUDCLNT_E_NOT_INITIALIZED, "[   WASAPI-R] failed to reset the audio stream");
+    }
 
     logi("[   WASAPI-R] STOPPED");
 
