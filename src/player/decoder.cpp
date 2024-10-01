@@ -9,6 +9,7 @@
 #include <probe/defer.h>
 #include <probe/thread.h>
 #include <probe/util.h>
+#include <QFileInfo>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -341,6 +342,120 @@ int Decoder::ass_open_internal()
     return 0;
 }
 
+int Decoder::open_external_subtitle(const std::string& filename)
+{
+    QFileInfo info(filename.c_str());
+
+    if (info.suffix() == "ass" || info.suffix() == "ssa") {
+        return ass_open_external(filename);
+    }
+
+    return ff_open_external(filename);
+}
+
+// srt
+int Decoder::ff_open_external(const std::string& filename)
+{
+    std::scoped_lock lock(ass_mtx_);
+
+    ass_external_ = filename;
+
+    AVFormatContext *fmt_ctx{};
+    if (avformat_open_input(&fmt_ctx, filename.c_str(), nullptr, nullptr) < 0) {
+        loge("[    DECODER] failed to open file: {}", filename);
+        return -1;
+    }
+    defer(avformat_close_input(&fmt_ctx));
+
+    if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+        loge("[    DECODER] failed to find the stream information");
+        return -1;
+    }
+
+    const auto index = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_SUBTITLE, -1, -1, nullptr, 0);
+    if (index < 0) {
+        loge("[    DECODER] failed to find the subtitle stream");
+        return -1;
+    }
+
+    auto stream  = fmt_ctx->streams[index];
+    auto decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+    if (!decoder) {
+        loge("[    DECODER] [S] failed to find subtitle decoder");
+        return -1;
+    }
+
+    auto codec = avcodec_alloc_context3(decoder);
+    if (!codec) {
+        loge("[    DECODER] [S] failed to alloc codec context");
+        return -1;
+    }
+    defer(avcodec_free_context(&codec));
+
+    if (avcodec_parameters_to_context(codec, stream->codecpar) < 0) return -1;
+
+    codec->pkt_timebase = stream->time_base;
+
+    if (avcodec_open2(codec, decoder, nullptr) < 0) {
+        loge("[    DECODER] [S] can not open the subtitle decoder");
+        return -1;
+    }
+
+    const auto descriptor = avcodec_descriptor_get(stream->codecpar->codec_id);
+    if (descriptor && !(descriptor->props & AV_CODEC_PROP_TEXT_SUB)) {
+        logd("[    DECODER] [S] only support text based subtitles");
+        return -1;
+    }
+
+    sub_type_ = AV_CODEC_PROP_TEXT_SUB;
+
+    logi("[    DECODER] [S] [{}]: {}({}), text", decoder->name, descriptor->name, descriptor->long_name);
+
+    // libass
+    if (!ass_library_ && ass_init() < 0) return -1;
+    if (ass_track_) ass_free_track(ass_track_);
+
+    ass_cached_chunks_ = 0;
+    ass_track_         = ass_new_track(ass_library_);
+    if (!ass_track_) {
+        loge("[    DECODER] [S] could not create libass track");
+        return AVERROR(EINVAL);
+    }
+
+    if (codec->subtitle_header) {
+        ass_process_codec_private(ass_track_, reinterpret_cast<char *>(codec->subtitle_header),
+                                  codec->subtitle_header_size);
+    }
+
+    av::packet packet{};
+    while (av_read_frame(fmt_ctx, packet.put()) >= 0) {
+        AVSubtitle subtitle{};
+        int        got = 0;
+
+        if (packet->stream_index == index) {
+            if (avcodec_decode_subtitle2(codec, &subtitle, &got, packet.get()) >= 0) {
+                if (got) {
+                    const auto    pts      = subtitle.pts / 1000;
+                    const int64_t duration = subtitle.end_display_time;
+
+                    for (size_t i = 0; i < subtitle.num_rects; ++i) {
+                        const auto rect = subtitle.rects[i];
+                        if (rect->type == SUBTITLE_ASS && rect->ass) {
+                            const auto length = static_cast<int>(strlen(rect->ass));
+                            ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
+
+                            ass_cached_chunks_++;
+                        }
+                    }
+                }
+            }
+        }
+        avsubtitle_free(&subtitle);
+    }
+
+    return 0;
+}
+
 int Decoder::ass_open_external(const std::string& filename)
 {
     std::scoped_lock lock(ass_mtx_);
@@ -359,7 +474,16 @@ int Decoder::ass_open_external(const std::string& filename)
 
     if (ass_track_) ass_free_track(ass_track_);
 
-    ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), nullptr);
+    //
+    std::string codepages[] = { "UTF-8", "GBK", "UTF-16" };
+    for (auto& page : codepages) {
+        ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), page.data());
+        if (ass_track_) {
+            loge("[     LIBASS] codepage '{}'", page);
+            break;
+        }
+    }
+
     if (!ass_track_) {
         loge("[     LIBASS] failed to open external file: {}", filename);
         return -1;

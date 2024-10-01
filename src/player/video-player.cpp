@@ -142,7 +142,7 @@ int VideoPlayer::open(const std::string& filename)
     }
 
     if (!external_subtitles_.empty()) {
-        if (source_->ass_open_external(external_subtitles_[0]) < 0) {
+        if (source_->open_external_subtitle(external_subtitles_[0]) < 0) {
             Message::error(QString("Failed to open the external file: ") + external_subtitles_[0].c_str());
         }
     }
@@ -522,7 +522,7 @@ void VideoPlayer::dropEvent(QDropEvent *event)
             logi("add subtitle: {}", info.fileName().toStdString());
 
             if (source_) {
-                if (source_->ass_open_external(info.absoluteFilePath().toStdString()) < 0) {
+                if (source_->open_external_subtitle(info.absoluteFilePath().toStdString()) < 0) {
                     Message::error("Failed to open the external file: " + info.absoluteFilePath());
                 }
             }
@@ -641,7 +641,7 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
 
     for (auto& sub : external_subtitles_) {
         const auto action =
-            ssmenu_->addAction(sub.c_str(), this, [=, this]() { source_->ass_open_external(sub); });
+            ssmenu_->addAction(sub.c_str(), this, [=, this]() { source_->open_external_subtitle(sub); });
         action->setCheckable(true);
         ssgroup_->addAction(action);
     }

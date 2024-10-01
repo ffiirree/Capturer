@@ -90,7 +90,7 @@ public:
 
     int index(AVMediaType type) const;
 
-    int ass_open_external(const std::string& filename);
+    int open_external_subtitle(const std::string& filename);
 
 private:
     int open_video_stream(int index);
@@ -99,6 +99,9 @@ private:
 
     int ass_init();
     int ass_open_internal();
+
+    int ass_open_external(const std::string& filename);
+    int ff_open_external(const std::string& filename);
 
     int create_audio_graph();
     int create_video_graph();
