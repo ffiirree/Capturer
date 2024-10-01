@@ -12,6 +12,7 @@
 #include <probe/thread.h>
 #include <QActionGroup>
 #include <QApplication>
+#include <QDir>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QMimeData>
@@ -108,12 +109,42 @@ int VideoPlayer::open(const std::string& filename)
         control_->setPlaybackMode(PlaybackMode::ANIMATED_IMAGE);
     }
 
+    // search external subtitles
+    const auto dir  = file.absoluteDir();
+    auto       list = dir.entryInfoList(QStringList{ "*.ass", "*.ssa", "*.srt" });
+    for (const auto& info : list) {
+        if (file.completeBaseName().toLower() == info.completeBaseName().toLower()) {
+            external_subtitles_.push_back(info.absoluteFilePath().toStdString());
+        }
+    }
+
+    if (external_subtitles_.empty()) {
+        const QRegularExpression re("S(\\d+)E(\\d+)", QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatch  smatch = re.match(file.completeBaseName());
+        if (smatch.hasMatch()) {
+            const auto captured = smatch.captured(0);
+
+            for (const auto& info : list) {
+                QRegularExpressionMatch dmatch = re.match(info.completeBaseName());
+                if (dmatch.hasMatch() && captured == dmatch.captured(0)) {
+                    external_subtitles_.push_back(info.absoluteFilePath().toStdString());
+                }
+            }
+        }
+    }
+
     // video decoder
     if (source_->open(filename) != 0) {
         source_ = std::make_unique<Decoder>();
         loge("[    PLAYER] failed to open video decoder");
         Message::error(tr("Failed to open the video decoder"));
         return -1;
+    }
+
+    if (!external_subtitles_.empty()) {
+        if (source_->ass_open_external(external_subtitles_[0]) < 0) {
+            Message::error(QString("Failed to open the external file: ") + external_subtitles_[0].c_str());
+        }
     }
 
     control_->setDuration(av::clock::us(source_->duration()).count());
@@ -123,7 +154,8 @@ int VideoPlayer::open(const std::string& filename)
         audio_enabled_ = true;
 
         if (const auto default_asink = av::default_audio_sink();
-            !default_asink || audio_renderer_->open(default_asink->id, {}) != 0) {
+            !default_asink ||
+            audio_renderer_->open(default_asink->id, AudioRenderer::RENDER_ALLOW_STREAM_SWITCH) != 0) {
             audio_renderer_->reset();
             loge("[    PLAYER] failed to open audio render");
             return -1;
@@ -489,7 +521,11 @@ void VideoPlayer::dropEvent(QDropEvent *event)
                                  .contains(info.suffix(), Qt::CaseInsensitive)) {
             logi("add subtitle: {}", info.fileName().toStdString());
 
-            if (source_) source_->ass_open_external(info.absoluteFilePath().toStdString());
+            if (source_) {
+                if (source_->ass_open_external(info.absoluteFilePath().toStdString()) < 0) {
+                    Message::error("Failed to open the external file: " + info.absoluteFilePath());
+                }
+            }
         }
     }
 }
@@ -600,6 +636,13 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
         if (p["Index"] == std::to_string(source_->index(AVMEDIA_TYPE_SUBTITLE))) {
             action->setChecked(true);
         }
+        ssgroup_->addAction(action);
+    }
+
+    for (auto& sub : external_subtitles_) {
+        const auto action =
+            ssmenu_->addAction(sub.c_str(), this, [=, this]() { source_->ass_open_external(sub); });
+        action->setCheckable(true);
         ssgroup_->addAction(action);
     }
 

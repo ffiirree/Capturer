@@ -320,7 +320,9 @@ int Decoder::ass_init()
 
 int Decoder::ass_open_internal()
 {
-    if (sctx_.index < 0) return 0;
+    if (sctx_.index < 0 || !ass_external_.empty()) return 0;
+
+    if (!ass_library_ && ass_init() < 0) return -1;
 
     if (ass_track_) ass_free_track(ass_track_);
 
@@ -343,6 +345,10 @@ int Decoder::ass_open_external(const std::string& filename)
 {
     std::scoped_lock lock(ass_mtx_);
 
+    ass_external_ = filename;
+
+    if (!ass_library_ && ass_init() < 0) return -1;
+
     if (sctx_.index >= 0) {
         sctx_.queue.stop();
         sctx_.done = true;
@@ -355,10 +361,11 @@ int Decoder::ass_open_external(const std::string& filename)
 
     ass_track_ = ass_read_file(ass_library_, const_cast<char *>(filename.c_str()), nullptr);
     if (!ass_track_) {
-        loge("[     LIBASS] failed to open file: {}", filename);
+        loge("[     LIBASS] failed to open external file: {}", filename);
         return -1;
     }
 
+    sub_type_          = AV_CODEC_PROP_TEXT_SUB;
     ass_cached_chunks_ = std::numeric_limits<int>::max();
     return 0;
 }
@@ -483,7 +490,8 @@ int Decoder::select(AVMediaType type, int index)
 
     case AVMEDIA_TYPE_SUBTITLE:
         sctx_.queue.stop();
-        sctx_.dirty = true;
+        sctx_.dirty   = true;
+        ass_external_ = {};
         return 0;
 
     default:
@@ -912,7 +920,7 @@ std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::millise
     case AV_CODEC_PROP_TEXT_SUB: {
         std::scoped_lock lock(ass_mtx_);
 
-        if (!ass_cached_chunks_) return {};
+        if (!ass_cached_chunks_ || !ass_renderer_ || !ass_track_) return {};
 
         int changed = 0;
 

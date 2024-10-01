@@ -97,6 +97,7 @@ private:
 
     std::unique_ptr<Decoder>       source_{};
     std::unique_ptr<AudioRenderer> audio_renderer_{};
+    std::vector<std::string>       external_subtitles_{};
 
     std::atomic<bool> video_enabled_{};
     std::atomic<bool> audio_enabled_{};

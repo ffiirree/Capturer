@@ -135,6 +135,7 @@ private:
     std::atomic<int>          ass_width_{};
     std::atomic<int>          ass_height_{};
     std::atomic<int>          ass_cached_chunks_{};
+    std::string               ass_external_{};
 
     // bitmap
     std::mutex          bitmaps_mtx_{};
