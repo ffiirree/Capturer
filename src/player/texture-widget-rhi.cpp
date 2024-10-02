@@ -30,7 +30,7 @@ void TextureRhiWidget::initialize(QRhiCommandBuffer *)
 
 void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 {
-//    if (!rhi_ || !cb) return;
+    //    if (!rhi_ || !cb) return;
 
     std::scoped_lock lock(mtx_);
 
@@ -69,7 +69,7 @@ void TextureRhiWidget::present(const av::frame& frame)
 
 void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
-    if (!changed || subtitles.empty()) return;
+    if (!changed) return;
 
     std::scoped_lock lock(mtx_);
 

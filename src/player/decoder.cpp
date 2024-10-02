@@ -264,7 +264,7 @@ int Decoder::open_subtitle_stream(int index)
         logi("[    DECODER] [S] [{}]: {}({}), {}", decoder->name, descriptor->name, descriptor->long_name,
              (sub_type_ == AV_CODEC_PROP_TEXT_SUB)
                  ? "text"
-                 : ((sub_type_ == AV_CODEC_PROP_TEXT_SUB) ? "bitmap" : "unknown"));
+                 : ((sub_type_ == AV_CODEC_PROP_BITMAP_SUB) ? "bitmap" : "unknown"));
     }
 
     return 0;
@@ -654,9 +654,11 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
     sctx_.queue.stop();
 
     if (sub_type_ == AV_CODEC_PROP_BITMAP_SUB) {
-        std::scoped_lock bitmaps_lock(bitmaps_mtx_);
-        bitmaps_changed_ = 2;
+        std::scoped_lock locK(subtitle_mtx_);
+
+        subtitle_changed_ = 2;
         bitmaps_.clear();
+        displayed_.clear();
     }
 
     notenough_.notify_all();
@@ -952,17 +954,26 @@ void Decoder::sdecode_thread_fn()
         int        got = 0;
         if (avcodec_decode_subtitle2(sctx_.codec, &subtitle, &got, pkt.value().get()) >= 0) {
             if (got) {
-                const auto    pts      = subtitle.pts / 1000;
-                const int64_t duration = subtitle.end_display_time;
+                auto pts = std::chrono::milliseconds{ subtitle.pts / 1000 + subtitle.start_display_time };
+                auto duration =
+                    std::chrono::milliseconds{ subtitle.end_display_time - subtitle.start_display_time };
 
-                logd("[S] subtitles +{} {:.3%T}+{:%S}", subtitle.num_rects,
-                     std::chrono::milliseconds{ pts }, std::chrono::milliseconds{ duration });
+                logd("[S] {:.3%T} ~ {:.3%T} +{}", pts, pts + duration, subtitle.num_rects);
 
-                // FIXME: need clear?
-                if (subtitle.format == 0 && sub_type_ == AV_CODEC_PROP_BITMAP_SUB) {
-                    std::scoped_lock bitmaps_lock(bitmaps_mtx_);
-                    bitmaps_.clear();
-                    bitmaps_changed_ = 2;
+                if (sctx_.codec->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE && !subtitle.num_rects) {
+                    std::scoped_lock locK(subtitle_mtx_);
+
+                    for (auto& bm : bitmaps_) {
+                        if (bm.duration > pts - bm.pts) {
+                            bm.duration = pts - bm.pts;
+                        }
+                    }
+
+                    for (auto& bm : displayed_) {
+                        if (bm.duration > pts - bm.pts) {
+                            bm.duration = pts - bm.pts;
+                        }
+                    }
                 }
 
                 for (size_t i = 0; i < subtitle.num_rects; ++i) {
@@ -975,14 +986,15 @@ void Decoder::sdecode_thread_fn()
                             const uint32_t *colors = reinterpret_cast<uint32_t *>(rect->data[1]);
 
                             Subtitle sub{
-                                .x = { rect->x, vfi.width },
-                                .y = { rect->y - std::max(0, rect->y + rect->h - vfi.height), vfi.height },
-                                .w = { rect->w, vfi.width },
-                                .h = { rect->h, vfi.height },
-                                .stride   = rect->w * 4,
-                                .pts      = std::chrono::milliseconds{ pts },
-                                .duration = std::chrono::milliseconds{ duration },
-                                .format   = AV_PIX_FMT_ARGB,
+                                .x      = { rect->x, sctx_.codec->width },
+                                .y      = { rect->y - std::max(0, rect->y + rect->h - sctx_.codec->height),
+                                            sctx_.codec->height },
+                                .w      = { rect->w, sctx_.codec->width },
+                                .h      = { rect->h, sctx_.codec->height },
+                                .stride = rect->w * 4,
+                                .pts    = pts,
+                                .duration = duration,
+                                .format   = AV_PIX_FMT_BGRA,
                                 .size     = static_cast<size_t>(rect->w * rect->h * 4),
                                 .buffer   = std::make_shared<uint8_t[]>(rect->w * rect->h * 4),
                             };
@@ -995,10 +1007,8 @@ void Decoder::sdecode_thread_fn()
                                 }
                             }
 
-                            bitmaps_changed_ = 2;
-
-                            std::scoped_lock bitmaps_lock(bitmaps_mtx_);
-                            bitmaps_.push_back(sub);
+                            std::scoped_lock locK(subtitle_mtx_);
+                            bitmaps_.emplace_back(sub);
                         }
 
                         break;
@@ -1008,7 +1018,7 @@ void Decoder::sdecode_thread_fn()
 
                         if (rect->type == SUBTITLE_ASS && rect->ass) {
                             const auto length = static_cast<int>(strlen(rect->ass));
-                            ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
+                            ass_process_chunk(ass_track_, rect->ass, length, pts.count(), duration.count());
 
                             ass_cached_chunks_++;
                         }
@@ -1034,30 +1044,38 @@ void Decoder::sdecode_thread_fn()
 
 std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::milliseconds& now)
 {
+    int changed = 0;
+
     switch (sub_type_) {
     case AV_CODEC_PROP_BITMAP_SUB: {
-        std::scoped_lock lock(bitmaps_mtx_);
+        std::scoped_lock lock(subtitle_mtx_);
 
-        int changed      = bitmaps_changed_;
-        bitmaps_changed_ = 0;
+        changed = subtitle_changed_.exchange(0);
 
-        // expired
-        bitmaps_.remove_if([&](auto& sub) {
-            const auto expired = sub.pts + sub.duration < now;
+        // from buffered
+        for (const auto& bm : bitmaps_) {
+            if (now <= bm.pts) break;
+
+            changed = 2;
+            displayed_.push_back(bm);
+        }
+
+        // remove expired
+        bitmaps_.remove_if([&](auto& sub) { return now > sub.pts; });
+        displayed_.remove_if([&](auto& sub) {
+            const auto expired = (now <= sub.pts || (now >= (sub.pts + sub.duration)));
             if (expired) changed = 2;
             return expired;
         });
 
-        logd_if(changed, "[    DECODER] [S] changed {}, subtitles {}", changed, bitmaps_.size());
+        logd_if(changed, "[S] {:.3%T}: changed {}, subtitles {}", now, changed, displayed_.size());
 
-        return { changed, bitmaps_ };
+        return { changed, displayed_ };
     }
     case AV_CODEC_PROP_TEXT_SUB: {
         std::scoped_lock lock(ass_mtx_);
 
         if (!ass_cached_chunks_ || !ass_renderer_ || !ass_track_) return {};
-
-        int changed = 0;
 
         ASS_Image *image = ass_render_frame(ass_renderer_, ass_track_, now.count(), &changed);
 
@@ -1087,13 +1105,11 @@ std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::millise
 
                 std::memcpy(subtitle.buffer.get(), image->bitmap, bytes);
 
-                logd("[    DECODER] [S] changed {}, image@{}", changed, (void *)image);
-
                 subtitles.push_back(subtitle);
             }
         }
 
-        logd_if(changed, "[    DECODER] [S] changed {}, subtitles {}", changed, subtitles.size());
+        logd_if(changed, "[S] {:.3%T}: changed {}, subtitles {}", now, changed, subtitles.size());
 
         return { changed, subtitles };
     }

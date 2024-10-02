@@ -63,7 +63,7 @@ void SubtitleRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
 
     pipeline_.reset(rhi->newGraphicsPipeline());
     const auto name = QString(":/src/resources/shaders/") +
-                      ((subtitle_.format == AV_PIX_FMT_PAL8) ? "ass" : "rgba") + ".frag.qsb";
+                      ((subtitle_.format == AV_PIX_FMT_PAL8) ? "ass" : "bgra") + ".frag.qsb";
 
     pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
     pipeline_->setShaderStages({

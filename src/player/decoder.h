@@ -143,9 +143,10 @@ private:
     std::string               ass_external_{};
 
     // bitmap
-    std::mutex          bitmaps_mtx_{};
-    std::atomic<int>    bitmaps_changed_{};
-    std::list<Subtitle> bitmaps_{};
+    std::mutex          subtitle_mtx_{};
+    std::atomic<int>    subtitle_changed_{};
+    std::list<Subtitle> bitmaps_{}; // buffered subtitles
+    std::list<Subtitle> displayed_{};
 
     // switch stream
     mutable std::shared_mutex selected_mtx_{};
