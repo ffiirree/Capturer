@@ -1,25 +1,16 @@
 #ifndef CAPTURER_TEXTURE_WIDGET_RHI_H
 #define CAPTURER_TEXTURE_WIDGET_RHI_H
 
+#include "image-render-item.h"
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/media.h"
+#include "subtitle-render-item.h"
 #include "subtitle.h"
 
-#include <array>
-#include <ass/ass.h>
 #include <memory>
 #include <QRhiWidget>
 #include <rhi/qrhi.h>
-
-struct TextureDescription
-{
-    int32_t             xfactor{};
-    int32_t             yfactor{};
-    QRhiTexture::Format format{};
-    uint32_t            bytes{};
-};
-
-constexpr int MAX_PLANES = 4;
+#include <vector>
 
 class TextureRhiWidget : public QRhiWidget
 {
@@ -28,79 +19,36 @@ public:
     explicit TextureRhiWidget(QWidget *parent = nullptr);
 
     void initialize(QRhiCommandBuffer *cb) override;
+
     void render(QRhiCommandBuffer *cb) override;
 
-    QSize pixelSize() const { return pixel_size_; }
+    [[nodiscard]] QSize renderSize() const { return render_sz_; }
 
-    QSize framePixelSize() const
-    {
-        const auto sz = QSize{ fmt_.width, fmt_.height };
-        return (rhi_ && renderTarget()) ? sz.scaled(renderTarget()->pixelSize(), Qt::KeepAspectRatio) : sz;
-    }
-
-public:
     void present(const av::frame& frame);
 
     void present(const std::list<Subtitle>& subtitles, int changed);
 
-    static std::vector<AVPixelFormat> PixelFormats();
+    static AVPixelFormat format(AVPixelFormat, AVPixelFormat = ImageRenderItem::formats()[0]);
 
-    static bool IsSupported(AVPixelFormat fmt);
+    void hflip() { hflip_ = hflip_ * (-1); }
+    void vflip() { vflip_ = vflip_ * (-1); }
 
 signals:
     void updateRequest();
 
 private:
-    void UpdateTextures(QRhiResourceUpdateBatch *rub);
-    void SetupPipeline(QRhiGraphicsPipeline *pipeline, QRhiShaderResourceBindings *bindings,
-                       const QString& frag);
+    std::mutex mtx_;
 
-private:
-    // QRhi @{
     QRhi *rhi_{};
 
-    QSize pixel_size_{};
+    std::vector<std::shared_ptr<IRenderItem>> items_{};
+    std::vector<std::shared_ptr<IRenderItem>> items_slots_[4]{};
 
-    QMatrix4x4                   mvp_{};
-    std::unique_ptr<QRhiSampler> sampler_{};
+    std::atomic<int8_t> hflip_{ 1 };
+    std::atomic<int8_t> vflip_{ 1 };
 
-    // video frame
-    std::unique_ptr<QRhiGraphicsPipeline>                pipeline_{};
-    std::unique_ptr<QRhiBuffer>                          vbuf_{};
-    std::unique_ptr<QRhiBuffer>                          ubuf_{};
-    std::unique_ptr<QRhiShaderResourceBindings>          srb_{};
-    std::array<std::unique_ptr<QRhiTexture>, MAX_PLANES> planes_{};
-
-    // subtitles
-    struct RenderItem
-    {
-        std::shared_ptr<QRhiBuffer>                 vbuf{};
-        std::shared_ptr<QRhiBuffer>                 ubuf{};
-        std::shared_ptr<QRhiTexture>                tex{};
-        std::shared_ptr<QRhiShaderResourceBindings> srb{};
-        std::shared_ptr<QRhiGraphicsPipeline>       pipeline{};
-    };
-    std::vector<RenderItem>  items_{};
-    QRhiResourceUpdateBatch *sub_rub_{};
-
-    std::list<Subtitle>     subtitles_{};
-    std::list<Subtitle>     subtitle_slots_[4]{};
-    std::vector<RenderItem> items_slots_[4]{};
-
-    // @}
-
-    av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P };
-
-    // frame
-    av::frame frame_{};
-
-    av::frame frame_slots_[4]{};
-
-    std::mutex mtx_;
-    std::mutex sub_mtx_{};
-
-    std::atomic<bool> format_changed_{ true };
-    std::atomic<bool> subtitles_changed_{ true };
+    QSize image_sz_{};
+    QSize render_sz_{};
 };
 
 #endif //! CAPTURER_TEXTURE_WIDGET_RHI_H

@@ -426,5 +426,17 @@
         <source>Failed to open the video decoder</source>
         <translation>无法打开视频解码器</translation>
     </message>
+    <message>
+        <source>Video</source>
+        <translation>视频</translation>
+    </message>
+    <message>
+        <source>H Flip</source>
+        <translation>水平翻转</translation>
+    </message>
+    <message>
+        <source>V Flip</source>
+        <translation>垂直翻转</translation>
+    </message>
 </context>
 </TS>

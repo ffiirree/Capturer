@@ -426,5 +426,17 @@
         <source>Failed to open the video decoder</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Video</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>H Flip</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>V Flip</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

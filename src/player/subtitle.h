@@ -25,6 +25,7 @@ struct Subtitle
 
     uint8_t color[4]{}; // RGBA
 
+    size_t                     size{};
     std::shared_ptr<uint8_t[]> buffer{};
 };
 

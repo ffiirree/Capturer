@@ -983,6 +983,7 @@ void Decoder::sdecode_thread_fn()
                                 .pts      = std::chrono::milliseconds{ pts },
                                 .duration = std::chrono::milliseconds{ duration },
                                 .format   = AV_PIX_FMT_ARGB,
+                                .size     = static_cast<size_t>(rect->w * rect->h * 4),
                                 .buffer   = std::make_shared<uint8_t[]>(rect->w * rect->h * 4),
                             };
 
@@ -1080,6 +1081,7 @@ std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::millise
                         GET_B(image->color),
                         GET_A(image->color),
                     },
+                    .size    = bytes,
                     .buffer  = std::make_shared<uint8_t[]>(bytes),
                 };
 
@@ -1103,7 +1105,7 @@ void Decoder::set_ass_render_size(int w, int h)
 {
     std::shared_lock lock(ass_mtx_);
 
-    if (!ass_renderer_ || !w || !h) return;
+    if (!ass_renderer_ || w <= 0 || h <= 0) return;
 
     ass_width_  = w;
     ass_height_ = h;

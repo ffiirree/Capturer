@@ -179,9 +179,7 @@ int VideoPlayer::open(const std::string& filename)
     if (source_->has(AVMEDIA_TYPE_VIDEO)) {
         video_enabled_       = true;
         source_->vfo         = source_->vfi;
-        source_->vfo.pix_fmt = TextureRhiWidget::IsSupported(source_->vfo.pix_fmt)
-                                   ? source_->vfo.pix_fmt
-                                   : TextureRhiWidget::PixelFormats()[0];
+        source_->vfo.pix_fmt = TextureRhiWidget::format(source_->vfo.pix_fmt);
     }
 
     // title
@@ -504,7 +502,7 @@ void VideoPlayer::mouseDoubleClickEvent(QMouseEvent *event)
 void VideoPlayer::resizeEvent(QResizeEvent *event)
 {
     if (source_ && texture_) {
-        const auto sz = texture_->framePixelSize();
+        const auto sz = texture_->renderSize();
         source_->set_ass_render_size(sz.width(), sz.height());
     }
     FramelessWindow::resizeEvent(event);
@@ -541,6 +539,22 @@ void VideoPlayer::dragEnterEvent(QDragEnterEvent *event)
 void VideoPlayer::initContextMenu()
 {
     menu_ = new Menu(this);
+
+    // video menu
+    {
+        const auto menu = new Menu(tr("Video"), this);
+        {
+            const auto hflip = menu->addAction(tr("H Flip"), this, [=, this]() { texture_->hflip(); });
+            hflip->setCheckable(true);
+
+            const auto vflip = menu->addAction(tr("V Flip"), this, [=, this]() { texture_->vflip(); });
+            vflip->setCheckable(true);
+
+            menu->addAction(hflip);
+            menu->addAction(vflip);
+        }
+        menu_->addMenu(menu);
+    }
 
     // audio menu
     {
@@ -650,7 +664,7 @@ void VideoPlayer::contextMenuEvent(QContextMenuEvent *event)
         const auto action = ssmenu_->addAction(QFileInfo{ sub.c_str() }.fileName(), this,
                                                [=, this]() { source_->open_external_subtitle(sub); });
         action->setCheckable(true);
-        if(source_ && source_->external_subtitle() == sub) {
+        if (source_ && source_->external_subtitle() == sub) {
             action->setChecked(true);
         }
         ssgroup_->addAction(action);

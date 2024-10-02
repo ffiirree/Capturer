@@ -52,9 +52,8 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
     };
 
     // sink video format
-    vfmt = source_->vfmt;
-    vfmt.pix_fmt =
-        TextureRhiWidget::IsSupported(vfmt.pix_fmt) ? vfmt.pix_fmt : TextureRhiWidget::PixelFormats()[0];
+    vfmt         = source_->vfmt;
+    vfmt.pix_fmt = TextureRhiWidget::format(vfmt.pix_fmt);
 
     ready_ = true;
 
