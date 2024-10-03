@@ -7,5 +7,7 @@ layout (binding = 1) uniform sampler2D plane0;
 
 void main()
 {
-    fragColor = texture(plane0, texCoord).bgra;
+    float l = texture(plane0, texCoord).r;
+
+    fragColor = vec4(l, l, l, 1.0);
 }
