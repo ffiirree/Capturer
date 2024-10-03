@@ -6,6 +6,7 @@
 #include "libcap/media.h"
 #include "subtitle-render-item.h"
 #include "subtitle.h"
+#include "texture-helper.h"
 
 #include <memory>
 #include <QRhiWidget>
@@ -28,7 +29,7 @@ public:
 
     void present(const std::list<Subtitle>& subtitles, int changed);
 
-    static AVPixelFormat format(AVPixelFormat, AVPixelFormat = ImageRenderItem::formats()[0]);
+    static AVPixelFormat format(AVPixelFormat, AVPixelFormat = av::texture_formats()[0]);
 
     void hflip() { hflip_ = hflip_ * (-1); }
     void vflip() { vflip_ = vflip_ * (-1); }

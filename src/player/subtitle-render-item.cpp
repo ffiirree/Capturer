@@ -1,14 +1,7 @@
 #include "subtitle-render-item.h"
 
 #include "logging.h"
-
-#include <QFile>
-
-static QShader GetShaderByName(const QString& name)
-{
-    QFile f(name);
-    return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
-}
+#include "texture-helper.h"
 
 bool SubtitleRenderItem::attach(const std::any& attachment)
 {
@@ -62,13 +55,10 @@ void SubtitleRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
     srb_->create();
 
     pipeline_.reset(rhi->newGraphicsPipeline());
-    const auto name = QString(":/src/resources/shaders/") +
-                      ((subtitle_.format == AV_PIX_FMT_PAL8) ? "ass" : "bgra") + ".frag.qsb";
-
     pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
     pipeline_->setShaderStages({
-        { QRhiShaderStage::Vertex, GetShaderByName(":/src/resources/shaders/vertex.vert.qsb") },
-        { QRhiShaderStage::Fragment, GetShaderByName(name) },
+        { QRhiShaderStage::Vertex, av::get_shader(":/src/resources/shaders/vertex.vert.qsb") },
+        { QRhiShaderStage::Fragment, av::get_frag_shader(subtitle_.format) },
     });
 
     QRhiVertexInputLayout layout{};

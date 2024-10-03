@@ -12,7 +12,7 @@ TextureRhiWidget::TextureRhiWidget(QWidget *parent)
 
 AVPixelFormat TextureRhiWidget::format(const AVPixelFormat expected, const AVPixelFormat dft)
 {
-    for (const auto& fmt : ImageRenderItem::formats()) {
+    for (const auto& fmt : av::texture_formats()) {
         if (fmt == expected) {
             return expected;
         }

@@ -14,8 +14,6 @@ public:
     void upload(QRhiResourceUpdateBatch *rub, float scale_x, float scale_y) override;
     void draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport) override;
 
-    static std::vector<AVPixelFormat> formats();
-
 private:
     mutable std::mutex mtx_{};
 
