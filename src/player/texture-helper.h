@@ -26,11 +26,11 @@ namespace av
     std::vector<TextureDescription> get_texture_desc(AVPixelFormat fmt);
     const float                    *get_color_matrix_coefficients(const av::vformat_t& fmt);
 
-    QString get_shader_name(AVPixelFormat fmt);
-    QString get_frag_shader_path(AVPixelFormat fmt);
+    QString get_shader_name(const av::vformat_t& fmt, bool hdr);
+    QString get_frag_shader_path(const av::vformat_t& fmt, bool hdr);
 
     QShader get_shader(const QString& name);
-    QShader get_frag_shader(AVPixelFormat name);
+    QShader get_frag_shader(const av::vformat_t& fmt, bool hdr);
 } // namespace av
 
 #endif //! CAPTURER_TEXTURE_HELPER_H

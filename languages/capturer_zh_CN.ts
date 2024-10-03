@@ -438,5 +438,9 @@
         <source>V Flip</source>
         <translation>垂直翻转</translation>
     </message>
+    <message>
+        <source>Failed to open the audio output device</source>
+        <translation>无法打开音频输出设备</translation>
+    </message>
 </context>
 </TS>

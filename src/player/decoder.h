@@ -84,6 +84,8 @@ public:
 
     std::vector<AVStream *> streams(AVMediaType type);
 
+    AVStream *stream(AVMediaType type);
+
     void set_ass_render_size(int w, int h);
 
     int select(AVMediaType type, int index);

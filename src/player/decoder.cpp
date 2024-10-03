@@ -1184,6 +1184,16 @@ std::vector<AVStream *> Decoder::streams(AVMediaType type)
     return list;
 }
 
+AVStream *Decoder::stream(AVMediaType type)
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO:    return vctx_.stream;
+    case AVMEDIA_TYPE_AUDIO:    return actx_.stream;
+    case AVMEDIA_TYPE_SUBTITLE: return sctx_.stream;
+    default:                    return nullptr;
+    }
+}
+
 std::vector<std::map<std::string, std::string>> Decoder::properties(const AVMediaType mt) const
 {
     if (mt == AVMEDIA_TYPE_UNKNOWN) {

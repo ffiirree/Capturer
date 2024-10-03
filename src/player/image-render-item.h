@@ -10,6 +10,8 @@ class ImageRenderItem final : public IRenderItem
 public:
     bool attach(const std::any&) override;
 
+    void hdr(bool) override;
+
     void create(QRhi *rhi, QRhiRenderTarget *rt) override;
     void upload(QRhiResourceUpdateBatch *rub, float scale_x, float scale_y) override;
     void draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport) override;
@@ -31,6 +33,8 @@ private:
     av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P };
     av::frame     frame_{};
     av::frame     frame_slots_[4]{};
+
+    std::atomic<bool> hdr_{};
 
     std::atomic<bool> uploaded_{};
     std::atomic<bool> created_{};

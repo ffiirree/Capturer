@@ -438,5 +438,9 @@
         <source>V Flip</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Failed to open the audio output device</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

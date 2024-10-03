@@ -57,6 +57,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::pause,          this, &VideoPlayer::pause);
     connect(control_,   &ControlWidget::resume,         this, &VideoPlayer::resume);
     connect(control_,   &ControlWidget::seek,           this, &VideoPlayer::seek);
+    connect(control_,   &ControlWidget::hdrToggled,     this, [=,this](bool hdr){ texture_->hdr(hdr); });
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });
@@ -159,6 +160,7 @@ int VideoPlayer::open(const std::string& filename)
             audio_renderer_->open(default_asink->id, AudioRenderer::RENDER_ALLOW_STREAM_SWITCH) != 0) {
             audio_renderer_->reset();
             loge("[    PLAYER] failed to open audio render");
+            Message::error(tr("Failed to open the audio output device"));
             return -1;
         }
 
@@ -180,6 +182,17 @@ int VideoPlayer::open(const std::string& filename)
         video_enabled_       = true;
         source_->vfo         = source_->vfi;
         source_->vfo.pix_fmt = TextureRhiWidget::format(source_->vfo.pix_fmt);
+    }
+
+    control_->setHdr(source_->vfo.color.space == AVCOL_SPC_BT2020_NCL &&
+                     source_->vfo.color.transfer == AVCOL_TRC_SMPTE2084);
+
+    if (auto stream = source_->stream(AVMEDIA_TYPE_VIDEO); stream) {
+        control_->setVideoCodecName(avcodec_get_name(stream->codecpar->codec_id));
+    }
+
+    if (auto stream = source_->stream(AVMEDIA_TYPE_AUDIO); stream) {
+        control_->setAudioCodecName(avcodec_get_name(stream->codecpar->codec_id));
     }
 
     // title
@@ -549,9 +562,6 @@ void VideoPlayer::initContextMenu()
 
             const auto vflip = menu->addAction(tr("V Flip"), this, [=, this]() { texture_->vflip(); });
             vflip->setCheckable(true);
-
-            menu->addAction(hflip);
-            menu->addAction(vflip);
         }
         menu_->addMenu(menu);
     }
@@ -682,11 +692,10 @@ void VideoPlayer::showProperties()
     auto ap = source_->properties(AVMEDIA_TYPE_AUDIO);
     auto sp = source_->properties(AVMEDIA_TYPE_SUBTITLE);
 
-    const auto win = new QWidget(this, Qt::Dialog);
+    const auto win = new QDialog(this);
     win->setMinimumSize(600, 800);
     win->setAttribute(Qt::WA_DeleteOnClose);
     win->setWindowTitle(tr("Properties"));
-    win->setStyleSheet("QWidget { background: white; color: black; } QLabel { padding-left: 2em; }");
 
     const auto layout = new QVBoxLayout();
     layout->setContentsMargins({});

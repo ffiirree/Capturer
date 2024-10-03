@@ -16,6 +16,7 @@ enum class PlaybackMode
 };
 
 class TitleBar;
+class QPushButton;
 
 class ControlWidget final : public QWidget
 {
@@ -36,6 +37,11 @@ public slots:
 
     [[nodiscard]] bool paused() const;
 
+    void setVideoCodecName(const QString&);
+    void setAudioCodecName(const QString&);
+
+    void setHdr(bool);
+
 signals:
     void pause();
     void resume();
@@ -48,6 +54,8 @@ signals:
 
     void subtitlesEnabled(bool);
 
+    void hdrToggled(bool);
+
 private:
     TitleBar  *title_bar_{};
     QWidget   *control_bar_{};
@@ -59,6 +67,10 @@ private:
 
     QLabel *time_label_{};
     QLabel *duration_label_{};
+
+    QPushButton *hdr_btn_{};
+    QPushButton *vcodec_btn_{};
+    QPushButton *acodec_btn_{};
 
     QCheckBox *pause_btn_{};
 };

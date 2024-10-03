@@ -67,6 +67,12 @@ void TextureRhiWidget::present(const av::frame& frame)
     }
 }
 
+void TextureRhiWidget::hdr(bool en)
+{
+    items_.front()->hdr(en);
+    emit updateRequest();
+}
+
 void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
     if (!changed) return;

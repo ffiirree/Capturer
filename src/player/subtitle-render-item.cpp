@@ -58,7 +58,7 @@ void SubtitleRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
     pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
     pipeline_->setShaderStages({
         { QRhiShaderStage::Vertex, av::get_shader(":/src/resources/shaders/vertex.vert.qsb") },
-        { QRhiShaderStage::Fragment, av::get_frag_shader(subtitle_.format) },
+        { QRhiShaderStage::Fragment, av::get_frag_shader({ .pix_fmt = subtitle_.format }, false) },
     });
 
     QRhiVertexInputLayout layout{};

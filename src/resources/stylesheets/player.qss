@@ -96,6 +96,19 @@ QWidget#control-bar QLabel#time-label {
     color: white;
 }
 
+QWidget#control-bar QPushButton {
+    background-color: rgba(0, 0, 0, 100);
+    border: 0px;
+    font-size: 9pt;
+    border-radius: 3px;
+    padding: 0em 0.35em;
+    color: #efefef;
+}
+
+QWidget#control-bar QPushButton:checked {
+    color: #409eff;
+}
+
 /* subtitles */
 QWidget#control-bar QCheckBox#subtitles-btn::indicator {
     image: url(:/icons/subtitles-off-light);

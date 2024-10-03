@@ -34,6 +34,8 @@ public:
     void hflip() { hflip_ = hflip_ * (-1); }
     void vflip() { vflip_ = vflip_ * (-1); }
 
+    void hdr(bool en);
+
 signals:
     void updateRequest();
 

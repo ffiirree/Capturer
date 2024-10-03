@@ -6,6 +6,7 @@
 #include <fmt/chrono.h>
 #include <libcap/media.h>
 #include <qabstractitemview.h>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 ControlWidget::ControlWidget(FramelessWindow *parent)
@@ -78,6 +79,23 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         duration_label_->setAlignment(Qt::AlignCenter);
         connect(this, &ControlWidget::validDruation, duration_label_, &QLabel::setVisible);
         hl->addWidget(duration_label_);
+
+        hdr_btn_ = new QPushButton("HDR");
+        hdr_btn_->hide();
+        hdr_btn_->setCheckable(true);
+        hdr_btn_->setObjectName("hdr-btn");
+        connect(hdr_btn_, &QPushButton::toggled, this, &ControlWidget::hdrToggled);
+        hl->addWidget(hdr_btn_);
+
+        vcodec_btn_ = new QPushButton();
+        vcodec_btn_->hide();
+        vcodec_btn_->setObjectName("vcodec-btn");
+        hl->addWidget(vcodec_btn_);
+
+        acodec_btn_ = new QPushButton();
+        acodec_btn_->hide();
+        acodec_btn_->setObjectName("acodec-btn");
+        hl->addWidget(acodec_btn_);
 
         hl->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Maximum));
 
@@ -154,6 +172,20 @@ void ControlWidget::setTime(const int64_t ts)
     }
     time_label_->setText(fmt::format("{:%T}", std::chrono::seconds(ts / 1000000)).c_str());
 }
+
+void ControlWidget::setVideoCodecName(const QString& name)
+{
+    vcodec_btn_->setText(name.toUpper());
+    vcodec_btn_->show();
+}
+
+void ControlWidget::setAudioCodecName(const QString& name)
+{
+    acodec_btn_->setText(name.toUpper());
+    acodec_btn_->show();
+}
+
+void ControlWidget::setHdr(bool en) { hdr_btn_->setVisible(en); }
 
 void ControlWidget::setVolume(int v)
 {

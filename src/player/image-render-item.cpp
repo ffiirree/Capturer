@@ -59,6 +59,16 @@ bool ImageRenderItem::attach(const std::any& attachment)
     return true;
 }
 
+void ImageRenderItem::hdr(bool en)
+{
+    if (hdr_ != en) {
+        uploaded_ = false;
+        created_  = false;
+    }
+
+    hdr_ = en;
+}
+
 void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
 {
     if (created_.exchange(true)) return;
@@ -102,7 +112,7 @@ void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
     pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
     pipeline_->setShaderStages({
         { QRhiShaderStage::Vertex, av::get_shader(":/src/resources/shaders/vertex.vert.qsb") },
-        { QRhiShaderStage::Fragment, av::get_frag_shader(fmt_.pix_fmt) },
+        { QRhiShaderStage::Fragment, av::get_frag_shader(fmt_, hdr_) },
     });
 
     QRhiVertexInputLayout layout{};

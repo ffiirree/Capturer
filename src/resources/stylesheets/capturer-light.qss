@@ -167,6 +167,12 @@ QFrame[frameShape="5"] {
 }
 
 /*///////////////////////////////////////////////////////////////*/
+QTreeView {
+    background-color: #F9F9F9;
+    color: #50505f;
+}
+
+/*///////////////////////////////////////////////////////////////*/
 NavigationBar {
     border: 1px solid #D6D6D7;
     background-color: #E6E6E7;

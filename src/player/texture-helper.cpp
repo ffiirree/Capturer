@@ -244,42 +244,47 @@ namespace av
         }
     }
 
-    QString get_shader_name(AVPixelFormat fmt)
+    QString get_shader_name(const av::vformat_t& fmt, bool hdr)
     {
-        switch (fmt) {
-        case AV_PIX_FMT_PAL8:        return "pal8";
+        switch (fmt.pix_fmt) {
+        case AV_PIX_FMT_PAL8:     return "pal8";
         case AV_PIX_FMT_GRAY8:
-        case AV_PIX_FMT_GRAY16LE:    return "gray";
-        case AV_PIX_FMT_YUV420P:     // planar
+        case AV_PIX_FMT_GRAY16LE: return "gray";
+        case AV_PIX_FMT_YUV420P:  // planar
         case AV_PIX_FMT_YUV422P:
         case AV_PIX_FMT_YUV444P:
         case AV_PIX_FMT_YUV410P:
         case AV_PIX_FMT_YUV411P:
         case AV_PIX_FMT_YUVJ420P:
         case AV_PIX_FMT_YUVJ422P:
-        case AV_PIX_FMT_YUVJ444P:    return "yuv";
-        case AV_PIX_FMT_YUVA444P:    return "yuva";
-        case AV_PIX_FMT_YUV420P10LE: return "yuv_p10";
-        case AV_PIX_FMT_NV12:        return "nv12"; // semi-planar
-        case AV_PIX_FMT_NV21:        return "nv21";
-        case AV_PIX_FMT_YUYV422:     return "yuyv"; // packed
-        case AV_PIX_FMT_UYVY422:     return "uyvy";
+        case AV_PIX_FMT_YUVJ444P: return "yuv";
+        case AV_PIX_FMT_YUVA444P: return "yuva";
+        case AV_PIX_FMT_YUV420P10LE:
+            if (hdr && fmt.color.space == AVCOL_SPC_BT2020_NCL &&
+                fmt.color.transfer == AVCOL_TRC_SMPTEST2084) {
+                return "yuv_p10_bt2020_pq";
+            }
+            return "yuv_p10";
+        case AV_PIX_FMT_NV12:    return "nv12"; // semi-planar
+        case AV_PIX_FMT_NV21:    return "nv21";
+        case AV_PIX_FMT_YUYV422: return "yuyv"; // packed
+        case AV_PIX_FMT_UYVY422: return "uyvy";
         case AV_PIX_FMT_ARGB:
-        case AV_PIX_FMT_0RGB:        return "argb";
+        case AV_PIX_FMT_0RGB:    return "argb";
         case AV_PIX_FMT_RGBA:
-        case AV_PIX_FMT_RGB0:        return "bgra";
+        case AV_PIX_FMT_RGB0:    return "bgra";
         case AV_PIX_FMT_ABGR:
-        case AV_PIX_FMT_0BGR:        return "abgr";
+        case AV_PIX_FMT_0BGR:    return "abgr";
         case AV_PIX_FMT_BGRA:
-        case AV_PIX_FMT_BGR0:        return "bgra";
-        case AV_PIX_FMT_GBRP:        return "gbrp"; // planar
-        default:                     return {};
+        case AV_PIX_FMT_BGR0:    return "bgra";
+        case AV_PIX_FMT_GBRP:    return "gbrp"; // planar
+        default:                 return {};
         }
     }
 
-    QString get_frag_shader_path(AVPixelFormat fmt)
+    QString get_frag_shader_path(const av::vformat_t& fmt, bool hdr)
     {
-        return ":/src/resources/shaders/" + av::get_shader_name(fmt) + ".frag.qsb";
+        return ":/src/resources/shaders/" + av::get_shader_name(fmt, hdr) + ".frag.qsb";
     }
 
     QShader get_shader(const QString& name)
@@ -288,9 +293,9 @@ namespace av
         return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
     }
 
-    QShader get_frag_shader(const AVPixelFormat fmt)
+    QShader get_frag_shader(const av::vformat_t& fmt, bool hdr)
     {
-        QFile f(get_frag_shader_path(fmt));
+        QFile f(get_frag_shader_path(fmt, hdr));
         return f.open(QIODevice::ReadOnly) ? QShader::fromSerialized(f.readAll()) : QShader();
     }
 
