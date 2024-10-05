@@ -96,6 +96,8 @@ public:
 
     std::string external_subtitle() const { return ass_external_; }
 
+    int set_hwaccel(AVHWDeviceType, AVPixelFormat);
+
 private:
     int open_video_stream(int index);
     int open_audio_stream(int index);

@@ -30,8 +30,6 @@ void TextureRhiWidget::initialize(QRhiCommandBuffer *)
 
 void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 {
-    //    if (!rhi_ || !cb) return;
-
     std::scoped_lock lock(mtx_);
 
     const auto rub = rhi_->nextResourceUpdateBatch();

@@ -136,6 +136,9 @@ int VideoPlayer::open(const std::string& filename)
     }
 
     // video decoder
+#ifdef _WIN32
+    source_->set_hwaccel(AV_HWDEVICE_TYPE_D3D11VA, AV_PIX_FMT_D3D11);
+#endif
     if (source_->open(filename) != 0) {
         source_ = std::make_unique<Decoder>();
         loge("[    PLAYER] failed to open video decoder");

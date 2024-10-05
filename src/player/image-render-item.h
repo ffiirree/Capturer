@@ -4,6 +4,7 @@
 #include "libcap/ffmpeg-wrapper.h"
 #include "libcap/media.h"
 #include "render-item.h"
+#include "texture-converter.h"
 
 class ImageRenderItem final : public IRenderItem
 {
@@ -35,6 +36,7 @@ private:
     av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P, .sw_pix_fmt = AV_PIX_FMT_YUV420P };
     av::frame     frame_{};
     av::frame     frame_slots_[4]{};
+    std::unique_ptr<TextureConverter> converter_{};
 
     std::atomic<bool> hdr_{};
 

@@ -138,6 +138,16 @@ int Decoder::open(const std::string& name)
     return 0;
 }
 
+int Decoder::set_hwaccel(AVHWDeviceType hwaccel, AVPixelFormat format)
+{
+    if (vfi.hwaccel != hwaccel || vfi.pix_fmt != format) {
+        vfi.hwaccel = hwaccel;
+        vfi.pix_fmt = format;
+    }
+
+    return 0;
+}
+
 int Decoder::open_video_stream(int index)
 {
     vctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, index, -1, nullptr, 0);
@@ -145,6 +155,7 @@ int Decoder::open_video_stream(int index)
     if (vctx_.index >= 0) {
         vctx_.stream = fmt_ctx_->streams[vctx_.index];
         auto decoder = choose_decoder(vctx_.stream, vfi.hwaccel);
+        if (vctx_.codec) avcodec_free_context(&vctx_.codec);
         if (vctx_.codec = avcodec_alloc_context3(decoder); !vctx_.codec) return -1;
         if (avcodec_parameters_to_context(vctx_.codec, vctx_.stream->codecpar) < 0) return -1;
 
@@ -836,7 +847,7 @@ void Decoder::vdecode_thread_fn()
 
         if (vctx_.dirty) {
             avcodec_flush_buffers(vctx_.codec);
-            create_video_graph();
+            if (vctx_.graph) avfilter_graph_free(&vctx_.graph);
             vctx_.dirty = false;
         }
 
@@ -859,6 +870,13 @@ void Decoder::vdecode_thread_fn()
             }
 
             frame->pts = frame->best_effort_timestamp;
+
+            if (!vctx_.graph) {
+                if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE && frame->hw_frames_ctx) {
+                    av::hwaccel::get_context(vfi.hwaccel)->frames_ctx = frame->hw_frames_ctx;
+                }
+                create_video_graph();
+            }
 
             if (frame->pts != AV_NOPTS_VALUE) {
                 const auto vpts = av::clock::us(frame->pts, vctx_.stream->time_base).count();

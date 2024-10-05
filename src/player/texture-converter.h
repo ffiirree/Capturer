@@ -35,10 +35,10 @@ public:
 class TextureBridge
 {
 public:
-    bool to(ID3D11Device *dev, ID3D11DeviceContext *ctx, ID3D11Texture2D *tex, UINT index,
-            const QSize& size);
-    winrt::com_ptr<ID3D11Texture2D> from(const winrt::com_ptr<ID3D11Device1>&       dev,
-                                         const winrt::com_ptr<ID3D11DeviceContext>& ctx);
+    bool to_shared(ID3D11Device *dev, ID3D11DeviceContext *ctx, ID3D11Texture2D *tex, UINT index,
+                   const QSize& size);
+    winrt::com_ptr<ID3D11Texture2D> from_shared(const winrt::com_ptr<ID3D11Device1>&       dev,
+                                                const winrt::com_ptr<ID3D11DeviceContext>& ctx);
 
 private:
     bool ensure_source(ID3D11Device *dev, ID3D11Texture2D *tex, const QSize& size);
@@ -48,15 +48,15 @@ private:
     winrt::handle shared_handle{};
 
     const UINT                      SRCKEY = 0;
-    winrt::com_ptr<ID3D11Texture2D> src{};
+    winrt::com_ptr<ID3D11Texture2D> src_tex{};
     winrt::com_ptr<IDXGIKeyedMutex> src_mtx{};
 
-    const UINT                      DSTKEY = 0;
+    const UINT                      DSTKEY = 1;
     winrt::com_ptr<ID3D11Device1>   dst_device{};
-    winrt::com_ptr<ID3D11Texture2D> dst{};
+    winrt::com_ptr<ID3D11Texture2D> dst_tex{};
     winrt::com_ptr<IDXGIKeyedMutex> dst_mtx{};
 
-    winrt::com_ptr<ID3D11Texture2D> out{};
+    winrt::com_ptr<ID3D11Texture2D> out_tex{};
 };
 
 class D3D11TextureConverter : public TextureConverter

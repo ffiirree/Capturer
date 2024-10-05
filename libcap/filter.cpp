@@ -35,18 +35,12 @@ namespace av::graph
         par->color_range         = fmt.color.range;
         if (fmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
             const auto hwctx = av::hwaccel::get_context(fmt.hwaccel);
-            if (!hwctx) {
-                loge("[V] failed to create hardware context: {}", to_string(fmt.hwaccel));
+            if (!hwctx || !hwctx->frames_ctx) {
+                loge("[V] failed to get hardware context: {}", to_string(fmt.hwaccel));
                 return -1;
             }
-
-            if (!hwctx->frames_ctx) hwctx->frames_ctx_realloc();
 
             par->hw_frames_ctx = av_buffer_ref(hwctx->frames_ctx.get());
-            if (!par->hw_frames_ctx) {
-                loge("[V] failed to alloc hw_frame_ctx for buffersrc");
-                return -1;
-            }
         }
 
         if (av_buffersrc_parameters_set(*ctx, par) < 0) {

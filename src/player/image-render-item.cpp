@@ -22,9 +22,11 @@ static constexpr float vertices[] = {
 av::vformat_t get_video_format(const av::frame& frame)
 {
     auto sw_format = static_cast<AVPixelFormat>(frame->format);
+    auto hwaccel   = AV_HWDEVICE_TYPE_NONE;
     if (frame->hw_frames_ctx) {
         const auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
         sw_format             = frames_ctx->sw_format;
+        hwaccel               = frames_ctx->device_ctx->type;
     }
 
     return av::vformat_t{
@@ -39,6 +41,7 @@ av::vformat_t get_video_format(const av::frame& frame)
                 .primaries = frame->color_primaries,
                 .transfer  = frame->color_trc,
             },
+        .hwaccel    = hwaccel,
         .sw_pix_fmt = sw_format,
     };
 }
@@ -90,6 +93,10 @@ void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
 
     rhi_ = rhi;
 
+#ifdef _WIN32
+    converter_ = std::make_unique<D3D11TextureConverter>(rhi);
+#endif
+
     vbuf_.reset(rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(vertices)));
     vbuf_->create();
 
@@ -100,27 +107,7 @@ void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
                                    QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
     sampler_->create();
 
-    std::vector<QRhiShaderResourceBinding> bindings{};
-    bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
-        0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, ubuf_.get()));
-
-    auto params = av::get_texture_desc(fmt_.sw_pix_fmt);
-    planes_.clear();
-    for (auto& param : params) {
-        const auto texture =
-            rhi->newTexture(param.format, { fmt_.width / param.scale_x, fmt_.height / param.scale_y });
-        texture->create();
-        planes_.emplace_back(texture);
-    }
-
-    for (size_t i = 0; i < params.size(); ++i) {
-        bindings.emplace_back(QRhiShaderResourceBinding::sampledTexture(
-            static_cast<int>(i + 1), QRhiShaderResourceBinding::FragmentStage, planes_[i].get(),
-            sampler_.get()));
-    }
     srb_.reset(rhi->newShaderResourceBindings());
-    srb_->setBindings(bindings.begin(), bindings.end());
-    srb_->create();
 
     pipeline_.reset(rhi->newGraphicsPipeline());
     pipeline_->setTopology(QRhiGraphicsPipeline::TriangleStrip);
@@ -146,24 +133,59 @@ void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, float scale_x, float 
 {
     std::scoped_lock lock(mtx_);
 
+    if (!frame_ || frame_->width <= 0 || frame_->height <= 0 || !frame_->data[0]) return;
+    if (!uploaded_.exchange(true)) {
+        std::vector<QRhiShaderResourceBinding> bindings{};
+        bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
+            0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
+            ubuf_.get()));
+        auto params = av::get_texture_desc(fmt_.sw_pix_fmt);
+        planes_.clear();
+
+        if (fmt_.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+            const auto tex = converter_->texture(frame_);
+
+            for (auto& param : params) {
+                const auto texture = rhi_->newTexture(
+                    param.format, { fmt_.width / param.scale_x, fmt_.height / param.scale_y });
+                texture->createFrom({ tex, 0 });
+                planes_.emplace_back(texture);
+            }
+        }
+        else {
+            for (auto& param : params) {
+                const auto texture = rhi_->newTexture(
+                    param.format, { fmt_.width / param.scale_x, fmt_.height / param.scale_y });
+                texture->create();
+                planes_.emplace_back(texture);
+            }
+        }
+
+        for (size_t i = 0; i < params.size(); ++i) {
+            bindings.emplace_back(QRhiShaderResourceBinding::sampledTexture(
+                static_cast<int>(i + 1), QRhiShaderResourceBinding::FragmentStage, planes_[i].get(),
+                sampler_.get()));
+        }
+        srb_->setBindings(bindings.begin(), bindings.end());
+        srb_->create();
+
+        if (fmt_.hwaccel == AV_HWDEVICE_TYPE_NONE) {
+            frame_slots_[rhi_->currentFrameSlot()] = frame_;
+            for (size_t i = 0; i < params.size(); ++i) {
+                QRhiTextureSubresourceUploadDescription desc(
+                    frame_->data[i], frame_->linesize[i] * frame_->height / params[i].scale_y);
+                desc.setDataStride(frame_->linesize[i]);
+                rub->uploadTexture(planes_[i].get(), QRhiTextureUploadDescription{ { 0, 0, desc } });
+            }
+        }
+
+        rub->uploadStaticBuffer(vbuf_.get(), vertices);
+        rub->updateDynamicBuffer(ubuf_.get(), 64, 64, av::get_color_matrix_coefficients(fmt_));
+    }
+
     mvp_.setToIdentity();
     mvp_.scale(scale_x, scale_y);
     rub->updateDynamicBuffer(ubuf_.get(), 0, 64, mvp_.constData());
-
-    if (uploaded_.exchange(true)) return;
-
-    rub->uploadStaticBuffer(vbuf_.get(), vertices);
-
-    rub->updateDynamicBuffer(ubuf_.get(), 64, 64, av::get_color_matrix_coefficients(fmt_));
-
-    const auto params                      = av::get_texture_desc(fmt_.sw_pix_fmt);
-    frame_slots_[rhi_->currentFrameSlot()] = frame_;
-    for (size_t i = 0; i < params.size(); ++i) {
-        QRhiTextureSubresourceUploadDescription desc(frame_->data[i], frame_->linesize[i] * frame_->height /
-                                                                          params[i].scale_y);
-        desc.setDataStride(frame_->linesize[i]);
-        rub->uploadTexture(planes_[i].get(), QRhiTextureUploadDescription{ { 0, 0, desc } });
-    }
 }
 
 void ImageRenderItem::draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport)

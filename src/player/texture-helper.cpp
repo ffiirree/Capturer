@@ -96,6 +96,8 @@ namespace av
             AV_PIX_FMT_P010LE, ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, little-endian
 
             AV_PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
+
+            AV_PIX_FMT_D3D11,
         };
         // clang-format on
     }
@@ -262,7 +264,12 @@ namespace av
                 return "yuv_p10_bt2020_pq";
             }
             return "yuv_p10";
-        case AV_PIX_FMT_P010LE:  return "p010";
+        case AV_PIX_FMT_P010LE:
+            if (hdr && fmt.color.space == AVCOL_SPC_BT2020_NCL &&
+                fmt.color.transfer == AVCOL_TRC_SMPTEST2084) {
+                return "nv12_bt2020_pq";
+            }
+            return "nv12";
         case AV_PIX_FMT_NV12:    return "nv12"; // semi-planar
         case AV_PIX_FMT_NV21:    return "nv21";
         case AV_PIX_FMT_YUYV422: return "yuyv"; // packed
