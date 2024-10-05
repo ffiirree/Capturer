@@ -9,6 +9,8 @@ class SubtitleRenderItem final : public IRenderItem
 public:
     bool attach(const std::any&) override;
 
+    QSize size() const override;
+
     void create(QRhi *rhi, QRhiRenderTarget *rt) override;
     void upload(QRhiResourceUpdateBatch *rub, float scale_x, float scale_y) override;
     void draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport) override;

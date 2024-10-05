@@ -960,7 +960,7 @@ void Decoder::sdecode_thread_fn()
 
                 logd("[S] {:.3%T} ~ {:.3%T} +{}", pts, pts + duration, subtitle.num_rects);
 
-                if (sctx_.codec->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE && !subtitle.num_rects) {
+                if (sctx_.codec->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE/* && !subtitle.num_rects */) {
                     std::scoped_lock locK(subtitle_mtx_);
 
                     for (auto& bm : bitmaps_) {

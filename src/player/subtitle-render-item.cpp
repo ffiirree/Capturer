@@ -21,6 +21,8 @@ bool SubtitleRenderItem::attach(const std::any& attachment)
     return true;
 }
 
+QSize SubtitleRenderItem::size() const { return { subtitle_.w.den, subtitle_.h.den }; }
+
 void SubtitleRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
 {
     if (created_.exchange(true)) return;

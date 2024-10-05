@@ -10,6 +10,8 @@ class ImageRenderItem final : public IRenderItem
 public:
     bool attach(const std::any&) override;
 
+    QSize size() const override;
+
     void hdr(bool) override;
 
     void create(QRhi *rhi, QRhiRenderTarget *rt) override;

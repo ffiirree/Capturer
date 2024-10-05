@@ -11,6 +11,8 @@ public:
 
     virtual bool attach(const std::any&) = 0;
 
+    virtual QSize size() const = 0;
+
     virtual void hdr(bool) {} // HDR to SDR
 
     virtual void create(QRhi *rhi, QRhiRenderTarget *rt)                            = 0;

@@ -59,6 +59,8 @@ bool ImageRenderItem::attach(const std::any& attachment)
     return true;
 }
 
+QSize ImageRenderItem::size() const { return frame_ ? QSize{ frame_->width, frame_->height } : QSize{}; }
+
 void ImageRenderItem::hdr(bool en)
 {
     if (hdr_ != en) {

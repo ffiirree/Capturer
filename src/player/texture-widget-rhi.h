@@ -31,8 +31,8 @@ public:
 
     static AVPixelFormat format(AVPixelFormat, AVPixelFormat = av::texture_formats()[0]);
 
-    void hflip() { hflip_ = hflip_ * (-1); }
-    void vflip() { vflip_ = vflip_ * (-1); }
+    void hflip() { hflip_ = hflip_ * (-1.0f); }
+    void vflip() { vflip_ = vflip_ * (-1.0f); }
 
     void hdr(bool en);
 
@@ -47,8 +47,8 @@ private:
     std::vector<std::shared_ptr<IRenderItem>> items_{};
     std::vector<std::shared_ptr<IRenderItem>> items_slots_[4]{};
 
-    std::atomic<int8_t> hflip_{ 1 };
-    std::atomic<int8_t> vflip_{ 1 };
+    std::atomic<float> hflip_{ 1.0f };
+    std::atomic<float> vflip_{ 1.0f };
 
     QSize image_sz_{};
     QSize render_sz_{};

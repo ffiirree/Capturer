@@ -36,14 +36,16 @@ void TextureRhiWidget::render(QRhiCommandBuffer *cb)
 
     const auto rub = rhi_->nextResourceUpdateBatch();
 
-    const float rt_w = static_cast<float>(renderTarget()->pixelSize().width());
-    const float rt_h = static_cast<float>(renderTarget()->pixelSize().height());
-    render_sz_       = image_sz_.scaled(renderTarget()->pixelSize(), Qt::KeepAspectRatio);
-    float scale_x    = (static_cast<float>(render_sz_.width()) / rt_w) * hflip_;
-    float scale_y    = (static_cast<float>(render_sz_.height()) / rt_h) * vflip_;
+    const auto rtsz = renderTarget()->pixelSize();
+    render_sz_      = image_sz_.scaled(rtsz, Qt::KeepAspectRatio);
 
     items_slots_[rhi_->currentFrameSlot()] = items_;
     for (const auto& item : items_) {
+        const auto scaled = item->size().scaled(rtsz, Qt::KeepAspectRatio);
+
+        float scale_x = (static_cast<float>(scaled.width()) / static_cast<float>(rtsz.width())) * hflip_;
+        float scale_y = (static_cast<float>(scaled.height()) / static_cast<float>(rtsz.height())) * vflip_;
+
         item->create(rhi_, renderTarget());
         item->upload(rub, scale_x, scale_y);
     }
@@ -51,7 +53,7 @@ void TextureRhiWidget::render(QRhiCommandBuffer *cb)
     cb->beginPass(renderTarget(), Qt::black, { 1.0f, 0 }, rub);
 
     for (const auto& item : items_) {
-        item->draw(cb, { 0, 0, rt_w, rt_h });
+        item->draw(cb, { 0, 0, static_cast<float>(rtsz.width()), static_cast<float>(rtsz.height()) });
     }
 
     cb->endPass();
