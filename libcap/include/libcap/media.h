@@ -69,6 +69,29 @@ namespace av
         AVPixelFormat  sw_pix_fmt{ AV_PIX_FMT_NONE };
     };
 
+    inline bool operator==(const av::vformat_t::color_t& r, const av::vformat_t::color_t& l)
+    {
+        return r.space == l.space && r.range == l.range && r.primaries == l.primaries &&
+               r.transfer == l.transfer;
+    }
+
+    inline bool operator!=(const av::vformat_t::color_t& r, const av::vformat_t::color_t& l)
+    {
+        return !(l == r);
+    }
+
+    inline bool operator==(const av::vformat_t& r, const av::vformat_t& l)
+    {
+        return r.width == l.width && r.height == l.height && r.pix_fmt == l.pix_fmt &&
+               r.framerate.num == l.framerate.num && r.framerate.den == l.framerate.den &&
+               r.sample_aspect_ratio.num == l.sample_aspect_ratio.num &&
+               r.sample_aspect_ratio.den == l.sample_aspect_ratio.den &&
+               r.time_base.num == l.time_base.num && r.color == l.color && r.hwaccel == l.hwaccel &&
+               r.sw_pix_fmt == l.sw_pix_fmt;
+    }
+
+    inline bool operator!=(const av::vformat_t& r, const av::vformat_t& l) { return !(l == r); }
+
     // audio format options
     struct aformat_t
     {

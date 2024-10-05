@@ -153,6 +153,10 @@
         <source>Could not open the encoder</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Failed to initialize the recorder</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>ScreenShoter</name>

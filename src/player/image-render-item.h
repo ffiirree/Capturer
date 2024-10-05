@@ -32,7 +32,7 @@ private:
 
     QMatrix4x4 mvp_{};
 
-    av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P };
+    av::vformat_t fmt_{ .pix_fmt = AV_PIX_FMT_YUV420P, .sw_pix_fmt = AV_PIX_FMT_YUV420P };
     av::frame     frame_{};
     av::frame     frame_slots_[4]{};
 

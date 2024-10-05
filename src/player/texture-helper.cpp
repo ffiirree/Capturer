@@ -5,16 +5,6 @@
 #include <QFile>
 
 // clang-format off
-// normalized device coordinates
-static constexpr float vertices[] = {
-  // vertex coordinate: [-1.0, 1.0]    / texture coordinate: [0.0, 1.0]
-  //  x      y                         / x     y
-    -1.0f, -1.0f,  /* bottom left  */  0.0f, 1.0f, /* top    left  */
-    +1.0f, -1.0f,  /* bottom right */  1.0f, 1.0f, /* top    right */
-    -1.0f, +1.0f,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
-    +1.0f, +1.0f,  /* top    right */  1.0f, 0.0f, /* bottom right */
-};
-
 static QMatrix4x4 BT601_FULL_CM {
     1.0000f,  0.0000f,  1.77200f, -0.88600f,
     1.0000f, -0.1646f, -0.57135f,  0.36795f,
@@ -103,6 +93,7 @@ namespace av
             AV_PIX_FMT_BGR0,    ///< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
 
             AV_PIX_FMT_YUV420P10LE, ///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+            AV_PIX_FMT_P010LE, ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, little-endian
 
             AV_PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
         };
@@ -207,6 +198,12 @@ namespace av
                 { 2, 2, QRhiTexture::R16, 2 },
             };
 
+        case AV_PIX_FMT_P010LE:
+            return {
+                { 1, 1, QRhiTexture::R16, 2 },
+                { 2, 2, QRhiTexture::RG16, 4 },
+            };
+
         case AV_PIX_FMT_GBRP:
             return {
                 { 1, 1, QRhiTexture::R8, 1 },
@@ -246,7 +243,7 @@ namespace av
 
     QString get_shader_name(const av::vformat_t& fmt, bool hdr)
     {
-        switch (fmt.pix_fmt) {
+        switch (fmt.sw_pix_fmt) {
         case AV_PIX_FMT_PAL8:     return "pal8";
         case AV_PIX_FMT_GRAY8:
         case AV_PIX_FMT_GRAY16LE: return "gray";
@@ -265,6 +262,7 @@ namespace av
                 return "yuv_p10_bt2020_pq";
             }
             return "yuv_p10";
+        case AV_PIX_FMT_P010LE:  return "p010";
         case AV_PIX_FMT_NV12:    return "nv12"; // semi-planar
         case AV_PIX_FMT_NV21:    return "nv21";
         case AV_PIX_FMT_YUYV422: return "yuyv"; // packed
@@ -278,7 +276,7 @@ namespace av
         case AV_PIX_FMT_BGRA:
         case AV_PIX_FMT_BGR0:    return "bgra";
         case AV_PIX_FMT_GBRP:    return "gbrp"; // planar
-        default:                 return {};
+        default:                 loge("unsupported pixel format: {}", to_string(fmt.pix_fmt)); return {};
         }
     }
 

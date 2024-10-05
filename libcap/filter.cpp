@@ -1,7 +1,10 @@
 #include "libcap/filter.h"
 
+#include "libcap/hwaccel.h"
 #include "logging.h"
+
 extern "C" {
+#include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
 }
 
@@ -9,15 +12,54 @@ namespace av::graph
 {
     int create_video_src(AVFilterGraph *graph, AVFilterContext **ctx, const av::vformat_t& fmt)
     {
-        const auto args = to_string(fmt);
-
-        if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffer"), "video-source", args.c_str(),
-                                         nullptr, graph) < 0) {
-            loge("[V] failed to create 'buffer'.");
+        const auto buffer = avfilter_get_by_name("buffer");
+        const auto par    = av_buffersrc_parameters_alloc();
+        if (!par) {
+            loge("[V] failed to alloc parameters of buffersrc.");
             return -1;
         }
 
-        logi("[V] buffersrc : '{}'", args);
+        *ctx = avfilter_graph_alloc_filter(graph, buffer, "video-source");
+        if (!*ctx) {
+            loge("[V] failed to alloc context of buffersrc.");
+            return -1;
+        }
+
+        par->format              = fmt.pix_fmt;
+        par->time_base           = fmt.time_base;
+        par->frame_rate          = fmt.framerate;
+        par->width               = fmt.width;
+        par->height              = fmt.height;
+        par->sample_aspect_ratio = fmt.sample_aspect_ratio;
+        par->color_space         = fmt.color.space;
+        par->color_range         = fmt.color.range;
+        if (fmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+            const auto hwctx = av::hwaccel::get_context(fmt.hwaccel);
+            if (!hwctx) {
+                loge("[V] failed to create hardware context: {}", to_string(fmt.hwaccel));
+                return -1;
+            }
+
+            if (!hwctx->frames_ctx) hwctx->frames_ctx_realloc();
+
+            par->hw_frames_ctx = av_buffer_ref(hwctx->frames_ctx.get());
+            if (!par->hw_frames_ctx) {
+                loge("[V] failed to alloc hw_frame_ctx for buffersrc");
+                return -1;
+            }
+        }
+
+        if (av_buffersrc_parameters_set(*ctx, par) < 0) {
+            loge("[V] failed to set parameters for buffersrc");
+            return -1;
+        }
+
+        if (avfilter_init_dict(*ctx, nullptr) < 0) {
+            loge("[V] failed to set options for buffersrc");
+            return -1;
+        }
+
+        logi("[V] buffersrc : '{}'", to_string(fmt));
 
         return 0;
     }

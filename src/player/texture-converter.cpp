@@ -13,7 +13,7 @@ extern "C" {
 
 winrt::com_ptr<ID3D11Device1> GetD3DDeviceFromQRhi(QRhi *rhi)
 {
-    const auto native = static_cast<const QRhiD3D11NativeHandles *>(rhi->nativeHandles());
+    const auto native = reinterpret_cast<const QRhiD3D11NativeHandles *>(rhi->nativeHandles());
     if (!native) return {};
 
     winrt::com_ptr<ID3D11Device> rhi_device{};
@@ -21,7 +21,7 @@ winrt::com_ptr<ID3D11Device1> GetD3DDeviceFromQRhi(QRhi *rhi)
 
     //
     winrt::com_ptr<ID3D11Device1> dev1;
-    if (rhi_device.try_as(dev1) != S_OK) return nullptr;
+    if (!rhi_device.try_as(dev1)) return nullptr;
 
     return dev1;
 }
@@ -30,36 +30,34 @@ winrt::com_ptr<ID3D11Device1> GetD3DDeviceFromQRhi(QRhi *rhi)
 
 bool TextureBridge::ensure_source(ID3D11Device *dev, ID3D11Texture2D *tex, const QSize& size)
 {
-    if (!is_source_initialized(dev, tex, size)) {
-        shared_handle.close();
+    if (is_source_initialized(dev, tex, size)) return true;
 
-        CD3D11_TEXTURE2D_DESC desc{};
-        tex->GetDesc(&desc);
+    shared_handle.close();
 
-        const UINT w = static_cast<UINT>(size.width());
-        const UINT h = static_cast<UINT>(size.height());
+    CD3D11_TEXTURE2D_DESC desc{};
+    tex->GetDesc(&desc);
 
-        CD3D11_TEXTURE2D_DESC texDesc{ desc.Format, w, h };
-        texDesc.MipLevels = 1;
-        texDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+    const UINT w = static_cast<UINT>(size.width());
+    const UINT h = static_cast<UINT>(size.height());
 
-        if (dev->CreateTexture2D(&texDesc, nullptr, src.put()) != S_OK) return false;
+    CD3D11_TEXTURE2D_DESC texDesc{ desc.Format, w, h };
+    texDesc.MipLevels = 1;
+    texDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 
-        winrt::com_ptr<IDXGIResource1> res;
-        if (src.try_as(res) != S_OK) return false;
+    if (dev->CreateTexture2D(&texDesc, nullptr, src.put()) != S_OK) return false;
 
-        const HRESULT hr =
-            res->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ, nullptr, shared_handle.put());
+    winrt::com_ptr<IDXGIResource1> res;
+    if (!src.try_as(res)) return false;
 
-        if (hr != S_OK || !shared_handle) return false;
+    const HRESULT hr =
+        res->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ, nullptr, shared_handle.put());
 
-        if (src.try_as(src_mtx) != S_OK || !src_mtx) return false;
+    if (hr != S_OK || !shared_handle) return false;
 
-        dst     = nullptr;
-        dst_mtx = nullptr;
+    if (!src.try_as(src_mtx) || !src_mtx) return false;
 
-        return true;
-    }
+    dst     = nullptr;
+    dst_mtx = nullptr;
 
     return true;
 }
@@ -110,7 +108,7 @@ bool TextureBridge::ensure_sink(const winrt::com_ptr<ID3D11Device1>& dev)
 
     if (dst_device->CreateTexture2D(&desc, nullptr, out.put()) != S_OK) return false;
 
-    if (dst.try_as(dst_mtx) != S_OK) return false;
+    if (!dst.try_as(dst_mtx)) return false;
 
     return true;
 }
@@ -159,7 +157,7 @@ D3D11TextureConverter::D3D11TextureConverter(QRhi *rhi)
     if (rhi_device_) rhi_device_->GetImmediateContext(rhi_ctx_.put());
 }
 
-int64_t D3D11TextureConverter::texture(av::frame& frame)
+uint64_t D3D11TextureConverter::texture(av::frame& frame)
 {
     if (!rhi_device_) return 0;
     if (!frame || !frame->hw_frames_ctx || frame->format != AV_PIX_FMT_D3D11) return 0;
@@ -192,7 +190,7 @@ int64_t D3D11TextureConverter::texture(av::frame& frame)
 
     const auto output = bridge_.from(rhi_device_, rhi_ctx_);
 
-    return reinterpret_cast<int64_t>(output.get());
+    return reinterpret_cast<uint64_t>(output.get());
 }
 
 #endif

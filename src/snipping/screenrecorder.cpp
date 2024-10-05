@@ -294,6 +294,7 @@ void ScreenRecorder::setup()
     const auto afilters = nb_ainputs > 1 ? fmt::format("amix=inputs={}:duration=first", nb_ainputs) : "";
     if (dispatcher_->initialize(filters_, afilters) < 0) {
         loge("create filters failed");
+        Message::error(tr("Failed to initialize the recorder"));
         stop();
         return;
     }

@@ -19,6 +19,30 @@ static constexpr float vertices[] = {
 };
 // clang-format on
 
+av::vformat_t get_video_format(const av::frame& frame)
+{
+    auto sw_format = static_cast<AVPixelFormat>(frame->format);
+    if (frame->hw_frames_ctx) {
+        const auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
+        sw_format             = frames_ctx->sw_format;
+    }
+
+    return av::vformat_t{
+        .width               = frame->width,
+        .height              = frame->height,
+        .pix_fmt             = static_cast<AVPixelFormat>(frame->format),
+        .sample_aspect_ratio = frame->sample_aspect_ratio,
+        .color =
+            av::vformat_t::color_t{
+                .space     = frame->colorspace,
+                .range     = frame->color_range,
+                .primaries = frame->color_primaries,
+                .transfer  = frame->color_trc,
+            },
+        .sw_pix_fmt = sw_format,
+    };
+}
+
 bool ImageRenderItem::attach(const std::any& attachment)
 {
     try {
@@ -32,21 +56,9 @@ bool ImageRenderItem::attach(const std::any& attachment)
         frame_    = frame;
         uploaded_ = false;
 
-        if ((fmt_.width != frame_->width || fmt_.height != frame_->height) ||
-            (fmt_.pix_fmt != frame_->format) ||
-            (fmt_.color.space != frame_->colorspace || fmt_.color.range != frame_->color_range)) {
-
-            fmt_.width               = frame_->width;
-            fmt_.height              = frame_->height;
-            fmt_.pix_fmt             = static_cast<AVPixelFormat>(frame_->format);
-            fmt_.sample_aspect_ratio = frame_->sample_aspect_ratio;
-
-            fmt_.color = {
-                frame_->colorspace,
-                frame_->color_range,
-                frame_->color_primaries,
-                frame_->color_trc,
-            };
+        const auto vfmt = get_video_format(frame);
+        if (fmt_ != vfmt) {
+            fmt_ = vfmt;
 
             created_ = false;
         }
@@ -92,7 +104,7 @@ void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
     bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
         0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, ubuf_.get()));
 
-    auto params = av::get_texture_desc(fmt_.pix_fmt);
+    auto params = av::get_texture_desc(fmt_.sw_pix_fmt);
     planes_.clear();
     for (auto& param : params) {
         const auto texture =
@@ -144,7 +156,7 @@ void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, float scale_x, float 
 
     rub->updateDynamicBuffer(ubuf_.get(), 64, 64, av::get_color_matrix_coefficients(fmt_));
 
-    const auto params                      = av::get_texture_desc(fmt_.pix_fmt);
+    const auto params                      = av::get_texture_desc(fmt_.sw_pix_fmt);
     frame_slots_[rhi_->currentFrameSlot()] = frame_;
     for (size_t i = 0; i < params.size(); ++i) {
         QRhiTextureSubresourceUploadDescription desc(frame_->data[i], frame_->linesize[i] * frame_->height /

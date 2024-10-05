@@ -25,7 +25,7 @@ public:
 
     virtual ~TextureConverter() = default;
 
-    virtual int64_t texture(av::frame&) { return 0; }
+    virtual uint64_t texture(av::frame&) { return 0; }
 
     QRhi *rhi{};
 };
@@ -64,7 +64,7 @@ class D3D11TextureConverter : public TextureConverter
 public:
     explicit D3D11TextureConverter(QRhi *rhi);
 
-    int64_t texture(av::frame& frame) override;
+    uint64_t texture(av::frame& frame) override;
 
 private:
     winrt::com_ptr<ID3D11Device1>       rhi_device_{};

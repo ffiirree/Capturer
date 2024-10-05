@@ -153,6 +153,10 @@
         <source>Could not open the encoder</source>
         <translation>无法打开视频编码器</translation>
     </message>
+    <message>
+        <source>Failed to initialize the recorder</source>
+        <translation>视频录制初始化失败</translation>
+    </message>
 </context>
 <context>
     <name>ScreenShoter</name>

@@ -506,6 +506,13 @@ int Decoder::create_video_graph()
         return -1;
     }
 
+    if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+        if (av::hwaccel::setup_for_filter_graph(vctx_.graph, vfi.hwaccel) != 0) {
+            loge("[DISPATCHER] can not set hardware device up for filter graph.");
+            return -1;
+        }
+    }
+
     if (avfilter_graph_config(vctx_.graph, nullptr) < 0) {
         loge("[    DECODER] failed to configure the filter graph");
         return -1;
@@ -960,7 +967,7 @@ void Decoder::sdecode_thread_fn()
 
                 logd("[S] {:.3%T} ~ {:.3%T} +{}", pts, pts + duration, subtitle.num_rects);
 
-                if (sctx_.codec->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE/* && !subtitle.num_rects */) {
+                if (sctx_.codec->codec_id == AV_CODEC_ID_HDMV_PGS_SUBTITLE /* && !subtitle.num_rects */) {
                     std::scoped_lock locK(subtitle_mtx_);
 
                     for (auto& bm : bitmaps_) {

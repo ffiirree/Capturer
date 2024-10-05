@@ -102,6 +102,7 @@ namespace av::hwaccel
 
         for (unsigned i = 0; i < graph->nb_filters; ++i) {
             graph->filters[i]->hw_device_ctx = av_buffer_ref(ctx->device_ctx.get());
+            if (!graph->filters[i]->hw_device_ctx) return -1;
         }
 
         return 0;
