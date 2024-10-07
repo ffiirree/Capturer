@@ -84,7 +84,7 @@ public:
 
     std::vector<AVStream *> streams(AVMediaType type);
 
-    AVStream *stream(AVMediaType type);
+    AVStream *stream(AVMediaType type) const;
 
     void set_ass_render_size(int w, int h);
 
@@ -110,7 +110,7 @@ private:
     int ff_open_external(const std::string& filename);
 
     int create_audio_graph();
-    int create_video_graph();
+    int create_video_graph(const AVBufferRef *frames_ctx);
     int filter_frame(DecodingContext& ctx, const av::frame& frame, AVMediaType type);
 
     void readpkt_thread_fn();

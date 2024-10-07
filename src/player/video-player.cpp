@@ -345,8 +345,7 @@ int VideoPlayer::consume(const av::frame& frame, const AVMediaType type)
 {
     if (source_->seeking(type)) return 0;
 
-    if (seeking_) {
-        seeking_ = false;
+    if (seeking_.exchange(false)) {
         vqueue_.start();
         aqueue_.start();
     }

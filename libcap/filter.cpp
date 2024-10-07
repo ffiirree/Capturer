@@ -3,14 +3,18 @@
 #include "libcap/hwaccel.h"
 #include "logging.h"
 
+#include <probe/util.h>
+
 extern "C" {
+#include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
 }
 
 namespace av::graph
 {
-    int create_video_src(AVFilterGraph *graph, AVFilterContext **ctx, const av::vformat_t& fmt)
+    int create_video_src(AVFilterGraph *graph, AVFilterContext **ctx, const av::vformat_t& fmt,
+                         const AVBufferRef *frames_ctx)
     {
         const auto buffer = avfilter_get_by_name("buffer");
         const auto par    = av_buffersrc_parameters_alloc();
@@ -33,14 +37,8 @@ namespace av::graph
         par->sample_aspect_ratio = fmt.sample_aspect_ratio;
         par->color_space         = fmt.color.space;
         par->color_range         = fmt.color.range;
-        if (fmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-            const auto hwctx = av::hwaccel::get_context(fmt.hwaccel);
-            if (!hwctx || !hwctx->frames_ctx) {
-                loge("[V] failed to get hardware context: {}", to_string(fmt.hwaccel));
-                return -1;
-            }
-
-            par->hw_frames_ctx = av_buffer_ref(hwctx->frames_ctx.get());
+        if (fmt.hwaccel != AV_HWDEVICE_TYPE_NONE && frames_ctx) {
+            par->hw_frames_ctx = av_buffer_ref(frames_ctx);
         }
 
         if (av_buffersrc_parameters_set(*ctx, par) < 0) {
@@ -73,7 +71,9 @@ namespace av::graph
         return 0;
     }
 
-    int create_video_sink(AVFilterGraph *graph, AVFilterContext **ctx, const av::vformat_t& args)
+    int create_video_sink(AVFilterGraph *graph, AVFilterContext **ctx, const av::vformat_t& args,
+                          std::vector<AVPixelFormat> formats, std::vector<AVColorSpace> spaces,
+                          std::vector<AVColorRange> ranges)
     {
         if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffersink"), "video-sink", nullptr,
                                          nullptr, graph) < 0) {
@@ -81,24 +81,31 @@ namespace av::graph
             return -1;
         }
 
-        // pix_fmts (int list),
-        const AVPixelFormat pix_fmts[] = { args.pix_fmt, AV_PIX_FMT_NONE };
-        if (av_opt_set_int_list(*ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0) {
+        // pix_fmts (int list)
+        formats.emplace_back(args.pix_fmt);
+        probe::util::unique(formats);
+        formats.emplace_back(AV_PIX_FMT_NONE);
+        if (av_opt_set_int_list(*ctx, "pix_fmts", formats.data(), AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) <
+            0) {
             loge("[V] failed to set 'pix_fmts' for 'buffersink'");
             return -1;
         }
 
         // color_spaces (int list)
-        const AVColorSpace spaces[] = { args.color.space, AVCOL_SPC_UNSPECIFIED };
-        if (av_opt_set_int_list(*ctx, "color_spaces", spaces, AVCOL_SPC_UNSPECIFIED,
+        spaces.emplace_back(args.color.space);
+        probe::util::unique(spaces);
+        spaces.emplace_back(AVCOL_SPC_UNSPECIFIED);
+        if (av_opt_set_int_list(*ctx, "color_spaces", spaces.data(), AVCOL_SPC_UNSPECIFIED,
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             loge("[V] failed to set 'color_spaces' for 'buffersink'");
             return -1;
         }
 
         // color_ranges (int list)
-        const AVColorRange ranges[] = { args.color.range, AVCOL_RANGE_UNSPECIFIED };
-        if (av_opt_set_int_list(*ctx, "color_ranges", ranges, AVCOL_RANGE_UNSPECIFIED,
+        ranges.emplace_back(args.color.range);
+        probe::util::unique(ranges);
+        ranges.emplace_back(AVCOL_RANGE_UNSPECIFIED);
+        if (av_opt_set_int_list(*ctx, "color_ranges", ranges.data(), AVCOL_RANGE_UNSPECIFIED,
                                 AV_OPT_SEARCH_CHILDREN) < 0) {
             loge("[V] failed to set 'color_ranges' for 'buffersink'");
             return -1;
@@ -149,5 +156,50 @@ namespace av::graph
         logi("[A] buffersink: '{}'", av::to_string(args));
 
         return 0;
+    }
+
+    av::vformat_t buffersink_get_video_format(const AVFilterContext *sink)
+    {
+        auto hwaccel   = AV_HWDEVICE_TYPE_NONE;
+        auto sw_format = AV_PIX_FMT_NONE;
+        if (const auto frames_ctx_buf = av_buffersink_get_hw_frames_ctx(sink); frames_ctx_buf) {
+            const auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frames_ctx_buf->data);
+            if (frames_ctx) {
+                if (frames_ctx->device_ctx) {
+                    hwaccel = frames_ctx->device_ctx->type;
+                }
+                sw_format = frames_ctx->sw_format;
+            }
+        }
+
+        return {
+            .width               = av_buffersink_get_w(sink),
+            .height              = av_buffersink_get_h(sink),
+            .pix_fmt             = static_cast<AVPixelFormat>(av_buffersink_get_format(sink)),
+            .framerate           = av_buffersink_get_frame_rate(sink),
+            .sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(sink),
+            .time_base           = av_buffersink_get_time_base(sink),
+            .color =
+                av::vformat_t::color_t{
+                    .space = av_buffersink_get_colorspace(sink),
+                    .range = av_buffersink_get_color_range(sink),
+                },
+            .hwaccel    = hwaccel,
+            .sw_pix_fmt = sw_format,
+        };
+    }
+
+    av::aformat_t buffersink_get_audio_format(const AVFilterContext *sink)
+    {
+        AVChannelLayout ch_layout{};
+        av_buffersink_get_ch_layout(sink, &ch_layout);
+
+        return {
+            .sample_rate    = av_buffersink_get_sample_rate(sink),
+            .sample_fmt     = static_cast<AVSampleFormat>(av_buffersink_get_format(sink)),
+            .channels       = ch_layout.nb_channels,
+            .channel_layout = ch_layout.u.mask,
+            .time_base      = av_buffersink_get_time_base(sink),
+        };
     }
 } // namespace av::graph

@@ -3,6 +3,7 @@
 #include "libcap/filter.h"
 #include "libcap/hwaccel.h"
 #include "logging.h"
+#include "texture-helper.h"
 
 #include <filesystem>
 #include <fmt/chrono.h>
@@ -160,13 +161,14 @@ int Decoder::open_video_stream(int index)
         if (avcodec_parameters_to_context(vctx_.codec, vctx_.stream->codecpar) < 0) return -1;
 
         if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE) {
-            const auto hwctx           = av::hwaccel::get_context(vfi.hwaccel);
-            vctx_.codec->opaque        = &vfi;
-            vctx_.codec->hw_device_ctx = av_buffer_ref(hwctx->device_ctx.get());
-            vctx_.codec->get_format    = get_hw_format;
-            if (!vctx_.codec->hw_device_ctx) {
+            AVBufferRef *device_ctx = nullptr;
+            if (av_hwdevice_ctx_create(&device_ctx, vfi.hwaccel, nullptr, nullptr, 0) < 0) {
                 loge("[    DECODER] [V] can not create hardware device");
+                return -1;
             }
+            vctx_.codec->opaque        = &vfi;
+            vctx_.codec->hw_device_ctx = av_buffer_ref(device_ctx);
+            vctx_.codec->get_format    = get_hw_format;
         }
 
         // open codec
@@ -504,13 +506,13 @@ int Decoder::ass_open_external(const std::string& filename)
     return 0;
 }
 
-int Decoder::create_video_graph()
+int Decoder::create_video_graph(const AVBufferRef *frames_ctx)
 {
     if (vctx_.graph) avfilter_graph_free(&vctx_.graph);
     if (vctx_.graph = avfilter_graph_alloc(); !vctx_.graph) return av::NOMEM;
 
-    if (av::graph::create_video_src(vctx_.graph, &vctx_.src, vfi) < 0) return -1;
-    if (av::graph::create_video_sink(vctx_.graph, &vctx_.sink, vfo) < 0) return -1;
+    if (av::graph::create_video_src(vctx_.graph, &vctx_.src, vfi, frames_ctx) < 0) return -1;
+    if (av::graph::create_video_sink(vctx_.graph, &vctx_.sink, vfo, av::texture_formats()) < 0) return -1;
 
     if (avfilter_link(vctx_.src, 0, vctx_.sink, 0) < 0) {
         loge("[    DECODER] [V] failed to link filter graph");
@@ -528,6 +530,9 @@ int Decoder::create_video_graph()
         loge("[    DECODER] failed to configure the filter graph");
         return -1;
     }
+
+    vfo = av::graph::buffersink_get_video_format(vctx_.sink);
+    logi("[V] buffersink: '{}' (updated)", av::to_string(vfo));
 
     logi("[    DECODER] filter graph \n{}\n", avfilter_graph_dump(vctx_.graph, nullptr));
 
@@ -845,14 +850,15 @@ void Decoder::vdecode_thread_fn()
         notenough_.notify_all();
         if (!pkt.has_value()) continue;
 
-        if (vctx_.dirty) {
+        if (vctx_.dirty.exchange(false)) {
             avcodec_flush_buffers(vctx_.codec);
             if (vctx_.graph) avfilter_graph_free(&vctx_.graph);
-            vctx_.dirty = false;
         }
 
         // video decoding
         auto ret = avcodec_send_packet(vctx_.codec, pkt.value().get());
+        // FIXME: h264 hwaccel errors
+        loge_if(ret < 0, "[V] failed to send packet");
         while (ret >= 0) {
             ret = avcodec_receive_frame(vctx_.codec, frame.put());
             if (ret < 0) {
@@ -871,11 +877,35 @@ void Decoder::vdecode_thread_fn()
 
             frame->pts = frame->best_effort_timestamp;
 
-            if (!vctx_.graph) {
-                if (vfi.hwaccel != AV_HWDEVICE_TYPE_NONE && frame->hw_frames_ctx) {
-                    av::hwaccel::get_context(vfi.hwaccel)->frames_ctx = frame->hw_frames_ctx;
+            if (!vctx_.graph || (vfi.pix_fmt != static_cast<AVPixelFormat>(frame->format)) ||
+                (vfi.width != frame->width || vfi.height != frame->height) ||
+                (vfi.color.space != frame->colorspace || vfi.color.range != frame->color_range)) {
+                auto hwaccel   = AV_HWDEVICE_TYPE_NONE;
+                auto sw_format = AV_PIX_FMT_NONE;
+                if (frame->hw_frames_ctx) {
+                    auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
+
+                    sw_format = frames_ctx->sw_format;
+                    hwaccel   = frames_ctx->device_ctx->type;
+
+                    av::hwaccel::get_context(hwaccel)->frames_ctx = frame->hw_frames_ctx;
                 }
-                create_video_graph();
+
+                logd("[V] changed << {}", to_string(vfi));
+                vfi.pix_fmt     = static_cast<AVPixelFormat>(frame->format);
+                vfi.width       = frame->width;
+                vfi.height      = frame->height;
+                vfi.color.space = frame->colorspace;
+                vfi.color.range = frame->color_range;
+                vfi.hwaccel     = hwaccel;
+                vfi.sw_pix_fmt  = sw_format;
+                logd("[V] changed >> {}", to_string(vfi));
+
+                if (create_video_graph(frame->hw_frames_ctx) < 0) {
+                    running_ = false;
+                    loge("[V] ABORT");
+                    break;
+                }
             }
 
             if (frame->pts != AV_NOPTS_VALUE) {
@@ -907,10 +937,9 @@ void Decoder::adecode_thread_fn()
         notenough_.notify_all();
         if (!pkt.has_value()) continue;
 
-        if (actx_.dirty) {
+        if (actx_.dirty.exchange(false)) {
             avcodec_flush_buffers(actx_.codec);
             create_audio_graph();
-            actx_.dirty = false;
         }
 
         auto ret = avcodec_send_packet(actx_.codec, pkt.value().get());
@@ -966,13 +995,11 @@ void Decoder::sdecode_thread_fn()
         const auto& pkt = sctx_.queue.wait_and_pop();
         if (!pkt.has_value()) continue;
 
-        if (sctx_.dirty) {
+        if (sctx_.dirty.exchange(false)) {
             avcodec_flush_buffers(sctx_.codec);
 
             std::shared_lock lock(ass_mtx_);
             if (ass_track_) ass_flush_events(ass_track_);
-
-            sctx_.dirty = false;
         }
 
         AVSubtitle subtitle{};
@@ -1209,7 +1236,7 @@ std::vector<AVStream *> Decoder::streams(AVMediaType type)
     return list;
 }
 
-AVStream *Decoder::stream(AVMediaType type)
+AVStream *Decoder::stream(AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:    return vctx_.stream;

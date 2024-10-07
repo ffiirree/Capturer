@@ -5,6 +5,9 @@
 #include <fmt/format.h>
 #include <glog/logging.h>
 #include <probe/thread.h>
+extern "C" {
+#include <libavutil/log.h>
+}
 
 class Logger
 {
@@ -83,6 +86,26 @@ private:
         google::InstallFailureSignalHandler();
         google::InstallFailureWriter(
             [](const char *data, size_t size) { LOG(ERROR) << std::string(data, size); });
+
+        // ffmpeg
+        av_log_set_callback([](void *avcl, int level, const char *fmt, va_list args) {
+            if (level > AV_LOG_INFO) return;
+
+            std::string name{ "FFMPEG-L" + std::to_string(level >> 3) };
+            if (AVClass *avc = avcl ? *(AVClass **)avcl : nullptr; avc) {
+                name += "@";
+                name += (avc->item_name ? avc->item_name : av_default_item_name)(avcl);
+            }
+
+            char buffer[1024]{};
+            vsnprintf(buffer, 1024, fmt, args);
+
+            LOG_IF(ERROR, level == AV_LOG_PANIC) << fmt::format("[{:>11}] {}", name, buffer);
+            LOG_IF(ERROR, level == AV_LOG_FATAL) << fmt::format("[{:>11}] {}", name, buffer);
+            LOG_IF(ERROR, level == AV_LOG_ERROR) << fmt::format("[{:>11}] {}", name, buffer);
+            LOG_IF(WARNING, level == AV_LOG_WARNING) << fmt::format("[{:>11}] {}", name, buffer);
+            LOG_IF(INFO, level == AV_LOG_INFO) << fmt::format("[{:>11}] {}", name, buffer);
+        });
     }
 };
 

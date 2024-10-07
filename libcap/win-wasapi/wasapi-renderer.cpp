@@ -379,7 +379,7 @@ int WasapiRenderer::reset()
 
 int WasapiRenderer::stop()
 {
-    ::SetEvent(STOP_EVENT.get());
+    if (STOP_EVENT) ::SetEvent(STOP_EVENT.get());
 
     running_ = false;
     ready_   = false;
@@ -387,9 +387,11 @@ int WasapiRenderer::stop()
     if (thread_.joinable()) thread_.join();
 
     // Resetting the stream flushes all pending data and resets the audio clock stream position to 0
-    audio_client_->Stop();
-    if (auto hr = audio_client_->Reset(); FAILED(hr)) {
-        loge_if(hr != AUDCLNT_E_NOT_INITIALIZED, "[   WASAPI-R] failed to reset the audio stream");
+    if (audio_client_) {
+        audio_client_->Stop();
+        if (auto hr = audio_client_->Reset(); FAILED(hr)) {
+            loge_if(hr != AUDCLNT_E_NOT_INITIALIZED, "[   WASAPI-R] failed to reset the audio stream");
+        }
     }
 
     if (enumerator_ && (flags_ & RENDER_ALLOW_STREAM_SWITCH))

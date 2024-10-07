@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 #else
     const auto translation = "translations/capturer_" + config::language;
 #endif
-    loge_if(translator.load(translation), "failed to load {}", translation.toStdString());
+    loge_if(!translator.load(translation), "failed to load {}", translation.toStdString());
 
     Capturer::installTranslator(&translator);
 

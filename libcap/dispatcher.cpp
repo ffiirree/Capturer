@@ -81,7 +81,18 @@ int Dispatcher::create_filter_graph(const AVMediaType type)
         }
 
         if (type == AVMEDIA_TYPE_VIDEO) {
-            if (av::graph::create_video_src(vctx_.graph, &src_ctx, producer->vfmt) < 0) return -1;
+            AVBufferRef *frames_ref = nullptr;
+            if (producer->vfmt.hwaccel != AV_HWDEVICE_TYPE_NONE) {
+                const auto hwctx = av::hwaccel::get_context(producer->vfmt.hwaccel);
+                if (!hwctx || !hwctx->frames_ctx) {
+                    loge("[V] failed to get hardware context: {}", av::to_string(producer->vfmt.hwaccel));
+                    return -1;
+                }
+                frames_ref = hwctx->frames_ctx.get();
+            }
+
+            if (av::graph::create_video_src(vctx_.graph, &src_ctx, producer->vfmt, frames_ref) < 0)
+                return -1;
 
             ctx.srcs[producer] = src_ctx;
             src_ctxs.push_back(src_ctx);
@@ -150,24 +161,15 @@ int Dispatcher::create_filter_graph(const AVMediaType type)
 int Dispatcher::update_encoder_format_by_sinks()
 {
     if (consumer_ && consumer_->accepts(AVMEDIA_TYPE_VIDEO) && vctx_.sink) {
-        consumer_->vfmt.pix_fmt     = static_cast<AVPixelFormat>(av_buffersink_get_format(vctx_.sink));
-        consumer_->vfmt.color.space = av_buffersink_get_colorspace(vctx_.sink);
-        consumer_->vfmt.color.range = av_buffersink_get_color_range(vctx_.sink);
-        consumer_->vfmt.width       = av_buffersink_get_w(vctx_.sink);
-        consumer_->vfmt.height      = av_buffersink_get_h(vctx_.sink);
-        consumer_->vfmt.sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(vctx_.sink);
-        consumer_->vfmt.time_base           = av_buffersink_get_time_base(vctx_.sink);
-        consumer_->input_framerate          = av_buffersink_get_frame_rate(vctx_.sink);
+        const auto vfmt = consumer_->vfmt;
+        consumer_->vfmt = av::graph::buffersink_get_video_format(vctx_.sink);
+
+        consumer_->vfmt.framerate  = vfmt.framerate;
+        consumer_->input_framerate = av_buffersink_get_frame_rate(vctx_.sink);
     }
 
     if (consumer_ && consumer_->accepts(AVMEDIA_TYPE_AUDIO) && actx_.sink) {
-        consumer_->afmt.sample_fmt = static_cast<AVSampleFormat>(av_buffersink_get_format(actx_.sink));
-        AVChannelLayout ch_layout{};
-        av_buffersink_get_ch_layout(actx_.sink, &ch_layout);
-        consumer_->afmt.channels       = ch_layout.nb_channels;
-        consumer_->afmt.channel_layout = ch_layout.u.mask;
-        consumer_->afmt.sample_rate    = av_buffersink_get_sample_rate(actx_.sink);
-        consumer_->afmt.time_base      = av_buffersink_get_time_base(actx_.sink);
+        consumer_->afmt = av::graph::buffersink_get_audio_format(actx_.sink);
     }
     return 0;
 }
