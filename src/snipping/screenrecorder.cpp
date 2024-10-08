@@ -57,7 +57,12 @@ set_pix_fmt(const std::unique_ptr<ScreenCapturer>&      producer,
 
     // software
     for (const auto& fmt : producer->video_formats()) {
-        if (fmt.hwaccel == AV_HWDEVICE_TYPE_NONE) producer->vfmt.pix_fmt = fmt.pix_fmt;
+        if (fmt.hwaccel == AV_HWDEVICE_TYPE_NONE) {
+            producer->vfmt.pix_fmt = fmt.pix_fmt;
+            producer->vfmt.hwaccel = AV_HWDEVICE_TYPE_NONE;
+
+            return { fmt.pix_fmt, AV_HWDEVICE_TYPE_NONE };
+        }
     }
     //
     return {};
