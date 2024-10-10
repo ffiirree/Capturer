@@ -865,6 +865,14 @@ void Decoder::vdecode_thread_fn()
                 if (ret == AVERROR(EAGAIN) || seek_pts_ != AV_NOPTS_VALUE) break;
 
                 if (ret == AVERROR_EOF) {
+                    if (!vctx_.graph) {
+                        if (create_video_graph(vctx_.codec->hw_frames_ctx) < 0) {
+                            running_ = false;
+                            loge("[V] ABORT");
+                            break;
+                        }
+                    }
+
                     filter_frame(vctx_, nullptr, AVMEDIA_TYPE_VIDEO);
                     logi("[V] DECODING EOF, SEND NULL");
                     break;
@@ -873,6 +881,10 @@ void Decoder::vdecode_thread_fn()
                 running_ = false;
                 loge("[V] DECODING ERROR, ABORT");
                 break;
+            }
+
+            if (frame->decode_error_flags || (frame->flags & AV_FRAME_FLAG_CORRUPT)) {
+                loge("[V] corrupt decoded frame");
             }
 
             frame->pts = frame->best_effort_timestamp;

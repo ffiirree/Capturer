@@ -3,6 +3,7 @@
 #include "libcap/hwaccel.h"
 #include "logging.h"
 
+#include <probe/defer.h>
 #include <probe/util.h>
 
 extern "C" {
@@ -17,11 +18,12 @@ namespace av::graph
                          const AVBufferRef *frames_ctx)
     {
         const auto buffer = avfilter_get_by_name("buffer");
-        const auto par    = av_buffersrc_parameters_alloc();
+        auto       par    = av_buffersrc_parameters_alloc();
         if (!par) {
             loge("[V] failed to alloc parameters of buffersrc.");
             return -1;
         }
+        defer(av_freep(&par));
 
         *ctx = avfilter_graph_alloc_filter(graph, buffer, "video-source");
         if (!*ctx) {
@@ -38,7 +40,7 @@ namespace av::graph
         par->color_space         = fmt.color.space;
         par->color_range         = fmt.color.range;
         if (fmt.hwaccel != AV_HWDEVICE_TYPE_NONE && frames_ctx) {
-            par->hw_frames_ctx = av_buffer_ref(frames_ctx);
+            par->hw_frames_ctx = const_cast<AVBufferRef *>(frames_ctx);
         }
 
         if (av_buffersrc_parameters_set(*ctx, par) < 0) {
