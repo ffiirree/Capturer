@@ -36,6 +36,8 @@ public:
 
     void hdr(bool en);
 
+    void rotate(int angle);
+
 signals:
     void updateRequest();
 

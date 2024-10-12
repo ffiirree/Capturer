@@ -11,7 +11,9 @@ public:
 
     virtual bool attach(const std::any&) = 0;
 
-    virtual QSize size() const = 0;
+    [[nodiscard]] virtual QSize size() const = 0;
+
+    virtual void rotate(int) {};
 
     virtual void hdr(bool) {} // HDR to SDR
 

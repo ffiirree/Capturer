@@ -446,5 +446,21 @@
         <source>Failed to open the audio output device</source>
         <translation>无法打开音频输出设备</translation>
     </message>
+    <message>
+        <source>Rotate 0</source>
+        <translation>不旋转</translation>
+    </message>
+    <message>
+        <source>Rotate 90</source>
+        <translation>旋转90°</translation>
+    </message>
+    <message>
+        <source>Rotate 180</source>
+        <translation>旋转180°</translation>
+    </message>
+    <message>
+        <source>Rotate 270</source>
+        <translation>旋转270°</translation>
+    </message>
 </context>
 </TS>

@@ -15,6 +15,8 @@ public:
 
     void hdr(bool) override;
 
+    void rotate(int angle) override;
+
     void create(QRhi *rhi, QRhiRenderTarget *rt) override;
     void upload(QRhiResourceUpdateBatch *rub, float scale_x, float scale_y) override;
     void draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport) override;
@@ -39,6 +41,7 @@ private:
     std::unique_ptr<TextureConverter> converter_{};
 
     std::atomic<bool> hdr_{};
+    std::atomic<int>  rotation_{};
 
     std::atomic<bool> uploaded_{};
     std::atomic<bool> created_{};

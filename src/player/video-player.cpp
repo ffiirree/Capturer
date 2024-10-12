@@ -577,6 +577,22 @@ void VideoPlayer::initContextMenu()
 
             const auto vflip = menu->addAction(tr("V Flip"), this, [=, this]() { texture_->vflip(); });
             vflip->setCheckable(true);
+
+            menu->addSeparator();
+
+            const auto group = new QActionGroup(this);
+
+            const auto r0   = menu->addAction(tr("Rotate 0"), this, [this] { texture_->rotate(0); });
+            const auto r90  = menu->addAction(tr("Rotate 90"), this, [this] { texture_->rotate(90); });
+            const auto r180 = menu->addAction(tr("Rotate 180"), this, [this] { texture_->rotate(180); });
+            const auto r270 = menu->addAction(tr("Rotate 270"), this, [this] { texture_->rotate(270); });
+
+            group->addAction(r0)->setCheckable(true);
+            group->addAction(r90)->setCheckable(true);
+            group->addAction(r180)->setCheckable(true);
+            group->addAction(r270)->setCheckable(true);
+
+            r0->setChecked(true);
         }
         menu_->addMenu(menu);
     }

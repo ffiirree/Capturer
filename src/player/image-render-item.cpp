@@ -16,6 +16,21 @@ static constexpr float vertices[] = {
     +1.0f, -1.0f,  /* bottom right */  1.0f, 1.0f, /* top    right */
     -1.0f, +1.0f,  /* top    left  */  0.0f, 0.0f, /* bottom left  */
     +1.0f, +1.0f,  /* top    right */  1.0f, 0.0f, /* bottom right */
+    // 90
+    -1.0f, -1.0f,  /* bottom left  */  1.0f, 1.0f, /* top    right */
+    +1.0f, -1.0f,  /* bottom right */  1.0f, 0.0f, /* bottom right */
+    -1.0f, +1.0f,  /* top    left  */  0.0f, 1.0f, /* top    left  */
+    +1.0f, +1.0f,  /* top    right */  0.0f, 0.0f, /* bottom left  */
+    // 180
+    -1.0f, -1.0f,  /* bottom left  */  1.0f, 0.0f, /* bottom right */
+    +1.0f, -1.0f,  /* bottom right */  0.0f, 0.0f, /* bottom left  */
+    -1.0f, +1.0f,  /* top    left  */  1.0f, 1.0f, /* top    right */
+    +1.0f, +1.0f,  /* top    right */  0.0f, 1.0f, /* top    left  */
+    // 270
+    -1.0f, -1.0f,  /* bottom left  */  0.0f, 0.0f, /* bottom left  */
+    +1.0f, -1.0f,  /* bottom right */  0.0f, 1.0f, /* top    left  */
+    -1.0f, +1.0f,  /* top    left  */  1.0f, 0.0f, /* bottom right */
+    +1.0f, +1.0f,  /* top    right */  1.0f, 1.0f, /* top    right */
 };
 // clang-format on
 
@@ -74,7 +89,12 @@ bool ImageRenderItem::attach(const std::any& attachment)
     return true;
 }
 
-QSize ImageRenderItem::size() const { return frame_ ? QSize{ frame_->width, frame_->height } : QSize{}; }
+QSize ImageRenderItem::size() const
+{
+    return frame_ ? ((rotation_ / 90) % 2 ? QSize{ frame_->height, frame_->width }
+                                          : QSize{ frame_->width, frame_->height })
+                  : QSize{};
+}
 
 void ImageRenderItem::hdr(bool en)
 {
@@ -84,6 +104,14 @@ void ImageRenderItem::hdr(bool en)
     }
 
     hdr_ = en;
+}
+
+void ImageRenderItem::rotate(int angle)
+{
+    if (rotation_ != angle) {
+        rotation_ = angle;
+        uploaded_ = false;
+    }
 }
 
 void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
@@ -196,7 +224,7 @@ void ImageRenderItem::draw(QRhiCommandBuffer *cb, const QRhiViewport& viewport)
     cb->setViewport(viewport);
     cb->setShaderResources(srb_.get());
 
-    const QRhiCommandBuffer::VertexInput input{ vbuf_.get(), 0 };
+    const QRhiCommandBuffer::VertexInput input{ vbuf_.get(), 64 * (rotation_ / 90) };
     cb->setVertexInput(0, 1, &input);
     cb->draw(4);
 }

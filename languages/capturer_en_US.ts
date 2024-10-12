@@ -446,5 +446,21 @@
         <source>Failed to open the audio output device</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Rotate 0</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Rotate 90</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Rotate 180</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Rotate 270</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

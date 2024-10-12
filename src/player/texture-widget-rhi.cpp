@@ -73,6 +73,12 @@ void TextureRhiWidget::hdr(bool en)
     emit updateRequest();
 }
 
+void TextureRhiWidget::rotate(int angle)
+{
+    items_.front()->rotate(angle);
+    emit updateRequest();
+}
+
 void TextureRhiWidget::present(const std::list<Subtitle>& subtitles, int changed)
 {
     if (!changed) return;
