@@ -57,7 +57,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::pause,          this, &VideoPlayer::pause);
     connect(control_,   &ControlWidget::resume,         this, &VideoPlayer::resume);
     connect(control_,   &ControlWidget::seek,           this, &VideoPlayer::seek);
-    connect(control_,   &ControlWidget::hdrToggled,     this, [=,this](bool hdr){ texture_->hdr(hdr); });
+    connect(control_,   &ControlWidget::hwToggled,      this, &VideoPlayer::hwaccel);
+    connect(control_,   &ControlWidget::hdrToggled,     this, [=, this](bool hdr){ texture_->hdr(hdr); });
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });
@@ -137,7 +138,7 @@ int VideoPlayer::open(const std::string& filename)
 
     // video decoder
 #ifdef _WIN32
-    source_->set_hwaccel(AV_HWDEVICE_TYPE_D3D11VA, AV_PIX_FMT_D3D11);
+    if (control_->hwdecoded()) source_->set_hwaccel(AV_HWDEVICE_TYPE_D3D11VA, AV_PIX_FMT_D3D11);
 #endif
     if (source_->open(filename) != 0) {
         source_ = std::make_unique<Decoder>();
@@ -420,6 +421,18 @@ void VideoPlayer::seek(const std::chrono::nanoseconds ts, const std::chrono::nan
     audio_renderer_->reset();
 
     if (paused()) vstep_ = 1;
+}
+
+void VideoPlayer::hwaccel(bool en)
+{
+    if (en) {
+#ifdef _WIN32
+        source_->set_hwaccel(AV_HWDEVICE_TYPE_D3D11VA, AV_PIX_FMT_D3D11);
+#endif
+    }
+    else {
+        source_->set_hwaccel(AV_HWDEVICE_TYPE_NONE, AV_PIX_FMT_NONE);
+    }
 }
 
 void VideoPlayer::finish()

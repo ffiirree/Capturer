@@ -48,6 +48,8 @@ public slots:
 
     void finish();
 
+    void hwaccel(bool);
+
 signals:
     void started();
     void timeChanged(int64_t);

@@ -141,9 +141,16 @@ int Decoder::open(const std::string& name)
 
 int Decoder::set_hwaccel(AVHWDeviceType hwaccel, AVPixelFormat format)
 {
-    if (vfi.hwaccel != hwaccel || vfi.pix_fmt != format) {
-        vfi.hwaccel = hwaccel;
-        vfi.pix_fmt = format;
+    if (hwaccel_ != hwaccel || hw_pix_fmt_ != format) {
+        hwaccel_    = hwaccel;
+        hw_pix_fmt_ = format;
+
+        if (ready()) {
+            hw_changed_  = true;
+            vctx_.synced = actx_.synced = false;
+
+            seek(av::clock::us(vctx_.pts, vctx_.stream->time_base), -10ms);
+        }
     }
 
     return 0;
@@ -151,7 +158,11 @@ int Decoder::set_hwaccel(AVHWDeviceType hwaccel, AVPixelFormat format)
 
 int Decoder::open_video_stream(int index)
 {
-    vctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, index, -1, nullptr, 0);
+    if (index == -1 || vctx_.index != index)
+        vctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, index, -1, nullptr, 0);
+
+    vfi.hwaccel = hwaccel_;
+    vfi.pix_fmt = hw_pix_fmt_;
 
     if (vctx_.index >= 0) {
         vctx_.stream = fmt_ctx_->streams[vctx_.index];
@@ -166,8 +177,9 @@ int Decoder::open_video_stream(int index)
                 loge("[    DECODER] [V] can not create hardware device");
                 return -1;
             }
+
             vctx_.codec->opaque        = &vfi;
-            vctx_.codec->hw_device_ctx = av_buffer_ref(device_ctx);
+            vctx_.codec->hw_device_ctx = device_ctx;
             vctx_.codec->get_format    = get_hw_format;
         }
 
@@ -532,7 +544,7 @@ int Decoder::create_video_graph(const AVBufferRef *frames_ctx)
     }
 
     vfo = av::graph::buffersink_get_video_format(vctx_.sink);
-    logi("[V] buffersink: '{}' (updated)", av::to_string(vfo));
+    logi("[V] buffersink >>: '{}'", av::to_string(vfo));
 
     logi("[    DECODER] filter graph \n{}\n", avfilter_graph_dump(vctx_.graph, nullptr));
 
@@ -661,16 +673,17 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
 {
     std::scoped_lock lock(seek_mtx_);
 
-    if (seek_pts_ != AV_NOPTS_VALUE) return;
+    if (seek_pts_ != AV_NOPTS_VALUE || !ready()) return;
 
     seek_pts_ = std::clamp<int64_t>(ts.count() / 1000, fmt_ctx_->start_time, fmt_ctx_->duration);
-    seek_min_ = rel > 0s ? seek_pts_ - rel.count() / 1000 + 2 : std::numeric_limits<int64_t>::min();
-    seek_max_ = rel < 0s ? seek_pts_ - rel.count() / 1000 - 2 : std::numeric_limits<int64_t>::max();
+    seek_min_ = rel < 0s ? std::numeric_limits<int64_t>::min() : seek_pts_ - rel.count() / 1000;
+    seek_max_ = seek_pts_ + 2;
 
-    trim_pts_ = (seek_pts_ <= std::max<int64_t>(500, fmt_ctx_->start_time)) ? 0 : seek_pts_.load();
-    logi("seek: {:.3%T} {:+}s ({:.3%T}, {:.3%T}), trim: {:.3%T}", std::chrono::microseconds{ seek_pts_ },
+    vctx_.trim_pts = av::clock::to(std::chrono::microseconds{ seek_pts_ }, vfi.time_base);
+    actx_.trim_pts = av::clock::to(std::chrono::microseconds{ seek_pts_ }, afi.time_base);
+    logi("seek: {:.6%T} {:+}s ({:.6%T}, {:.6%T})", std::chrono::microseconds{ seek_pts_ },
          av::clock::s(rel).count(), std::chrono::microseconds{ seek_min_ },
-         std::chrono::microseconds{ seek_max_ }, std::chrono::microseconds{ trim_pts_ });
+         std::chrono::microseconds{ seek_max_ });
 
     vctx_.queue.stop();
     actx_.queue.stop();
@@ -689,8 +702,6 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
     vctx_.dirty = true;
     actx_.dirty = true;
     sctx_.dirty = true;
-
-    vctx_.synced = actx_.synced = false;
 
     // restart if needed
     if (!running_ || eof_ || vctx_.done || actx_.done) {
@@ -853,6 +864,14 @@ void Decoder::vdecode_thread_fn()
         if (vctx_.dirty.exchange(false)) {
             avcodec_flush_buffers(vctx_.codec);
             if (vctx_.graph) avfilter_graph_free(&vctx_.graph);
+
+            if (hw_changed_.exchange(false)) {
+                open_video_stream(vctx_.index);
+            }
+
+            if (vctx_.synced.exchange(false) && vctx_.pts != AV_NOPTS_VALUE) {
+                vctx_.trim_pts = vctx_.pts;
+            }
         }
 
         // video decoding
@@ -888,6 +907,9 @@ void Decoder::vdecode_thread_fn()
             }
 
             frame->pts = frame->best_effort_timestamp;
+            if (frame->pts == AV_NOPTS_VALUE) continue;
+
+            vctx_.pts = frame->pts;
 
             if (!vctx_.graph || (vfi.pix_fmt != static_cast<AVPixelFormat>(frame->format)) ||
                 (vfi.width != frame->width || vfi.height != frame->height) ||
@@ -920,16 +942,8 @@ void Decoder::vdecode_thread_fn()
                 }
             }
 
-            if (frame->pts != AV_NOPTS_VALUE) {
-                const auto vpts = av::clock::us(frame->pts, vctx_.stream->time_base).count();
-                if (!vctx_.synced && !vctx_.dirty) {
-                    vctx_.synced = true;
-                    trim_pts_    = std::max<int64_t>(trim_pts_, vpts);
-                }
-
-                if (vpts >= trim_pts_) {
-                    filter_frame(vctx_, frame, AVMEDIA_TYPE_VIDEO);
-                }
+            if (frame->pts >= vctx_.trim_pts) {
+                filter_frame(vctx_, frame, AVMEDIA_TYPE_VIDEO);
             }
         }
     }
@@ -952,6 +966,10 @@ void Decoder::adecode_thread_fn()
         if (actx_.dirty.exchange(false)) {
             avcodec_flush_buffers(actx_.codec);
             create_audio_graph();
+
+            if (actx_.synced.exchange(false) && actx_.pts != AV_NOPTS_VALUE) {
+                actx_.trim_pts = actx_.pts;
+            }
         }
 
         auto ret = avcodec_send_packet(actx_.codec, pkt.value().get());
@@ -978,18 +996,13 @@ void Decoder::adecode_thread_fn()
                 frame->pts = actx_.next_pts;
             }
 
-            if (frame->pts != AV_NOPTS_VALUE) {
-                actx_.next_pts = frame->pts + frame->nb_samples;
+            if (frame->pts == AV_NOPTS_VALUE) continue;
 
-                const auto apts = av::clock::us(frame->pts, afi.time_base).count();
-                if (!actx_.synced && !actx_.dirty) {
-                    actx_.synced = true;
-                    trim_pts_    = std::max<int64_t>(trim_pts_, apts);
-                }
+            actx_.next_pts = frame->pts + frame->nb_samples;
+            actx_.pts      = frame->pts;
 
-                if (apts >= trim_pts_) {
-                    filter_frame(actx_, frame, AVMEDIA_TYPE_AUDIO);
-                }
+            if (frame->pts >= actx_.trim_pts) {
+                filter_frame(actx_, frame, AVMEDIA_TYPE_AUDIO);
             }
         }
     }

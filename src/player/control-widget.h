@@ -26,6 +26,8 @@ public:
 
     [[nodiscard]] bool hideable() const;
 
+    [[nodiscard]] bool hwdecoded() const;
+
 public slots:
     void setDuration(int64_t duration); // microseconds
     void setTime(int64_t ts);           // microseconds
@@ -55,6 +57,7 @@ signals:
     void subtitlesEnabled(bool);
 
     void hdrToggled(bool);
+    void hwToggled(bool);
 
 private:
     TitleBar  *title_bar_{};
@@ -68,6 +71,7 @@ private:
     QLabel *time_label_{};
     QLabel *duration_label_{};
 
+    QPushButton *hw_btn_{};
     QPushButton *hdr_btn_{};
     QPushButton *vcodec_btn_{};
     QPushButton *acodec_btn_{};

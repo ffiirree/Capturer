@@ -32,7 +32,9 @@ struct DecodingContext
     AVFilterContext  *sink{};
     av::frame         frame{};
 
-    int64_t next_pts{ AV_NOPTS_VALUE };
+    int64_t pts{ AV_NOPTS_VALUE };
+    int64_t trim_pts{ AV_NOPTS_VALUE };
+    int64_t next_pts{ AV_NOPTS_VALUE }; // used by audio stream
 
     std::atomic<bool> done{};
 
@@ -133,6 +135,10 @@ private:
     DecodingContext vctx_{};
     DecodingContext sctx_{};
 
+    std::atomic<bool>           hw_changed_{ false };
+    std::atomic<AVHWDeviceType> hwaccel_{ AV_HWDEVICE_TYPE_NONE };
+    std::atomic<AVPixelFormat>  hw_pix_fmt_{ AV_PIX_FMT_D3D11 };
+
     // subtitles
     std::atomic<int> sub_type_{}; // text or bitmap based
 
@@ -162,7 +168,6 @@ private:
     int64_t                   seek_min_{ std::numeric_limits<int64_t>::min() };
     std::atomic<int64_t>      seek_pts_{ AV_NOPTS_VALUE };
     int64_t                   seek_max_{ std::numeric_limits<int64_t>::max() };
-    std::atomic<int64_t>      trim_pts_{ 0 };
     // @}
 };
 

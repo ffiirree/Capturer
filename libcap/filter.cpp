@@ -53,7 +53,7 @@ namespace av::graph
             return -1;
         }
 
-        logi("[V] buffersrc : '{}'", to_string(fmt));
+        logi("[V] buffersrc    : '{}'", to_string(fmt));
 
         return 0;
     }
@@ -113,7 +113,7 @@ namespace av::graph
             return -1;
         }
 
-        logi("[V] buffersink: '{}'", av::to_string(args));
+        logi("[V] buffersink <<: '{}'", av::to_string(args));
 
         return 0;
     }

@@ -207,6 +207,12 @@ namespace av
 
         AVBufferRef *detach() noexcept { return std::exchange(ptr_, {}); }
 
+        auto put()
+        {
+            release_ref();
+            return &ptr_;
+        }
+
         [[nodiscard]] AVBufferRef *get() const noexcept { return ptr_; }
 
         T *data() const noexcept { return ptr_ ? reinterpret_cast<T *>(ptr_->data) : nullptr; }

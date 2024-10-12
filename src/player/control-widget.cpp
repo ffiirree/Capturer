@@ -80,6 +80,18 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         connect(this, &ControlWidget::validDruation, duration_label_, &QLabel::setVisible);
         hl->addWidget(duration_label_);
 
+        hw_btn_ = new QPushButton("H/W");
+#ifndef Q_OS_WIN
+        hw_btn_->hide();
+#endif
+        hw_btn_->setCheckable(true);
+        hw_btn_->setChecked(true);
+        hw_btn_->setObjectName("hw-btn");
+        connect(hw_btn_, &QPushButton::toggled, this, &ControlWidget::hwToggled);
+        connect(hw_btn_, &QPushButton::toggled, this,
+                [=, this](bool toggled) { hw_btn_->setText(toggled ? "H/W" : "S/W"); });
+        hl->addWidget(hw_btn_);
+
         hdr_btn_ = new QPushButton("HDR");
         hdr_btn_->hide();
         hdr_btn_->setCheckable(true);
@@ -187,6 +199,8 @@ void ControlWidget::setAudioCodecName(const QString& name)
 
 void ControlWidget::setHdr(bool en) { hdr_btn_->setVisible(en); }
 
+bool ControlWidget::hwdecoded() const { return hw_btn_ && hw_btn_->isVisible() && hw_btn_->isChecked(); }
+
 void ControlWidget::setVolume(int v)
 {
     v = std::clamp<int>(v, 0, volume_slider_->maximum());
@@ -201,17 +215,20 @@ void ControlWidget::setPlaybackMode(const PlaybackMode mode)
 {
     switch (mode) {
     case PlaybackMode::LIVE:
+        hw_btn_->show();
         speed_box_->hide();
         volume_btn_->show();
         volume_slider_->show();
         break;
     case PlaybackMode::ANIMATED_IMAGE:
+        hw_btn_->hide();
         speed_box_->show();
         volume_btn_->hide();
         volume_slider_->hide();
         subtitles_btn_->hide();
         break;
     default:
+        hw_btn_->show();
         speed_box_->show();
         volume_btn_->show();
         volume_slider_->show();
