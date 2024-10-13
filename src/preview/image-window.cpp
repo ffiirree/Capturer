@@ -140,6 +140,20 @@ static QPixmap grayscale(const QPixmap& pixmap)
     return QPixmap::fromImage(pixmap.toImage().convertToFormat(QImage::Format::Format_Grayscale8));
 }
 
+static QPixmap inverse(const QPixmap& pixmap)
+{
+    auto img = pixmap.toImage();
+
+    for (int i = 0; i < img.height(); ++i) {
+        for (int j = 0; j < img.width(); ++j) {
+            const auto pix = img.pixel(j, i);
+            img.setPixel(j, i, qRgba(255 - qRed(pix), 255 - qGreen(pix), 255 - qBlue(pix), qAlpha(pix)));
+        }
+    }
+
+    return QPixmap::fromImage(img);
+}
+
 void ImageWindow::paste()
 {
     preview(std::shared_ptr<QMimeData>(clipboard::clone(QApplication::clipboard()->mimeData())));
@@ -187,6 +201,7 @@ void ImageWindow::initContextMenu()
     context_menu_->addSeparator();
 
     addAction(context_menu_->addAction(tr("Grayscale"),     QKeySequence(Qt::Key_G),            [this] { present(grayscale(pixmap_)); }));
+    addAction(context_menu_->addAction(tr("Inverse"),       QKeySequence(Qt::Key_I),            [this] { present(inverse(pixmap_)); }));
     addAction(context_menu_->addAction(tr("Rotate +90"),    QKeySequence(Qt::Key_R),            [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }));
     addAction(context_menu_->addAction(tr("Rotate -90"),    QKeySequence(Qt::CTRL | Qt::Key_R), [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }));
     addAction(context_menu_->addAction(tr("H Flip"),        QKeySequence(Qt::Key_H),            [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); }));

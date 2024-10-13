@@ -199,7 +199,7 @@ void ControlWidget::setAudioCodecName(const QString& name)
 
 void ControlWidget::setHdr(bool en) { hdr_btn_->setVisible(en); }
 
-bool ControlWidget::hwdecoded() const { return hw_btn_ && hw_btn_->isVisible() && hw_btn_->isChecked(); }
+bool ControlWidget::hwdecoded() const { return hw_btn_ && !hw_btn_->isHidden() && hw_btn_->isChecked(); }
 
 void ControlWidget::setVolume(int v)
 {

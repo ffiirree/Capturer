@@ -135,6 +135,10 @@
         <source>Transparent Input</source>
         <translation>输入穿透</translation>
     </message>
+    <message>
+        <source>Inverse</source>
+        <translation>反色</translation>
+    </message>
 </context>
 <context>
     <name>PathEdit</name>
