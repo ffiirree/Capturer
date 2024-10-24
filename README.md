@@ -189,6 +189,6 @@ cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target install --config Release
 ```
 
-## FFmpeg代码示例
+## References
 
-可以参考 [ffmpeg_examples](https://github.com/ffiirree/ffmpeg_examples)，有不少`FFmpeg`的基础用法。
+- [ffmpeg_examples](https://github.com/ffiirree/ffmpeg_examples): `FFmpeg`的基础用例
