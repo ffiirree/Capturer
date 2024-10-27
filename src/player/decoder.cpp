@@ -965,7 +965,11 @@ void Decoder::adecode_thread_fn()
 
         if (actx_.dirty.exchange(false)) {
             avcodec_flush_buffers(actx_.codec);
-            create_audio_graph();
+            if (create_audio_graph() < 0) {
+                running_ = false;
+                loge("[V] ABORT");
+                break;
+            }
 
             if (actx_.synced.exchange(false) && actx_.pts != AV_NOPTS_VALUE) {
                 actx_.trim_pts = actx_.pts;
