@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=dark
+Comment=dark theme icons
+
+Directories=png
+
+[png]
+Size=24
+Context=Applications
+MinSize=16
+MaxSize=512
+Type=Fixed

@@ -1,6 +1,26 @@
 <!DOCTYPE RCC>
-    <RCC version="1.0">
+<RCC version="1.0">
     <qresource prefix="/icons">
+        <file alias="dark/index.theme">resources/icons/dark-index.theme</file>
+        <file alias="light/index.theme">resources/icons/light-index.theme</file>
+
+        <file alias="dark/png/flip-v.png">resources/icons/flip-v-light.png</file>
+        <file alias="light/png/flip-v.png">resources/icons/flip-v-dark.png</file>
+        <file alias="dark/png/flip-h.png">resources/icons/flip-h-light.png</file>
+        <file alias="light/png/flip-h.png">resources/icons/flip-h-dark.png</file>
+        <file alias="dark/png/copy.png">resources/icons/copy-light.png</file>
+        <file alias="light/png/copy.png">resources/icons/copy-dark.png</file>
+        <file alias="dark/png/paste.png">resources/icons/paste-light.png</file>
+        <file alias="light/png/paste.png">resources/icons/paste-dark.png</file>
+        <file alias="dark/png/rotate-left.png">resources/icons/rotate-left-light.png</file>
+        <file alias="light/png/rotate-left.png">resources/icons/rotate-left-dark.png</file>
+        <file alias="dark/png/rotate-right.png">resources/icons/rotate-right-light.png</file>
+        <file alias="light/png/rotate-right.png">resources/icons/rotate-right-dark.png</file>
+        <file alias="dark/png/close-m.png">resources/icons/close-m-light.png</file>
+        <file alias="light/png/close-m.png">resources/icons/close-m-dark.png</file>
+        <file alias="dark/png/recover.png">resources/icons/recover-light.png</file>
+        <file alias="light/png/recover.png">resources/icons/recover-dark.png</file>
+
         <file alias="save">resources/icons/save.png</file>
         <file alias="save-light">resources/icons/save-light.png</file>
         <file alias="save-dark">resources/icons/save-dark.png</file>

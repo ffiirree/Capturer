@@ -190,8 +190,8 @@ void ImageWindow::initContextMenu()
 {
     context_menu_ = new Menu(this);
 
-    addAction(context_menu_->addAction(tr("Copy"),  QKeySequence::Copy,     [this] { clipboard::push(data_); }));
-    addAction(context_menu_->addAction(tr("Paste"), QKeySequence::Paste,    [this] { paste(); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("copy"), tr("Copy"),  QKeySequence::Copy,     [this] { clipboard::push(data_); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("paste"), tr("Paste"), QKeySequence::Paste,    [this] { paste(); }));
 
     context_menu_->addSeparator();
 
@@ -202,10 +202,10 @@ void ImageWindow::initContextMenu()
 
     addAction(context_menu_->addAction(tr("Grayscale"),     QKeySequence(Qt::Key_G),            [this] { present(grayscale(pixmap_)); }));
     addAction(context_menu_->addAction(tr("Inverse"),       QKeySequence(Qt::Key_I),            [this] { present(inverse(pixmap_)); }));
-    addAction(context_menu_->addAction(tr("Rotate +90"),    QKeySequence(Qt::Key_R),            [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }));
-    addAction(context_menu_->addAction(tr("Rotate -90"),    QKeySequence(Qt::CTRL | Qt::Key_R), [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }));
-    addAction(context_menu_->addAction(tr("H Flip"),        QKeySequence(Qt::Key_H),            [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); }));
-    addAction(context_menu_->addAction(tr("V Flip"),        QKeySequence(Qt::Key_V),            [this] { present(pixmap_.transformed(QTransform().scale(+1, -1))); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("rotate-right"), tr("Rotate +90"),  QKeySequence(Qt::Key_R),            [this] { present(pixmap_.transformed(QTransform().rotate(+1 * 90.0))); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("rotate-left"), tr("Rotate -90"),   QKeySequence(Qt::CTRL | Qt::Key_R), [this] { present(pixmap_.transformed(QTransform().rotate(-1 * 90.0))); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("flip-h"),      tr("H Flip"),       QKeySequence(Qt::Key_H),            [this] { present(pixmap_.transformed(QTransform().scale(-1, +1))); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("flip-v"),      tr("V Flip"),       QKeySequence(Qt::Key_V),            [this] { present(pixmap_.transformed(QTransform().scale(+1, -1))); }));
 
     context_menu_->addSeparator();
 
@@ -224,8 +224,8 @@ void ImageWindow::initContextMenu()
 
     context_menu_->addSeparator();
 
-    context_menu_->addAction(tr("Recover"), [this] { preview(data_); });
-    context_menu_->addAction(tr("Close"), QKeySequence(Qt::Key_Escape), this, &ImageWindow::close);
+    context_menu_->addAction(QIcon::fromTheme("recover"), tr("Recover"), [this] { preview(data_); });
+    context_menu_->addAction(QIcon::fromTheme("close-m"), tr("Close"), QKeySequence(Qt::Key_Escape), this, &ImageWindow::close);
 }
 // clang-format on
 

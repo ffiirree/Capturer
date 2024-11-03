@@ -289,6 +289,8 @@ void Capturer::SetTheme(const QString& theme)
 
     theme_ = theme;
 
+    QIcon::setThemeName(theme);
+
     std::vector<QString> files{
         ":/stylesheets/capturer",       ":/stylesheets/capturer-" + theme,
         ":/stylesheets/menu",           ":/stylesheets/menu-" + theme,
