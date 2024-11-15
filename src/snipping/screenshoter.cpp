@@ -110,7 +110,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         item->onresized([=, this](auto g, auto l) { undo_stack_->push(new ResizeCommand(item, g, l)); });
     });
 
-    // show menu
+    // hide/show menu
+    connect(selector_, &Selector::selecting, menu_, &QWidget::hide);
     connect(selector_, &Selector::captured, [this]() {
         menu_->show();
         moveMenu();
@@ -131,6 +132,9 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         else
             magnifier_->hide();
     });
+
+    // stop
+    connect(selector_, &Selector::stopped, this, &ScreenShoter::exit);
 
     selector_->installEventFilter(this);
 

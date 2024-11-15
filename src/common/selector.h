@@ -97,10 +97,12 @@ public slots:
     void showRegion();
 
 signals:
+    void selecting();
     void captured();
     void moved();
     void resized();
     void locked();
+    void stopped();
     void statusChanged(SelectorStatus);
 
 protected:

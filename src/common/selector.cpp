@@ -34,6 +34,8 @@ void Selector::status(const SelectorStatus status)
     setAttribute(Qt::WA_TransparentForMouseEvents, status == SelectorStatus::LOCKED);
 
     switch (status) {
+    case SelectorStatus::PREY_SELECTING:
+    case SelectorStatus::FREE_SELECTING: emit selecting(); break;
     case SelectorStatus::CAPTURED:
         update();
         emit captured();
@@ -94,6 +96,16 @@ void Selector::mousePressEvent(QMouseEvent *event)
             break;
 
         default: loge("error status"); break;
+        }
+    }
+    else if (event->button() == Qt::RightButton) {
+        switch (status_) {
+        case SelectorStatus::PREY_SELECTING: emit stopped(); break;
+        case SelectorStatus::CAPTURED:
+            select(hunter::hunt(QCursor::pos()));
+            status(SelectorStatus::PREY_SELECTING);
+            break;
+        default: break;
         }
     }
 }

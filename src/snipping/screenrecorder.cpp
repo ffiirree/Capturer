@@ -94,6 +94,9 @@ ScreenRecorder::ScreenRecorder(const int type, QWidget *parent)
         if (dispatcher_) dispatcher_->resume();
     });
 
+    // stop
+    connect(selector_, &Selector::stopped, this, &ScreenRecorder::stop);
+
     // update time of the menu
     timer_ = new QTimer(this);
     connect(timer_, &QTimer::timeout, [this] {
