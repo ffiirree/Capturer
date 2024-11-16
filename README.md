@@ -6,7 +6,7 @@
 
 <p>
     <p align="center">
-        <code>Capturer</code>是一款主打快速<code>截图</code>、<code>贴图</code>、<code>视频预览</code>、<code>录屏</code>和<code>录制GIF</code>的软件
+        <code>Capturer</code>是一款主打快速<code>截图</code>、<code>贴图</code>、<code>快速预览</code>、<code>录屏</code>和<code>录制GIF</code>的软件
     </p>
     <p align="center">
         使用快捷键可以快速选择感兴趣的<code>桌面区域</code>或<code>窗口</code>进行截图/录制，并将截图快速<code>钉在桌面</code>上
@@ -40,18 +40,19 @@ sudo apt install -f
 
 ## 快捷键
 
-> 可自定义
+> 均可自定义
 
 |       Keys       | Actions                                       |
 | :--------------: | --------------------------------------------- |
 |       `F1`       | 截图                                          |
+|  `Ctrl + PgUp`   | 重复上次截图                                  |
 |       `F3`       | 预览剪切板内容并置顶在桌面上                  |
-|    `Shift+F3`    | 显示/隐藏所有预览窗口                         |
+|   `Shift + F3`   | 显示/隐藏所有预览窗口                         |
 |       `F2`       | 快速预览文件资源管理器中选中的项目(仅Windows) |
 | `Ctrl + Alt + V` | 录制视频，选择区域，`Enter`开始录制           |
 | `Ctrl + Alt + G` | 录制GIF，选择区域，`Enter`开始录制            |
 
-> 文件保存在系统默认的图片/视频文件夹中
+> 文件默认保存在系统的**图片**/**视频**文件夹中
 
 ### 选择框通用快捷键
 
@@ -80,15 +81,16 @@ sudo apt install -f
 
 ### 编辑
 
-|         Keys          | Actions                                                    |
-| :-------------------: | ---------------------------------------------------------- |
-|      `Ctrl + Z`       | UNDO                                                       |
-|  `Ctrl + Shift + Z`   | REDO                                                       |
-| `Ctrl + C`/`Ctrl + V` | Copy & Paste                                               |
-|       `Delete`        | 删除选中的图形                                             |
-|        `Shift`        | 椭圆->圆<br>矩形->正方形<br>直线->水平/垂直                |
-|        `Space`        | 重新调整截图区域                                           |
-|        `Wheel`        | 控制马赛克/橡皮擦直径 <br>放置于菜单上时，控制图形线条宽度 |
+|         Keys          | Actions                                     |
+| :-------------------: | ------------------------------------------- |
+|      `Ctrl + Z`       | UNDO                                        |
+|  `Ctrl + Shift + Z`   | REDO                                        |
+| `Ctrl + C`/`Ctrl + V` | Copy & Paste                                |
+|       `Delete`        | 删除选中的图形                              |
+|        `Shift`        | 椭圆->圆<br>矩形->正方形<br>直线->水平/垂直 |
+|        `Space`        | 重新调整截图区域                            |
+|        `Wheel`        | 控制图形线条宽度                            |
+|    `Ctrl + Wheel`     | 控制图形颜色透明度                          |
 
 ### 贴图
 
@@ -170,6 +172,7 @@ git submodule update --init --recursive
 
 #### Windows
 
+- `Qt`: [下载](https://download.qt.io/archive/online_installers/)安装并添加到环境变量中，**需要安装`Qt::Pdf`模块**
 - `FFmpeg`: 从[官网](https://ffmpeg.org/download.html#build-windows)下载编译好的`库版本(ffmpeg-xxxxx-shared.7z)`并添加到环境变量中
 - `libass`: 从[ShiftMediaProject/libass](https://github.com/ShiftMediaProject/libass/releases)下载并添加到环境变量中
 

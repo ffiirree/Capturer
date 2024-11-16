@@ -651,8 +651,10 @@ QWidget *SettingWindow::setupAboutWidget()
 
         vlayout->addStretch(2);
 
-        const auto copyright = new QLabel(tr("Copyright © 2018 - 2024 ffiirree"));
+        const auto copyright = new QLabel(
+            "Copyright © 2018 - 2024 ffiirree, <a href=\"https://github.com/ffiirree/Capturer\">GitHub</a>");
         copyright->setAlignment(Qt::AlignCenter);
+        copyright->setOpenExternalLinks(true);
         copyright->setObjectName("about-copyright");
         vlayout->addWidget(copyright);
     }

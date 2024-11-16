@@ -343,10 +343,6 @@
         <translation>相机</translation>
     </message>
     <message>
-        <source>Copyright © 2018 - 2024 ffiirree</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Rate Control</source>
         <translation>速率控制</translation>
     </message>
