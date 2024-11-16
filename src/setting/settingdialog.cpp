@@ -151,6 +151,8 @@ QWidget *SettingWindow::setupHotkeyWidget()
         const auto updateHotkey = [=](const QString& name, QKeySequence& sequence) {
             const auto edit = new QKeySequenceEdit(sequence);
             edit->setMaximumSequenceLength(1);
+            if (edit->findChild<QLineEdit *>())
+                edit->findChild<QLineEdit *>()->setContextMenuPolicy(Qt::NoContextMenu);
             connect(edit, &QKeySequenceEdit::keySequenceChanged, [&](auto ks) {
                 sequence = ks;
                 App()->UpdateHotkeys();
@@ -486,6 +488,7 @@ QWidget *SettingWindow::setupGIFWidget()
         const auto bwidth = new QSpinBox();
         bwidth->setRange(1, 6);
         bwidth->setValue(style.border_width);
+        bwidth->setContextMenuPolicy(Qt::NoContextMenu);
         connect(bwidth, QOverload<int>::of(&QSpinBox::valueChanged),
                 [&](int width) { style.border_width = width; });
         form->addRow(LABEL(tr("Border Width"), 175), bwidth);
@@ -548,6 +551,7 @@ QWidget *SettingWindow::setupGIFWidget()
         const auto colors = new QSpinBox();
         colors->setRange(32, 256);
         colors->setValue(config::recording::gif::colors);
+        colors->setContextMenuPolicy(Qt::NoContextMenu);
         connect(colors, QOverload<int>::of(&QSpinBox::valueChanged),
                 [&](int n) { config::recording::gif::colors = n; });
         form->addRow(tr("Max Colors"), colors);
