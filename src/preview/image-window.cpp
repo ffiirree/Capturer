@@ -190,13 +190,13 @@ void ImageWindow::initContextMenu()
 {
     context_menu_ = new Menu(this);
 
-    addAction(context_menu_->addAction(QIcon::fromTheme("copy"), tr("Copy"),  QKeySequence::Copy,     [this] { clipboard::push(data_); }));
+    addAction(context_menu_->addAction(QIcon::fromTheme("copy"),  tr("Copy"),  QKeySequence::Copy,     [this] { clipboard::push(data_); }));
     addAction(context_menu_->addAction(QIcon::fromTheme("paste"), tr("Paste"), QKeySequence::Paste,    [this] { paste(); }));
 
     context_menu_->addSeparator();
 
-    addAction(context_menu_->addAction(tr("Open Image..."), QKeySequence::Open, this, &ImageWindow::open));
-    addAction(context_menu_->addAction(tr("Save As..."),    QKeySequence::Save, this, &ImageWindow::saveAs));
+    addAction(context_menu_->addAction(QIcon::fromTheme("image-unfill"), tr("Open Image..."), QKeySequence::Open, this, &ImageWindow::open));
+    addAction(context_menu_->addAction(QIcon::fromTheme("save-unfill"),  tr("Save As..."),    QKeySequence::Save, this, &ImageWindow::saveAs));
 
     context_menu_->addSeparator();
 
@@ -220,7 +220,7 @@ void ImageWindow::initContextMenu()
 
     zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");
     opacity_action_ = context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
-    context_menu_->addAction(tr("Transparent Input"),       [this] { toggleTransparentInput(); setWindowOpacity(opacity_ == 1.0 ? 0.99 : opacity_); });
+    context_menu_->addAction(tr("Transparent Input"),       QKeySequence(Qt::CTRL | Qt::Key_T), [this] { toggleTransparentInput(); setWindowOpacity(opacity_ == 1.0 ? 0.99 : opacity_); });
 
     context_menu_->addSeparator();
 

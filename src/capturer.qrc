@@ -20,6 +20,10 @@
         <file alias="light/png/close-m.png">resources/icons/close-m-dark.png</file>
         <file alias="dark/png/recover.png">resources/icons/recover-light.png</file>
         <file alias="light/png/recover.png">resources/icons/recover-dark.png</file>
+        <file alias="dark/png/image-unfill.png">resources/icons/image-unfill-light.png</file>
+        <file alias="light/png/image-unfill.png">resources/icons/image-unfill-dark.png</file>
+        <file alias="dark/png/save-unfill.png">resources/icons/save-unfill-light.png</file>
+        <file alias="light/png/save-unfill.png">resources/icons/save-unfill-dark.png</file>
 
         <file alias="save">resources/icons/save.png</file>
         <file alias="save-light">resources/icons/save-light.png</file>

@@ -42,7 +42,7 @@ QCheckBox {
 
 QCheckBox::indicator {
     font-size: 9pt;
-    
+
     height: 1.5em;
     width: 1.5em;
 }
@@ -266,7 +266,7 @@ QSlider::add-page:horizontal {
     margin-top: 14px;
     margin-bottom: 14px;
 }
- 
+
 QSlider::handle:horizontal {
     background: white;
 
@@ -274,7 +274,7 @@ QSlider::handle:horizontal {
     height: 12px;
 
     border: 3px solid #666;
-    border-radius: 9px; 
+    border-radius: 9px;
 
     margin-top: 7px;
     margin-bottom: 7px;
@@ -392,7 +392,7 @@ TitleBar QCheckBox::indicator {
 
 TitleBar QCheckBox#pin-btn::indicator {
     font-size: 8pt;
-    
+
     height: 1.1em;
     width: 1.1em;
 
