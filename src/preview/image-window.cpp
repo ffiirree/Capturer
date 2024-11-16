@@ -220,7 +220,7 @@ void ImageWindow::initContextMenu()
 
     zoom_action_    = context_menu_->addAction(tr("Zoom : ")    + QString::number(static_cast<int>(scale_ * 100)) + "%");
     opacity_action_ = context_menu_->addAction(tr("Opacity : ") + QString::number(static_cast<int>(opacity_ * 100)) + "%");
-    context_menu_->addAction(tr("Transparent Input"),       QKeySequence(Qt::CTRL | Qt::Key_T), [this] { toggleTransparentInput(); setWindowOpacity(opacity_ == 1.0 ? 0.99 : opacity_); });
+    context_menu_->addAction(tr("Transparent Input"),       config::hotkeys::transparent_input);
 
     context_menu_->addSeparator();
 

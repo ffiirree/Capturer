@@ -23,6 +23,7 @@ namespace config
 
         if (j.contains("hotkeys")) {
             JSON_GET(hotkeys::screenshot, j["hotkeys"], "screenshot");
+            JSON_GET(hotkeys::repeat_last_screenshot, j["hotkeys"], "repeat-last-screenshot");
             JSON_GET(hotkeys::preview, j["hotkeys"], "preview");
             JSON_GET(hotkeys::toggle_previews, j["hotkeys"], "toggle-previews");
             JSON_GET(hotkeys::quick_look, j["hotkeys"], "quick-look");
@@ -115,13 +116,14 @@ namespace config
         j["language"] = language;
         j["theme"]    = theme;
 
-        j["hotkeys"]["screenshot"]        = hotkeys::screenshot;
-        j["hotkeys"]["preview"]           = hotkeys::preview;
-        j["hotkeys"]["toggle-previews"]   = hotkeys::toggle_previews;
-        j["hotkeys"]["quick-look"]        = hotkeys::quick_look;
-        j["hotkeys"]["record-video"]      = hotkeys::record_video;
-        j["hotkeys"]["record-gif"]        = hotkeys::record_gif;
-        j["hotkeys"]["transparent-input"] = hotkeys::transparent_input;
+        j["hotkeys"]["screenshot"]             = hotkeys::screenshot;
+        j["hotkeys"]["repeat-last-screenshot"] = hotkeys::repeat_last_screenshot;
+        j["hotkeys"]["preview"]                = hotkeys::preview;
+        j["hotkeys"]["toggle-previews"]        = hotkeys::toggle_previews;
+        j["hotkeys"]["quick-look"]             = hotkeys::quick_look;
+        j["hotkeys"]["record-video"]           = hotkeys::record_video;
+        j["hotkeys"]["record-gif"]             = hotkeys::record_gif;
+        j["hotkeys"]["transparent-input"]      = hotkeys::transparent_input;
 
         j["snip"]["style"]["border-width"] = snip::style.border_width;
         j["snip"]["style"]["border-color"] = snip::style.border_color;

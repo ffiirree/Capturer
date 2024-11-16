@@ -11,6 +11,14 @@
         <source>Failed to open the camera</source>
         <translation>打开摄像头失败</translation>
     </message>
+    <message>
+        <source>H Flip</source>
+        <translation>水平翻转</translation>
+    </message>
+    <message>
+        <source>V Flip</source>
+        <translation>垂直翻转</translation>
+    </message>
 </context>
 <context>
     <name>Capturer</name>
@@ -405,6 +413,10 @@
     <message>
         <source>Tune</source>
         <translation>微调 (Tune)</translation>
+    </message>
+    <message>
+        <source>Repeat Last Screenshot</source>
+        <translation>重复上次截图</translation>
     </message>
 </context>
 <context>

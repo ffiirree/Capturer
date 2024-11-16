@@ -170,6 +170,19 @@ void ScreenShoter::start()
         // Qt::BypassWindowManagerHint: no keyboard input unless call QWidget::activateWindow()
         activateWindow();
     }
+
+    history_idx_ = history_.size();
+}
+
+void ScreenShoter::repeat()
+{
+    start();
+
+    if (!history_.empty()) {
+        selector_->select(history_.back());
+        selector_->status(SelectorStatus::CAPTURED);
+        moveMenu();
+    }
 }
 
 #ifdef Q_OS_LINUX
@@ -444,8 +457,10 @@ void ScreenShoter::moveMenu()
 
 std::pair<QPixmap, QPoint> ScreenShoter::snip()
 {
-    history_.push_back(selector_->prey());
-    history_idx_ = history_.size() - 1;
+    if (history_.empty() || history_.back() != selector_->prey()) {
+        history_.push_back(selector_->prey());
+        history_idx_ = history_.size();
+    }
 
     const auto rect = selector_->selected(); // absolute coordinate
     selector_->close();
@@ -533,6 +548,11 @@ void ScreenShoter::setStyle(const SelectorStyle& style)
     selector_->setMaskStyle(style.mask_color);
 }
 
+size_t ScreenShoter::history_index()
+{
+    return std::clamp<size_t>(history_idx_, 0, std::max<size_t>(0, history_.size() - 1));
+}
+
 void ScreenShoter::registerShortcuts()
 {
     connect(new QShortcut(Qt::CTRL | Qt::Key_S, this), &QShortcut::activated, [this] {
@@ -589,21 +609,21 @@ void ScreenShoter::registerShortcuts()
     });
 
     connect(new QShortcut(Qt::Key_PageUp, this), &QShortcut::activated, [=, this] {
-        if (history_idx_ < history_.size()) {
-            selector_->select(history_[history_idx_]);
-            selector_->status(SelectorStatus::CAPTURED);
-            moveMenu();
-            if (history_idx_ > 0) history_idx_--;
-        }
+        if (history_.empty()) return;
+
+        history_idx_ = history_idx_ > 0 ? history_idx_ - 1 : 0;
+        selector_->select(history_[history_index()]);
+        selector_->status(SelectorStatus::CAPTURED);
+        moveMenu();
     });
 
     connect(new QShortcut(Qt::Key_PageDown, this), &QShortcut::activated, [=, this] {
-        if (history_idx_ < history_.size()) {
-            selector_->select(history_[history_idx_]);
-            selector_->status(SelectorStatus::CAPTURED);
-            moveMenu();
-            if (history_idx_ < history_.size() - 1) history_idx_++;
-        }
+        if (history_.empty()) return;
+
+        history_idx_ = history_idx_ < history_.size() - 1 ? history_idx_ + 1 : history_.size() - 1;
+        selector_->select(history_[history_index()]);
+        selector_->status(SelectorStatus::CAPTURED);
+        moveMenu();
     });
 
     connect(new QShortcut(Qt::CTRL | Qt::Key_C, this), &QShortcut::activated, [=, this] {

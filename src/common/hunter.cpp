@@ -54,6 +54,14 @@ namespace hunter
         };
     }
 
+    bool operator==(const prey_t& l, const prey_t& r)
+    {
+        return l.type == r.type && l.geometry == r.geometry && l.handle == r.handle && l.name == r.name &&
+               l.codename == r.codename;
+    }
+
+    bool operator!=(const prey_t& l, const prey_t& r) { return !(l == r); }
+
     static prey_t scope_of(const QPoint& pos)
     {
         // virtual screen or corresponding display

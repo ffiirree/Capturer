@@ -32,17 +32,19 @@ Capturer::Capturer(int& argc, char **argv)
 
     setStyle(QStyleFactory::create("Fusion"));
 
-    snip_hotkey_       = new QHotkey(this);
-    preview_hotkey_    = new QHotkey(this);
-    toggle_hotkey_     = new QHotkey(this);
-    video_hotkey_      = new QHotkey(this);
-    gif_hotkey_        = new QHotkey(this);
-    quicklook_hotkey_  = new QHotkey(this);
-    transparent_input_ = new QHotkey(this);
+    snip_hotkey_        = new QHotkey(this);
+    repeat_snip_hotkey_ = new QHotkey(this);
+    preview_hotkey_     = new QHotkey(this);
+    toggle_hotkey_      = new QHotkey(this);
+    video_hotkey_       = new QHotkey(this);
+    gif_hotkey_         = new QHotkey(this);
+    quicklook_hotkey_   = new QHotkey(this);
+    transparent_input_  = new QHotkey(this);
 
     sniper_.reset(new ScreenShoter());
 
     connect(snip_hotkey_, &QHotkey::activated, sniper_.get(), &ScreenShoter::start);
+    connect(repeat_snip_hotkey_, &QHotkey::activated, sniper_.get(), &ScreenShoter::repeat);
     connect(preview_hotkey_, &QHotkey::activated, this, &Capturer::PreviewClipboard);
     connect(toggle_hotkey_, &QHotkey::activated, this, &Capturer::TogglePreviews);
     connect(video_hotkey_, &QHotkey::activated, this, &Capturer::RecordVideo);
@@ -269,6 +271,7 @@ void Capturer::UpdateHotkeys()
     QString error = "";
     // clang-format off
     SET_HOTKEY(snip_hotkey_,        config::hotkeys::screenshot);
+    SET_HOTKEY(repeat_snip_hotkey_, config::hotkeys::repeat_last_screenshot);
     SET_HOTKEY(preview_hotkey_,     config::hotkeys::preview);
     SET_HOTKEY(toggle_hotkey_,      config::hotkeys::toggle_previews);
     SET_HOTKEY(video_hotkey_,       config::hotkeys::record_video);

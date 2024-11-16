@@ -16,6 +16,7 @@ namespace config
     namespace hotkeys
     {
         inline QKeySequence screenshot{ "F1" };
+        inline QKeySequence repeat_last_screenshot{ "Ctrl+PgUp" };
         inline QKeySequence preview{ "F3" };
         inline QKeySequence toggle_previews{ "Shift+F3" };
         inline QKeySequence quick_look{ "F2" };

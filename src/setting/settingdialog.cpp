@@ -161,6 +161,7 @@ QWidget *SettingWindow::setupHotkeyWidget()
         };
 
         updateHotkey(tr("Screenshot"), config::hotkeys::screenshot);
+        updateHotkey(tr("Repeat Last Screenshot"), config::hotkeys::repeat_last_screenshot);
         updateHotkey(tr("Preview Clipboard"), config::hotkeys::preview);
         updateHotkey(tr("Toggle Previews"), config::hotkeys::toggle_previews);
 #if _WIN32

@@ -67,6 +67,7 @@ private:
 
     // hotkey
     QPointer<QHotkey> snip_hotkey_{};       // screenshot
+    QPointer<QHotkey> repeat_snip_hotkey_{}; // screenshot
     QPointer<QHotkey> video_hotkey_{};      // video recording
     QPointer<QHotkey> gif_hotkey_{};        // gif recording
     QPointer<QHotkey> preview_hotkey_{};    // preview

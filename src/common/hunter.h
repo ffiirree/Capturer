@@ -30,6 +30,9 @@ namespace hunter
         static prey_t from(const probe::graphics::display_t&);
     };
 
+    bool operator==(const prey_t& l, const prey_t& r);
+    bool operator!=(const prey_t& l, const prey_t& r);
+
     // return the prey at the point, world coordinate system
     prey_t hunt(const QPoint&);
 

@@ -11,6 +11,14 @@
         <source>Failed to open the camera</source>
         <translation></translation>
     </message>
+    <message>
+        <source>H Flip</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>V Flip</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>Capturer</name>
@@ -404,6 +412,10 @@
     </message>
     <message>
         <source>Tune</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Repeat Last Screenshot</source>
         <translation></translation>
     </message>
 </context>

@@ -28,6 +28,8 @@ public slots:
     void start();
     void exit();
 
+    void repeat();
+
     void                       save();
     void                       copy();
     void                       pin();
@@ -62,8 +64,9 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
 private:
-    void   registerShortcuts();
-    QBrush mosaicBrush();
+    void                 registerShortcuts();
+    QBrush               mosaicBrush();
+    [[nodiscard]] size_t history_index();
 
     Selector       *selector_{}; // Layer 1
     canvas::Canvas *scene_{};
