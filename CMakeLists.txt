@@ -33,7 +33,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.7 COMPONENTS Core Gui Widgets LinguistTools ShaderTools REQUIRED)
+find_package(Qt6 6.7 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
 find_package(FFmpeg 7.0 REQUIRED)
 find_package(Libass REQUIRED)
 
@@ -123,7 +123,7 @@ target_compile_options(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         QHotkey::QHotkey
-        Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::Widgets
+        Qt6::Core Qt6::Gui Qt6::GuiPrivate Qt6::Widgets Qt6::PdfWidgets
         glog::glog
         fmt::fmt
         ffmpeg::ffmpeg

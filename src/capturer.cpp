@@ -6,6 +6,7 @@
 #include "image-window.h"
 #include "libcap/devices.h"
 #include "logging.h"
+#include "pdf-viewer.h"
 #include "settingdialog.h"
 #include "video-player.h"
 
@@ -146,6 +147,13 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
             dynamic_cast<VideoPlayer *>(preview)->open(mimedata->urls()[0].toLocalFile().toStdString());
             dynamic_cast<VideoPlayer *>(preview)->start();
 
+            mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
+        }
+        else if (mimedata->hasUrls() && mimedata->urls().size() == 1 && mimedata->urls()[0].isLocalFile() &&
+            QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
+            QFileInfo(mimedata->urls()[0].fileName()).suffix().toLower() == "pdf") {
+
+            preview = new PdfViewer(mimedata);
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
         }
         else if (mimedata->hasColor()) {

@@ -148,6 +148,13 @@
     </message>
 </context>
 <context>
+    <name>PdfViewer</name>
+    <message>
+        <source>Close</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
     <name>ScreenRecorder</name>
     <message>
         <source>Could not capture the given window</source>

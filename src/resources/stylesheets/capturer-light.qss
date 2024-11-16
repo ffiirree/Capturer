@@ -188,6 +188,10 @@ TitleBar {
     background-color: #fcfbfb;
 }
 
+TitleBar QLabel#title {
+    color: black;
+}
+
 TitleBar QCheckBox#pin-btn::indicator:unchecked  {
     image: url(:/icons/title-pin-dark);
 }

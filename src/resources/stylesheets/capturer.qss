@@ -424,3 +424,19 @@ Message#error QLabel {
 Message#message QLabel {
     color: #909399;
 }
+
+/*///////////////////////////////////////////////////////////////*/
+QPdfView {
+    border: 0;
+    border-top: 1px solid #1E1E1E;
+}
+
+PdfViewer TitleBar QPushButton#icon {
+    width: 0px;
+}
+
+PdfViewer TitleBar QLabel#title {
+    font-size: 10pt;
+    padding-left: 0.75em;
+    min-width: 8em;
+}
