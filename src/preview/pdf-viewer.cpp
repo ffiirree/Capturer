@@ -20,6 +20,8 @@ PdfViewer::PdfViewer(const std::shared_ptr<QMimeData>& data, QWidget *parent)
                                   Qt::WindowStaysOnTopHint),
       data_(data)
 {
+    setAttribute(Qt::WA_DeleteOnClose);
+
     setLayout(new QVBoxLayout());
     layout()->setSpacing(0);
     layout()->setContentsMargins({});
@@ -34,8 +36,8 @@ PdfViewer::PdfViewer(const std::shared_ptr<QMimeData>& data, QWidget *parent)
     //
     data_->setData(clipboard::MIME_TYPE_STATUS, "P");
 
-    pdf_view_ = new QPdfView();
-    document_ = new QPdfDocument();
+    pdf_view_ = new QPdfView(this);
+    document_ = new QPdfDocument(this);
     pdf_view_->setDocument(document_);
     pdf_view_->setPageMode(QPdfView::PageMode::MultiPage);
     pdf_view_->setDocumentMargins({});
@@ -64,7 +66,8 @@ bool PdfViewer::eventFilter(QObject *watched, QEvent *event)
     if (watched == pdf_view_->viewport() && event->type() == QEvent::Wheel &&
         dynamic_cast<QWheelEvent *>(event)->modifiers() & Qt::CTRL) {
         const auto delta = dynamic_cast<QWheelEvent *>(event)->angleDelta().y();
-        pdf_view_->setZoomFactor(delta > 0 ? pdf_view_->zoomFactor() * 1.05 : pdf_view_->zoomFactor()  / 1.05);
+        pdf_view_->setZoomFactor(delta > 0 ? pdf_view_->zoomFactor() * 1.05
+                                           : pdf_view_->zoomFactor() / 1.05);
         return true;
     }
 
@@ -74,5 +77,6 @@ bool PdfViewer::eventFilter(QObject *watched, QEvent *event)
 void PdfViewer::closeEvent(QCloseEvent *event)
 {
     data_->setData(clipboard::MIME_TYPE_STATUS, "N");
-    return FramelessWindow::closeEvent(event);
+
+    FramelessWindow::closeEvent(event);
 }

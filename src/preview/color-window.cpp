@@ -137,5 +137,6 @@ void ColorWindow::refresh(const number_t format)
 void ColorWindow::closeEvent(QCloseEvent *event)
 {
     if (data_) data_->setData(clipboard::MIME_TYPE_STATUS, "N");
-    return FramelessWindow::closeEvent(event);
+
+    FramelessWindow::closeEvent(event);
 }

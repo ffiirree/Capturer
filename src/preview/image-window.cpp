@@ -254,7 +254,8 @@ void ImageWindow::dragEnterEvent(QDragEnterEvent *event)
 void ImageWindow::closeEvent(QCloseEvent *event)
 {
     data_->setData(clipboard::MIME_TYPE_STATUS, "N");
-    return FramelessWindow::closeEvent(event);
+
+    FramelessWindow::closeEvent(event);
 }
 
 void ImageWindow::registerShortcuts()
