@@ -6,6 +6,8 @@
 #include "libcap/queue.h"
 #include "texture-widget-rhi.h"
 
+class QMenu;
+
 class CameraPlayer final : public FramelessWindow
 {
     Q_OBJECT
@@ -30,6 +32,7 @@ private:
     std::string device_id_{};
 
     // UI
+    QMenu            *menu_{};
     TextureRhiWidget *texture_{};
 
     std::atomic<bool> ready_{};

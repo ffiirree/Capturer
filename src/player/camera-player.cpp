@@ -32,8 +32,17 @@ CameraPlayer::CameraPlayer(QWidget *parent)
 
     const auto layout = new QHBoxLayout(this);
     layout->setContentsMargins({});
+
     texture_ = new TextureRhiWidget();
     layout->addWidget(texture_);
+
+    // context menu
+    menu_ = new Menu(this);
+
+    menu_->addAction(QIcon::fromTheme("flip-h"), tr("H Flip"), this, [=, this]() { texture_->hflip(); });
+    menu_->addAction(QIcon::fromTheme("flip-v"), tr("V Flip"), this, [=, this]() { texture_->vflip(); });
+    menu_->addSeparator();
+    menu_->addAction(QIcon::fromTheme("close-m"), tr("Close"), this, &CameraPlayer::close);
 }
 
 int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::string>)
@@ -107,11 +116,4 @@ CameraPlayer::~CameraPlayer()
     logi("[     CAMERA] ~");
 }
 
-void CameraPlayer::contextMenuEvent(QContextMenuEvent *event)
-{
-    const auto menu = new Menu(this);
-
-    menu->addAction(tr("Close"), this, &CameraPlayer::close);
-
-    menu->exec(event->globalPos());
-}
+void CameraPlayer::contextMenuEvent(QContextMenuEvent *event) { menu_->exec(event->globalPos()); }
