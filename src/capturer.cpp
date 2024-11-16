@@ -150,8 +150,8 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
         }
         else if (mimedata->hasUrls() && mimedata->urls().size() == 1 && mimedata->urls()[0].isLocalFile() &&
-            QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
-            QFileInfo(mimedata->urls()[0].fileName()).suffix().toLower() == "pdf") {
+                 QFileInfo(mimedata->urls()[0].toLocalFile()).isFile() &&
+                 QFileInfo(mimedata->urls()[0].fileName()).suffix().toLower() == "pdf") {
 
             preview = new PdfViewer(mimedata);
             mimedata->setData(clipboard::MIME_TYPE_STATUS, "P");
@@ -218,10 +218,11 @@ void Capturer::OpenSettingsDialog()
 void Capturer::QuickLook()
 {
 #if _WIN32
-    const auto actived = probe::graphics::active_window();
-    if (!actived || actived->pname != "explorer.exe") return;
+    const auto active = probe::graphics::active_window();
+    if (!active || active->pname != "explorer.exe") return;
 
-    const auto file = probe::graphics::explorer_focused(actived->handle);
+    // FIXME: maybe without extensions
+    const auto file = probe::graphics::explorer_focused(active->handle);
 
     if (file.empty()) return;
 

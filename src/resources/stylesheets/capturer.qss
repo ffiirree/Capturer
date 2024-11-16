@@ -427,8 +427,9 @@ Message#message QLabel {
 
 /*///////////////////////////////////////////////////////////////*/
 QPdfView {
-    border: 0;
-    border-top: 1px solid #1E1E1E;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
 }
 
 PdfViewer TitleBar QPushButton#icon {
