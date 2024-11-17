@@ -19,6 +19,29 @@ file(GLOB_RECURSE LIBCAP_SOURCES *.cpp)
 add_library(libcap ${LIBCAP_SOURCES})
 add_library(libcap::libcap ALIAS libcap)
 
+if (WIN32)
+    add_custom_target(LIBCAP_SHADERS)
+
+    set(HLSL_SHADER_FILES ResizingVertexShader.hlsl ResizingPixelShader.hlsl)
+
+    set_source_files_properties(ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
+    set_source_files_properties(ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
+
+    foreach (HLSL_FILE ${HLSL_SHADER_FILES})
+        get_filename_component(FILE_NAME ${HLSL_FILE} NAME_WE)
+        get_source_file_property(SHADER_TYPE ${HLSL_FILE} ShaderType)
+
+        add_custom_command(TARGET LIBCAP_SHADERS PRE_BUILD
+            COMMAND fxc.exe /nologo /E${SHADER_TYPE}_main /T${SHADER_TYPE}_5_0 $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_NAME}.h ${HLSL_FILE}
+            COMMENT "HLSL ${HLSL_FILE}"
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/src/resources/d3d11"
+            VERBATIM
+        )
+    endforeach ()
+
+    add_dependencies(libcap LIBCAP_SHADERS)
+endif ()
+
 target_compile_options(libcap
     PRIVATE 
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>

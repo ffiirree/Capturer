@@ -62,34 +62,6 @@ add_executable(${PROJECT_NAME}
         $<$<PLATFORM_ID:Windows>:src/ico_win32.rc>
 )
 
-if (WIN32)
-    # Build HLSL shaders
-    add_custom_target(shaders)
-
-    set(HLSL_SHADER_FILES src/resources/d3d11/ResizingVertexShader.hlsl src/resources/d3d11/ResizingPixelShader.hlsl)
-
-    set_source_files_properties(src/resources/d3d11/ResizingVertexShader.hlsl   PROPERTIES ShaderType "vs")
-    set_source_files_properties(src/resources/d3d11/ResizingPixelShader.hlsl    PROPERTIES ShaderType "ps")
-
-    set_source_files_properties(${HLSL_SHADER_FILES}                            PROPERTIES ShaderModel "5_0")
-
-    foreach (FILE ${HLSL_SHADER_FILES})
-        get_filename_component(FILE_WE ${FILE} NAME_WE)
-        list(APPEND CSO_SHADER_FILES ${PROJECT_BINARY_DIR}/${FILE_WE}.cso)
-        get_source_file_property(shadertype ${FILE} ShaderType)
-        get_source_file_property(shadermodel ${FILE} ShaderModel)
-        add_custom_command(TARGET shaders
-                COMMAND fxc.exe /nologo /E${shadertype}_main /T${shadertype}_${shadermodel} $<IF:$<CONFIG:DEBUG>,/Od,/O1> /Zi /Fh ${PROJECT_BINARY_DIR}/${FILE_WE}.h ${FILE}
-                MAIN_DEPENDENCY ${FILE}
-                COMMENT "HLSL ${FILE}"
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                VERBATIM
-        )
-    endforeach ()
-
-    add_dependencies(${PROJECT_NAME} shaders)
-endif ()
-
 qt_add_shaders(${PROJECT_NAME} "capturer_shaders"
         PREFIX
         "/"
@@ -148,15 +120,76 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # #######################################################################################################################
-# Install
+# Package
 # #######################################################################################################################
-message(STATUS "CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}")
 
-# Binaries
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+
+set(CPACK_PACKAGE_VENDOR "ffiirree")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/ffiirree/Capturer")
+set(CPACK_PACKAGE_DESCRIPTION "Capturer - Screenshot & Screen Recording")
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+
 if (WIN32)
-    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
-    install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
-elseif (UNIX AND NOT APPLE)
+    install(TARGETS ${PROJECT_NAME} DESTINATION . COMPONENT Applications)
+    install(TARGETS ${PROJECT_NAME}
+        COMPONENT Runtime
+        RUNTIME_DEPENDENCIES
+        PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
+        POST_EXCLUDE_REGEXES ".*system32/.*\\.dll" "Qt.*.dll"
+        DIRECTORIES $ENV{PATH}
+        DESTINATION .
+    )
+    install(FILES ${QM_FILES} DESTINATION "translations")
+
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    include(InstallRequiredSystemLibraries)
+    install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION . COMPONENT Runtime)
+
+    qt_generate_deploy_script(
+        TARGET ${PROJECT_NAME}
+        OUTPUT_SCRIPT qt_deploy_script
+        CONTENT "
+            qt_deploy_runtime_dependencies(
+                EXECUTABLE \"$<TARGET_FILE:${PROJECT_NAME}>\"
+                BIN_DIR .
+                PLUGINS_DIR .
+                NO_TRANSLATIONS
+                NO_COMPILER_RUNTIME
+                DEPLOY_TOOL_OPTIONS \"--no-opengl-sw\" \"--no-system-d3d-compiler\"
+            )"
+    )
+    install(SCRIPT ${qt_deploy_script})
+
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY Capturer)
+    set(CPACK_PACKAGE_CHECKSUM SHA512)
+
+    # NSIS
+    set(CPACK_GENERATOR NSIS)
+
+    set(CPACK_NSIS_PACKAGE_NAME "Capturer ${PROJECT_VERSION}")
+    set(CPACK_NSIS_INSTALLED_ICON_NAME "${PROJECT_NAME}.exe")
+    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+
+    # The display name string that appears in the Windows Apps & features in Control Panel
+    set(CPACK_NSIS_DISPLAY_NAME Capturer)
+
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/src/resources/icons/icon.ico")
+    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/src/resources/icons/icon.ico")
+
+    set(CPACK_NSIS_MANIFEST_DPI_AWARE ON)
+    set(CPACK_NSIS_MODIFY_PATH ON)
+
+    set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
+    set(CPACK_NSIS_MUI_FINISHPAGE_RUN "${PROJECT_NAME}.exe")
+    set(CPACK_PACKAGE_EXECUTABLES ${PROJECT_NAME} "Capturer")
+    set(CPACK_CREATE_DESKTOP_LINKS ${PROJECT_NAME})
+
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-Windows-${CMAKE_HOST_SYSTEM_PROCESSOR}")
+
+    include(CPack)
+elseif (UNIX)
     # installed: /usr/local/bin/capturer
     # installed: /usr/local/etc/capturer/translations/capturer_en_US.ts
     # installed: /usr/local/etc/capturer/translations/capturer_zh_CN.ts
@@ -173,22 +206,7 @@ elseif (UNIX AND NOT APPLE)
     install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/pixmaps")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
-endif ()
-
-add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake")
-
-# #######################################################################################################################
-# Create DEB
-# #######################################################################################################################
-if (UNIX)
-    set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-
-    # Set a Package Version
-    set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-
-    set(CPACK_PACKAGE_DESCRIPTION "Screen snipping and recording")
-
-    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P "${PROJECT_SOURCE_DIR}/cmake/uninstall.cmake")
 
     # Tell CPack to generate a .deb package
     set(CPACK_GENERATOR "DEB")
