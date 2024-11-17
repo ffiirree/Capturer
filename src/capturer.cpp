@@ -169,7 +169,9 @@ void Capturer::PreviewMimeData(const std::shared_ptr<QMimeData>& mimedata)
         preview->show();
         if (!mimedata->hasFormat(clipboard::MIME_TYPE_POINT)) {
             const auto screen = screenAt(QCursor::pos()) ? screenAt(QCursor::pos()) : primaryScreen();
-            preview->move(screen->geometry().center() - preview->rect().center());
+            const auto pos    = screen->geometry().center() - preview->rect().center();
+            preview->move(std::max(screen->geometry().left(), pos.x()),
+                          std::max(screen->geometry().top(), pos.y()));
         }
         previews_.emplace_back(preview);
 

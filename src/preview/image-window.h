@@ -34,17 +34,19 @@ private:
     void mouseDoubleClickEvent(QMouseEvent *) override;
 
     void wheelEvent(QWheelEvent *) override;
+    void resizeEvent(QResizeEvent *) override;
     void contextMenuEvent(QContextMenuEvent *) override;
     void dropEvent(QDropEvent *) override;
     void dragEnterEvent(QDragEnterEvent *) override;
 
     void closeEvent(QCloseEvent *) override;
-
     void registerShortcuts();
     void initContextMenu();
 
+    [[nodiscard]] qreal scaling() const;
+
     bool  thumbnail_{ false };
-    qreal scale_{ 1.0 };
+    QSize size_{};
     qreal opacity_{ 1.0 };
 
     QSize  THUMBNAIL_SIZE_{ 125, 125 };
