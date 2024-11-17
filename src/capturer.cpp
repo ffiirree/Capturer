@@ -223,8 +223,9 @@ void Capturer::QuickLook()
     const auto active = probe::graphics::active_window();
     if (!active || active->pname != "explorer.exe") return;
 
-    // FIXME: maybe without extensions
-    const auto file = probe::graphics::explorer_focused(active->handle);
+    const auto file = (active->classname == "Progman" || active->classname == "WorkerW")
+                          ? probe::graphics::desktop_focused()
+                          : probe::graphics::explorer_focused(active->handle);
 
     if (file.empty()) return;
 
