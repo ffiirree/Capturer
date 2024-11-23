@@ -151,9 +151,11 @@ QWidget *SettingWindow::setupHotkeyWidget()
         const auto updateHotkey = [=](const QString& name, QKeySequence& sequence) {
             const auto edit = new QKeySequenceEdit(sequence);
             edit->setMaximumSequenceLength(1);
+            edit->setClearButtonEnabled(true);
+            edit->findChildren<QAction *>()[0]->setIcon(QIcon::fromTheme("close-m"));
             if (edit->findChild<QLineEdit *>())
                 edit->findChild<QLineEdit *>()->setContextMenuPolicy(Qt::NoContextMenu);
-            connect(edit, &QKeySequenceEdit::keySequenceChanged, [&](auto ks) {
+            connect(edit, &QKeySequenceEdit::keySequenceChanged, [&](auto& ks) {
                 sequence = ks;
                 App()->UpdateHotkeys();
             });
