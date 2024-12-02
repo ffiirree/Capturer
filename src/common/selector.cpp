@@ -277,7 +277,7 @@ void Selector::paintEvent(QPaintEvent *)
         if (crosshair_ && status_ < SelectorStatus::CAPTURED) {
             painter_.save();
 
-            const auto pos = mapFromGlobal(QCursor::pos());
+            const auto pos = QCursor::pos();
 
             painter_.setRenderHint(QPainter::Antialiasing);
 
