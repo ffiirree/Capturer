@@ -31,8 +31,7 @@ bool ComboBox::eventFilter(QObject *watched, QEvent *event)
             QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
             const auto hwnd = reinterpret_cast<HWND>(view()->window()->winId());
             windows::dwm::set_window_corner(hwnd, DWMWCP_ROUND);
-            windows::dwm::blur_behind(hwnd);
-            windows::dwm::blur(hwnd, windows::dwm::blur_mode_t::ACRYLIC);
+            windows::dwm::set_material_acrylic(hwnd, 0xBB000000);
         }
     }
     return false;

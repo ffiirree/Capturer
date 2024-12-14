@@ -7,8 +7,6 @@
 #include <QWidget>
 #include <winuser.h>
 
-#define DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 19
-
 namespace windows::dwm
 {
     HRESULT enable_shadow(HWND hwnd, bool en)
@@ -19,108 +17,103 @@ namespace windows::dwm
 
     HRESULT set_window_corner(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE corner)
     {
+        // This value is supported starting with Windows 11 Build 22000.
         return ::DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &corner,
                                        sizeof(DWMWINDOWATTRIBUTE));
     }
 
-    HRESULT blur_behind(HWND hwnd, BOOL en)
+    HRESULT extended_frame_into_client(HWND hwnd, const MARGINS& margins)
     {
-        const DWM_BLURBEHIND bb{ 1, en, nullptr, FALSE };
-        return ::DwmEnableBlurBehindWindow(hwnd, &bb);
+        return ::DwmExtendFrameIntoClientArea(hwnd, &margins);
     }
 
-    HRESULT blur(HWND hwnd, blur_mode_t mode)
+    HRESULT set_material(HWND hwnd, material_t material, bool enabled)
     {
-        switch (mode) {
-        case blur_mode_t::DISABLE: return blur_disable(hwnd);
-        case blur_mode_t::AERO:    return blur_aero(hwnd);
-        case blur_mode_t::ACRYLIC: return blur_acrylic(hwnd);
-        case blur_mode_t::MICA:    return blur_mica(hwnd);
-        case blur_mode_t::MICAALT: return blur_mica(hwnd, true);
+        switch (material) {
+        case material_t::Aero:    return set_material_aero(hwnd, enabled);
+        case material_t::Acrylic: return set_material_acrylic(hwnd, 0xBB000000, enabled);
+        case material_t::Mica:    return set_material_mica(hwnd, false, enabled);
+        case material_t::MicaAlt: return set_material_mica(hwnd, true, enabled);
         default:
             if (probe::system::version() >= probe::WIN_11_22H2) {
-                return blur_mica(hwnd, true);
+                return set_material_mica(hwnd, true, enabled);
             }
             if (probe::system::version() >= probe::WIN_11_21H2) {
-                return blur_mica(hwnd, false);
+                return set_material_mica(hwnd, false, enabled);
             }
             if (probe::system::version() >= probe::WIN_10) {
-                return blur_acrylic(hwnd);
+                return set_material_acrylic(hwnd, 0xBB000000, enabled);
             }
-            return blur_aero(hwnd);
+            return set_material_aero(hwnd, enabled);
         }
     }
 
-    HRESULT blur_disable(HWND hwnd)
+    HRESULT set_material_aero(HWND hwnd, bool enabled)
     {
         const auto SetWindowCompositionAttribute =
             reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
-        ACCENT_POLICY               accent = { ACCENT_DISABLED };
+        ACCENT_POLICY accent = { static_cast<DWORD>(enabled ? ACCENT_ENABLE_BLURBEHIND : ACCENT_DISABLED) };
         WINDOWCOMPOSITIONATTRIBDATA blur{ WCA_ACCENT_POLICY, &accent, sizeof(ACCENT_POLICY) };
-        SetWindowCompositionAttribute(hwnd, &blur);
+        if (SetWindowCompositionAttribute(hwnd, &blur) == FALSE) return E_FAIL;
 
-        return ERROR_SUCCESS;
+        return S_OK;
     }
 
-    HRESULT blur_aero(HWND hwnd)
+    // extended_frame_into_client(hwnd, { 0, 0, 0, 0 })
+    HRESULT set_material_acrylic(HWND hwnd, DWORD color, bool enabled)
     {
         const auto SetWindowCompositionAttribute =
             reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
                 probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
 
-        ACCENT_POLICY               accent = { ACCENT_ENABLE_BLURBEHIND };
+        ACCENT_POLICY accent = {};
+        if (enabled) {
+            accent = {
+                .state = ACCENT_ENABLE_ACRYLICBLURBEHIND,
+                .flags = ACCENT_ENABLE_BORDER,
+                .color = color,
+            };
+        }
         WINDOWCOMPOSITIONATTRIBDATA blur{ WCA_ACCENT_POLICY, &accent, sizeof(ACCENT_POLICY) };
-        SetWindowCompositionAttribute(hwnd, &blur);
+        if (SetWindowCompositionAttribute(hwnd, &blur) == FALSE) return E_FAIL;
 
-        return ERROR_SUCCESS;
+        return S_OK;
     }
 
-    HRESULT blur_acrylic(HWND hwnd)
+    // extended_frame_into_client(hwnd, { -1, -1, -1, -1 });
+    HRESULT set_material_acrylic_v2(HWND hwnd, bool enabled)
     {
-        const auto SetWindowCompositionAttribute =
-            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
-                probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
-
-        ACCENT_POLICY accent = {
-            .state     = ACCENT_ENABLE_ACRYLICBLURBEHIND,
-            .flags     = 0x20 | 0x40 | 0x80 | 0x100,
-            .color     = 0xBB000000,
-            .animation = 0,
-        };
-        WINDOWCOMPOSITIONATTRIBDATA blur{ WCA_ACCENT_POLICY, &accent, sizeof(ACCENT_POLICY) };
-        SetWindowCompositionAttribute(hwnd, &blur);
-
-        // DWORD attr = DWMSBT_MAINWINDOW; // Mica 2 | MicaAlt 4
-        //::DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &attr, sizeof(attr));
-        return ERROR_SUCCESS;
+        const DWORD mode = enabled ? DWMSBT_TRANSIENTWINDOW : DWMSBT_AUTO;
+        // 'DWMWA_SYSTEMBACKDROP_TYPE' is supported starting with Windows 11 Build 22621.
+        return ::DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &mode, sizeof(mode));
     }
 
-    HRESULT blur_mica(HWND hwnd, bool alt)
+    // extended_frame_into_client(hwnd, { -1, -1, -1, -1 });
+    HRESULT set_material_mica(HWND hwnd, bool alt, bool enabled)
     {
-        const auto SetWindowCompositionAttribute =
-            reinterpret_cast<pfnSetWindowCompositionAttribute>(probe::library::address_of(
-                probe::library::load("user32.dll"), "SetWindowCompositionAttribute"));
+        if (probe::system::version() >= probe::WIN_11_22H2) {
+            const DWORD mode = enabled ? (alt ? DWMSBT_TABBEDWINDOW : DWMSBT_MAINWINDOW) : DWMSBT_AUTO;
+            // 'DWMWA_SYSTEMBACKDROP_TYPE' is supported starting with Windows 11 Build 22621.
+            return ::DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &mode, sizeof(mode));
+        }
 
-        ACCENT_POLICY               accent = { ACCENT_ENABLE_HOSTBACKDROP };
-        WINDOWCOMPOSITIONATTRIBDATA blur{ WCA_ACCENT_POLICY, &accent, sizeof(ACCENT_POLICY) };
-        SetWindowCompositionAttribute(hwnd, &blur);
-
-        const DWORD mode = alt ? DWMSBT_TABBEDWINDOW : DWMSBT_MAINWINDOW;
-        return ::DwmSetWindowAttribute(
-            hwnd, (probe::system::version() >= probe::WIN_11_22H2) ? DWMWA_SYSTEMBACKDROP_TYPE : 1029,
-            &mode, sizeof(mode));
+        // >= Windows 11 21H2
+        const BOOL enable = enabled ? TRUE : FALSE;
+        return ::DwmSetWindowAttribute(hwnd, 1029, &enable, sizeof(enable));
     }
 
     // https://github.com/ysc3839/win32-darkmode/blob/master/win32-darkmode/DarkMode.h
-    HRESULT update_theme(HWND hwnd, BOOL dark)
+    HRESULT set_dark_mode(HWND hwnd, BOOL dark)
     {
-        ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &dark, sizeof(dark));
+        if (probe::system::version() >= probe::WIN_11_21H2) {
+            return ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+        }
 
-        return ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+        return ::DwmSetWindowAttribute(hwnd, 19, &dark, sizeof(dark));
     }
-}; // namespace windows::dwm
+} // namespace windows::dwm
 
 void TransparentInput(QWidget *win, const bool en)
 {

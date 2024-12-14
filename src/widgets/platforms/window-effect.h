@@ -60,9 +60,18 @@ enum ACCENT_STATE
 
 enum ACCENT_FLAG
 {
-    ACCENT_NONE                           = 0,
-    ACCENT_ENABLE_ACRYLIC                 = 1,
-    ACCENT_ENABLE_ACRYLIC_WITH_LUMINOSITY = 482
+    ACCENT_NONE,
+    ACCENT_ENABLE_MODERN_ACRYLIC_RECIPE = 1 << 1, // Windows 11 22H2+
+    ACCENT_ENABLE_GRADIENT_COLOR        = 1 << 1, // ACCENT_ENABLE_BLURBEHIND
+    ACCENT_ENABLE_FULLSCREEN            = 1 << 2,
+    ACCENT_ENABLE_BORDER_LEFT           = 1 << 5,
+    ACCENT_ENABLE_BORDER_TOP            = 1 << 6,
+    ACCENT_ENABLE_BORDER_RIGHT          = 1 << 7,
+    ACCENT_ENABLE_BORDER_BOTTOM         = 1 << 8,
+    ACCENT_ENABLE_BLUR_RECT             = 1 << 9, // DwmpUpdateAccentBlurRect, it is conflicted with
+                                      // ACCENT_ENABLE_GRADIENT_COLOR when using ACCENT_ENABLE_BLURBEHIND
+    ACCENT_ENABLE_BORDER                = ACCENT_ENABLE_BORDER_LEFT | ACCENT_ENABLE_BORDER_TOP |
+                           ACCENT_ENABLE_BORDER_RIGHT | ACCENT_ENABLE_BORDER_BOTTOM
 };
 
 struct ACCENT_POLICY
@@ -77,30 +86,30 @@ typedef BOOL(WINAPI *pfnSetWindowCompositionAttribute)(HWND, WINDOWCOMPOSITIONAT
 
 namespace windows::dwm
 {
-    enum class blur_mode_t : unsigned char
+    HRESULT enable_shadow(HWND, bool);
+
+    HRESULT set_window_corner(HWND, DWM_WINDOW_CORNER_PREFERENCE);
+
+    HRESULT extended_frame_into_client(HWND, const MARGINS&);
+
+    // material
+    enum class material_t : unsigned char
     {
-        DISABLE,
-        DEFAULT,
-        AERO,
-        ACRYLIC,
-        MICA,
-        MICAALT
+        Auto,
+        Aero,
+        Acrylic,
+        Mica,
+        MicaAlt
     };
 
-    HRESULT set_window_corner(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE corner);
+    HRESULT set_material(HWND, material_t, bool = true);
 
-    HRESULT enable_shadow(HWND hwnd, bool en);
+    HRESULT set_material_aero(HWND, bool = true);
+    HRESULT set_material_acrylic(HWND, DWORD = 0xBB000000, bool = true);
+    HRESULT set_material_acrylic_v2(HWND, bool = true);
+    HRESULT set_material_mica(HWND, bool = false, bool = true);
 
-    HRESULT blur_behind(HWND hwnd, BOOL en = true);
-
-    HRESULT blur(HWND hwnd, blur_mode_t mode);
-
-    HRESULT blur_disable(HWND hwnd);
-    HRESULT blur_aero(HWND hwnd);
-    HRESULT blur_acrylic(HWND hwnd);
-    HRESULT blur_mica(HWND hwnd, bool alt = false);
-
-    HRESULT update_theme(HWND hwnd, BOOL dark = FALSE);
+    HRESULT set_dark_mode(HWND, BOOL = FALSE);
 }; // namespace windows::dwm
 
 #elif __linux__
