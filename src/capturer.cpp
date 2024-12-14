@@ -16,6 +16,7 @@
 #include <QKeyEvent>
 #include <QScreen>
 #include <QStyleFactory>
+#include <QStyleHints>
 #include <QSystemTrayIcon>
 #include <QUrl>
 
@@ -338,6 +339,8 @@ void Capturer::SetTheme(const QString& theme)
     tray_open_camera_->setIcon(QIcon(":/icons/camera-" + color));
     tray_settings_->setIcon(QIcon(":/icons/setting-" + color));
     tray_exit_->setIcon(QIcon(":/icons/exit-" + color));
+
+    styleHints()->setColorScheme(theme_ == "dark" ? Qt::ColorScheme::Dark : Qt::ColorScheme::Light);
 }
 
 void Capturer::UpdateScreenshotStyle()

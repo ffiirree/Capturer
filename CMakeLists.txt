@@ -33,7 +33,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.7 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
+find_package(Qt6 6.8 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
 find_package(FFmpeg 7.0 REQUIRED)
 find_package(Libass REQUIRED)
 
@@ -155,7 +155,6 @@ if (WIN32)
                 EXECUTABLE \"$<TARGET_FILE:${PROJECT_NAME}>\"
                 BIN_DIR .
                 PLUGINS_DIR .
-                NO_TRANSLATIONS
                 NO_COMPILER_RUNTIME
                 DEPLOY_TOOL_OPTIONS \"--no-opengl-sw\" \"--no-system-d3d-compiler\"
             )"

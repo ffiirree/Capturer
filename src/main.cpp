@@ -48,15 +48,20 @@ int main(int argc, char *argv[])
     Capturer app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
-    QTranslator translator;
+    QTranslator sys_translator;
+    QTranslator app_translator;
 #ifdef __linux__
-    const auto translation = "/usr/local/etc/capturer/translations/capturer_" + config::language;
+    const auto sys_translation = "/usr/local/etc/capturer/translations/qt_" + config::language;
+    const auto app_translation = "/usr/local/etc/capturer/translations/capturer_" + config::language;
 #else
-    const auto translation = "translations/capturer_" + config::language;
+    const auto sys_translation = "translations/qt_" + config::language;
+    const auto app_translation = "translations/capturer_" + config::language;
 #endif
-    loge_if(!translator.load(translation), "failed to load {}", translation.toStdString());
+    loge_if(!sys_translator.load(sys_translation), "failed to load {}", sys_translation.toStdString());
+    loge_if(!app_translator.load(app_translation), "failed to load {}", app_translation.toStdString());
 
-    Capturer::installTranslator(&translator);
+    Capturer::installTranslator(&sys_translator);
+    Capturer::installTranslator(&app_translator);
 
     app.Init();
 

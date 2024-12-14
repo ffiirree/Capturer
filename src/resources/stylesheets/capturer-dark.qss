@@ -149,12 +149,6 @@ QScrollBar::handle {
 }
 
 /*///////////////////////////////////////////////////////////////*/
-QColorDialog {
-    background-color: #232323;
-    color: #e6e6e6;
-}
-
-/*///////////////////////////////////////////////////////////////*/
 QPushButton {
     background-color: #323232;
     border: 1px solid #323232;

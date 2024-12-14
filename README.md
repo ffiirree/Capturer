@@ -27,14 +27,14 @@
 
 ### Windows
 
-下载后解压，双击 `capturer.exe` 运行。
+现在后双击`capturer-1.7.1-Windows-AMD64.exe`进行安装。
 
 ### Ubuntu
 
 下载后安装：
 
 ```bash
-sudo dpkg -i capturer-1.7.0-ubuntu_xx.04-amd64.deb
+sudo dpkg -i capturer-1.7.1-ubuntu_xx.04-amd64.deb
 sudo apt install -f
 ```
 
@@ -151,7 +151,7 @@ git submodule update --init --recursive
 ### Development Environment
 
 - `C++` : `C++20`
-- `Qt` : `>= 6.7`
+- `Qt` : `>= 6.8`
 - `CMake` : `>= 3.27`
 - `FFmpeg` : `>= 7.0`
 - Windows
@@ -202,9 +202,9 @@ sudo apt install libx11-dev libxrandr-dev libxcb1-dev libxcb-shm0-dev libxcb-xfi
 cd Capturer && mkdir build
 
 cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target install --config Release
+cmake --build build --target package --config Release
 ```
 
 ## References
 
-- [ffmpeg_examples](https://github.com/ffiirree/ffmpeg_examples): `FFmpeg`的基础用例
+- [ffmpeg-tutorials](https://github.com/ffiirree/ffmpeg-tutorials): `FFmpeg`的基础用例
