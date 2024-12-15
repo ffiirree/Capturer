@@ -116,7 +116,7 @@ QWidget *SettingWindow::setupGeneralWidget()
             { "zh_CN", "简体中文" },
         });
         language->select(config::language);
-        language->onselected([](auto value) { config::language = value.toString(); });
+        language->onselected([](const auto& value) { config::language = value.toString(); });
         form->addRow(tr("Language"), language);
 
         //
@@ -131,7 +131,7 @@ QWidget *SettingWindow::setupGeneralWidget()
             { "dark", tr("Dark") },
             { "light", tr("Light") },
         });
-        theme->onselected([](auto value) { config::set_theme(value.toString().toStdString()); });
+        theme->onselected([](const auto& value) { config::set_theme(value.toString().toStdString()); });
         theme->select(config::theme);
         form->addRow(tr("Theme"), theme);
     }
@@ -202,7 +202,7 @@ QWidget *SettingWindow::setupSnipWidget()
 
         const auto bstyle = new ComboBox();
         bstyle->add(PENSTYLES);
-        bstyle->onselected([&](auto value) {
+        bstyle->onselected([&](const auto& value) {
             config::snip::style.border_style = static_cast<Qt::PenStyle>(value.toInt());
         });
         connect(bstyle, &ComboBox::selected, [] { App()->UpdateScreenshotStyle(); });
@@ -248,7 +248,8 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto bstyle = new ComboBox();
         bstyle->add(PENSTYLES)
-            .onselected([&](auto value) { style.border_style = static_cast<Qt::PenStyle>(value.toInt()); })
+            .onselected(
+                [&](const auto& value) { style.border_style = static_cast<Qt::PenStyle>(value.toInt()); })
             .select(static_cast<int>(style.border_style));
         form->addRow(tr("Border Style"), bstyle);
 
@@ -278,7 +279,7 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto format = new ComboBox();
         format->add({ { "mp4", "MPEG-4 (.mp4)" }, { "mkv", "Matroska Video (.mkv)" } })
-            .onselected([](auto value) { config::recording::video::mcf = value.toString(); })
+            .onselected([](const auto& value) { config::recording::video::mcf = value.toString(); })
             .select(config::recording::video::mcf);
         form->addRow(tr("Format"), format);
     }
@@ -320,7 +321,7 @@ QWidget *SettingWindow::setupRecordWidget()
             });
         }
         encoder->onselected(
-            [](auto value) { config::recording::video::v::codec = value.toString().toStdString(); });
+            [](const auto& value) { config::recording::video::v::codec = value.toString().toStdString(); });
         encoder->select(QString::fromStdString(config::recording::video::v::codec));
         form->addRow(tr("Encoder"), encoder);
 
@@ -339,7 +340,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { QPoint{ 60, 1 }, "60" },
                 { QPoint{ 120, 1 }, "120" },
             })
-            .onselected([](auto value) {
+            .onselected([](const auto& value) {
                 const auto fps                         = value.toPoint();
                 config::recording::video::v::framerate = { fps.x(), fps.y() };
             })
@@ -349,7 +350,7 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto ratectrl = new ComboBox();
         ratectrl->add("crf", "CRF")
-            .onselected([](auto value) {
+            .onselected([](const auto& value) {
                 config::recording::video::v::rate_control = value.toString().toStdString();
             })
             .select(QString::fromStdString(config::recording::video::v::rate_control));
@@ -377,8 +378,9 @@ QWidget *SettingWindow::setupRecordWidget()
                 { "slower", "slower" },
                 { "veryslow", "veryslow" },
             })
-            .onselected(
-                [](auto value) { config::recording::video::v::preset = value.toString().toStdString(); })
+            .onselected([](const auto& value) {
+                config::recording::video::v::preset = value.toString().toStdString();
+            })
             .select(QString::fromStdString(config::recording::video::v::preset));
         form->addRow(tr("Preset"), preset);
 
@@ -390,8 +392,9 @@ QWidget *SettingWindow::setupRecordWidget()
                 { "main", "main" },
                 { "high", "high" },
             })
-            .onselected(
-                [](auto value) { config::recording::video::v::profile = value.toString().toStdString(); })
+            .onselected([](const auto& value) {
+                config::recording::video::v::profile = value.toString().toStdString();
+            })
             .select(QString::fromStdString(config::recording::video::v::profile));
         form->addRow(tr("Profile"), profile);
 
@@ -407,8 +410,9 @@ QWidget *SettingWindow::setupRecordWidget()
                       { "fastdecode", "fastdecode" },
                       { "zerolatency", "zerolatency" },
                   })
-            .onselected(
-                [](auto value) { config::recording::video::v::tune = value.toString().toStdString(); })
+            .onselected([](const auto& value) {
+                config::recording::video::v::tune = value.toString().toStdString();
+            })
             .select(QString::fromStdString(config::recording::video::v::tune));
         form->addRow(tr("Tune"), tune);
 
@@ -421,7 +425,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { AV_PIX_FMT_YUV420P10LE, "YUV420P10 (10-bit, planar YUV 4:2:0, 15bpp)" },
 
             })
-            .onselected([](auto value) {
+            .onselected([](const auto& value) {
                 config::recording::video::v::pix_fmt = static_cast<AVPixelFormat>(value.toUInt());
             })
             .select(config::recording::video::v::pix_fmt);
@@ -435,7 +439,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { AVCOL_SPC_BT470BG, "BT.601" },
                 { AVCOL_SPC_BT2020_NCL, "BT.2020" },
             })
-            .onselected([](auto value) {
+            .onselected([](const auto& value) {
                 config::recording::video::v::color_space = static_cast<AVColorSpace>(value.toUInt());
             })
             .select(config::recording::video::v::color_space);
@@ -447,7 +451,7 @@ QWidget *SettingWindow::setupRecordWidget()
                 { AVCOL_RANGE_MPEG, "Limited (TV/MPEG)" },
                 { AVCOL_RANGE_JPEG, "Full (PC/JPEG)" },
             })
-            .onselected([](auto value) {
+            .onselected([](const auto& value) {
                 config::recording::video::v::color_range = static_cast<AVColorRange>(value.toUInt());
             })
             .select(config::recording::video::v::color_range);
@@ -459,20 +463,21 @@ QWidget *SettingWindow::setupRecordWidget()
 
         const auto codec = new ComboBox();
         codec->add("aac", "AAC / Advanced Audio Coding")
-            .onselected(
-                [](auto value) { config::recording::video::a::codec = value.toString().toStdString(); })
+            .onselected([](const auto& value) {
+                config::recording::video::a::codec = value.toString().toStdString();
+            })
             .select(QString::fromStdString(config::recording::video::a::codec));
         form->addRow(LABEL(tr("Encoder"), 175), codec);
 
         const auto channels = new ComboBox();
         channels->add(2, "Stereo")
-            .onselected([](auto value) { config::recording::video::a::channels = value.toInt(); })
+            .onselected([](const auto& value) { config::recording::video::a::channels = value.toInt(); })
             .select(config::recording::video::a::channels);
         form->addRow(tr("Channel Layout"), channels);
 
         const auto srate = new ComboBox();
         srate->add(48000, "48 kHz")
-            .onselected([](auto r) { config::recording::video::a::sample_rate = r.toInt(); })
+            .onselected([](const auto& r) { config::recording::video::a::sample_rate = r.toInt(); })
             .select(config::recording::video::a::sample_rate);
         form->addRow(tr("Sample Rate"), srate);
     }
@@ -502,7 +507,8 @@ QWidget *SettingWindow::setupGIFWidget()
 
         const auto bstyle = new ComboBox();
         bstyle->add(PENSTYLES);
-        bstyle->onselected([&](auto s) { style.border_style = static_cast<Qt::PenStyle>(s.toInt()); });
+        bstyle->onselected(
+            [&](const auto& s) { style.border_style = static_cast<Qt::PenStyle>(s.toInt()); });
         bstyle->select(static_cast<int>(style.border_style));
         form->addRow(tr("Border Style"), bstyle);
 
@@ -606,19 +612,21 @@ QWidget *SettingWindow::setupDevicesWidget()
         const auto form = page->addForm(tr("Devices"));
 
         const auto mic = new ComboBox(microphones);
-        mic->onselected([](auto value) { config::devices::mic = value.toString().toStdString(); });
+        mic->onselected([](const auto& value) { config::devices::mic = value.toString().toStdString(); });
         auto default_src = av::default_audio_source();
         if (default_src.has_value()) mic->select(default_src.value().id);
         form->addRow(LABEL(tr("Microphone"), 175), mic);
 
         const auto speaker = new ComboBox(speakers);
-        speaker->onselected([](auto value) { config::devices::speaker = value.toString().toStdString(); });
+        speaker->onselected(
+            [](const auto& value) { config::devices::speaker = value.toString().toStdString(); });
         auto default_sink = av::default_audio_sink();
         if (default_sink.has_value()) speaker->select(default_sink.value().id);
         form->addRow(tr("Speaker"), speaker);
 
         const auto camera = new ComboBox(cameras);
-        camera->onselected([](auto value) { config::devices::camera = value.toString().toStdString(); });
+        camera->onselected(
+            [](const auto& value) { config::devices::camera = value.toString().toStdString(); });
         if (config::devices::camera.empty()) camera->select(config::devices::camera);
         form->addRow(tr("Camera"), camera);
     }
@@ -654,7 +662,7 @@ QWidget *SettingWindow::setupAboutWidget()
         vlayout->addStretch(2);
 
         const auto copyright = new QLabel(
-            "Copyright © 2018 - 2024 ffiirree, <a href=\"https://github.com/ffiirree/Capturer\">GitHub</a>");
+            "Copyright © 2018 - 2024 Liangqi Zhang, <a href=\"https://github.com/ffiirree/Capturer\">GitHub</a>");
         copyright->setAlignment(Qt::AlignCenter);
         copyright->setOpenExternalLinks(true);
         copyright->setObjectName("about-copyright");

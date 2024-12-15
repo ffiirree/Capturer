@@ -51,7 +51,7 @@ public:
     virtual void resize(const ResizerF&, ResizerLocation) {}
 
     //
-    virtual void end(){};
+    virtual void end() {};
 
     // callbacks
     virtual void onhovered(const std::function<void(ResizerLocation)>& fn) { onhover = fn; }
@@ -251,11 +251,11 @@ private:
 
 /// Ellipse Item
 
-class GraphicsEllipseleItem : public GraphicsItem
+class GraphicsEllipseItem : public GraphicsItem
 {
 public:
-    explicit GraphicsEllipseleItem(QGraphicsItem * = nullptr);
-    explicit GraphicsEllipseleItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
+    explicit GraphicsEllipseItem(QGraphicsItem * = nullptr);
+    explicit GraphicsEllipseItem(const QPointF&, const QPointF&, QGraphicsItem * = nullptr);
 
     // QGraphicsItem
     [[nodiscard]] QRectF       boundingRect() const override;

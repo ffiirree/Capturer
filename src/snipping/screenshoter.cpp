@@ -78,13 +78,13 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         updateCursor(ResizerLocation::DEFAULT);
     });
 
-    connect(menu_, &EditingMenu::penChanged, [this](auto graph, auto pen) {
+    connect(menu_, &EditingMenu::penChanged, [this](auto graph, const auto& pen) {
         if (auto item = scene_->focusItem(); item && item->graph() == graph && item->pen() != pen) {
             undo_stack_->push(new PenChangedCommand(item, item->pen(), pen));
         }
     });
 
-    connect(menu_, &EditingMenu::fontChanged, [this](auto graph, auto font) {
+    connect(menu_, &EditingMenu::fontChanged, [this](auto graph, const auto& font) {
         if (auto item = scene_->focusOrFirstSelectedItem();
             item && item->graph() == graph && item->font() != font) {
             undo_stack_->push(new FontChangedCommand(item, item->font(), font));
@@ -97,7 +97,7 @@ ScreenShoter::ScreenShoter(QWidget *parent)
         }
     });
 
-    connect(menu_, &EditingMenu::imageArrived, [this](auto pixmap) {
+    connect(menu_, &EditingMenu::imageArrived, [this](const auto& pixmap) {
         GraphicsItemWrapper *item = new GraphicsPixmapItem(pixmap, selector_->selected(true).center());
 
         undo_stack_->push(new CreatedCommand(scene(), dynamic_cast<QGraphicsItem *>(item)));
@@ -107,7 +107,8 @@ ScreenShoter::ScreenShoter(QWidget *parent)
             undo_stack_->push(new MoveCommand(dynamic_cast<QGraphicsItem *>(item), opos));
         });
         item->onrotated([=, this](auto angle) { undo_stack_->push(new RotateCommand(item, angle)); });
-        item->onresized([=, this](auto g, auto l) { undo_stack_->push(new ResizeCommand(item, g, l)); });
+        item->onresized(
+            [=, this](const auto& g, auto l) { undo_stack_->push(new ResizeCommand(item, g, l)); });
     });
 
     // hide/show menu
@@ -322,7 +323,7 @@ void ScreenShoter::createItem(const QPointF& pos)
 
     switch (menu_->graph()) {
     case canvas::rectangle: creating_item_ = new GraphicsRectItem(pos, pos); break;
-    case canvas::ellipse:   creating_item_ = new GraphicsEllipseleItem(pos, pos); break;
+    case canvas::ellipse:   creating_item_ = new GraphicsEllipseItem(pos, pos); break;
     case canvas::arrow:     creating_item_ = new GraphicsArrowItem(pos, pos); break;
     case canvas::line:      creating_item_ = new GraphicsLineItem(pos, pos); break;
     case canvas::curve:     creating_item_ = new GraphicsCurveItem(pos, sceneRect().size()); break;
@@ -345,7 +346,7 @@ void ScreenShoter::createItem(const QPointF& pos)
     creating_item_->onmoved([item = creating_item_, this](auto opos) {
         undo_stack_->push(new MoveCommand(dynamic_cast<QGraphicsItem *>(item), opos));
     });
-    creating_item_->onresized([item = creating_item_, this](auto g, auto l) {
+    creating_item_->onresized([item = creating_item_, this](const auto& g, auto l) {
         undo_stack_->push(new ResizeCommand(item, g, l));
         if (item->graph() & canvas::text) menu_->setFont(item->font());
     });

@@ -530,17 +530,17 @@ void GraphicsRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *
 
 ///
 
-GraphicsEllipseleItem::GraphicsEllipseleItem(QGraphicsItem *parent)
+GraphicsEllipseItem::GraphicsEllipseItem(QGraphicsItem *parent)
     : GraphicsItem(parent)
 {}
 
-GraphicsEllipseleItem::GraphicsEllipseleItem(const QPointF& x1, const QPointF& x2, QGraphicsItem *parent)
+GraphicsEllipseItem::GraphicsEllipseItem(const QPointF& x1, const QPointF& x2, QGraphicsItem *parent)
     : GraphicsItem(parent)
 {
     setVertexes(x1, x2);
 }
 
-void GraphicsEllipseleItem::setVertexes(const QPointF& p1, const QPointF& p2)
+void GraphicsEllipseItem::setVertexes(const QPointF& p1, const QPointF& p2)
 {
     if (geometry_.point1() == p1 && geometry_.point2() == p2) return;
 
@@ -549,7 +549,7 @@ void GraphicsEllipseleItem::setVertexes(const QPointF& p1, const QPointF& p2)
     update();
 }
 
-void GraphicsEllipseleItem::push(const QPointF& point)
+void GraphicsEllipseItem::push(const QPointF& point)
 {
     if (geometry_.point2() == point) return;
     prepareGeometryChange();
@@ -557,13 +557,13 @@ void GraphicsEllipseleItem::push(const QPointF& point)
     update();
 }
 
-QRectF GraphicsEllipseleItem::boundingRect() const
+QRectF GraphicsEllipseItem::boundingRect() const
 {
     const auto w = std::max(geometry_.borderWidth(), pen_.widthF()) / 2;
     return geometry_.rect() + QMarginsF{ w, w, w, w };
 }
 
-QPainterPath GraphicsEllipseleItem::shape() const
+QPainterPath GraphicsEllipseItem::shape() const
 {
     QPainterPath path;
     if (filled()) {
@@ -580,7 +580,7 @@ QPainterPath GraphicsEllipseleItem::shape() const
     return path;
 }
 
-ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
+ResizerLocation GraphicsEllipseItem::location(const QPointF& p) const
 {
     if (geometry_.isAnchor(p) || geometry_.isRotateAnchor(p)) {
         return geometry_.absolutePos(p);
@@ -603,9 +603,9 @@ ResizerLocation GraphicsEllipseleItem::location(const QPointF& p) const
     return ResizerLocation::OUTSIDE;
 }
 
-bool GraphicsEllipseleItem::filled() const { return filled_; }
+bool GraphicsEllipseItem::filled() const { return filled_; }
 
-void GraphicsEllipseleItem::fill(bool f)
+void GraphicsEllipseItem::fill(bool f)
 {
     if (filled_ == f) return;
 
@@ -613,7 +613,7 @@ void GraphicsEllipseleItem::fill(bool f)
     update();
 }
 
-void GraphicsEllipseleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
+void GraphicsEllipseItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     if (invalid()) return;
 

@@ -110,74 +110,116 @@ namespace config
 
     json to_json()
     {
-        json j;
+        return {
+            { "autorun", autorun },
+            { "language", language },
+            { "theme", theme },
+            {
+                "hotkeys",
+                {
+                    { "screenshot", hotkeys::screenshot },
+                    { "repeat-last-screenshot", hotkeys::repeat_last_screenshot },
+                    { "preview", hotkeys::preview },
+                    { "toggle-previews", hotkeys::toggle_previews },
+                    { "quick-look", hotkeys::quick_look },
+                    { "record-video", hotkeys::record_video },
+                    { "record-gif", hotkeys::record_gif },
+                    { "transparent-input", hotkeys::transparent_input },
+                },
 
-        j["autorun"]  = autorun;
-        j["language"] = language;
-        j["theme"]    = theme;
-
-        j["hotkeys"]["screenshot"]             = hotkeys::screenshot;
-        j["hotkeys"]["repeat-last-screenshot"] = hotkeys::repeat_last_screenshot;
-        j["hotkeys"]["preview"]                = hotkeys::preview;
-        j["hotkeys"]["toggle-previews"]        = hotkeys::toggle_previews;
-        j["hotkeys"]["quick-look"]             = hotkeys::quick_look;
-        j["hotkeys"]["record-video"]           = hotkeys::record_video;
-        j["hotkeys"]["record-gif"]             = hotkeys::record_gif;
-        j["hotkeys"]["transparent-input"]      = hotkeys::transparent_input;
-
-        j["snip"]["style"]["border-width"] = snip::style.border_width;
-        j["snip"]["style"]["border-color"] = snip::style.border_color;
-        j["snip"]["style"]["border-style"] = snip::style.border_style;
-        j["snip"]["style"]["mask-color"]   = snip::style.mask_color;
-
-        j["snip"]["save-path"] = snip::path;
-
-        j["recording"]["video"]["style"]["border-width"] = recording::video::style.border_width;
-        j["recording"]["video"]["style"]["border-color"] = recording::video::style.border_color;
-        j["recording"]["video"]["style"]["border-style"] = recording::video::style.border_style;
-        j["recording"]["video"]["style"]["mask-color"]   = recording::video::style.mask_color;
-
-        j["recording"]["video"]["show-region"]   = recording::video::show_region;
-        j["recording"]["video"]["capture-mouse"] = recording::video::capture_mouse;
-        j["recording"]["video"]["floating-menu"] = recording::video::floating_menu;
-
-        j["recording"]["video"]["container-format"] = recording::video::mcf;
-        j["recording"]["video"]["save-path"]        = recording::video::path;
-
-        j["recording"]["video"]["mic-enabled"]     = recording::video::mic_enabled;
-        j["recording"]["video"]["speaker-enabled"] = recording::video::speaker_enabled;
-
-        j["recording"]["video"]["v"]["codec"]            = recording::video::v::codec;
-        j["recording"]["video"]["v"]["framerate"]["num"] = recording::video::v::framerate.num;
-        j["recording"]["video"]["v"]["framerate"]["den"] = recording::video::v::framerate.den;
-        j["recording"]["video"]["v"]["rate-control"]     = recording::video::v::rate_control;
-        j["recording"]["video"]["v"]["crf"]              = recording::video::v::crf;
-        j["recording"]["video"]["v"]["preset"]           = recording::video::v::preset;
-        j["recording"]["video"]["v"]["profile"]          = recording::video::v::profile;
-        j["recording"]["video"]["v"]["tune"]             = recording::video::v::tune;
-        j["recording"]["video"]["v"]["pixel-format"]     = recording::video::v::pix_fmt;
-        j["recording"]["video"]["v"]["color-space"]      = recording::video::v::color_space;
-        j["recording"]["video"]["v"]["color-range"]      = recording::video::v::color_range;
-
-        j["recording"]["video"]["a"]["codec"]       = recording::video::a::codec;
-        j["recording"]["video"]["a"]["channels"]    = recording::video::a::channels;
-        j["recording"]["video"]["a"]["sample-rate"] = recording::video::a::sample_rate;
-
-        j["recording"]["gif"]["style"]["border-width"] = recording::gif::style.border_width;
-        j["recording"]["gif"]["style"]["border-color"] = recording::gif::style.border_color;
-        j["recording"]["gif"]["style"]["border-style"] = recording::gif::style.border_style;
-        j["recording"]["gif"]["style"]["mask-color"]   = recording::gif::style.mask_color;
-
-        j["recording"]["gif"]["save-path"]     = recording::gif::path;
-        j["recording"]["gif"]["show-region"]   = recording::gif::show_region;
-        j["recording"]["gif"]["capture-mouse"] = recording::gif::capture_mouse;
-        j["recording"]["gif"]["floating-menu"] = recording::gif::floating_menu;
-
-        j["recording"]["gif"]["framerate"] = recording::gif::framerate.num;
-        j["recording"]["gif"]["colors"]    = recording::gif::colors;
-        j["recording"]["gif"]["dither"]    = recording::gif::dither;
-
-        return j;
+            },
+            {
+                "snip",
+                {
+                    {
+                        "style",
+                        {
+                            { "border-width", snip::style.border_width },
+                            { "border-color", snip::style.border_color },
+                            { "border-style", snip::style.border_style },
+                            { "mask-color", snip::style.mask_color },
+                        },
+                    },
+                    { "save-path", snip::path },
+                },
+            },
+            {
+                "recording",
+                {
+                    {
+                        "video",
+                        {
+                            {
+                                "style",
+                                {
+                                    { "border-width", recording::video::style.border_width },
+                                    { "border-color", recording::video::style.border_color },
+                                    { "border-style", recording::video::style.border_style },
+                                    { "mask-color", recording::video::style.mask_color },
+                                },
+                            },
+                            { "show-region", recording::video::show_region },
+                            { "capture-mouse", recording::video::capture_mouse },
+                            { "floating-menu", recording::video::floating_menu },
+                            { "container-format", recording::video::mcf },
+                            { "save-path", recording::video::path },
+                            { "mic-enabled", recording::video::mic_enabled },
+                            { "speaker-enabled", recording::video::speaker_enabled },
+                            {
+                                "v",
+                                {
+                                    { "codec", recording::video::v::codec },
+                                    {
+                                        "framerate",
+                                        {
+                                            { "num", recording::video::v::framerate.num },
+                                            { "den", recording::video::v::framerate.den },
+                                        },
+                                    },
+                                    { "rate-control", recording::video::v::rate_control },
+                                    { "crf", recording::video::v::crf },
+                                    { "preset", recording::video::v::preset },
+                                    { "profile", recording::video::v::profile },
+                                    { "tune", recording::video::v::tune },
+                                    { "pixel-format", recording::video::v::pix_fmt },
+                                    { "color-space", recording::video::v::color_space },
+                                    { "color-range", recording::video::v::color_range },
+                                },
+                            },
+                            {
+                                "a",
+                                {
+                                    { "codec", recording::video::a::codec },
+                                    { "channels", recording::video::a::channels },
+                                    { "sample-rate", recording::video::a::sample_rate },
+                                },
+                            },
+                        },
+                    },
+                    {
+                        "gif",
+                        {
+                            {
+                                "style",
+                                {
+                                    { "border-width", recording::gif::style.border_width },
+                                    { "border-color", recording::gif::style.border_color },
+                                    { "border-style", recording::gif::style.border_style },
+                                    { "mask-color", recording::gif::style.mask_color },
+                                },
+                            },
+                            { "save-path", recording::gif::path },
+                            { "show-region", recording::gif::show_region },
+                            { "capture-mouse", recording::gif::capture_mouse },
+                            { "floating-menu", recording::gif::floating_menu },
+                            { "framerate", recording::gif::framerate.num },
+                            { "colors", recording::gif::colors },
+                            { "dither", recording::gif::dither },
+                        },
+                    },
+                },
+            },
+        };
     }
 } // namespace config
 
@@ -252,7 +294,7 @@ namespace config
             theme_monitor->listen(
                 std::pair<HKEY, std::string>{
                     HKEY_CURRENT_USER, R"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)" },
-                [&](auto) { set_theme(probe::to_string(probe::system::theme())); });
+                [&](const auto&) { set_theme(probe::to_string(probe::system::theme())); });
         }
 
         if (!m) {

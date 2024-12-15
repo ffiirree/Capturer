@@ -55,7 +55,8 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
 
         pause_btn_ = new QCheckBox();
         pause_btn_->setObjectName("pause-btn");
-        connect(pause_btn_, &QCheckBox::stateChanged, [this](int state) { state ? pause() : resume(); });
+        connect(pause_btn_, &QCheckBox::checkStateChanged,
+                [this](Qt::CheckState state) { state ? pause() : resume(); });
         connect(this, &ControlWidget::pause, [this] {
             if (!pause_btn_->isChecked()) pause_btn_->setChecked(true);
         });

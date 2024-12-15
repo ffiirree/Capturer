@@ -143,9 +143,9 @@ EditingMenu::EditingMenu(QWidget *parent, const uint32_t groups)
             // style changed event
             if (submenus_.contains(gtype)) {
                 // clang-format off
-                connect(submenus_[gtype], &EditingSubmenu::penChanged,   [gtype, this](auto pen)    { emit penChanged(gtype, pen); });
-                connect(submenus_[gtype], &EditingSubmenu::fontChanged,  [gtype, this](auto font)   { emit fontChanged(gtype, font); });
-                connect(submenus_[gtype], &EditingSubmenu::fillChanged,  [gtype, this](auto filled) { emit fillChanged(gtype, filled); });
+                connect(submenus_[gtype], &EditingSubmenu::penChanged,   [gtype, this](auto &value) { emit penChanged(gtype, value); });
+                connect(submenus_[gtype], &EditingSubmenu::fontChanged,  [gtype, this](auto &value) { emit fontChanged(gtype, value); });
+                connect(submenus_[gtype], &EditingSubmenu::fillChanged,  [gtype, this](auto value)  { emit fillChanged(gtype, value); });
                 // clang-format on
 
                 connect(this, &EditingMenu::moved, [=, this]() {

@@ -27,7 +27,7 @@
 
 ### Windows
 
-现在后双击`capturer-1.7.1-Windows-AMD64.exe`进行安装。
+下载后双击`capturer-1.7.1-Windows-AMD64.exe`进行安装。
 
 ### Ubuntu
 

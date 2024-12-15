@@ -23,7 +23,7 @@ namespace config
         inline QKeySequence record_video{ "Ctrl+Alt+V" };
         inline QKeySequence record_gif{ "Ctrl+Alt+G" };
         inline QKeySequence transparent_input{ "Ctrl+T" };
-    }; // namespace hotkeys
+    } // namespace hotkeys
 
     namespace snip
     {
@@ -74,7 +74,7 @@ namespace config
                 inline int         channels{ 2 };
                 inline int         sample_rate{ 48000 };
             } // namespace a
-        }; // namespace video
+        } // namespace video
 
         namespace gif
         {
@@ -88,8 +88,8 @@ namespace config
             inline AVRational framerate{ 6, 1 };
             inline int        colors{ 128 };
             inline bool       dither{ false };
-        }; // namespace gif
-    }; // namespace recording
+        } // namespace gif
+    } // namespace recording
 
     namespace devices
     {
@@ -106,7 +106,7 @@ namespace config
 {
     inline constexpr auto                      filename = "capturer.json";
     inline std::shared_ptr<probe::Listener>    theme_monitor{};
-    inline std::function<void(const QString&)> on_theme_changed = [](auto) {};
+    inline std::function<void(const QString&)> on_theme_changed = [](auto&&) {};
 
     void load();
     void save();
