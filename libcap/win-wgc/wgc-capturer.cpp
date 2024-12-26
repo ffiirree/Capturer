@@ -71,7 +71,8 @@ int WindowsGraphicsCapturer::open(const std::string&, std::map<std::string, std:
         if (wgc::IsBorderToggleSupported()) session_.IsBorderRequired(show_region);
     }
     catch (const winrt::hresult_error& e) {
-        loge("[        WGC] {}", probe::util::to_utf8(e.message().c_str()));
+        loge("[        WGC] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 

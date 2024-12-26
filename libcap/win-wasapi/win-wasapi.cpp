@@ -85,7 +85,8 @@ std::optional<av::device_t> wasapi::device_info(IMMDevice *dev)
         };
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[     WASAPI] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return {};
     }
 }
@@ -118,7 +119,8 @@ std::vector<av::device_t> wasapi::endpoints(av::device_type_t type)
         }
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[     WASAPI] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
     }
 
     return devices;

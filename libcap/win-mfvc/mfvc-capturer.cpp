@@ -155,7 +155,8 @@ int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, s
         }
     }
     catch (const winrt::hresult_error& e) {
-        loge("[   WIN-MFVC] {}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WIN-MFVC] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 

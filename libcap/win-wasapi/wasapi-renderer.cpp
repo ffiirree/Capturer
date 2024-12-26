@@ -40,7 +40,8 @@ int WasapiRenderer::open(const std::string&, const RenderFlags flags)
         SWITCH_EVENT.attach(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
     }
     catch (const winrt::hresult_error& e) {
-        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 
@@ -124,7 +125,8 @@ int WasapiRenderer::start()
         winrt::check_hresult(audio_client_->Start());
     }
     catch (const winrt::hresult_error& e) {
-        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 
@@ -249,7 +251,8 @@ HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
         winrt::check_hresult(renderer_->ReleaseBuffer(wframes, wframes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT));
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return e.code().value;
     }
 
@@ -324,7 +327,8 @@ HRESULT WasapiRenderer::SwitchEventHandler()
         winrt::check_hresult(audio_client_->Start());
     }
     catch (const winrt::hresult_error& e) {
-        loge("[   WASAPI-R] {}", probe::util::to_utf8(e.message().c_str()));
+        loge("[   WASAPI-R] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return e.code().value;
     }
 

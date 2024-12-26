@@ -53,7 +53,8 @@ namespace mfvc
             }
         }
         catch (const winrt::hresult_error& e) {
-            loge("[     WIN-MF] {}", probe::util::to_utf8(e.message().c_str()));
+            loge("[     WIN-MF] {:#x}: {}", static_cast<uint32_t>(e.code()),
+                 probe::util::to_utf8(e.message().c_str()));
             return {};
         }
 

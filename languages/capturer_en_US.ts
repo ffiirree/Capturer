@@ -46,6 +46,10 @@
         <source>Quit</source>
         <translation></translation>
     </message>
+    <message>
+        <source>No camera found</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>ColorDialogButton</name>

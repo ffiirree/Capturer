@@ -46,6 +46,10 @@
         <source>Quit</source>
         <translation>退出</translation>
     </message>
+    <message>
+        <source>No camera found</source>
+        <translation>未找到摄像头</translation>
+    </message>
 </context>
 <context>
     <name>ColorDialogButton</name>

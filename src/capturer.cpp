@@ -6,6 +6,7 @@
 #include "image-window.h"
 #include "libcap/devices.h"
 #include "logging.h"
+#include "message.h"
 #include "pdf-viewer.h"
 #include "settingdialog.h"
 #include "video-player.h"
@@ -195,7 +196,8 @@ void Capturer::ToggleCamera()
     camera_ = new CameraPlayer();
 
     if (av::cameras().empty()) {
-        logw("camera not found");
+        logw("No camera found");
+        Message::error(tr("No camera found"));
         return;
     }
 

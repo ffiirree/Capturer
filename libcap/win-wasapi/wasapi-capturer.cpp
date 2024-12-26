@@ -50,7 +50,8 @@ int WasapiCapturer::open(const std::string& name, std::map<std::string, std::str
         if (!!(device_.type & av::device_type_t::sink)) InitSlientRenderer(device.get());
     }
     catch (const winrt::hresult_error& e) {
-        loge("{}", probe::util::to_utf8(e.message().c_str()));
+        loge("[  WASAPI-C] {:#x}: {}", static_cast<uint32_t>(e.code()),
+             probe::util::to_utf8(e.message().c_str()));
         return -1;
     }
 

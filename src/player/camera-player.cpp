@@ -51,7 +51,7 @@ int CameraPlayer::open(const std::string& device_id, std::map<std::string, std::
 
     source_ = std::make_unique<CameraInput>();
     if (source_->open(device_id, {}) != 0) {
-        loge("[    CAMERA] failed to open the camera");
+        loge("[     CAMERA] failed to open the camera");
         Message::error(tr("Failed to open the camera"));
         return -1;
     }
