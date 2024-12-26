@@ -17,22 +17,17 @@ public:
     Logger(Logger&&)                 = delete;
     Logger& operator=(Logger&&)      = delete;
 
-    static Logger& init(const char *argv0)
+    static Logger& init(const char *argv0, const std::string& dir)
     {
-        static Logger logger(argv0);
+        static Logger logger(argv0, dir);
         return logger;
     }
 
     ~Logger() { google::ShutdownGoogleLogging(); }
 
 private:
-    explicit Logger(const char *argv0)
+    explicit Logger(const char *argv0, const std::string& log_dir)
     {
-#ifdef _WIN32
-        const std::string log_dir = "logs";
-#elif __linux__
-        const std::string log_dir = std::string{ ::getenv("HOME") } + "/.local/logs/capturer";
-#endif
         if (!std::filesystem::is_directory(log_dir) || std::filesystem::exists(log_dir)) {
             std::filesystem::create_directories(log_dir);
         }

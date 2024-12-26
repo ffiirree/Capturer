@@ -6,6 +6,7 @@
 #include "probe/util.h"
 #include "version.h"
 
+#include <QStandardPaths>
 #include <QTranslator>
 
 int main(int argc, char *argv[])
@@ -19,8 +20,9 @@ int main(int argc, char *argv[])
     ::setvbuf(stdout, nullptr, _IONBF, 0);
 #endif
 
-    // glog
-    Logger::init(argv[0]);
+    Logger::init(argv[0],
+                 QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString() +
+                     "/Capturer/Logs");
 
     probe::thread::set_name("capturer-main");
 
