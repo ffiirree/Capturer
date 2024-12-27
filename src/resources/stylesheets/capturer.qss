@@ -183,7 +183,7 @@ QMenu::right-arrow {
 }
 
 QMenu::separator {
-    height: 1px;
+    height: 2px;
     margin: 3px;
 }
 

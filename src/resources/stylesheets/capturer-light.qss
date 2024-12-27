@@ -119,12 +119,12 @@ QSpinBox::down-arrow {
 
 /*///////////////////////////////////////////////////////////////*/
 QMenu {
-    background-color: #fefefe;
+    background-color: transparent;
     color: #2c2c2c;
 }
 
 QMenu::item::selected {
-    background-color: #e6e6e6;
+    background-color: rgba(160, 160, 160, 75);
 }
 
 QMenu::item::disabled {
@@ -140,7 +140,7 @@ QMenu::right-arrow {
 }
 
 QMenu::separator {
-    background-color: #e5e5e6;
+    background-color: rgba(195, 195, 195, 150);
 }
 
 /*///////////////////////////////////////////////////////////////*/

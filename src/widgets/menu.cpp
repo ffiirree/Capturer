@@ -4,6 +4,7 @@
 
 #include <QEvent>
 #include <QPlatformSurfaceEvent>
+#include <QStyleHints>
 
 Menu::Menu(QWidget *parent)
     : Menu({}, parent)
@@ -31,7 +32,9 @@ bool Menu::eventFilter(QObject *, QEvent *event)
             QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
             const auto hwnd = reinterpret_cast<HWND>(winId());
             windows::dwm::set_window_corner(hwnd, DWMWCP_ROUND);
-            windows::dwm::set_material_acrylic(hwnd, 0xBB000000);
+            windows::dwm::set_material_acrylic(
+                hwnd,
+                qApp->styleHints()->colorScheme() == Qt::ColorScheme::Light ? 0xBBFFFFFF : 0xBB000000);
         }
     }
     return false;

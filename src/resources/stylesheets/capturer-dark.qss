@@ -140,7 +140,7 @@ QMenu::right-arrow {
 }
 
 QMenu::separator {
-    background-color: #323232;
+    background-color: rgba(95, 95, 95, 150);
 }
 
 /*///////////////////////////////////////////////////////////////*/
