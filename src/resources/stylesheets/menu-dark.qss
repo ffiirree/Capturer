@@ -153,3 +153,19 @@ EditingMenu WidthButton:unchecked:hover {
 EditingSubmenu QCheckBox#fill-btn::indicator {
     image: url(:/icons/fill-light)
 }
+
+EditingSubmenu QCheckBox#font-bold::indicator {
+    image: url(:/icons/bold-light)
+}
+
+EditingSubmenu QCheckBox#font-italic::indicator {
+    image: url(:/icons/italic-light)
+}
+
+EditingSubmenu QCheckBox#font-underline::indicator {
+    image: url(:/icons/underline-light)
+}
+
+EditingSubmenu QCheckBox#font-strickout::indicator {
+    image: url(:/icons/strickout-light)
+}

@@ -51,9 +51,12 @@ private:
     WidthButton *width_btn_{};
     QCheckBox   *fill_btn_{};
 
-    ComboBox *font_family_{};
-    ComboBox *font_size_{};
-    ComboBox *font_style_{};
+    QCheckBox *font_bold_{};
+    QCheckBox *font_italic_{};
+    QCheckBox *font_underline_{};
+    QCheckBox *font_strickout_{};
+    ComboBox  *font_family_{};
+    ComboBox  *font_size_{};
 
     ColorPanel *color_panel_{};
 

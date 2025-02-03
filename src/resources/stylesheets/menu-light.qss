@@ -150,3 +150,19 @@ EditingMenu WidthButton {
 EditingSubmenu QCheckBox#fill-btn::indicator {
     image: url(:/icons/fill-dark)
 }
+
+EditingSubmenu QCheckBox#font-bold::indicator {
+    image: url(:/icons/bold-dark)
+}
+
+EditingSubmenu QCheckBox#font-italic::indicator {
+    image: url(:/icons/italic-dark)
+}
+
+EditingSubmenu QCheckBox#font-underline::indicator {
+    image: url(:/icons/underline-dark)
+}
+
+EditingSubmenu QCheckBox#font-strickout::indicator {
+    image: url(:/icons/strickout-dark)
+}

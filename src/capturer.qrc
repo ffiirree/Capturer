@@ -157,6 +157,18 @@
         <file alias="subtitles-off">resources/icons/subtitles-off.png</file>
         <file alias="subtitles-off-light">resources/icons/subtitles-off-light.png</file>
         <file alias="subtitles-off-dark">resources/icons/subtitles-off-dark.png</file>
+        <file alias="bold">resources/icons/bold.png</file>
+        <file alias="bold-light">resources/icons/bold-light.png</file>
+        <file alias="bold-dark">resources/icons/bold-dark.png</file>
+        <file alias="italic">resources/icons/italic.png</file>
+        <file alias="italic-light">resources/icons/italic-light.png</file>
+        <file alias="italic-dark">resources/icons/italic-dark.png</file>
+        <file alias="underline">resources/icons/underline.png</file>
+        <file alias="underline-light">resources/icons/underline-light.png</file>
+        <file alias="underline-dark">resources/icons/underline-dark.png</file>
+        <file alias="strickout">resources/icons/strickout.png</file>
+        <file alias="strickout-light">resources/icons/strickout-light.png</file>
+        <file alias="strickout-dark">resources/icons/strickout-dark.png</file>
     </qresource>
     <qresource prefix="/stylesheets">
         <file alias="capturer">resources/stylesheets/capturer.qss</file>

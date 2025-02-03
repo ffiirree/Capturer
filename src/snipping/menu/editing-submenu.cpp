@@ -64,23 +64,34 @@ EditingSubmenu::EditingSubmenu(int buttons, QWidget *parent)
         layout->setContentsMargins({});
 
         // font
-        font_family_ = new ComboBox(this);
-        font_style_  = new ComboBox(this);
-        font_size_   = new ComboBox(this);
+        font_bold_      = new QCheckBox(this);
+        font_italic_    = new QCheckBox(this);
+        font_underline_ = new QCheckBox(this);
+        font_strickout_ = new QCheckBox(this);
+        font_family_    = new ComboBox(this);
+        font_size_      = new ComboBox(this);
+
+        font_bold_->setObjectName("font-bold");
+        font_italic_->setObjectName("font-italic");
+        font_underline_->setObjectName("font-underline");
+        font_strickout_->setObjectName("font-strickout");
+
+        layout->addWidget(font_bold_);
+        layout->addWidget(font_italic_);
+        layout->addWidget(font_underline_);
+        layout->addWidget(font_strickout_);
         layout->addWidget(font_family_);
-        layout->addWidget(font_style_);
         layout->addWidget(font_size_);
 
         // font family
         font_family_->addItems(QFontDatabase::families());
-        connect(font_family_, &QComboBox::currentTextChanged, [this](const QString& family) {
-            font_style_->clear();
-            font_style_->addItems(QFontDatabase::styles(family));
-            emit fontChanged(font());
-        });
+        connect(font_family_, &QComboBox::currentTextChanged, [this]() { emit fontChanged(font()); });
 
         // font style
-        connect(font_style_, &QComboBox::currentTextChanged, [this] { emit fontChanged(font()); });
+        connect(font_bold_, &QCheckBox::checkStateChanged, [this] { emit fontChanged(font()); });
+        connect(font_italic_, &QCheckBox::checkStateChanged, [this] { emit fontChanged(font()); });
+        connect(font_underline_, &QCheckBox::checkStateChanged, [this] { emit fontChanged(font()); });
+        connect(font_strickout_, &QCheckBox::checkStateChanged, [this] { emit fontChanged(font()); });
 
         // font size
         font_size_->setEditable(true);
@@ -123,17 +134,27 @@ void EditingSubmenu::setPen(const QPen& pen, bool silence)
 
 void EditingSubmenu::setFont(const QFont& font)
 {
-    if (font_family_) font_family_->setCurrentText(font.family());
-    if (font_size_) font_size_->setCurrentText(QString::number(font.pointSizeF(), 'f', 2));
-    if (font_style_) font_style_->setCurrentText(font.styleName());
+    if (font_family_) {
+        font_family_->setCurrentText(font.family());
+        font_size_->setCurrentText(QString::number(font.pointSizeF(), 'f', 2));
+        font_bold_->setChecked(font.bold());
+        font_italic_->setChecked(font.italic());
+        font_underline_->setChecked(font.underline());
+        font_strickout_->setChecked(font.strikeOut());
+    }
 }
 
 QFont EditingSubmenu::font() const
 {
-    if (!font_family_ || !font_style_ || !font_size_) return QFont{};
+    if (!font_family_ || !font_size_) return QFont{};
 
-    auto font = QFontDatabase::font(font_family_->currentText(), font_style_->currentText(), 16);
+    QFont font{};
+    font.setFamily(font_family_->currentText());
     font.setPointSizeF(font_size_->currentText().toFloat());
+    font.setBold(font_bold_->isChecked());
+    font.setItalic(font_italic_->isChecked());
+    font.setUnderline(font_underline_->isChecked());
+    font.setStrikeOut(font_strickout_->isChecked());
     return font;
 }
 
