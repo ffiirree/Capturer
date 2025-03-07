@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
     const auto sys_translation = "/usr/local/etc/capturer/translations/qt_" + config::language;
     const auto app_translation = "/usr/local/etc/capturer/translations/capturer_" + config::language;
 #else
-    const auto sys_translation = "translations/qt_" + config::language;
-    const auto app_translation = "translations/capturer_" + config::language;
+    const auto sys_translation = qApp->applicationDirPath() + "/translations/qt_" + config::language;
+    const auto app_translation = qApp->applicationDirPath() + "/translations/capturer_" + config::language;
 #endif
     loge_if(!sys_translator.load(sys_translation), "failed to load {}", sys_translation.toStdString());
     loge_if(!app_translator.load(app_translation), "failed to load {}", app_translation.toStdString());

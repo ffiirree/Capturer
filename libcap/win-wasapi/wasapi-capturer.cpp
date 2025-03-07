@@ -201,8 +201,8 @@ int WasapiCapturer::ProcessReceivedData(BYTE *data_ptr, const UINT32 nb_samples,
     frame->ch_layout   = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
 
     av_frame_get_buffer(frame.get(), 0);
-    if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0, nb_samples,
-                        afmt.channels, afmt.sample_fmt) < 0) {
+    if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0,
+                        static_cast<int>(nb_samples), afmt.channels, afmt.sample_fmt) < 0) {
         loge("failed to copy packet data");
         return -1;
     }

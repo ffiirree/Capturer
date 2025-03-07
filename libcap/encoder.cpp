@@ -450,7 +450,7 @@ int Encoder::process_audio_frames()
             }
             a_last_dts_ = packet_->dts;
 
-            logi("[A] pts = {:>14d}, dts = {:>14d}, ts = {:.3%T}", packet_->pts, packet_->dts,
+            logd("[A] pts = {:>14d}, dts = {:>14d}, ts = {:.3%T}", packet_->pts, packet_->dts,
                  av::clock::ns(packet_->pts, stream->time_base));
 
             packet_->stream_index = astream_idx_;
