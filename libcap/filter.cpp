@@ -149,7 +149,7 @@ namespace av::graph
         }
 
         // sample_rates(int list)
-        if (const int64_t sample_rates[] = { args.sample_rate, -1 };
+        if (const int32_t sample_rates[] = { args.sample_rate, -1 };
             av_opt_set_int_list(*ctx, "sample_rates", sample_rates, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
             loge("[A] failed to set 'sample_rates' option.");
             return -1;
