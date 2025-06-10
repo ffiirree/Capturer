@@ -32,6 +32,7 @@ add_subdirectory(libcap             EXCLUDE_FROM_ALL)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
 find_package(Qt6 6.8 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
 find_package(FFmpeg 7.0 REQUIRED)

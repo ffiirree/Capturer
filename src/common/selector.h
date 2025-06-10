@@ -143,7 +143,8 @@ protected:
 private:
     void registerShortcuts();
 
-    QLabel *info_{ nullptr };
+    QLabel *info_{};
+    QRect   geometry_{};
 
     QPen   pen_{ Qt::cyan, 1, Qt::DashDotLine, Qt::SquareCap, Qt::MiterJoin };
     QColor mask_color_{ 0, 0, 0, 100 };

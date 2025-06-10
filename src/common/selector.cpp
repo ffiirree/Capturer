@@ -55,6 +55,7 @@ void Selector::start(const probe::graphics::window_filter_t flags)
         box_.range(probe::graphics::virtual_screen_geometry());
 
         hunter::ready(flags);
+        geometry_ = probe::graphics::virtual_screen_geometry();
         select(hunter::hunt(QCursor::pos()));
         info_->show();
 
@@ -260,8 +261,7 @@ void Selector::update_info_label()
 
     // move
     auto info_y = box_.top() - info_->geometry().height() - 1;
-    info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) -
-                box_.range().topLeft());
+    info_->move(QPoint(box_.left() + 1, (info_y < 0 ? box_.top() + 1 : info_y - 1)) - geometry_.topLeft());
 }
 
 void Selector::paintEvent(QPaintEvent *)
