@@ -98,17 +98,16 @@ namespace av
         int            sample_rate{ 0 };
         AVSampleFormat sample_fmt{ AV_SAMPLE_FMT_NONE };
 
-        int      channels{ 0 };
-        uint64_t channel_layout{ 0 };
+        AVChannelLayout ch_layout{};
 
         AVRational time_base{ 1, OS_TIME_BASE };
     };
 
-    inline uint64_t default_channel_layout(int channels)
+    inline AVChannelLayout default_channel_layout(const int channels)
     {
         AVChannelLayout ch{};
         av_channel_layout_default(&ch, channels);
-        return ch.u.mask;
+        return ch;
     }
 
     inline std::string to_string(const status_t code)
@@ -143,12 +142,12 @@ namespace av
     // convert <T> to string
     inline std::string to_string(const AVChannelLayout& channel_layout)
     {
-        char buffer[32]{ 0 };
+        char buffer[32]{};
         if (av_channel_layout_describe(&channel_layout, buffer, sizeof(buffer)) < 0) return {};
         return buffer;
     }
 
-    inline std::string channel_layout_name(int channels, uint64_t channel_layout)
+    inline std::string channel_layout_name(const int channels, const uint64_t channel_layout)
     {
         return to_string(AV_CHANNEL_LAYOUT_MASK(channels, channel_layout));
     }
@@ -234,14 +233,9 @@ namespace av
     // for creating abuffer src
     inline std::string to_string(const aformat_t& fmt)
     {
-        std::string repr =
-            fmt::format("sample_rate={}:sample_fmt={}:channels={}:time_base={}/{}", fmt.sample_rate,
-                        to_string(fmt.sample_fmt), fmt.channels, fmt.time_base.num, fmt.time_base.den);
-
-        if (fmt.channel_layout)
-            repr += ":channel_layout=" + channel_layout_name(fmt.channels, fmt.channel_layout);
-
-        return repr;
+        return fmt::format("sample_rate={}:sample_fmt={}:time_base={}/{}:channel_layout={}",
+                           fmt.sample_rate, to_string(fmt.sample_fmt), fmt.time_base.num, fmt.time_base.den,
+                           to_string(fmt.ch_layout));
     }
 
     inline std::string to_string(const vsync_t m)

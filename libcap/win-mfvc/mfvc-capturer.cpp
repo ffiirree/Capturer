@@ -49,7 +49,7 @@ HRESULT ReaderCallback::OnFlush(DWORD) { return S_OK; }
 
 HRESULT ReaderCallback::OnEvent(DWORD, IMFMediaEvent *) { return S_OK; }
 
-int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, std::string> options)
+int MFCameraCapturer::open(const std::string& device_id, std::map<std::string, std::string>)
 {
     try {
         winrt::com_ptr<IMFAttributes> attributes{};

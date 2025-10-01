@@ -161,7 +161,7 @@ int Encoder::new_audio_stream(const std::string& codec_name)
     }
 
     acodec_ctx_->sample_rate                   = afmt.sample_rate;
-    acodec_ctx_->ch_layout                     = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
+    acodec_ctx_->ch_layout                     = afmt.ch_layout;
     acodec_ctx_->sample_fmt                    = afmt.sample_fmt;
     acodec_ctx_->time_base                     = { 1, afmt.sample_rate };
     fmt_ctx_->streams[astream_idx_]->time_base = afmt.time_base;
@@ -182,8 +182,8 @@ int Encoder::new_audio_stream(const std::string& codec_name)
     if (avcodec_parameters_from_context(fmt_ctx_->streams[astream_idx_]->codecpar, acodec_ctx_) < 0)
         return av::INVALID;
 
-    abuffer_ =
-        std::make_unique<safe_audio_fifo>(afmt.sample_fmt, afmt.channels, acodec_ctx_->frame_size * 4);
+    abuffer_ = std::make_unique<safe_audio_fifo>(afmt.sample_fmt, afmt.ch_layout.nb_channels,
+                                                 acodec_ctx_->frame_size * 4);
 
     if (astream_idx_ >= 0) {
         logi("[   ENCODER] [A] >>> [{}], sample_rate={}:sample_fmt={}:channels={}:tbc={}:tbn={}",
@@ -302,9 +302,7 @@ std::pair<int, int> Encoder::video_sync_process(av::frame& vframe)
                 num_pre_frames = std::lround(delta_l - 0.6);
             }
         }
-#if LIBAVUTIL_VERSION_MAJOR >= 58
         vframe->duration = 1;
-#endif
         break;
 
     case av::vsync_t::vfr:
@@ -314,9 +312,7 @@ std::pair<int, int> Encoder::video_sync_process(av::frame& vframe)
         else if (delta_r > 0.6) {
             expected_pts_ = std::lround(floating_pts);
         }
-#if LIBAVUTIL_VERSION_MAJOR >= 58
         vframe->duration = static_cast<int64_t>(duration);
-#endif
         break;
     default: break;
     }

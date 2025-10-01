@@ -287,11 +287,10 @@ void ScreenRecorder::setup()
         encoder_->vfmt.color.space = config::recording::video::v::color_space;
         encoder_->vfmt.color.range = config::recording::video::v::color_range;
     }
-    encoder_->afmt.sample_fmt     = AV_SAMPLE_FMT_FLTP;
-    encoder_->afmt.channels       = config::recording::video::a::channels;
-    encoder_->afmt.channel_layout = av::default_channel_layout(config::recording::video::a::channels);
-    encoder_->afmt.sample_rate    = config::recording::video::a::sample_rate;
-    encoder_->vfmt.hwaccel        = hwaccel;
+    encoder_->afmt.sample_fmt  = AV_SAMPLE_FMT_FLTP;
+    encoder_->afmt.ch_layout   = av::default_channel_layout(config::recording::video::a::channels);
+    encoder_->afmt.sample_rate = config::recording::video::a::sample_rate;
+    encoder_->vfmt.hwaccel     = hwaccel;
 
     // outputs
     dispatcher_->set_output(encoder_.get());

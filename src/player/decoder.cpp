@@ -231,11 +231,10 @@ int Decoder::open_audio_stream(int index)
         }
 
         afi = {
-            .sample_rate    = actx_.codec->sample_rate,
-            .sample_fmt     = actx_.codec->sample_fmt,
-            .channels       = actx_.codec->ch_layout.nb_channels,
-            .channel_layout = actx_.codec->ch_layout.u.mask,
-            .time_base      = { 1, actx_.codec->sample_rate },
+            .sample_rate = actx_.codec->sample_rate,
+            .sample_fmt  = actx_.codec->sample_fmt,
+            .ch_layout   = actx_.codec->ch_layout,
+            .time_base   = { 1, actx_.codec->sample_rate },
         };
 
         actx_.next_pts = av_rescale_q(actx_.stream->start_time, actx_.stream->time_base, afi.time_base);
@@ -246,7 +245,7 @@ int Decoder::open_audio_stream(int index)
     return 0;
 }
 
-int Decoder::open_subtitle_stream(int index)
+int Decoder::open_subtitle_stream(const int index)
 {
     sctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_SUBTITLE, index, -1, nullptr, 0);
 
@@ -323,8 +322,8 @@ int Decoder::ass_init()
 
     // load attached fonts
     for (size_t i = 0; i < fmt_ctx_->nb_streams; ++i) {
-        const auto stream = fmt_ctx_->streams[i];
-        if (stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
+        if (const auto stream = fmt_ctx_->streams[i];
+            stream->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT && attachment_is_font(stream)) {
             if (const auto tag = av_dict_get(stream->metadata, "filename", nullptr, AV_DICT_MATCH_CASE);
                 tag) {
                 logd("[    DECODER] [S] loading attached font: {}", tag->value);
@@ -368,9 +367,8 @@ int Decoder::ass_open_internal()
 
 int Decoder::open_external_subtitle(const std::string& filename)
 {
-    QFileInfo info(filename.c_str());
 
-    if (info.suffix() == "ass" || info.suffix() == "ssa") {
+    if (const QFileInfo info(filename.c_str()); info.suffix() == "ass" || info.suffix() == "ssa") {
         return ass_open_external(filename);
     }
 

@@ -21,18 +21,18 @@ void WasapiCapturer::InitWaveFormat(WAVEFORMATEX *wfex)
     }
 
     afmt = av::aformat_t{
-        .sample_rate    = static_cast<int>(wfex->nSamplesPerSec),
-        .sample_fmt     = AV_SAMPLE_FMT_FLT,
-        .channels       = wfex->nChannels,
-        .channel_layout = wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels),
-        .time_base      = { 1, OS_TIME_BASE },
+        .sample_rate = static_cast<int>(wfex->nSamplesPerSec),
+        .sample_fmt  = AV_SAMPLE_FMT_FLT,
+        .ch_layout   = AV_CHANNEL_LAYOUT_MASK(wfex->nChannels,
+                                              wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels)),
+        .time_base   = { 1, OS_TIME_BASE },
     };
 
     logi("[  WASAPI-C] [{:>10}] {}", device_.name, av::to_string(afmt));
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/coreaudio/capturing-a-stream
-int WasapiCapturer::open(const std::string& name, std::map<std::string, std::string> options)
+int WasapiCapturer::open(const std::string& name, std::map<std::string, std::string>)
 {
     try {
         winrt::com_ptr<IMMDeviceEnumerator> enumerator{};
@@ -198,17 +198,17 @@ int WasapiCapturer::ProcessReceivedData(BYTE *data_ptr, const UINT32 nb_samples,
     frame->nb_samples  = static_cast<int>(nb_samples);
     frame->format      = afmt.sample_fmt;
     frame->sample_rate = afmt.sample_rate;
-    frame->ch_layout   = AV_CHANNEL_LAYOUT_MASK(afmt.channels, afmt.channel_layout);
+    frame->ch_layout   = afmt.ch_layout;
 
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy((uint8_t **)frame->data, (uint8_t *const *)&data_ptr, 0, 0,
-                        static_cast<int>(nb_samples), afmt.channels, afmt.sample_fmt) < 0) {
+                        static_cast<int>(nb_samples), afmt.ch_layout.nb_channels, afmt.sample_fmt) < 0) {
         loge("failed to copy packet data");
         return -1;
     }
 
     if (muted_)
-        av_samples_set_silence(frame->data, 0, frame->nb_samples, afmt.channels,
+        av_samples_set_silence(frame->data, 0, frame->nb_samples, afmt.ch_layout.nb_channels,
                                static_cast<AVSampleFormat>(frame->format));
 
     logd("[A] pts = {:>14d}, samples = {:>6d}", frame->pts, frame->nb_samples);

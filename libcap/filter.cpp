@@ -77,39 +77,44 @@ namespace av::graph
                           std::vector<AVPixelFormat> formats, std::vector<AVColorSpace> spaces,
                           std::vector<AVColorRange> ranges)
     {
-        if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("buffersink"), "video-sink", nullptr,
-                                         nullptr, graph) < 0) {
-            loge("[V] failed to create 'buffersink'.");
+        if (*ctx = avfilter_graph_alloc_filter(graph, avfilter_get_by_name("buffersink"), "video-sink");
+            !*ctx) {
+            loge("[V] failed to alloc 'buffersink'.");
             return -1;
         }
 
-        // pix_fmts (int list)
+        // pixel_formats (array of pixel formats)
         formats.emplace_back(args.pix_fmt);
         probe::util::unique(formats);
-        formats.emplace_back(AV_PIX_FMT_NONE);
-        if (av_opt_set_int_list(*ctx, "pix_fmts", formats.data(), AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) <
-            0) {
-            loge("[V] failed to set 'pix_fmts' for 'buffersink'");
+        if (av_opt_set_array(*ctx, "pixel_formats", AV_OPT_SEARCH_CHILDREN, 0,
+                             static_cast<unsigned int>(formats.size()), AV_OPT_TYPE_PIXEL_FMT,
+                             formats.data()) < 0) {
+            loge("[V] failed to set 'pixel_formats' for 'buffersink'");
             return -1;
         }
 
-        // color_spaces (int list)
+        // colorspaces (array of int)
         spaces.emplace_back(args.color.space);
         probe::util::unique(spaces);
-        spaces.emplace_back(AVCOL_SPC_UNSPECIFIED);
-        if (av_opt_set_int_list(*ctx, "color_spaces", spaces.data(), AVCOL_SPC_UNSPECIFIED,
-                                AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[V] failed to set 'color_spaces' for 'buffersink'");
+        if (av_opt_set_array(*ctx, "colorspaces", AV_OPT_SEARCH_CHILDREN, 0,
+                             static_cast<unsigned int>(spaces.size()), AV_OPT_TYPE_INT,
+                             spaces.data()) < 0) {
+            loge("[V] failed to set 'colorspaces' for 'buffersink'");
             return -1;
         }
 
-        // color_ranges (int list)
+        // colorranges (array of int)
         ranges.emplace_back(args.color.range);
         probe::util::unique(ranges);
-        ranges.emplace_back(AVCOL_RANGE_UNSPECIFIED);
-        if (av_opt_set_int_list(*ctx, "color_ranges", ranges.data(), AVCOL_RANGE_UNSPECIFIED,
-                                AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[V] failed to set 'color_ranges' for 'buffersink'");
+        if (av_opt_set_array(*ctx, "colorranges", AV_OPT_SEARCH_CHILDREN, 0,
+                             static_cast<unsigned int>(ranges.size()), AV_OPT_TYPE_INT,
+                             ranges.data()) < 0) {
+            loge("[V] failed to set 'colorranges' for 'buffersink'");
+            return -1;
+        }
+
+        if (avfilter_init_dict(*ctx, nullptr) < 0) {
+            loge("[A] failed to create 'buffersink'.");
             return -1;
         }
 
@@ -120,38 +125,36 @@ namespace av::graph
 
     int create_audio_sink(AVFilterGraph *graph, AVFilterContext **ctx, const av::aformat_t& args)
     {
-        if (avfilter_graph_create_filter(ctx, avfilter_get_by_name("abuffersink"), "audio-sink", nullptr,
-                                         nullptr, graph) < 0) {
-            loge("[A] failed to create 'buffersink'.");
+        if (*ctx = avfilter_graph_alloc_filter(graph, avfilter_get_by_name("abuffersink"), "audio-sink");
+            !*ctx) {
+            loge("[A] failed to alloc 'buffersink'.");
             return -1;
         }
 
-        // sample_fmts (int list)
-        if (const AVSampleFormat sink_fmts[] = { args.sample_fmt, AV_SAMPLE_FMT_NONE };
-            av_opt_set_int_list(*ctx, "sample_fmts", sink_fmts, AV_SAMPLE_FMT_NONE,
-                                AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[A] failed to set 'sample_fmts' option.");
+        // sample_formats (array of sample formats)
+        if (av_opt_set(*ctx, "sample_formats", av_get_sample_fmt_name(args.sample_fmt),
+                       AV_OPT_SEARCH_CHILDREN) < 0) {
+            loge("[A] failed to set 'sample_formats' option.");
             return -1;
         }
 
-        // channel_counts(int list)
-        // all_channel_counts(bool)
-        if (av_opt_set_int(*ctx, "all_channel_counts", 0, AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[A] failed to set 'all_channel_counts' option.");
-            return -1;
-        }
-
-        // ch_layouts(string)
-        const auto layout = av::channel_layout_name(args.channels, args.channel_layout);
-        if (av_opt_set(*ctx, "ch_layouts", layout.c_str(), AV_OPT_SEARCH_CHILDREN) < 0) {
+        // channel_layouts (array of channel layouts) If an option is not set, all corresponding formats
+        // are accepted.
+        if (av_opt_set_array(*ctx, "channel_layouts", AV_OPT_SEARCH_CHILDREN, 0, 1, AV_OPT_TYPE_CHLAYOUT,
+                             &args.ch_layout) < 0) {
             loge("[A] failed to set 'channel_layouts' option.");
             return -1;
         }
 
-        // sample_rates(int list)
-        if (const int32_t sample_rates[] = { args.sample_rate, -1 };
-            av_opt_set_int_list(*ctx, "sample_rates", sample_rates, -1, AV_OPT_SEARCH_CHILDREN) < 0) {
-            loge("[A] failed to set 'sample_rates' option.");
+        // samplerates (array of int),
+        if (av_opt_set_array(*ctx, "samplerates", AV_OPT_SEARCH_CHILDREN, 0, 1, AV_OPT_TYPE_INT,
+                             &args.sample_rate) < 0) {
+            loge("[A] failed to set 'samplerates' option.");
+            return -1;
+        }
+
+        if (avfilter_init_dict(*ctx, nullptr) < 0) {
+            loge("[A] failed to create 'buffersink'.");
             return -1;
         }
 
@@ -197,11 +200,10 @@ namespace av::graph
         av_buffersink_get_ch_layout(sink, &ch_layout);
 
         return {
-            .sample_rate    = av_buffersink_get_sample_rate(sink),
-            .sample_fmt     = static_cast<AVSampleFormat>(av_buffersink_get_format(sink)),
-            .channels       = ch_layout.nb_channels,
-            .channel_layout = ch_layout.u.mask,
-            .time_base      = av_buffersink_get_time_base(sink),
+            .sample_rate = av_buffersink_get_sample_rate(sink),
+            .sample_fmt  = static_cast<AVSampleFormat>(av_buffersink_get_format(sink)),
+            .ch_layout   = ch_layout,
+            .time_base   = av_buffersink_get_time_base(sink),
         };
     }
 } // namespace av::graph

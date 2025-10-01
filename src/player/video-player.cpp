@@ -174,7 +174,7 @@ int VideoPlayer::open(const std::string& filename)
         // sink audio format
         source_->afo = audio_renderer_->format();
         if (sonic_stream_ = sonic_stream_create(source_->afo.sample_fmt, source_->afo.sample_rate,
-                                                source_->afo.channels);
+                                                source_->afo.ch_layout.nb_channels);
             !sonic_stream_) {
             loge("[    PLAYER] failed to create sonic");
             return -1;
@@ -191,11 +191,11 @@ int VideoPlayer::open(const std::string& filename)
     control_->setHdr(source_->vfo.color.space == AVCOL_SPC_BT2020_NCL &&
                      source_->vfo.color.transfer == AVCOL_TRC_SMPTE2084);
 
-    if (auto stream = source_->stream(AVMEDIA_TYPE_VIDEO); stream) {
+    if (const auto stream = source_->stream(AVMEDIA_TYPE_VIDEO); stream) {
         control_->setVideoCodecName(avcodec_get_name(stream->codecpar->codec_id));
     }
 
-    if (auto stream = source_->stream(AVMEDIA_TYPE_AUDIO); stream) {
+    if (const auto stream = source_->stream(AVMEDIA_TYPE_AUDIO); stream) {
         control_->setAudioCodecName(avcodec_get_name(stream->codecpar->codec_id));
     }
 

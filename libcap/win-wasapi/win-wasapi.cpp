@@ -17,7 +17,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
+uint64_t wasapi::to_ffmpeg_channel_layout(const DWORD layout, const int channels)
 {
     switch (layout) {
     case KSAUDIO_SPEAKER_MONO:     return AV_CH_LAYOUT_MONO;
@@ -25,7 +25,7 @@ uint64_t wasapi::to_ffmpeg_channel_layout(DWORD layout, int channels)
     case KSAUDIO_SPEAKER_QUAD:     return AV_CH_LAYOUT_QUAD;
     case KSAUDIO_SPEAKER_2POINT1:  return AV_CH_LAYOUT_SURROUND;
     case KSAUDIO_SPEAKER_SURROUND: return AV_CH_LAYOUT_4POINT0;
-    default:                       return av::default_channel_layout(channels);
+    default:                       return av::default_channel_layout(channels).u.mask;
     }
 }
 

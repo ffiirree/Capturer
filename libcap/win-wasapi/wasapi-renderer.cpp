@@ -59,11 +59,11 @@ void WasapiRenderer::InitializeWaveFormat(WAVEFORMATEX *wfex)
     }
 
     format_ = av::aformat_t{
-        .sample_rate    = static_cast<int>(wfex->nSamplesPerSec),
-        .sample_fmt     = AV_SAMPLE_FMT_FLT,
-        .channels       = wfex->nChannels,
-        .channel_layout = wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels),
-        .time_base      = { 1, static_cast<int>(wfex->nSamplesPerSec) },
+        .sample_rate = static_cast<int>(wfex->nSamplesPerSec),
+        .sample_fmt  = AV_SAMPLE_FMT_FLT,
+        .ch_layout   = AV_CHANNEL_LAYOUT_MASK(wfex->nChannels,
+                                              wasapi::to_ffmpeg_channel_layout(layout, wfex->nChannels)),
+        .time_base   = { 1, static_cast<int>(wfex->nSamplesPerSec) },
     };
 
     logi("[   WASAPI-R] [{:>10}] {}", devinfo_.name, av::to_string(format_));
