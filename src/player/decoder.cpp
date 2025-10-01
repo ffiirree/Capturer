@@ -100,7 +100,7 @@ inline const std::vector<std::string> font_mimetypes{
     "application/x-font-ttf",
 };
 
-static bool attachment_is_font(AVStream *st)
+static bool attachment_is_font(const AVStream *st)
 {
     if (const auto tag = av_dict_get(st->metadata, "mimetype", nullptr, AV_DICT_MATCH_CASE); tag) {
         for (const auto& mimetype : font_mimetypes) {
@@ -139,7 +139,7 @@ int Decoder::open(const std::string& name)
     return 0;
 }
 
-int Decoder::set_hwaccel(AVHWDeviceType hwaccel, AVPixelFormat format)
+int Decoder::set_hwaccel(const AVHWDeviceType hwaccel, const AVPixelFormat format)
 {
     if (hwaccel_ != hwaccel || hw_pix_fmt_ != format) {
         hwaccel_    = hwaccel;
@@ -156,7 +156,7 @@ int Decoder::set_hwaccel(AVHWDeviceType hwaccel, AVPixelFormat format)
     return 0;
 }
 
-int Decoder::open_video_stream(int index)
+int Decoder::open_video_stream(const int index)
 {
     if (index == -1 || vctx_.index != index)
         vctx_.index = av_find_best_stream(fmt_ctx_, AVMEDIA_TYPE_VIDEO, index, -1, nullptr, 0);
@@ -466,7 +466,7 @@ int Decoder::ff_open_external(const std::string& filename)
                             const auto length = static_cast<int>(strlen(rect->ass));
                             ass_process_chunk(ass_track_, rect->ass, length, pts, duration);
 
-                            ass_cached_chunks_++;
+                            ++ass_cached_chunks_;
                         }
                     }
                 }
@@ -624,7 +624,7 @@ int Decoder::start()
     return 0;
 }
 
-int Decoder::select(AVMediaType type, int index)
+int Decoder::select(const AVMediaType type, const int index)
 {
     std::scoped_lock lock(selected_mtx_);
 
@@ -657,7 +657,7 @@ int Decoder::select(AVMediaType type, int index)
     }
 }
 
-int Decoder::index(AVMediaType type) const
+int Decoder::index(const AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:    return vctx_.index;
@@ -673,7 +673,7 @@ void Decoder::seek(const std::chrono::nanoseconds& ts, const std::chrono::nanose
 
     if (seek_pts_ != AV_NOPTS_VALUE || !ready()) return;
 
-    seek_pts_ = std::clamp<int64_t>(ts.count() / 1000, fmt_ctx_->start_time, fmt_ctx_->duration);
+    seek_pts_ = std::clamp<int64_t>(ts.count() / 1000, 0, fmt_ctx_->duration);
     seek_min_ = rel < 0s ? std::numeric_limits<int64_t>::min() : seek_pts_ - rel.count() / 1000;
     seek_max_ = seek_pts_ + 2;
 
@@ -723,7 +723,9 @@ void Decoder::readpkt_thread_fn()
         if (seek_pts_ != AV_NOPTS_VALUE) {
             std::scoped_lock lock(seek_mtx_);
 
-            if (avformat_seek_file(fmt_ctx_, -1, seek_min_, seek_pts_, seek_max_, 0) < 0) {
+            if (avformat_seek_file(fmt_ctx_, -1, seek_min_ + fmt_ctx_->start_time,
+                                   seek_pts_ + fmt_ctx_->start_time, seek_max_ + fmt_ctx_->start_time,
+                                   0) < 0) {
                 loge("failed to seek");
             }
             else {
@@ -904,8 +906,9 @@ void Decoder::vdecode_thread_fn()
                 loge("[V] corrupt decoded frame");
             }
 
-            frame->pts = frame->best_effort_timestamp;
-            if (frame->pts == AV_NOPTS_VALUE) continue;
+            frame->pts = frame->best_effort_timestamp -
+                         av_rescale_q(fmt_ctx_->start_time, AV_TIME_BASE_Q, vfi.time_base);
+            if (frame->best_effort_timestamp == AV_NOPTS_VALUE) continue;
 
             vctx_.pts = frame->pts;
 
@@ -992,7 +995,8 @@ void Decoder::adecode_thread_fn()
             }
 
             if (frame->pts != AV_NOPTS_VALUE) {
-                frame->pts = av_rescale_q(frame->pts, actx_.stream->time_base, afi.time_base);
+                frame->pts = av_rescale_q(frame->pts, actx_.stream->time_base, afi.time_base) -
+                             av_rescale_q(fmt_ctx_->start_time, AV_TIME_BASE_Q, afi.time_base);
             }
             else if (actx_.next_pts != AV_NOPTS_VALUE) {
                 frame->pts = actx_.next_pts;
@@ -1099,7 +1103,7 @@ void Decoder::sdecode_thread_fn()
                             const auto length = static_cast<int>(strlen(rect->ass));
                             ass_process_chunk(ass_track_, rect->ass, length, pts.count(), duration.count());
 
-                            ass_cached_chunks_++;
+                            ++ass_cached_chunks_;
                         }
                         break;
                     }
@@ -1196,7 +1200,7 @@ std::pair<int, std::list<Subtitle>> Decoder::subtitle(const std::chrono::millise
     }
 }
 
-void Decoder::set_ass_render_size(int w, int h)
+void Decoder::set_ass_render_size(const int w, const int h)
 {
     std::shared_lock lock(ass_mtx_);
 
@@ -1252,7 +1256,7 @@ Decoder::~Decoder()
     logi("[    DECODER] ~");
 }
 
-std::vector<AVStream *> Decoder::streams(AVMediaType type)
+std::vector<AVStream *> Decoder::streams(const AVMediaType type) const
 {
     std::vector<AVStream *> list{};
     for (size_t i = 0; i < fmt_ctx_->nb_streams; ++i) {
@@ -1263,7 +1267,7 @@ std::vector<AVStream *> Decoder::streams(AVMediaType type)
     return list;
 }
 
-AVStream *Decoder::stream(AVMediaType type) const
+AVStream *Decoder::stream(const AVMediaType type) const
 {
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:    return vctx_.stream;

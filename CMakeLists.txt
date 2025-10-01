@@ -35,7 +35,7 @@ set(CMAKE_AUTOUIC ON)
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
 find_package(Qt6 6.8 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
-find_package(FFmpeg 7.0 REQUIRED)
+find_package(FFmpeg 8.0 REQUIRED)
 find_package(Libass REQUIRED)
 
 if (WIN32)
@@ -43,7 +43,7 @@ if (WIN32)
     set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
 
 elseif (UNIX AND NOT APPLE)
-    find_package(Qt6 6.7 COMPONENTS DBus REQUIRED)
+    find_package(Qt6 6.8 COMPONENTS DBus REQUIRED)
 endif ()
 
 # #######################################################################################################################
@@ -88,7 +88,7 @@ qt_add_shaders(${PROJECT_NAME} "capturer_shaders"
 
 target_compile_options(${PROJECT_NAME}
         PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8 /DUNICODE /D_UNICODE /DNOMINMAX /Zc:preprocessor /Zc:__cplusplus /wd5054 /EHsc>
         $<$<CXX_COMPILER_ID:MSVC>:/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR> # VS 17.10: https://github.com/microsoft/STL/issues/4730
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Wno-deprecated-enum-enum-conversion>
 )

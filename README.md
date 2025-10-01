@@ -153,7 +153,7 @@ git submodule update --init --recursive
 - `C++` : `C++20`
 - `Qt` : `>= 6.8`
 - `CMake` : `>= 3.27`
-- `FFmpeg` : `>= 7.0`
+- `FFmpeg` : `>= 8.0`
 - Windows
   - `Windows` : `>= Windows 10 2004`
   - `Windows SDK` : `>= 10.0.22621.0`

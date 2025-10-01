@@ -22,14 +22,13 @@ int PulseCapturer::open(const std::string& name, std::map<std::string, std::stri
 {
     const auto spec = pulse::source_format(name);
     afmt            = {
-                   .sample_rate    = static_cast<int>(spec.rate),
-                   .sample_fmt     = pulse::to_av_sample_format(spec.format),
-                   .channels       = spec.channels,
-                   .channel_layout = pulse::to_av_channel_layout(spec.channels),
-                   .time_base      = { 1, OS_TIME_BASE },
+                   .sample_rate = static_cast<int>(spec.rate),
+                   .sample_fmt  = pulse::to_av_sample_format(spec.format),
+                   .ch_layout   = AV_CHANNEL_LAYOUT_MASK(spec.channels, pulse::to_av_channel_layout(spec.channels)),
+                   .time_base   = { 1, OS_TIME_BASE },
     };
 
-    if (afmt.sample_fmt == AV_SAMPLE_FMT_NONE || afmt.channel_layout == 0 ||
+    if (afmt.sample_fmt == AV_SAMPLE_FMT_NONE || afmt.ch_layout.nb_channels == 0 ||
         !::pa_sample_spec_valid(&spec)) {
         loge("[PULSE-AUDIO] invalid pulse audio format");
         return -1;
@@ -102,11 +101,11 @@ void PulseCapturer::pulse_stream_read_callback(pa_stream *stream, size_t /* == b
     frame->pkt_dts     = frame->pts;
     frame->format      = self->afmt.sample_fmt;
     frame->sample_rate = self->afmt.sample_rate;
-    frame->ch_layout   = AV_CHANNEL_LAYOUT_MASK(self->afmt.channels, self->afmt.channel_layout);
+    frame->ch_layout   = self->afmt.ch_layout;
 
     av_frame_get_buffer(frame.get(), 0);
     if (av_samples_copy(frame->data, (uint8_t *const *)&frames, 0, 0, frame->nb_samples,
-                        self->afmt.channels, self->afmt.sample_fmt) < 0) {
+                        self->afmt.ch_layout.nb_channels, self->afmt.sample_fmt) < 0) {
         loge("[PULSE-AUDIO] failed to copy frames");
         return;
     }

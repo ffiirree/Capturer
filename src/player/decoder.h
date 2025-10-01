@@ -84,7 +84,7 @@ public:
 
     std::pair<int, std::list<Subtitle>> subtitle(const std::chrono::milliseconds& now);
 
-    std::vector<AVStream *> streams(AVMediaType type);
+    std::vector<AVStream *> streams(AVMediaType type) const;
 
     AVStream *stream(AVMediaType type) const;
 

@@ -58,7 +58,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(control_,   &ControlWidget::resume,         this, &VideoPlayer::resume);
     connect(control_,   &ControlWidget::seek,           this, &VideoPlayer::seek);
     connect(control_,   &ControlWidget::hwToggled,      this, &VideoPlayer::hwaccel);
-    connect(control_,   &ControlWidget::hdrToggled,     this, [=, this](bool hdr){ texture_->hdr(hdr); });
+    connect(control_,   &ControlWidget::hdrToggled,     this, [=, this](const bool hdr){ texture_->hdr(hdr); });
     connect(control_,   &ControlWidget::speedChanged,   this, &VideoPlayer::setSpeed);
     connect(control_,   &ControlWidget::volumeChanged,  [this](auto val) { audio_renderer_->set_volume(val / 100.0f); });
     connect(control_,   &ControlWidget::mute,           [this](auto muted) { audio_renderer_->mute(muted); });

@@ -19,11 +19,10 @@ int PulseAudioRenderer::open(const std::string&, RenderFlags)
     };
 
     format_ = {
-        .sample_rate    = 48000,
-        .sample_fmt     = AV_SAMPLE_FMT_S16,
-        .channels       = 2,
-        .channel_layout = AV_CH_LAYOUT_STEREO,
-        .time_base      = { 1, 48000 },
+        .sample_rate = 48000,
+        .sample_fmt  = AV_SAMPLE_FMT_S16,
+        .ch_layout   = AV_CHANNEL_LAYOUT_STEREO,
+        .time_base   = { 1, 48000 },
     };
 
     if (!::pa_sample_spec_valid(&spec)) {
@@ -184,7 +183,7 @@ int PulseAudioRenderer::set_volume(const float value)
     if (!stream_) return av::NULLPTR;
 
     pa_cvolume volume{};
-    ::pa_cvolume_set(&volume, format_.channels, pa_sw_volume_from_linear(value));
+    ::pa_cvolume_set(&volume, format_.ch_layout.nb_channels, pa_sw_volume_from_linear(value));
     return pulse::stream::set_sink_volume(stream_, &volume);
 }
 
