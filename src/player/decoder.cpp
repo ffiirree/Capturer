@@ -918,7 +918,8 @@ void Decoder::vdecode_thread_fn()
                 auto hwaccel   = AV_HWDEVICE_TYPE_NONE;
                 auto sw_format = AV_PIX_FMT_NONE;
                 if (frame->hw_frames_ctx) {
-                    auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
+                    const auto frames_ctx =
+                        reinterpret_cast<AVHWFramesContext *>(frame->hw_frames_ctx->data);
 
                     sw_format = frames_ctx->sw_format;
                     hwaccel   = frames_ctx->device_ctx->type;

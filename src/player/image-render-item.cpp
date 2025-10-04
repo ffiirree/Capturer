@@ -74,8 +74,7 @@ bool ImageRenderItem::attach(const std::any& attachment)
         frame_    = frame;
         uploaded_ = false;
 
-        const auto vfmt = get_video_format(frame);
-        if (fmt_ != vfmt) {
+        if (const auto vfmt = get_video_format(frame); fmt_ != vfmt) {
             fmt_ = vfmt;
 
             created_ = false;
@@ -96,7 +95,7 @@ QSize ImageRenderItem::size() const
                   : QSize{};
 }
 
-void ImageRenderItem::hdr(bool en)
+void ImageRenderItem::hdr(const bool en)
 {
     if (hdr_ != en) {
         uploaded_ = false;
@@ -106,7 +105,7 @@ void ImageRenderItem::hdr(bool en)
     hdr_ = en;
 }
 
-void ImageRenderItem::rotate(int angle)
+void ImageRenderItem::rotate(const int angle)
 {
     if (rotation_ != angle) {
         rotation_ = angle;
@@ -157,7 +156,7 @@ void ImageRenderItem::create(QRhi *rhi, QRhiRenderTarget *rt)
     pipeline_->create();
 }
 
-void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, float scale_x, float scale_y)
+void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, const float scale_x, const float scale_y)
 {
     std::scoped_lock lock(mtx_);
 
@@ -167,7 +166,7 @@ void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, float scale_x, float 
         bindings.emplace_back(QRhiShaderResourceBinding::uniformBuffer(
             0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
             ubuf_.get()));
-        auto params = av::get_texture_desc(fmt_.sw_pix_fmt);
+        const auto params = av::get_texture_desc(fmt_.sw_pix_fmt);
         planes_.clear();
 
         if (fmt_.hwaccel != AV_HWDEVICE_TYPE_NONE) {
@@ -181,7 +180,7 @@ void ImageRenderItem::upload(QRhiResourceUpdateBatch *rub, float scale_x, float 
             }
         }
         else {
-            for (auto& param : params) {
+            for (const auto& param : params) {
                 const auto texture = rhi_->newTexture(
                     param.format, { fmt_.width / param.scale_x, fmt_.height / param.scale_y });
                 texture->create();

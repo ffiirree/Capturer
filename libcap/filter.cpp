@@ -94,23 +94,27 @@ namespace av::graph
         }
 
         // colorspaces (array of int)
-        spaces.emplace_back(args.color.space);
-        probe::util::unique(spaces);
-        if (av_opt_set_array(*ctx, "colorspaces", AV_OPT_SEARCH_CHILDREN, 0,
-                             static_cast<unsigned int>(spaces.size()), AV_OPT_TYPE_INT,
-                             spaces.data()) < 0) {
-            loge("[V] failed to set 'colorspaces' for 'buffersink'");
-            return -1;
+        if (!spaces.empty() && args.color.space != AVCOL_SPC_UNSPECIFIED) {
+            spaces.emplace_back(args.color.space);
+            probe::util::unique(spaces);
+            if (av_opt_set_array(*ctx, "colorspaces", AV_OPT_SEARCH_CHILDREN, 0,
+                                 static_cast<unsigned int>(spaces.size()), AV_OPT_TYPE_INT,
+                                 spaces.data()) < 0) {
+                loge("[V] failed to set 'colorspaces' for 'buffersink'");
+                return -1;
+            }
         }
 
         // colorranges (array of int)
-        ranges.emplace_back(args.color.range);
-        probe::util::unique(ranges);
-        if (av_opt_set_array(*ctx, "colorranges", AV_OPT_SEARCH_CHILDREN, 0,
-                             static_cast<unsigned int>(ranges.size()), AV_OPT_TYPE_INT,
-                             ranges.data()) < 0) {
-            loge("[V] failed to set 'colorranges' for 'buffersink'");
-            return -1;
+        if (!ranges.empty() && args.color.range != AVCOL_RANGE_UNSPECIFIED) {
+            ranges.emplace_back(args.color.range);
+            probe::util::unique(ranges);
+            if (av_opt_set_array(*ctx, "colorranges", AV_OPT_SEARCH_CHILDREN, 0,
+                                 static_cast<unsigned int>(ranges.size()), AV_OPT_TYPE_INT,
+                                 ranges.data()) < 0) {
+                loge("[V] failed to set 'colorranges' for 'buffersink'");
+                return -1;
+            }
         }
 
         if (avfilter_init_dict(*ctx, nullptr) < 0) {
@@ -168,8 +172,7 @@ namespace av::graph
         auto hwaccel   = AV_HWDEVICE_TYPE_NONE;
         auto sw_format = AV_PIX_FMT_NONE;
         if (const auto frames_ctx_buf = av_buffersink_get_hw_frames_ctx(sink); frames_ctx_buf) {
-            const auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frames_ctx_buf->data);
-            if (frames_ctx) {
+            if (const auto frames_ctx = reinterpret_cast<AVHWFramesContext *>(frames_ctx_buf->data)) {
                 if (frames_ctx->device_ctx) {
                     hwaccel = frames_ctx->device_ctx->type;
                 }
