@@ -34,7 +34,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
-find_package(Qt6 6.8 COMPONENTS Core Gui Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
+find_package(Qt6 6.8 COMPONENTS Core Gui GuiPrivate Widgets PdfWidgets LinguistTools ShaderTools REQUIRED)
 find_package(FFmpeg 8.0 REQUIRED)
 find_package(Libass REQUIRED)
 

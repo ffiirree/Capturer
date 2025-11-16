@@ -319,10 +319,7 @@ void Capturer::SetTheme(const QString& theme)
     QString style{};
     for (auto& qss : files) {
 
-        QFile file(qss);
-        file.open(QFile::ReadOnly);
-
-        if (file.isOpen()) {
+        if (QFile file(qss); file.open(QFile::ReadOnly)) {
             style += file.readAll();
             file.close();
         }
