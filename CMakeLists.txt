@@ -43,6 +43,9 @@ if (WIN32)
     set(CMAKE_WIN32_EXECUTABLE $<IF:$<CONFIG:DEBUG>,OFF,ON>)
 
 elseif (UNIX AND NOT APPLE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    
     find_package(Qt6 6.8 COMPONENTS DBus REQUIRED)
 endif ()
 
@@ -190,19 +193,26 @@ if (WIN32)
 
     include(CPack)
 elseif (UNIX)
-    # installed: /usr/local/bin/capturer
-    # installed: /usr/local/etc/capturer/translations/capturer_en_US.ts
-    # installed: /usr/local/etc/capturer/translations/capturer_zh_CN.ts
+    # installed: ${CMAKE_INSTALL_PREFIX}/capturer
+    # installed: ${CMAKE_INSTALL_PREFIX}/translations/capturer_en_US.ts
+    # installed: ${CMAKE_INSTALL_PREFIX}/translations/capturer_zh_CN.ts
     # installed: /usr/share/applications/capturer.desktop
     # installed: /usr/share/pixmaps/capturer.png
     # installed: /usr/share/icons/hicolor/128x128/apps/capturer.png
     # installed: ~/.config/capturer/config.json
     # installed: ~/.config/autostart/capturer.desktop
     # installed: ~/.local/logs/capturer/capturer-*.log
-    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
-    # install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_INSTALL_PREFIX}/capturer/capturer /usr/local/bin/capturer)")
-    # install(IMPORTED_RUNTIME_ARTIFACTS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGL Qt6::OpenGLWidgets DESTINATION "${CMAKE_INSTALL_PREFIX}/capturer")
-    install(FILES ${QM_FILES} DESTINATION "/usr/local/etc/capturer/translations")
+    install(TARGETS ${PROJECT_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}")
+    install(TARGETS ${PROJECT_NAME}
+            RUNTIME_DEPENDENCIES
+            PRE_EXCLUDE_REGEXES "ld-linux"
+            POST_EXCLUDE_REGEXES
+            DIRECTORIES $ENV{PATH}
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
+    )
+    include(GNUInstallDirs)
+
+    install(FILES ${QM_FILES} DESTINATION "${CMAKE_INSTALL_PREFIX}/translations")
     install(FILES "${PROJECT_SOURCE_DIR}/capturer.desktop" DESTINATION "/usr/share/applications")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/pixmaps")
     install(FILES "${PROJECT_SOURCE_DIR}/src/resources/icons/capturer.png" DESTINATION "/usr/share/icons/hicolor/128x128/apps")
@@ -215,8 +225,6 @@ elseif (UNIX)
     # This is required
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Liangqi Zhang(zhliangqi@gmail.com)")
 
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
 
     if (EXISTS "/etc/lsb-release")
         file(STRINGS "/etc/lsb-release" SYSTEM_NAME)
