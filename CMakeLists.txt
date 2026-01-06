@@ -160,7 +160,7 @@ if (WIN32)
                 BIN_DIR .
                 PLUGINS_DIR .
                 NO_COMPILER_RUNTIME
-                DEPLOY_TOOL_OPTIONS \"--no-opengl-sw\" \"--no-system-d3d-compiler\"
+                DEPLOY_TOOL_OPTIONS \"--no-opengl-sw\" \"--no-system-d3d-compiler\" \"--no-system-dxc-compiler\"
             )"
     )
     install(SCRIPT ${qt_deploy_script})
