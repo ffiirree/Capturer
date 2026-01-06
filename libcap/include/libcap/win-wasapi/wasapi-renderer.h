@@ -48,7 +48,7 @@ protected:
     long refs = 0;
 
     // IUnknown
-    HRESULT QueryInterface(REFIID riid, void **ppvObject) override;
+    HRESULT QueryInterface(REFIID riid, void **ptr) override;
     ULONG   AddRef() override;
     ULONG   Release() override;
 
@@ -62,7 +62,7 @@ protected:
     // IAudioSessionEvents
     HRESULT OnDisplayNameChanged(LPCWSTR, LPCGUID) override { return S_OK; }
     HRESULT OnIconPathChanged(LPCWSTR, LPCGUID) override { return S_OK; }
-    HRESULT OnSimpleVolumeChanged(float, BOOL, LPCGUID) override { return S_OK; }
+    HRESULT OnSimpleVolumeChanged(float, BOOL, LPCGUID) override;
     HRESULT OnChannelVolumeChanged(DWORD, float[], DWORD, LPCGUID) override { return S_OK; }
     HRESULT OnGroupingParamChanged(LPCGUID, LPCGUID) override { return S_OK; }
     HRESULT OnStateChanged(AudioSessionState) override { return S_OK; }
@@ -103,6 +103,9 @@ private:
     UINT32 buffer_frames_{};
 
     std::atomic<bool> switching_{ false };
+
+    GUID ctx_{};
+    BOOL muted_{ FALSE };
 
     winrt::handle REQUEST_EVENT{};
     winrt::handle STOP_EVENT{};

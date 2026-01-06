@@ -30,6 +30,8 @@ int WasapiRenderer::open(const std::string&, const RenderFlags flags)
 
         InitializeWaveFormat(wfex_);
 
+        winrt::check_hresult(CoCreateGuid(&ctx_));
+
         //
         winrt::check_hresult(InitializeAudioEngine());
 
@@ -88,6 +90,7 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
 
     winrt::check_hresult(
         audio_client_->GetService(winrt::guid_of<ISimpleAudioVolume>(), volume_.put_void()));
+    winrt::check_hresult(volume_->SetMute(muted_, nullptr));
 
     winrt::check_hresult(
         audio_client_->GetService(winrt::guid_of<IAudioSessionControl>(), session_.put_void()));
@@ -195,11 +198,13 @@ bool WasapiRenderer::paused() const
 
 int WasapiRenderer::mute(const bool muted)
 {
+    muted_ = muted;
+
     std::lock_guard lock(mtx_);
 
     if (!volume_) return -1;
 
-    if (FAILED(volume_->SetMute(muted, nullptr))) return -1;
+    if (FAILED(volume_->SetMute(muted_, &ctx_))) return -1;
 
     return 0;
 }
@@ -220,7 +225,7 @@ int WasapiRenderer::set_volume(const float volume)
 
     if (!volume_) return -1;
 
-    if (FAILED(volume_->SetMasterVolume(volume, nullptr))) return -1;
+    if (FAILED(volume_->SetMasterVolume(volume, &ctx_))) return -1;
 
     return 0;
 }
@@ -236,7 +241,7 @@ float WasapiRenderer::volume() const
     return volume;
 }
 
-HRESULT WasapiRenderer::RequestEventHandler(std::chrono::nanoseconds ts)
+HRESULT WasapiRenderer::RequestEventHandler(const std::chrono::nanoseconds ts)
 {
     BYTE  *buffer         = nullptr;
     UINT32 padding_frames = 0;
@@ -338,7 +343,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
 }
 
 // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/WASAPIRendering/WASAPIRendering.cpp
-HRESULT WasapiRenderer::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR)
+HRESULT WasapiRenderer::OnDefaultDeviceChanged(const EDataFlow flow, const ERole role, LPCWSTR)
 {
     if (flow == eRender && role == eMultimedia) {
         if (!switching_) {
@@ -350,7 +355,7 @@ HRESULT WasapiRenderer::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWS
     return S_OK;
 }
 
-HRESULT WasapiRenderer::OnSessionDisconnected(AudioSessionDisconnectReason DisconnectReason)
+HRESULT WasapiRenderer::OnSessionDisconnected(const AudioSessionDisconnectReason DisconnectReason)
 {
     switch (DisconnectReason) {
     case DisconnectReasonDeviceRemoval:
@@ -366,6 +371,15 @@ HRESULT WasapiRenderer::OnSessionDisconnected(AudioSessionDisconnectReason Disco
     default: break;
     }
 
+    return S_OK;
+}
+
+HRESULT WasapiRenderer::OnSimpleVolumeChanged(const float volume, const BOOL mute, const LPCGUID ctx)
+{
+    if (!InlineIsEqualGUID(*ctx, ctx_)) {
+        muted_ = mute;
+        on_volume_changed(volume, mute);
+    }
     return S_OK;
 }
 
@@ -393,7 +407,7 @@ int WasapiRenderer::stop()
     // Resetting the stream flushes all pending data and resets the audio clock stream position to 0
     if (audio_client_) {
         audio_client_->Stop();
-        if (auto hr = audio_client_->Reset(); FAILED(hr)) {
+        if (const auto hr = audio_client_->Reset(); FAILED(hr)) {
             loge_if(hr != AUDCLNT_E_NOT_INITIALIZED, "[   WASAPI-R] failed to reset the audio stream");
         }
     }

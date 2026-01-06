@@ -56,7 +56,7 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
         pause_btn_ = new QCheckBox();
         pause_btn_->setObjectName("pause-btn");
         connect(pause_btn_, &QCheckBox::checkStateChanged,
-                [this](Qt::CheckState state) { state ? pause() : resume(); });
+                [this](const Qt::CheckState state) { state ? pause() : resume(); });
         connect(this, &ControlWidget::pause, [this] {
             if (!pause_btn_->isChecked()) pause_btn_->setChecked(true);
         });
@@ -238,6 +238,6 @@ void ControlWidget::setPlaybackMode(const PlaybackMode mode)
     }
 }
 
-void ControlWidget::setMute(bool muted) { volume_btn_->setChecked(muted); }
+void ControlWidget::setMute(const bool muted) { volume_btn_->setChecked(muted); }
 
 bool ControlWidget::paused() const { return pause_btn_->isChecked(); }

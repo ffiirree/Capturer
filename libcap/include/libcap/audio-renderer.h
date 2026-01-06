@@ -46,6 +46,8 @@ struct AudioRenderer
     // sample number
     [[nodiscard]] virtual uint32_t buffer_size() const = 0;
 
+    std::function<void(float, bool)> on_volume_changed = [](auto, auto) {};
+
     std::function<uint32_t(uint8_t **data, uint32_t samples, std::chrono::nanoseconds)> callback =
         [](auto, auto, auto) -> int32_t { return 0; };
 };
