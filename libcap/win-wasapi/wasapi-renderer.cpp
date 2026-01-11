@@ -34,6 +34,7 @@ int WasapiRenderer::open(const std::string&, const RenderFlags flags)
 
         //
         winrt::check_hresult(InitializeAudioEngine());
+        winrt::check_hresult(volume_->GetMute(&muted_));
 
         if (flags_ & RENDER_ALLOW_STREAM_SWITCH) winrt::check_hresult(InitializeStreamSwitch());
 
@@ -90,7 +91,6 @@ HRESULT WasapiRenderer::InitializeAudioEngine()
 
     winrt::check_hresult(
         audio_client_->GetService(winrt::guid_of<ISimpleAudioVolume>(), volume_.put_void()));
-    winrt::check_hresult(volume_->SetMute(muted_, nullptr));
 
     winrt::check_hresult(
         audio_client_->GetService(winrt::guid_of<IAudioSessionControl>(), session_.put_void()));
@@ -319,6 +319,7 @@ HRESULT WasapiRenderer::SwitchEventHandler()
 
         // 7. re-initialize the audio client
         winrt::check_hresult(InitializeAudioEngine());
+        winrt::check_hresult(volume_->SetMute(muted_, &ctx_));
 
         // 8. re-register for session disconnect notification
         winrt::check_hresult(
@@ -377,8 +378,7 @@ HRESULT WasapiRenderer::OnSessionDisconnected(const AudioSessionDisconnectReason
 HRESULT WasapiRenderer::OnSimpleVolumeChanged(const float volume, const BOOL mute, const LPCGUID ctx)
 {
     if (!InlineIsEqualGUID(*ctx, ctx_)) {
-        muted_ = mute;
-        on_volume_changed(volume, mute);
+        // TODO
     }
     return S_OK;
 }

@@ -153,12 +153,6 @@ ControlWidget::ControlWidget(FramelessWindow *parent)
             emit volumeChanged(v);
         });
         hl->addWidget(volume_slider_);
-
-        // settings
-        // const auto setting_btn = new QCheckBox();
-        // setting_btn->setObjectName("setting-btn");
-        // setting_btn->setCheckable(false);
-        // hl->addWidget(setting_btn);
     }
 }
 

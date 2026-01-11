@@ -70,15 +70,11 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     stacked_layout->addWidget(control_);
 
     // decoding
-    source_                            = std::make_unique<Decoder>();
+    source_         = std::make_unique<Decoder>();
     // audio sink
-    audio_renderer_                    = std::make_unique<AudioOutput>();
-    audio_renderer_->on_volume_changed = [this](const float volume, const bool mute) {
-        control_->setVolume(std::clamp<int>(volume * 100, 0, 100));
-        control_->setMute(mute);
-    };
+    audio_renderer_ = std::make_unique<AudioOutput>();
     // video sink
-    texture_ = new TextureRhiWidget();
+    texture_        = new TextureRhiWidget();
 
     stacked_layout->addWidget(texture_);
 
