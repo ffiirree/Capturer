@@ -423,7 +423,7 @@ void VideoPlayer::seek(const std::chrono::nanoseconds ts, const std::chrono::nan
     if (paused()) vstep_ = 1;
 }
 
-void VideoPlayer::hwaccel(bool en)
+void VideoPlayer::hwaccel(const bool en)
 {
     if (en) {
 #ifdef _WIN32

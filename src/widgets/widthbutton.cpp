@@ -12,7 +12,7 @@ WidthButton::WidthButton(bool checkable, QWidget *parent)
     setCheckable(checkable);
 }
 
-void WidthButton::setValue(int value, bool silence)
+void WidthButton::setValue(const int value, const bool silence)
 {
     if (width_ == value) return;
 

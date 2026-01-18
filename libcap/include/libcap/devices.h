@@ -88,7 +88,7 @@ namespace av
         case device_format_t::DirectShow:             return "DirectShow";
         case device_format_t::WASAPI:                 return "Windows Audio Session API";
         case device_format_t::WindowsGraphicsCapture: return "Windows Graphics Capture";
-        case device_format_t::MediaFoundation:        return "Meida Foundation";
+        case device_format_t::MediaFoundation:        return "Media Foundation";
         default:                                      return "unsupported";
         }
     }

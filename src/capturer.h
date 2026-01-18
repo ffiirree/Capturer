@@ -54,6 +54,9 @@ private:
 
     QString theme_{};
 
+    QPointer<QTranslator> sys_translator_{};
+    QPointer<QTranslator> app_translator_{};
+
     QScopedPointer<QSystemTrayIcon> tray_{};
     QScopedPointer<Menu>            tray_menu_{};
     QPointer<QAction>               tray_snip_{};
@@ -66,14 +69,14 @@ private:
     QPointer<SettingWindow> settings_window_{};
 
     // hotkey
-    QPointer<QHotkey> snip_hotkey_{};       // screenshot
+    QPointer<QHotkey> snip_hotkey_{};        // screenshot
     QPointer<QHotkey> repeat_snip_hotkey_{}; // screenshot
-    QPointer<QHotkey> video_hotkey_{};      // video recording
-    QPointer<QHotkey> gif_hotkey_{};        // gif recording
-    QPointer<QHotkey> preview_hotkey_{};    // preview
-    QPointer<QHotkey> quicklook_hotkey_{};  // Explorer window, Windows only
-    QPointer<QHotkey> transparent_input_{}; // for preview window
-    QPointer<QHotkey> toggle_hotkey_{};     // toggle previews
+    QPointer<QHotkey> video_hotkey_{};       // video recording
+    QPointer<QHotkey> gif_hotkey_{};         // gif recording
+    QPointer<QHotkey> preview_hotkey_{};     // preview
+    QPointer<QHotkey> quicklook_hotkey_{};   // Explorer window, Windows only
+    QPointer<QHotkey> transparent_input_{};  // for preview window
+    QPointer<QHotkey> toggle_hotkey_{};      // toggle previews
 
     QScopedPointer<ScreenShoter> sniper_{};
     QPointer<ScreenRecorder>     recorder_{};

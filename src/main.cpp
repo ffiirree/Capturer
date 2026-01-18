@@ -3,11 +3,9 @@
 #include "logging.h"
 #include "probe/cpu.h"
 #include "probe/system.h"
-#include "probe/util.h"
 #include "version.h"
 
 #include <QStandardPaths>
-#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
@@ -48,18 +46,6 @@ int main(int argc, char *argv[])
     logi("");
 
     Capturer app(argc, argv);
-    QApplication::setQuitOnLastWindowClosed(false);
-
-    QTranslator sys_translator;
-    QTranslator app_translator;
-    const auto  sys_translation = qApp->applicationDirPath() + "/translations/qt_" + config::language;
-    const auto  app_translation = qApp->applicationDirPath() + "/translations/capturer_" + config::language;
-    loge_if(!sys_translator.load(sys_translation), "failed to load {}", sys_translation.toStdString());
-    loge_if(!app_translator.load(app_translation), "failed to load {}", app_translation.toStdString());
-
-    Capturer::installTranslator(&sys_translator);
-    Capturer::installTranslator(&app_translator);
-
     app.Init();
 
     return Capturer::exec();

@@ -19,6 +19,7 @@
 #include <QStyleFactory>
 #include <QStyleHints>
 #include <QSystemTrayIcon>
+#include <QTranslator>
 #include <QUrl>
 
 #define SET_HOTKEY(X, Y)                                                                                   \
@@ -30,10 +31,25 @@
 Capturer::Capturer(int& argc, char **argv)
     : QApplication(argc, argv)
 {
+    setQuitOnLastWindowClosed(false);
+
     setWindowIcon(QIcon(":/icons/capturer"));
 
     setStyle(QStyleFactory::create("Fusion"));
 
+    // translations
+    sys_translator_ = new QTranslator(this);
+    app_translator_ = new QTranslator(this);
+
+    const auto sys_translation = qApp->applicationDirPath() + "/translations/qt_" + config::language;
+    const auto app_translation = qApp->applicationDirPath() + "/translations/capturer_" + config::language;
+    loge_if(!sys_translator_->load(sys_translation), "failed to load {}", sys_translation.toStdString());
+    loge_if(!app_translator_->load(app_translation), "failed to load {}", app_translation.toStdString());
+
+    installTranslator(sys_translator_);
+    installTranslator(app_translator_);
+
+    // hotkeys
     snip_hotkey_        = new QHotkey(this);
     repeat_snip_hotkey_ = new QHotkey(this);
     preview_hotkey_     = new QHotkey(this);
@@ -92,7 +108,7 @@ void Capturer::Init()
 
     config::set_autorun(config::autorun);
 
-    //
+    // devices
     // microphones: default or null
     const auto asrc      = av::default_audio_source();
     config::devices::mic = asrc.value_or(av::device_t{}).id;
@@ -309,7 +325,7 @@ void Capturer::SetTheme(const QString& theme)
 
     QIcon::setThemeName(theme);
 
-    std::vector<QString> files{
+    const std::vector<QString> files{
         ":/stylesheets/capturer",       ":/stylesheets/capturer-" + theme,
         ":/stylesheets/menu",           ":/stylesheets/menu-" + theme,
         ":/stylesheets/settingswindow", ":/stylesheets/settingswindow-" + theme,

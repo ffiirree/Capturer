@@ -80,14 +80,14 @@ private:
         google::EnableLogCleaner(3); // days
         google::InstallFailureSignalHandler();
         google::InstallFailureWriter(
-            [](const char *data, size_t size) { LOG(ERROR) << std::string(data, size); });
+            [](const char *data, const size_t size) { LOG(ERROR) << std::string(data, size); });
 
         // ffmpeg
-        av_log_set_callback([](void *avcl, int level, const char *fmt, va_list args) {
+        av_log_set_callback([](void *avcl, const int level, const char *fmt, const va_list args) {
             if (level > AV_LOG_INFO) return;
 
             std::string name{ "FFMPEG-L" + std::to_string(level >> 3) };
-            if (AVClass *avc = avcl ? *(AVClass **)avcl : nullptr; avc) {
+            if (const AVClass *avc = avcl ? *static_cast<AVClass **>(avcl) : nullptr; avc) {
                 name += "@";
                 name += (avc->item_name ? avc->item_name : av_default_item_name)(avcl);
             }

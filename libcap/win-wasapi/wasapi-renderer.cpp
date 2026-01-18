@@ -375,7 +375,7 @@ HRESULT WasapiRenderer::OnSessionDisconnected(const AudioSessionDisconnectReason
     return S_OK;
 }
 
-HRESULT WasapiRenderer::OnSimpleVolumeChanged(const float volume, const BOOL mute, const LPCGUID ctx)
+HRESULT WasapiRenderer::OnSimpleVolumeChanged(const float, const BOOL, const LPCGUID ctx)
 {
     if (!InlineIsEqualGUID(*ctx, ctx_)) {
         // TODO
