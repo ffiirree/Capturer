@@ -83,7 +83,7 @@ private:
             [](const char *data, const size_t size) { LOG(ERROR) << std::string(data, size); });
 
         // ffmpeg
-        av_log_set_callback([](void *avcl, const int level, const char *fmt, const va_list args) {
+        av_log_set_callback([](void *avcl, const int level, const char *fmt, va_list args) {
             if (level > AV_LOG_INFO) return;
 
             std::string name{ "FFMPEG-L" + std::to_string(level >> 3) };
